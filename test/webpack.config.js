@@ -1,4 +1,4 @@
-const coreCfg = require('cs-viewer-core/webpack.config');
+const coreCfg = require('anemui-core/webpack.config');
 
 module.exports = (env, argv) => {
     let ret = coreCfg(env, argv);

@@ -573,10 +573,10 @@ app.configure().then((res)=&gt;{app.render()}).catch((res)=&gt;{console.error("e
 <div class="listingblock">
 <div class="title">my-drought-monitor/src/App.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import {DataServiceApp, STR_ALL} from "cs-viewer-core/src/ServiceApp"
-import {loadTimesJs} from "cs-viewer-core/src/data/CsDataLoader"
+<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import {DataServiceApp, STR_ALL} from "anemui-core/src/ServiceApp"
+import {loadTimesJs} from "anemui-core/src/data/CsDataLoader"
 import { EpmOptionsService, EpmService, SUBVAR_5DAY } from "./EpmService";
-import { CategoryRangePainter, PaletteManager } from "cs-viewer-core/src/PaletteManager";
+import { CategoryRangePainter, PaletteManager } from "anemui-core/src/PaletteManager";
 import { EpmInfo } from "./EmpInfo";
 
 const VIEWER_NAME = "My Drought Monitor" <i class="conum" data-value="1"></i><b>(1)</b>
@@ -718,9 +718,9 @@ export class AppMDM extends DataServiceApp{
 <div class="listingblock">
 <div class="title">my-drought-monitor/src/MdmService.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import { CsDataService, STR_ALL, STR_CUSTOM } from "cs-viewer-core/src/ServiceApp";
-import { CsViewerData } from "cs-viewer-core/src/data/CsDataTypes";
-import { renderers } from "cs-viewer-core/src/tiles/Support";
+<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import { CsDataService, STR_ALL, STR_CUSTOM } from "anemui-core/src/ServiceApp";
+import { CsViewerData } from "anemui-core/src/data/CsDataTypes";
+import { renderers } from "anemui-core/src/tiles/Support";
 
 const VAR_TMAX = "Temperatura Maxima";
 const VAR_TMIN = "Temperatura Minina";
@@ -820,10 +820,10 @@ Se han escogio valores arbitrarios para mostar que cada variable puede tener su 
 <div class="listingblock">
 <div class="title">my-drought-monitor/src/App.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import { MenuBar } from "cs-viewer-core/src/ui/MenuBar";
-import {BaseApp} from "cs-viewer-core/src/BaseApp"
-import {loadTimesJs} from "cs-viewer-core/src/data/CsDataLoader"
-import { renderers } from "cs-viewer-core/src/tiles/Support";
+<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import { MenuBar } from "anemui-core/src/ui/MenuBar";
+import {BaseApp} from "anemui-core/src/BaseApp"
+import {loadTimesJs} from "anemui-core/src/data/CsDataLoader"
+import { renderers } from "anemui-core/src/tiles/Support";
 import { MdmService } from "./MdmService"; <i class="conum" data-value="1"></i><b>(1)</b>
 
 export class AppMDM extends BaseApp{
@@ -977,7 +977,7 @@ Es posible que de errores de compilacion hasta que no salvemos los dos ficheros
 <div class="listingblock">
 <div class="title">extreme-precipitation-monitor/webpack.config.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const coreCfg  = require('cs-viewer-core/webpack.config');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const coreCfg  = require('anemui-core/webpack.config');
 
 module.exports = (env,argv) =&gt; {
     let ret = coreCfg(env,argv);
@@ -1443,7 +1443,7 @@ Al hacer la clase como singleton nos permite, si lo necesitaramos, localizarla s
 <div class="listingblock">
 <div class="title">extreme-precipitation-monitor/src/EpmService.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import { CsViewerData } from "cs-viewer-core/src/data/CsDataTypes";
+<pre class="highlightjs highlight"><code class="language-ts hljs" data-lang="ts">import { CsViewerData } from "anemui-core/src/data/CsDataTypes";
 ...
 export class EpmService {
     public getRenderers(): string[] { <i class="conum" data-value="1"></i><b>(1)</b>

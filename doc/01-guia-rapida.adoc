@@ -199,10 +199,10 @@ Este error lo solucionaremos cambiando la definicion en el su codigo fuente: `my
 .my-drought-monitor/src/App.ts
 [source,ts]
 ----
-import {DataServiceApp, STR_ALL} from "cs-viewer-core/src/ServiceApp"
-import {loadTimesJs} from "cs-viewer-core/src/data/CsDataLoader"    
+import {DataServiceApp, STR_ALL} from "anemui-core/src/ServiceApp"
+import {loadTimesJs} from "anemui-core/src/data/CsDataLoader"    
 import { EpmOptionsService, EpmService, SUBVAR_5DAY } from "./EpmService";
-import { CategoryRangePainter, PaletteManager } from "cs-viewer-core/src/PaletteManager";
+import { CategoryRangePainter, PaletteManager } from "anemui-core/src/PaletteManager";
 import { EpmInfo } from "./EmpInfo";
 
 const VIEWER_NAME = "My Drought Monitor" <1>
@@ -308,9 +308,9 @@ Para simplificar un poco las cosas, hay un "servicio" (`EpmService`) que tiene t
 .my-drought-monitor/src/MdmService.ts
 [source,ts]
 ----
-import { CsDataService, STR_ALL, STR_CUSTOM } from "cs-viewer-core/src/ServiceApp";
-import { CsViewerData } from "cs-viewer-core/src/data/CsDataTypes";
-import { renderers } from "cs-viewer-core/src/tiles/Support";
+import { CsDataService, STR_ALL, STR_CUSTOM } from "anemui-core/src/ServiceApp";
+import { CsViewerData } from "anemui-core/src/data/CsDataTypes";
+import { renderers } from "anemui-core/src/tiles/Support";
 
 const VAR_TMAX = "Temperatura Maxima";
 const VAR_TMIN = "Temperatura Minina";
@@ -379,10 +379,10 @@ Una vez que tengamos la fuente de datos preparada debemos instruir a la aplicaci
 .my-drought-monitor/src/App.ts
 [source,ts]
 ----
-import { MenuBar } from "cs-viewer-core/src/ui/MenuBar";
-import {BaseApp} from "cs-viewer-core/src/BaseApp"
-import {loadTimesJs} from "cs-viewer-core/src/data/CsDataLoader"    
-import { renderers } from "cs-viewer-core/src/tiles/Support";
+import { MenuBar } from "anemui-core/src/ui/MenuBar";
+import {BaseApp} from "anemui-core/src/BaseApp"
+import {loadTimesJs} from "anemui-core/src/data/CsDataLoader"    
+import { renderers } from "anemui-core/src/tiles/Support";
 import { MdmService } from "./MdmService"; <1>
 
 export class AppMDM extends BaseApp{ 
