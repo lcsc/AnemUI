@@ -1,0 +1,75 @@
+div.GraphContainer {
+    @include bgFrame(12px);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0.8em 1.5em;
+    background-color: rgba(255, 255, 255, 1);
+    background: white;
+    color: #333;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    width: fit-content;
+
+
+    a.popup-close-button i.bi {
+        width: 40px;
+        height: 40px;
+        padding: 12px 0 0 12px;
+        cursor: pointer;
+        font-size: 2rem;
+        color: #2c6d9a;
+        padding: 5px 0 0 9px;
+    }
+
+    a.popup-close-button i.bi:hover {
+        color: #aeddff;
+    }
+
+    div.popup-content-wrapper {
+        padding: 1px;
+        text-align: left;
+        border-radius: 12px;
+    }
+
+    .dygraph-label {
+        color: #064d87;
+        font-size: 1.1em;
+        font-weight: 500;
+        padding: 0.2rem 0rem;
+    }
+
+    .dygraph-title {
+        font-size: 20px;
+        color: gray 2px 2px 2px;
+    }
+
+    .dygraph-ylabel {
+        font-size: 18px;
+        color: gray -2px 2px 2px;
+    }
+
+    .dygraph-legend {
+        text-align: center;
+        width: 1024px;
+        background-color: transparent !important;
+        left: 0px !important;
+    }
+
+    .chart {
+        border: 1px dashed black;
+        margin: 5px 5px 5px 50px;
+        padding: 2px;
+    }
+
+    .labels-content {
+        min-height: 40px;
+        padding-top: 10px;
+    }
+
+    #labels {
+
+        text-align: center;
+    }
+
+}

@@ -1,0 +1,50 @@
+@startuml
+node sc-frontal{
+    component "Frontal\nHTTP/S" as frontalHttp
+}
+node sc-aemet-1{
+    component "Frontal\nDev" as frontalDev
+    frame visores as visoresDev{
+        component "job [visor]" as jobDev
+        component "datos [visor]" as datosDev
+        component "web [visor]" as webDev
+    } 
+}
+node sc-aemet-prod{
+    component "Frontal\nProd" as frontalProd
+    frame visores as visoresProd{
+        component "datos [visor]" as datosProd
+        component "web [visor]" as webProd
+    }
+}
+node genoma{
+    folder data{
+        storage "[visor]" as dataSt
+    }
+    folder web{
+        storage "[visor]" as webSt
+    }
+    folder prod{
+        storage "[visor]" as prodSt
+    }
+}
+
+actor User
+User --> frontalHttp
+frontalHttp --> frontalDev
+frontalDev --> datosDev
+frontalDev --> webDev
+datosDev --> webSt
+webDev --> webSt
+jobDev --> webSt
+jobDev --> dataSt
+
+frontalHttp --> frontalProd
+frontalProd --> datosProd
+frontalProd --> webProd
+datosProd --> prodSt
+webProd --> prodSt
+
+web -.-> prod: Copia Estable
+
+@enduml
