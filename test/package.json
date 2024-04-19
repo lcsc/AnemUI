@@ -1,0 +1,25 @@
+{
+  "name": "common-test",
+  "version": "0.0.1",
+  "description": "Climatic Services Test Suite",
+  "main": "src/index.ts",
+  "devDependencies": {},
+  "scripts": {
+    "test":"mocha  --timeout 10000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lcsc/VisorServiciosClimaticos.git"
+  },
+  "author": "LCSC",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/lcsc/VisorServiciosClimaticos/issues"
+  },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false
+  },
+  "homepage": "https://github.com/lcsc/VisorServiciosClimaticos#readme"
+}

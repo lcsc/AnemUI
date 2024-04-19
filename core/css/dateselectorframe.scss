@@ -1,0 +1,43 @@
+
+div.DateSelectorFrame.small{
+    max-width: fit-content;
+    div.slider-horizontal,button{
+        display: none;
+    }
+    
+}
+
+div.DateSelectorFrame{
+    @include blurBgFrame();
+    width: 60%;
+
+    left:0;
+    right:0;
+    bottom: 0.25em;
+    margin-left:auto;
+    margin-right:auto;
+
+    div.datePickerGroup{
+        position: relative;
+        display: flex;
+        width: fit-content;
+        margin-left:auto;
+        margin-right:auto;
+        left: 0;
+        right: 0;
+    }
+    div#datePicker{
+        width: fit-content;
+        margin-left:auto;
+        margin-right:auto;
+        left: 0;
+        right: 0;
+    }
+
+    div.slider-horizontal{
+        width: 100%;
+    }
+    div.tooltip{
+        max-width: fit-content;
+    }
+}

@@ -1,0 +1,64 @@
+// COLORS
+
+$title_color: #064d87;
+$title_bgcolor: #dcdcdc;
+$color_1: #B9B9B9;
+$color_2: #FC6262;
+$color_3: #000;
+$color_4: #fff;
+$color_5: #1E95FA;
+$color_6: #7386D5;
+$color_7: #FF6200;
+$color_8: #2c6d9a;
+
+// MEDIA QUERIES
+
+/* max-width 576px, mobile-only styles */
+@mixin sm-mobile {
+    @media only screen and (max-width: 576px) {
+        @content;
+    }
+}
+
+/* min-width 576px, medium screens */
+@mixin mobile {
+    @media only screen and (min-width:576px) {
+        @content;
+    }
+
+}
+
+/* min-width 768px, medium screens */
+@mixin tablet {
+    @media only screen and (min-width: 768px) {
+        @content;
+    }
+}
+
+/* min-width 992px, large screens */
+@mixin laptop {
+    @media only screen and (min-width: 992px) {
+        @content;
+    }
+}
+
+ /* min-width 1200px, xlarge screens */
+@mixin desktop {
+    @media only screen and (min-width: 1200px)  {
+        @content;
+    }
+}
+
+ /* min-width 1500px, xlarge screens */
+ @mixin md-desktop {
+    @media only screen and (min-width: 1500px)  {
+        @content;
+    }
+}
+
+ /* min-width 1920px, xlarge screens */
+ @mixin xl-desktop {
+    @media only screen and (min-width: 1920px) {
+        @content;
+    }
+}

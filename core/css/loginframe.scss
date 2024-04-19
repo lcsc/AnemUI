@@ -1,0 +1,29 @@
+div.loginFrame{
+    // @include blurBgFrame();
+    // max-width: fit-content;
+    // top:0.25em;
+    // right:0.25em;
+    // position: relative;
+    // margin-top: 0.25em;
+    // margin-bottom: 0.25em;
+    text-align: center;
+    
+    i.bi:hover{
+        color:cornflowerblue;
+    }
+}
+
+div.loginFrame.max{
+    i.bi{
+        // font-size: 2rem;
+    }
+}
+
+div.loginFrame.min{
+    i.bi{
+        font-size: small;
+    }
+    div{
+        display: none;
+    }
+}

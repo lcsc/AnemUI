@@ -1,0 +1,284 @@
+== Pruebas de software 
+Se ha realizado una serie de Pruebas de integración para probar las interacciones entre componentes de los distintos visores, y validar de una manera eficiente que el código de la aplicación funciona como se pretende. Para crear un marco de automatización de dichas pruebas se ha elegido Selenium + Mocha
+
+== Mocha
+Mocha es un entorno de prueba de JavaScript para programas de Node.js muy popular que nos permite organizar nuestros casos de prueba y se encarga de ejecutarlos. Ofrece compatibilidad con navegadores, pruebas asincrónicas, informes de cobertura de pruebas y el uso de cualquier biblioteca de aserciones. Para incorporarlo al proyecto y que sea ejecutable desde cada visor, se debe instalar y actualizar el comando de prueba "test" en el package.json de cada uno de ellos para que contenga el script ejecutable de Mocha. 
+
+[source,console]
+----
+$ npm install mocha 
+----
+
+[source,json]
+.package.json
+----
+"scripts": {
+    "test": "mocha (+ algunas opciones)"
+  },
+----
+
+Por ejemplo, El package.json del Sistema de información agrometeorológica tiene este aspecto:  
+
+[source,json]
+.package.json
+----
+{
+  "name": "aam-monitor",
+  "version": "0.0.1",
+  "description": "Agro-meteorology Monitor",
+  "main": "src/index.ts",
+  "devDependencies": {},
+  "scripts": {
+    "build": "NODE_ENV=development webpack",
+    "prod": "NODE_ENV=production webpack",
+    "build-wms": "NODE_ENV=wms webpack",
+    "watch": "webpack --watch",
+    "start": "webpack serve --open",
+    "dev": "NODE_ENV=development webpack serve --open",
+    "dev-wms": "NODE_ENV=developmentWms webpack serve --open",
+    "test":"mocha  --timeout 10000"
+  },
+  /// .......
+}
+----
+
+Sin embargo, Mocha por sí solo no verifica el comportamiento de nuestro código, para ello necesitamos una herramienta que nos permita grabar/reproducir las pruebas, ahí entra Selenium. 
+
+== Selenium
+Selenium es una herramienta de automatización de pruebas también muy popular y ampliamente utilizada en el campo del desarrollo de software. Permite a los desarrolladores y testers simular interacciones de un usuario con una aplicación web, lo que facilita la detección de errores y la validación de la funcionalidad.
+
+Se ha preferido frente a otras plataformas como Cypress, Playwright o WebdriverIO por su compatibilidad con las herramientas de desarrollo utilizadas en la plataforma (Nodejs/npm, Javascript), por su facilidad de uso y por existir ya experiencia previa en el equipo. 
+
+La instalación de Selenium Webdriver es sencilla si previamente tenemos Node.js y npm instalados, simplemente basta con ejecutar el siguiente código en el terminal:
+
+[source,console]
+----
+$ npm install selenium-WebDriver
+----
+
+Una vez instalado Selenium WebDriver, en el archivo package.json del raíz debería aparecer el paquete Selenium WebDriver instalado entre las dependencias del proyecto:
+
+
+[source,json]
+.package.json
+----
+"dependencies": {
+
+    "selenium-webdriver": "^4.17.0"
+
+  }
+----
+
+La estructura básica del archivo de pruebas realizado con Selenium consta de: 
+
+[source,js]
+----
+
+<1>
+const {Browser} = require('selenium-webdriver');
+const {suite} = require('selenium-webdriver/testing');
+const firefox = require('selenium-webdriver/firefox');
+
+suite(function (env) {
+  describe('Título del conjunto de pruebas', function () {
+    let driver;
+
+     <2> 
+    before(async function () {
+      let options = new firefox.Options();
+      driver = await env.builder() <3>
+        .setFirefoxOptions(options)
+        .build();
+    });
+
+    <4>
+    after(async () => await driver.quit());
+
+    it('Título de la prueba 1', async function () {
+        await driver.get('https://servicios-climaticos.pti-clima.csic.es/amm-dev/'); <5>
+      ///  Aquí va el código del test 1 <6>
+      ........
+    });
+
+    it('Título de la prueba 2', async function () {
+        await driver.get('https://servicios-climaticos.pti-clima.csic.es/amm-dev/'); <5>
+      ///  Aquí va el código del test 2 <6>
+    });
+
+    .... 
+
+  });
+}, { browsers: [Browser.FIREFOX]});
+----
+
+<1> Carga de las librerías necesarias
+<2> before: Inicializa el driver, en este caso con Firefox como navegador
+<3> Conexión al navegador
+<4> Finaliza el driver 
+<5> after: Inicializa la web
+<6> it: Ejecuta el test
+
+== Estructura del código de pruebas 
+Siguiendo la estructura de la aplicación, se han centralizado las pruebas en un código común a todos los visores donde se han reunido todos los test a realizar, accesible desde cada visor a través de un pequeño script alojado en la carpeta correspondiente a cada uno de ellos, y en el que se inicializan los parámetros específicos para poder probarlos.
+
+Así, en la estructura de directorios de la aplicación:
+
+. En el raíz se ha añadido una carpeta "test" donde está el archivo principal "test.js" que ejecuta las pruebas. Todo el código de este archivo se ha agrupado en la clase csTest, siendo el método performTest el encargado de ejecutar las pruebas. 
+. Dentro de cada visor se ha incluido una estructura idéntica: en una carpeta también llamada "test", el respectivo script de arranque "test.js". Por ejemplo, en el visor de  
+. Se ha configurado el archivo principal como un paquete de Nodejs para que pueda ser importado desde cada unos de los archivos de los visores
+
+.test/test.js (Clase csTest)
+[source,js]
+----
+// --- IMPORTACIÓN DE LIBRERÍAS NECESARIAS
+const VAR_USR = 'aemet';
+const VAR_PWD = 'pticlima';
+const VAR_WEB_DOMAIN = "servicios-climaticos.pti-clima.csic.es/";
+///-- OTRAS VARIABLES Y CONSTANTES QUE NECESITAMOS
+
+class csTest {
+
+// --- OTROS MÉTODOS
+
+    performTest(params, testGraph = true) {
+        // --- INICIALIZACIÓN DE CONSTANTES NECESARIAS
+        const serviceCode = params["serviceCode"];
+        
+        suite((env) => {
+            describe('Tests - ' + serviceFolder, function () {
+                // --- INICIALIZACIÓN DE OTRAS PROPIEDADES
+                const webPage = VAR_WEB_DOMAIN + serviceCode + "-dev/";
+
+                before(async function () {
+                   // ---- INICIALIZACIÓN DEL DRIVER
+                });
+
+                after(async () => await driver.quit());  // --- DESCONEXIÓN DEL DRIVER
+
+                it(VAR_TEST_1, async () => {
+                    this.timeout(0);
+                    if (browserName == 'chrome') {
+                        const connection = await driver.createCDPConnection('page');
+                        await driver.register(VAR_USR, VAR_PWD, connection);
+                        await driver.get('https://' + webPage);
+                    } else {
+                        await driver.get('https://' + VAR_USR + ':' + VAR_PWD + '@' + webPage);
+                    }
+                    ///------------  TEST 1
+                });
+
+                it(VAR_TEST_2, async () => {
+                    if (browserName == 'chrome') {
+                        const connection = await driver.createCDPConnection('page');
+                        await driver.register(VAR_USR, VAR_PWD, connection);
+                        await driver.get('https://' + webPage);
+                    } else {
+                        await driver.get('https://' + VAR_USR + ':' + VAR_PWD + '@' + webPage);
+                    }
+                    ///------------  TEST 2
+                });
+            }
+
+          });
+        }, { browsers: [Browser.CHROME, Browser.FIREFOX] });
+    }
+}
+
+module.exports = csTest;            
+----
+
+== Tests (método "it")
+Cada unos delos tests está englobado dentro de un método "it" de la suite selenium-webdriver. De modo que para añadir nuevos test, habría que copiar una estructura it de las ya codificadas y modificar su contenido. (Se pueden ponerntodos los test seguidos sin necesidad de utilizar esta funcionalidad, el método "it" lo que hace es organizar la ejecución)
+
+El código que debe permanecer común a todas ella es el de conexión con la URL a testear, se ve que es diferente según testeemos en chrome o en el resto de navegadores. Esto es porque en nuestro caso estamos utilizando la configuración de Apache para que pida user/password para permitir acceder a la aplicación. Durante las pruebas, de manera empírica se comprobó que la manera de autenticar una URL con esta característica varía según el navegador. Esta es la razón de ese código. (ver https://www.browserstack.com/docs/automate/selenium/basic-http-authentication. Para la autenticación con Chrome ver https://rajendraak.medium.com/chrome-devtools-protocol-with-selenium-e9ffaca4b0f4)
+
+Selenium dispone de un repositorio en Github con ejemplos de script en varios lenguales de programación. De ahí se puede sacar inspiración para futuros tests https://github.com/SeleniumHQ/seleniumhq.github.io/blob/trunk/examples/javascript/test/getting_started/openFirefoxTest.spec.js
+
+
+== Utilización de la clase csTest desde los script de cada visor
+El código desarrollado para las pruebas se ha integrado en la estructura de la plataforma en forma de paquete de Nodejs, de modo que pueda ser utilizado importándolo desde cada script individual.
+
+Para tal fin, se ha generado el package.json de la carpeta test raíz, 
+
+.test/package.json
+[source,js]
+----
+{
+  "name": "common-test",
+  "version": "0.0.1",
+  "description": "Climatic Services Test Suite",
+  "main": "src/index.ts",
+  "devDependencies": {},
+  "scripts": {
+    "test":"mocha  --timeout 10000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lcsc/VisorServiciosClimaticos.git"
+  },
+  "author": "LCSC",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/lcsc/VisorServiciosClimaticos/issues"
+  },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false
+  },
+  "homepage": "https://github.com/lcsc/VisorServiciosClimaticos#readme"
+}
+----
+
+Posteriormente se ha instalado como un paquete de Node.js con el nombre "common-test". Así ya se puede importar el script desde cada visor para poder ser utilizado. Por ejemplo, en el test.js del Sistema de información agrometeorológica: 
+
+.agrometeorology-monitor/test/test.js
+[source,js]
+----
+const csTest = require('common-test/test'); <1>
+
+let test = new csTest; <2>
+
+const serviceCode   = "amm"; <3>
+const serviceFolder = "agro-meteorology-monitor";
+const serviceTitle  = "Sistema de información agrometeorológica";
+const dropDownId    = "VariableDD";
+const dropDownVars  =  ["cereal de invierno", "maíz", "frutales/vid"];
+
+const params = {
+    "serviceCode" : serviceCode,
+    "serviceFolder" : serviceFolder,
+    "serviceTitle" : serviceTitle,
+    "dropDownId" : dropDownId,
+    "dropDownVars" : dropDownVars
+}
+
+test.performTest(params); <4>
+----
+
+<1> Se importa la clase csTest
+<2> Se instancia la clase csTest
+<3> Se inicializan las variables específicas de cada visor
+<4> Se ejecuta el test (método performTest)
+
+
+== Ejecución de los test
+Para ejecutar los scirpt de test de cada visor, invocamos el comando `test` en la consola, dentro del directorio de la aplicación.
+
+.Ejecución del test en el visor agro-meteorology-monitor
+[source,console]
+----
+$ cd VisorServiciosClimaticos # <1>
+$ npm -w agro-meteorology-monitor run test # <2>
+----
+
+<1> Nos situamos en el directorio
+<2> Ejecucion propiamente dicha
+
+== Toma de imágenes de pantalla y borrado de archivos
+La clase csTest dispone de dos métodos auxiliares:
+
+* takeScreendhot: graba una imagen de pantalla en el momneto de que se invoca al método   
+* deleteFiles: borra los archivos contenidos en la carpeta que se le pasa como parámetro
+
+Se utilizan para aportar información visual de apoyo a cada uno de los tests.

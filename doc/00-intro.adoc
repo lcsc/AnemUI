@@ -1,0 +1,53 @@
+= Introduccion
+:source-highlighter: highlight.js
+
+Para los diferentes Servicios Climaticos se ha decido partir el codigo de NC-WebMapper usando un framework de empaquetado. Ademas, se ha tenido en cuenta que a futuro la Interface se unificara con la version de Adaptecca, hecha en React.
+
+== Filosofia del Framework
+O decisiones de alto nivel que guian el desarrollo de los visores
+
+* Se ha decidido usar WebPack e ir escribiendo el codigo en TypeScript para ir acercarnos a lo que requiere React. Anticipandos a problemas que pudieran Salir.
+* La vista de la UI se ha hecho desde cero, desacoplando la UI principal de LeafLet
+* Se usaran los resultados del proceso NC-WebMapper (times.js, nc, maps,...)
+* La funcionalidad se ha copiado de la version NC-WebMapper, practicamente Tal Cual (se ha convertido a Type Script)
+* No se usan variables globales, salvo para la aplicacion en si misma, como punto de localizacion.
+* Obligatorio usar objetos. Salvo requisitos del navegador o utilidades no asignables a objetos.
+* Introduccion de `Promises` y `Asyc/Await` donde sea posible
+* Existira una libreria comun (`core`) que contendra el codigo comun a todos los visores. No tendra `main.js`
+* Cada visor sera un proyecto Node.JS que tendra el `main.js` este fichero personalizara el visor (Varibles, paleta de color, ...)
+* Para simplificar la gestion de dependencias se usaran los Workspaces de Node 
+
+== WebPack
+Webpack es una herramienta que transforma una aplicacion Node.JS en una aplicacion de navegador. A partir de un punto de entrada (`main.js`) es capaz de generar un HTML (`index.html`) y un javascript que contiene "todo" el codigo de la aplicacion Node.JS. Por defecto el codigo acaba optimizado y ofuscado, pero se puede configurar para que genere meta-informacion de tal forma que el visor de codigo del navegador muestre los ficheros originales.
+
+Existen otras herramientas similares, como `Vitte`, `Parcel`,... Pero React utiliza WebPack y usandolo nos encontraremos ya los problemas que nos surgira a futuro.
+
+La configuracion de WebPack se realiza desde el `core`, siendo solo necesario pasar una poca informacion desde el visor. Como pasa en React
+
+== TypeScript
+TypeScript o TS (https://www.typescriptlang.org) es un lenguaje inventado por Microsoft que se puede resumir en "JavaScript Tipado". Esto implica que deba ser procesado antes de ejecutarse, realmente se traduce a JS. Veamos un ejemplo sencillo que unicamente ha sido necesario añadir los tipos:
+
+.Version JavaScript
+[source,js]
+----
+var degrees2meters = function(lon,lat) {
+ var x = lon * 20037508.343 / 180;
+ var y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
+ y = y * 20037508.343 / 180;
+ return [x, y]
+}
+----
+
+.Version TypeScript
+[source,ts]
+----
+function degrees2meters(lon:number, lat:number):[number,number] {
+    var x = lon * 20037508.343 / 180;
+    var y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
+    y = y * 20037508.343 / 180;
+    return [x, y]
+}
+----
+
+Al traducir el TS se puede configurar el compilador para que genere un JS optimizado para navegadores concretos, aprovechando las diferentes versiones fucniones disponibles en los mismos. En este caso es el propio WebPack quien se encarga de compilar el TS. Y en su conjunto son capaces de injectar modulos EcmaScript nuevos que aun no esten disponibles en los navegadores (Simpre y cuando haya un wrapper).
+

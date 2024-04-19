@@ -1,0 +1,569 @@
+@import "media-queries.scss";
+
+/* ---------------------------------------------------
+    SIDEBAR STYLE
+----------------------------------------------------- */
+
+#logo {
+    width: 160px;
+}
+
+#SideBar {
+    a {
+        color: $color_1;
+        text-decoration: none;
+    }
+
+    .dropdown-menu {
+        max-height: 300px;
+        overflow-y: scroll;
+    }
+
+    a.dropdown-item {
+        color: $color_3
+    }
+
+    a.cs-disabled {
+        color: $color_1
+    }
+
+    .sub-active {
+        a {
+            color: $color_2 !important;
+            background: $color_4;
+        }
+    }
+
+    height: fit-content;
+    min-width: 250px;
+    max-width: 250px;
+    background: #ffffff00;
+    position: fixed;
+    top: 6em;
+    z-index: 50;
+    color: $color_4;
+    transition: all 0.3s;
+
+    ul {
+        li {
+            position: relative;
+            display: block;
+
+            a {
+                text-align: left;
+                padding: 4px 10px;
+                font-size: .9em;
+                display: block;
+
+                &:hover {
+                    color: $color_5;
+                    background: $color_4;
+                }
+
+                i {
+                    margin-right: 10px;
+                }
+
+                img {
+                    width: 38px;
+                    margin: 2px auto;
+                }
+            }
+        }
+
+        ul {
+            li {
+                .label-small {
+                    display: none;
+                }
+            }
+        }
+
+        li.active {
+            >a {
+                color: $color_4;
+                background: $color_5;
+            }
+        }
+    }
+
+    #SideBarHeader {
+        padding: 10px;
+        // background: $color_4;
+        text-align: left;
+
+        strong {
+            display: none;
+            font-size: 1.8em;
+        }
+    }
+
+    ul.components {
+        padding-bottom: 20px;
+    }
+
+    /* .dropdown-toggle {
+        &::after {
+            display: block;
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+    } */
+
+    .selected {
+        margin-left: 20px;
+    }
+}
+
+.navbar {
+    padding: 15px 10px;
+    background: $color_4;
+    border: none;
+    border-radius: 0;
+    margin-bottom: 40px;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-btn {
+    box-shadow: none;
+    outline: none !important;
+    display: block;
+    text-shadow: none;
+    background-color: $color_8;
+    color: $color_4 !important;
+    border-radius: 50px;
+    border-color: $color_4;
+    // margin-bottom: 0.5em;
+}
+
+.navbar-btn-title {
+    min-width: 180px;
+    border-right: none;
+}
+
+.navbar-btn-split {
+    border-left: none;
+}
+
+
+.navbar-btn:hover,
+.navbar-btn:focus,
+.navbar-btn:active {
+    background-color: #b5cdde;
+    border-color: $color_4;
+}
+
+.navbar-btn:disabled {
+    background-color: $color_1;
+}
+
+.navbar-sm-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    font-size: 1.3rem !important;
+    cursor: pointer;
+    background-color: #2c6d9a;
+    color: #fff;
+    border: none;
+}
+
+.navbar-sm-btn:hover {
+    background-color: #aeddff;
+    color: #2c6d9a;
+}
+
+.header {
+    background: $color_4;
+    color: $color_3;
+}
+
+.line {
+    width: 100%;
+    height: 1px;
+    border-bottom: 1px dashed #ddd;
+    margin: 40px 0;
+}
+
+.hide {
+    display: none !important;
+}
+
+.wrapper {
+    display: flex;
+    align-items: stretch;
+}
+
+#SideBar.active {
+    min-width: 202px;
+    max-width: 202px;
+    text-align: center;
+
+    .sidebar-header {
+        h3 {
+            display: none;
+        }
+
+        strong {
+            display: block;
+        }
+    }
+
+    .CTAs {
+        display: none;
+    }
+
+    ul {
+        ul {
+            li {
+                .label-big {
+                    display: none;
+                }
+
+                .label-small {
+                    display: inline-block;
+                    width: 100%;
+                    text-align: left;
+                }
+            }
+
+            a {
+                padding: 10px !important;
+            }
+        }
+
+        li {
+            a {
+                text-align: left;
+                font-size: 0.85em;
+
+                span {
+                    display: none;
+                }
+
+                i {
+                    margin-right: 0;
+                    display: block;
+                    font-size: 1.5em;
+                    margin-bottom: 5px;
+                }
+            }
+        }
+    }
+
+}
+
+a[aria-expanded="true"] {
+    color: $color_4;
+    background: #1E95FA;
+}
+
+a[data-toggle="collapse"] {
+    position: relative;
+}
+
+ul {
+    ul {
+        a {
+            font-size: 0.9em !important;
+            padding-left: 30px !important;
+        }
+    }
+}
+
+ul.CTAs {
+    padding: 20px;
+
+    a {
+        text-align: center;
+        font-size: 0.9em !important;
+        display: block;
+        border-radius: 5px;
+        margin-bottom: 5px;
+    }
+}
+
+a.download {
+    background: $color_4;
+    color: $color_6;
+}
+
+a.article {
+    background: #ffa012 !important;
+    color: $color_4 !important;
+
+    &:hover {
+        background: #ffa012 !important;
+        color: $color_4 !important;
+    }
+}
+
+#content {
+    width: 100%;
+    padding: 20px;
+    min-height: 100vh;
+    transition: all 0.3s;
+}
+
+.container {
+    margin-top: 80px;
+}
+
+#SideBarCollapse {
+    img {
+        width: 30;
+        cursor: pointer;
+    }
+}
+
+.no-wrap {
+    flex-wrap: nowrap !important;
+
+    /* .input-group-text:last-child {
+        border-top-right-radius: 0.25rem;
+        border-bottom-right-radius: 0.25rem;
+    } */
+}
+
+.orange-nav {
+    color: $color_7 !important;
+}
+
+/* #header {
+    height: 3.5em;
+    padding-top: 0.5em;
+}
+#header {
+    max-width: 42.5em;
+    width: 34em;
+    transition: .25s;
+} */
+
+#TopBar {
+    height: 4.2em;
+    width: 96%;
+    left: 2.1em;
+    left: 2.1em;
+    top: 2em;
+    box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.25);
+    background-size: contain;
+    padding-top: 0px !important;
+    @include topBgFrame(3em);
+
+    label {
+        display: block;
+        border-radius: 2em;
+        border: 1px solid #ccc;
+        padding: 0.5em 1.5em 0 2.5em;
+        height: 2.5em;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, .125);
+        margin: 0;
+        position: relative;
+        width: 50%;
+        background: $color_4;
+    }
+
+    input.p {
+        color: #999;
+    }
+
+    .input-group-text {
+        min-width: 50px !important;
+    }
+
+    #logo img {
+        width: 100px;
+    }
+
+    #title {
+        text-decoration: none;
+        color: $title_color;
+        font-size: 1.1em;
+        font-weight: 500;
+        padding: 0.2rem 0rem;
+        margin-bottom: 0rem;
+
+        @include xl-desktop {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+    }
+
+    #TopRightBar {
+        @include xl-desktop {
+            padding-top: 0.2em;
+        }
+    }
+
+    @include md-desktop {
+        width: 85%;
+    }
+
+    @include xl-desktop {
+        width: 90%;
+        padding-top: 0em;
+
+        #logo img {
+            width: 120px;
+            margin-left: 7%;
+        }
+    }
+
+}
+
+.smallBar {
+    width: 70% !important;
+    left: 50% !important;
+    transform: translate(-50%, 0%);
+
+    #logo {
+        display: none;
+    }
+
+    #central {
+        width: 100% !important;
+    }
+
+    #SubBar {
+        width: 100% !important;
+    }
+
+    #inputs{
+        margin: 1.2em auto;
+    }
+
+    @include md-desktop {
+        width: 40% !important;
+    }
+}
+
+#SubBar {
+    display: inline-block !important;
+    // margin: 0px auto;
+
+    /* .input-group{
+        padding-top: 0.75em;
+    } */
+
+    #info {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+
+    .TopRightFrame {
+        float: right;
+    }
+
+    /* @include desktop {
+        width: 60%;
+    }
+
+    @include xl-desktop {
+        width: 60%;
+    } */
+
+}
+
+.Input-group-end {
+    border-top-right-radius: 0.25rem !important;
+    border-bottom-right-radius: 0.25rem !important;
+}
+
+ul .two-columns {
+    columns: 2;
+    -webkit-columns: 2;
+    -moz-columns: 2;
+}
+
+/* ---------------------------------------------------
+    POPOVER STYLES
+----------------------------------------------------- */
+
+.popover {
+    max-width: 40% !important;
+    background-color: $color_8;
+    border-color: $color_4;
+    font-size: 12px;
+    margin-left:20px!important;
+}
+
+.popover-header {
+    color: $title_color;
+    background-color: $title_bgcolor;
+}
+
+.popover-body {
+    color: $color_4 !important;
+}
+
+
+@media (max-width: 768px) {
+    #SideBar {
+        min-width: 80px;
+        max-width: 80px;
+        text-align: center;
+        margin-left: -80px !important;
+        margin-left: 0;
+
+        .dropdown-toggle {
+            &::after {
+                top: auto;
+                bottom: 10px;
+                right: 50%;
+                -webkit-transform: translateX(50%);
+                -ms-transform: translateX(50%);
+                transform: translateX(50%);
+            }
+        }
+
+        .sidebar-header {
+            h3 {
+                display: none;
+            }
+
+            strong {
+                display: block;
+            }
+        }
+
+        .CTAs {
+            display: none;
+        }
+
+        ul {
+            li {
+                a {
+                    padding: 20px 10px;
+
+                    span {
+                        font-size: 0.85em;
+                    }
+
+                    i {
+                        margin-right: 0;
+                        display: block;
+                        font-size: 1.3em;
+                    }
+                }
+            }
+
+            ul {
+                a {
+                    padding: 10px !important;
+                }
+            }
+        }
+    }
+
+    #SideBar.active {
+        margin-left: 0 !important;
+    }
+
+    #SideBarCollapse {
+        span {
+            display: none;
+        }
+    }
+}

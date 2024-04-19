@@ -1,0 +1,35 @@
+@startuml VisorGeneral
+
+component Core {
+    [Core] as core
+    [Web Pack] as webpack
+    [TypeScript] as ts
+    [Env] as env
+    [Ui] as ui
+    interface "Base App" as BaseApp
+    BaseApp -up- core
+    webpack --> env:use
+}
+
+component Visor as Vlib {
+    [Visor] as visor
+    interface "Visor App" as visorApp 
+    interface TypeScript.config as tsCfg
+    interface CsConfig
+    interface WebPack.config as webpackCfg
+    interface Env as envVisor
+    
+    visorApp -- visor
+    CsConfig -- visor
+    webpackCfg -- visor
+    tsCfg -- visor
+    envVisor -- visor
+} 
+
+webpack ----> webpackCfg
+webpack ----> CsConfig
+webpack ----> envVisor
+ts ----> tsCfg
+visorApp ----|> BaseApp
+
+ @enduml

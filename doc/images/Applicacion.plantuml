@@ -1,0 +1,59 @@
+@startuml Funcionamiento Aplicacion
+actor User
+box "App" #LightBlue
+participant index
+participant VisorApp
+participant DataService as data
+end box
+box "Core" #ADD1B2
+participant BaseApp
+participant Ui
+database State as state
+end box
+participant times.js as times
+
+User -> index ++: get /
+    index -> VisorApp: configure()
+        VisorApp -> times ++: get /times.js
+        return
+        VisorApp -> BaseApp ++: setTimes(times,"defaultVar")
+        return
+        VisorApp -> data ++: getUiData()
+        return
+        VisorApp ->> state: updateState()
+        VisorApp -> BaseApp ++: setUiParams()
+        return
+        VisorApp --> index
+    index -> BaseApp ++:render()
+        BaseApp -> Ui ++: render()
+        Ui <<- state: getState()
+        return
+    return
+return
+
+== Interaccion Usuario ==
+User -> Ui: Click on UI
+Ui ->(5) BaseApp ++:<<Async>> NotifyChange()
+    alt#Gold #CornflowerBlue Change is UI 
+        BaseApp ->> state: updateState()
+        BaseApp -> Ui ++: UpdateUI()
+        Ui <<- state: getState()
+        return
+    else #Pink Change is Data
+        BaseApp -> VisorApp ++: NotifyChangeData()
+            VisorApp -> data ++: getDataForChange()
+            return
+            VisorApp ->> state: updateState()
+            VisorApp -> BaseApp ++:update()
+                BaseApp -> Ui ++: UpdateUI()
+                    Ui <<- state: getState()
+                return
+            return
+        return
+    end
+    BaseApp -> Ui ++: Refresh() 
+    return 
+deactivate
+& Ui->(15) User: <<Async>> Updated Html
+
+@enduml

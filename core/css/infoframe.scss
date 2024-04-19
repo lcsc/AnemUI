@@ -1,0 +1,60 @@
+div.infoFrame{
+    // @include blurBgFrame();
+    // max-width: fit-content;
+    // top:0.25em;
+    // right:0.25em;
+    // position: relative;
+    // margin-top: 0.25em;
+    // margin-bottom: 0.25em;
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+
+    /* i.bi:hover{
+        color:#aeddff;
+    } */
+}
+
+/* div.infoFrame.max{
+    i.bi{
+        font-size: 2rem;
+        color: #2c6d9a;
+        cursor: pointer;
+    }
+    i.bi:hover{
+        color:#aeddff;
+    }
+} */
+
+div.infoFrame.min{
+    i.bi{
+        font-size: small;
+    }
+}
+
+div.tingle-modal {
+    background: rgba(0, 0, 0, .55);
+    font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+    .modal-header {
+        position: absolute;
+        top: -2rem;
+        left: -0rem;
+        background: wheat;
+       /* background: linear-gradient(150deg,wheat 80%,white 100%);*/
+        padding-left: 1em;
+        padding-right:  2em;
+        border-top-left-radius: 0.8em;
+        border-top-right-radius: 0.8em;
+        border-bottom-right-radius: 1em;
+      }
+      .modal-header h1{
+        margin-top: 0.5em;
+        margin-bottom: 0.25em;
+        font-size: 22px;
+      }
+      .modal-content{
+        position: relative;
+        
+      }
+}

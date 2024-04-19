@@ -1,0 +1,24 @@
+= LCSC CS-UI-FW
+LCSC <lcsc_admin@listas.csic.es>;
+v0.1, 2023-08-01
+:description: Documento Arquitectura GUI de los Servicios Climaticos
+:doctype: book
+:toc: left
+:toclevels: 5
+:stylesdir: css
+:stylesheet: lcsc.css
+:linkcss:
+:source-highlighter: highlight.js
+:icons: font
+
+Documento de arquitectura para la GUI de los Servicios Climaticos
+
+[.text-center]
+.Framework Logo
+image::media/logo.svg["FW Logo",align=center] 
+
+
+include::00-intro.adoc[leveloffset=1]
+include::01-guia-rapida.adoc[leveloffset=1]
+include::02-Esqueleto-Visor.adoc[leveloffset=1]
+include::03-Entorno-Ejecucion.adoc[leveloffset=1]

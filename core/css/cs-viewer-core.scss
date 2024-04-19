@@ -1,0 +1,72 @@
+@import "~bootstrap/scss/bootstrap";
+
+$bootstrap-icons-font-src: url("~bootstrap-icons/font/fonts/bootstrap-icons.woff2") format("woff2"), url("~bootstrap-icons/font/fonts/bootstrap-icons.woff") format("woff");
+@import "~bootstrap-icons/font/bootstrap-icons.scss";
+@import "~bootstrap-slider/src/sass/bootstrap-slider.scss";
+
+
+
+html,
+body,
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+#download_iframe {
+    display: none;
+}
+
+#map {
+    z-index: 0;
+}
+
+body {
+    margin: 0px !important;
+}
+
+#MainFrame {
+    width: 98%;
+    margin: 0px auto;
+}
+
+@mixin bgFrame($b_radius: 1em) {
+    z-index: 10;
+    border-radius: $b_radius;
+    padding-left: 1.5em;
+    padding-right: 1.5em;
+    padding-top: 0.25em;
+    padding-bottom: 0.5em;
+    position: absolute;
+}
+
+@mixin blurBgFrame($b_radius: 1em) {
+    @include bgFrame($b_radius);
+    background-color: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px) dropshadow(4px 4px 10px blue);
+}
+
+@mixin topBgFrame($b_radius: 1em) {
+    @include bgFrame($b_radius);
+    background-color: rgb(220, 220, 220);
+
+}
+
+@import "menubar.scss";
+@import "sidebar.scss";
+@import "downloadframe.scss";
+@import "paletteframe.scss";
+@import "dateselectorframe.scss";
+@import "graphcontainer.scss";
+@import "infoframe.scss";
+@import "loginframe.scss";
+@import "open-layers-map.scss";
+
+
+// Shared 
+// div.topLeftFrame{
+//     max-width: fit-content;
+//     top:0.25em;
+//     right:0.25em;
+//     position: absolute;
+// }

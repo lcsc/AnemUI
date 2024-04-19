@@ -1,0 +1,34 @@
+@startuml Proceso Configuracion y Arranque
+collections "WebPack" as wp
+participant "Visor WebPack.Config" as visorWpCfg
+participant "Core WebPack Config" as coreWpCfg
+participant "Visor CsConfig.js" as visorCfg
+collections "Env" as env
+
+wp -> visorWpCfg: require(.../webpack.config.js)
+visorWpCfg -> coreWpCfg: coreCfg(env,argv)
+coreWpCfg -> visorCfg: require(visor/csconfig.js)
+visorCfg --> coreWpCfg
+coreWpCfg -> env: BuildEnv(core)
+coreWpCfg <-- env
+coreWpCfg -> env: BuildEnv(visor)
+coreWpCfg <-- env
+note over coreWpCfg
+Usando el mecanismo de extension de JS:
+
+const ENV={...buildEnv(core),
+ ...buildEnv(visor}
+end note
+
+coreWpCfg -> coreWpCfg: buildBaseConfig
+coreWpCfg -> coreWpCfg: injectToBase(ENV, csconfig.js)
+alt NODE_ENV is Development
+coreWpCfg -> coreWpCfg: extendBaseWithDevConfig
+coreWpCfg -> coreWpCfg: injectToConfigProxyUrl
+end
+
+
+coreWpCfg --> visorWpCfg
+visorWpCfg --> wp
+wp -> wp: BuildOrServe
+@enduml
