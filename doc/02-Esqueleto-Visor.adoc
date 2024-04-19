@@ -299,7 +299,7 @@ El soporte Espacial son los renderizadores que se usaran, o bien un raster gener
 [source, ts]
 .extreme-precipitation-monitor/src/EpmService.ts
 ----
-import { CsViewerData } from "cs-viewer-core/src/data/CsDataTypes";
+import { CsViewerData } from "anemui-core/src/data/CsDataTypes";
 ...
 export class EpmService { 
     public getRenderers(): string[] { <1>

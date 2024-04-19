@@ -1,0 +1,27 @@
+{
+  "name": "anemui-demo",
+  "version": "0.0.1",
+  "description": "Reference Evapotranspiration Monitor",
+  "main": "src/index.ts",
+  "devDependencies": {},
+  "scripts": {
+    "build": "NODE_ENV=development webpack",
+    "prod": "NODE_ENV=production webpack",
+    "build-wms": "NODE_ENV=wms webpack",
+    "watch": "webpack --watch",
+    "start": "webpack serve --open",
+    "dev": "NODE_ENV=development webpack serve --open",
+    "dev-wms": "NODE_ENV=developmentWms webpack serve --open",
+    "test":"mocha  --timeout 10000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lcsc/AnemUI.git"
+  },
+  "author": "LCSC",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/lcsc/AnemUI/issues"
+  },
+  "homepage": "https://github.com/lcsc/AnemUI#readme"
+}

@@ -23,7 +23,8 @@
   "homepage": "https://github.com/lcsc/AnemUI#readme",
   "workspaces": [
     "core",
-    "test"
+    "test",
+    "demo"
   ],
   "devDependencies": {
     "@types/bootstrap": "^5.2.6",

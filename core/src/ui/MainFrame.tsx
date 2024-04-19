@@ -1,5 +1,5 @@
 import { createElement, addChild } from 'tsx-create-element';
-import "../../css/cs-viewer-core.scss"
+import "../../css/anemui-core.scss"
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
