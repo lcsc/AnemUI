@@ -1,5 +1,5 @@
 {
-  "name": "anemui",
+  "name": "@anemui/parent",
   "version": "0.0.1",
   "description": "Climatic Services Viewer",
   "scripts": {
