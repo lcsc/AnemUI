@@ -1,8 +1,8 @@
 // EvapotranspirationMonitorService
 
-import { CsDataService } from "anemui-core/src/ServiceApp";
-import { CsViewerData } from "anemui-core/src/data/CsDataTypes";
-import { renderers } from "anemui-core/src/tiles/Support";
+import { CsDataService } from "@lcsc/anemui-core/src/ServiceApp";
+import { CsViewerData } from "@lcsc/anemui-core/src/data/CsDataTypes";
+import { renderers } from "@lcsc/anemui-core/src/tiles/Support";
 
 
 export class EtoService implements CsDataService{
