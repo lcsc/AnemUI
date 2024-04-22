@@ -1,5 +1,5 @@
 {
-  "name": "@anemui/test",
+  "name": "@lcsc/anemui-test",
   "version": "0.0.1",
   "description": "Climatic Services Test Suite",
   "main": "src/index.ts",
@@ -9,17 +9,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lcsc/VisorServiciosClimaticos.git"
+    "url": "git+https://github.com/lcsc/AnemUI.git"
   },
   "author": "LCSC",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/lcsc/VisorServiciosClimaticos/issues"
+    "url": "https://github.com/lcsc/AnemUI/issues"
   },
   "browser": {
     "fs": false,
     "os": false,
     "path": false
   },
-  "homepage": "https://github.com/lcsc/VisorServiciosClimaticos#readme"
+  "homepage": "https://github.com/lcsc/AnemUI#readme"
 }

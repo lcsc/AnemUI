@@ -1,5 +1,5 @@
 {
-  "name": "@anemui/demo",
+  "name": "@lcsc/anemui-demo",
   "version": "0.0.1",
   "description": "Reference Evapotranspiration Monitor",
   "main": "src/index.ts",
