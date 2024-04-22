@@ -2,7 +2,6 @@
 AnemUI Framework
 
 ## Publicacion en GitHub Repo
-___Crear un PAT (classic con repo:write)___
 ```
 #npm login --scope=@lcsc --registry=https://npm.pkg.github.com
 npm login --scope=@lcsc --registry=https://mirror.lcsc.csic.es/repository/anemui/
