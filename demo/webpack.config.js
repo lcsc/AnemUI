@@ -1,4 +1,4 @@
-const coreCfg  = require('anemui-core/webpack.config');
+const coreCfg  = require('@lcsc/anemui-core/webpack.config');
 //const path = require('path');
 //const distPath= path.resolve(__dirname, 'dist');
 

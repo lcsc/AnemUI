@@ -1,9 +1,9 @@
-import { MenuBar } from "anemui-core/src/ui/MenuBar";
-import { DataServiceApp } from "anemui-core/src/ServiceApp";
-import { loadTimesJs } from "anemui-core/src/data/CsDataLoader";
-import { renderers } from "anemui-core/src/tiles/Support";
+import { MenuBar } from "@lcsc/anemui-core/src/ui/MenuBar";
+import { DataServiceApp } from "@lcsc/anemui-core/src/ServiceApp";
+import { loadTimesJs } from "@lcsc/anemui-core/src/data/CsDataLoader";
+import { renderers } from "@lcsc/anemui-core/src/tiles/Support";
 import { EtoService } from "./EtmService";
-import { PaletteManager } from "anemui-core/src/PaletteManager";
+import { PaletteManager } from "@lcsc/anemui-core/src/PaletteManager";
 import { EtmInfo } from "./EtmInfo";
 
 const VIEWER_NAME = "Monitor de Evapotranspiración de Referencia"
