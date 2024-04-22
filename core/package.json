@@ -18,5 +18,8 @@
   "homepage": "https://github.com/lcsc/AnemUI#readme",
   "dependencies": {
     "keycloak-js": "^22.0.1"
+  },
+  "devDependencies": {
+    "anemui-test":"0.0.1"
   }
 }
