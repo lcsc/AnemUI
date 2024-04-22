@@ -1,5 +1,5 @@
 {
-  "name": "anemui-test",
+  "name": "@anemui/test",
   "version": "0.0.1",
   "description": "Climatic Services Test Suite",
   "main": "src/index.ts",

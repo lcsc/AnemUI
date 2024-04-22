@@ -1,5 +1,5 @@
 {
-  "name": "anemui-core",
+  "name": "@anemui/core",
   "version": "0.0.1",
   "description": "Climatic Services Viewer Core",
   "main": "index.js",
