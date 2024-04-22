@@ -1,5 +1,5 @@
 {
-  "name": "@anemui/parent",
+  "name": "@lcsc/anemui-parent",
   "version": "0.0.1",
   "description": "Climatic Services Viewer",
   "scripts": {
@@ -7,7 +7,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lcsc/VisorServiciosClimaticos.git"
+    "url": "git+https://github.com/lcsc/AnemUI.git"
   },
   "keywords": [
     "Climate",

@@ -1,5 +1,5 @@
 {
-  "name": "@anemui/core",
+  "name": "@lcsc/anemui-core",
   "version": "0.0.1",
   "description": "Climatic Services Viewer Core",
   "main": "index.js",
@@ -20,6 +20,6 @@
     "keycloak-js": "^22.0.1"
   },
   "devDependencies": {
-    "anemui-test":"0.0.1"
+    "@lcsc/anemui-test":"0.0.1"
   }
 }
