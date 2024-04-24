@@ -22,9 +22,9 @@
   },
   "homepage": "https://github.com/lcsc/AnemUI#readme",
   "workspaces": [
-    "core",
-    "test",
-    "demo"
+    "anemui-core",
+    "anemui-test",
+    "anemui-demo"
   ],
   "devDependencies": {
 
