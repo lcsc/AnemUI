@@ -4,13 +4,13 @@ import { MenuBarListener } from "./ui/MenuBar";
 import { MenuBar } from './ui/MenuBar';
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
-import { PaletteFrame } from "./ui/PaletteFrame";
+import PaletteFrame from "./ui/PaletteFrame";
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled } from "./Env";
+import { isKeyCloakEnabled, maxWhenInf, minWhenInf} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { defaultRender } from "./tiles/Support";
 import { defaultTpRender } from "./tiles/tpSupport";
@@ -26,19 +26,19 @@ import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import { SideBar, SideBarListener } from "./ui/SideBar";
+import Translate from "cs-viewer-anemui-core/src/language/translate";
 
 export const zip = require("@zip.js/zip.js");
 
 require("bootstrap-datepicker/dist/css/bootstrap-datepicker3.css")
 
-
 declare global {
     interface Window { CsViewerApp: BaseApp; }
 }
 
-const INITIAL_STATE:CsViewerData={
-    support:"Raster",
-    tpSupport:undefined,
+const INITIAL_STATE: CsViewerData = {
+    support: "Raster",
+    tpSupport: undefined,
     varId: "",
     varName: "",
     times: undefined,
@@ -47,22 +47,21 @@ const INITIAL_STATE:CsViewerData={
     selection: "",
     selectionParam: 0,
     selectionParamEnable: false
-
 }
 
-export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarListener{
+export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener {
 
-    protected menuBar:MenuBar;
-    protected sideBar:SideBar;
-    protected csMap:CsMap;
-    protected mainFrame:MainFrame;
-    protected downloadFrame:DownloadFrame;
-    protected paletteFrame:PaletteFrame;
-    protected dateSelectorFrame:DateSelectorFrame;
-    protected lastLlData:CsLatLongData;
-    protected graph:CsGraph
-    protected infoFrame:InfoFrame
-    protected loginFrame:LoginFrame
+    protected menuBar: MenuBar;
+    protected sideBar: SideBar;
+    protected csMap: CsMap;
+    protected mainFrame: MainFrame;
+    protected downloadFrame: DownloadFrame;
+    protected paletteFrame: PaletteFrame;
+    protected dateSelectorFrame: DateSelectorFrame;
+    protected lastLlData: CsLatLongData;
+    protected graph: CsGraph
+    protected infoFrame: InfoFrame
+    protected loginFrame: LoginFrame
 
     protected state: CsViewerData;
     protected timesJs: CsTimesJsData;
@@ -71,11 +70,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
 
     protected stationsLayer: CsGeoJsonLayer
 
-    
+    // protected language: string;
+    // protected es: es;
+    // protected en: en;
+    protected translate: any;
 
     protected constructor() {
         this.menuBar = new MenuBar(this, this);
-        this.sideBar= new SideBar(this,this)
+        this.sideBar = new SideBar(this, this)
 
         this.csMap = new CsMap(this, new OpenLayerMap(), this);
 
@@ -90,13 +92,15 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
 
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
+        // this.language = 'es';
+        this.translate = Translate.getInstance();
     }
 
     public getMenuBar(): MenuBar {
         return this.menuBar;
     }
 
-    public getSideBar():SideBar{
+    public getSideBar(): SideBar {
         return this.sideBar;
     }
 
@@ -111,6 +115,20 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
     public getGraph(): CsGraph {
         return this.graph;
     }
+
+    public getPaletteFrame(): PaletteFrame {
+        return this.paletteFrame;
+    }
+
+    public getTranslation(text:string): string {
+        console.log(text);
+        // return 'hhhh';
+        return this.translate.locale(text) ;
+    } 
+    
+    public setLanguage(lang:string): void {
+        this.translate.setDefault(lang) ;
+    } 
 
     public abstract configure(): void;
 
@@ -127,9 +145,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
         }
     }
 
-
     public render(): BaseApp {
-
+        // let language = this.getLanguage()== "es"? lan.es:lan.en;
+        // console.log(language);
         zip.workerScriptsPath = "zip_js/";
         zip.configure({
             workerScripts: {
@@ -176,13 +194,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
     }
 
     onDragStart(event: CsMapEvent): void {
+        if (this.avoidMin()) return;
         this.menuBar.minimize();
         this.sideBar.minimize();
         this.downloadFrame.minimize();
         this.paletteFrame.minimize();
         this.dateSelectorFrame.minimize();
         this.infoFrame.minimize();
-    
+
         if (isKeyCloakEnabled) this.loginFrame.minimize();
     }
 
@@ -237,7 +256,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
         let currUrl = new URL(document.location.toString())
         currUrl.search = "";
         currUrl.pathname += "nc/data/" + this.state.varId;
-        if (suffix != undefined) currUrl.pathname += "_" + suffix;
+        if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
         currUrl.pathname += ".nc";
         console.log(currUrl)
         return currUrl.toString();
@@ -296,8 +315,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
         } else {
             varName = varId
         }
-        if(this.state==undefined)this.state= INITIAL_STATE;
-        this.state = {...this.state,
+        if (this.state == undefined) this.state = INITIAL_STATE;
+        this.state = {
+            ...this.state,
             varId: varId,
             varName: varName,
             times: _timesJs.times[varId],
@@ -398,7 +418,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
         let vals = this.getLegendValues();
         if (vals == undefined) return undefined;
         ret = [];
-        vals.forEach((value) => { ret.push(value + "") })
+        vals.forEach((value) => { ret.push(value.toFixed(2) + "") })
         return ret
     }
 
@@ -412,6 +432,18 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
         return values;
     }
 
+    public hasButtons(): boolean {
+        return true;
+    }
+
+    public hasSubTitle(): boolean {
+        return true;
+    }
+
+    public hasSpSupport(): boolean {
+        return true;
+    }
+
     public hasSubVars(): boolean {
         return false;
     }
@@ -420,7 +452,23 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
         return false;
     }
 
-    public hasPopData(): boolean {
+    public varHasPopData(): boolean {
+        return false;
+    }
+
+    public sbVarHasPopData(): boolean {
+        return false;
+    }
+
+    public logoStyle(): string {
+        return 'basic';
+    }
+
+    public disableDownload(): boolean {
+        return false;   
+    }
+
+    public avoidMin(): boolean {
         return false;
     }
 
@@ -430,12 +478,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
 
     async onStationClick(feature: GeoJSON.Feature, event: any) {
         let stationId = feature.properties['id'];
-        let varId = this.state.varId + "_" + this.state.selectionParam +"y";
+        let varId = this.state.varId + "_" + this.state.selectionParam + "y";
         let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
         let hasData = await this.stHasData(stationId);
         let div = document.createElement("div");
         let header = document.createElement("h5");
-        let hdText = document.createTextNode('Estación: ' +  feature.properties['name']);
+        let hdText = document.createTextNode('Estación: ' + feature.properties['name']);
         header.appendChild(hdText);
         div.appendChild(header);
         let list = document.createElement('ul');
@@ -453,8 +501,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
                 list.appendChild(stProp);
             }
         });
-
-        // ---------- GRAPH BUTTON: ONLY SET IF STATION HAS DATASET 
 
         if (hasData == true) {
             let btndiv = document.createElement("div");
@@ -485,16 +531,16 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
         }
     }
     public notifyMaxMinChanged(): void {
-        if(this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]==this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex]||
-            isNaN(this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]) || 
+        if (this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex] == this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex] ||
+            isNaN(this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]) ||
             isNaN(this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex]) ||
-            !isFinite(this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]) || 
-            !isFinite(this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex])){
-                this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]=10;
-                this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex]=0;
+            !isFinite(this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]) ||
+            !isFinite(this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex])) {
+            this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex] = maxWhenInf;
+            this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex] = minWhenInf;
         }
         this.paletteFrame.update();
-        if(this.stationsLayer!=undefined){
+        if (this.stationsLayer != undefined) {
             this.stationsLayer.refresh()
         }
     }
@@ -580,7 +626,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener,SideBarL
 
     public getFeatureStyle(feature: FeatureLike): Style {
         return DEF_STYLE_STATIONS;
-      }
+    }
 
     public formatPopupValue(value: number): string {
         return "Valor: " + value

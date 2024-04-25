@@ -19,3 +19,5 @@ export const olProjection:string=ENV.olProjection;
 export const logo:string=ENV.logo;
 export const initialZoom:number=ENV.initialZoom;
 export const ncSignif:number=ENV.ncSignif;
+export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;
+export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;

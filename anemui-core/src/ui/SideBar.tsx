@@ -33,11 +33,13 @@ export class SideBar extends BaseFrame {
         super(_parent)
         this.listener = _listener;
         let self = this
-        this.spatialSupport = new CsDropdown("SpatialSupportDD", "Soporte Espacial", {
-            valueSelected(origin, index, value, values) {
-                self.listener.spatialSelected(index, value, values)
-            },
-        });
+        if (this.parent.hasSpSupport()) {
+            this.spatialSupport = new CsDropdown("SpatialSupportDD", "Soporte Espacial", {
+                valueSelected(origin, index, value, values) {
+                    self.listener.spatialSelected(index, value, values)
+                },
+            });
+        }
         this.variable = new CsDropdown("VariableDD", "Variable", {
             valueSelected(origin, index, value, values) {
                 self.listener.varSelected(index, value, values)
@@ -77,7 +79,7 @@ export class SideBar extends BaseFrame {
         return (<div id="SideBar" className="active z-depth-1">
             <div id="SideBarInfo">
                 <div id="ButtonStrip">
-                    <div className='menu-container mx-auto d-grid gap-2 my-4' />
+                    <div className='menu-container mx-auto d-grid gap-2' />
                 </div>
             </div>
         </div>);
@@ -87,32 +89,44 @@ export class SideBar extends BaseFrame {
         this.menuContainer = this.container.getElementsByClassName("menu-container")[0] as HTMLElement;
         this.buttonStrip = document.getElementById("ButtonStrip") as HTMLElement;
 
-        addChild(this.menuContainer, this.spatialSupport.render());
-        this.spatialSupport.build()
+        if (this.parent.hasButtons()) {
+            if (this.parent.hasSpSupport()) {
+                addChild(this.menuContainer, this.spatialSupport.render());
+                this.spatialSupport.build()
+            }
 
-        addChild(this.menuContainer, this.variable.render());
-        this.variable.build()
+            addChild(this.menuContainer, this.variable.render(this.parent.varHasPopData()));
+            this.variable.build()
 
-        if (this.parent.hasSubVars()) {
-            addChild(this.menuContainer, this.subVariable.render(this.parent.hasPopData()));
-            this.subVariable.build()
+            if (this.parent.hasSubVars()) {
+                addChild(this.menuContainer, this.subVariable.render(this.parent.sbVarHasPopData()));
+                this.subVariable.build()
+            }
+
+            if (this.parent.hasTpSupport()) {
+                addChild(this.menuContainer, this.temporalSupport.render());
+                this.temporalSupport.build();
+            }
+
+            addChild(this.menuContainer, this.selection.render());
+            this.selection.build()
+
+            this.extraBtns.forEach((btn) => {
+                addChild(this.menuContainer, btn.render());
+                btn.build()
+            });
+
+            if (this.parent.varHasPopData()) {
+                this.variable.configPopOver(this.popData);
+            }
+            
+            if (this.parent.sbVarHasPopData()) {
+                this.subVariable.configPopOver(this.popData);
+            }
+
+            this.menuContainer.classList.add("my-4");
         }
-        if (this.parent.hasTpSupport()) {
-            addChild(this.menuContainer, this.temporalSupport.render());
-            this.temporalSupport.build();
-        }
 
-        addChild(this.menuContainer, this.selection.render());
-        this.selection.build()
-
-        this.extraBtns.forEach((btn) => {
-            addChild(this.menuContainer, btn.render());
-            btn.build()
-        });
-
-        if (this.parent.hasPopData()) {
-            this.subVariable.configPopOver(this.popData);
-        }
     }
 
     public setSupportValues(_supportValues: string[]) {
@@ -124,21 +138,25 @@ export class SideBar extends BaseFrame {
         }
     }
     public setVariables(_variables: string[]) {
-        this.variable.setValues(_variables);
+        this.variable.setValues(_variables, this.parent.varHasPopData());
     }
 
     public configVariables(visible: boolean, shortVisible?: boolean, newText?: string) {
+        if (!this.parent.hasButtons()) return;
         this.variable.config(visible, newText);
+        if (this.parent.varHasPopData()) {
+            this.variable.configPopOver(this.popData);
+        }
     }
 
     public setSubVariables(_variables: string[]) {
-        this.subVariable.setValues(_variables, this.parent.hasPopData());
+        this.subVariable.setValues(_variables, this.parent.sbVarHasPopData());
     }
 
     public configSubVariables(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!this.parent.hasSubVars()) return;
+        if (!this.parent.hasButtons() || !this.parent.hasSubVars()) return;
         this.subVariable.config(visible, newText);
-        if (this.parent.hasPopData()) {
+        if (this.parent.sbVarHasPopData()) {
             this.subVariable.configPopOver(this.popData);
         }
     }
@@ -148,11 +166,12 @@ export class SideBar extends BaseFrame {
     }
 
     public configSelection(visible: boolean, shortVisible?: boolean, newText?: string) {
+        if (!this.parent.hasButtons()) return;
         this.selection.config(visible, newText);
     }
 
-    public setPopIfo(popData:any) {
+    public setPopIfo(popData: any) {
         this.popData = popData
     }
-   
+
 }

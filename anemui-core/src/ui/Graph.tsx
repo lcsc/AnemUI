@@ -8,7 +8,7 @@ import { CsLatLong } from '../CsMapTypes';
 
 require("dygraphs/dist/dygraph.css")
 
-export type GraphType="Serial"|"Linear"|"Cummulative"|"MgFr"|"WindRose"
+export type GraphType = "Serial" | "Linear" | "Cummulative" | "MgFr" | "WindRose"
 
 export class CsGraph extends BaseFrame {
 
@@ -53,16 +53,13 @@ export class CsGraph extends BaseFrame {
     this.byPoint = _byPoint;
     switch (_type) {
       case "Serial":
-        // this.graphTitle += " Time series";
-        this.graphTitle += ": Serie temporal";
+        this.graphTitle += ": " + this.parent.getTranslation('serie_temporal');
         break;
       case "Cummulative":
-        // this.graphTitle += " Time series with linear trend model + confidence intervals";
-        this.graphTitle += ": Serie temporal con modelo lineal + intervalos de confianza";
+        this.graphTitle += ": " + this.parent.getTranslation('modelo_lineal');
         break;
       case "MgFr":
-        // this.graphTitle += " Time series with linear trend model + confidence intervals";
-        this.graphTitle += ": modelo magnitud / frecuencia";
+        this.graphTitle += ": " + this.parent.getTranslation('modelo_mg_fr');
         break;
     }
   }
@@ -75,31 +72,124 @@ export class CsGraph extends BaseFrame {
     //let data:any;
     //console.log("opening Graph")
     this.container.hidden = false;
-    let graph:Dygraph
-    
+    let graph: Dygraph
+
     switch (this.graphType) {
       case "Serial":
         var file = new Blob([data], { type: 'text/plain' });
         let url = URL.createObjectURL(file);
-        graph=this.drawSerialGraph(url, latlng);
+        graph = this.drawSerialGraph(url, latlng);
         break;
       case "Linear":
-        graph=this.drawLinearGraph(data, station);
+        graph = this.drawLinearGraph(data, station);
         break;
       case "Cummulative":
-        graph=this.drawCummulativeGraph(data, latlng);
+        graph = this.drawCummulativeGraph(data, latlng);
         break;
       case "MgFr":
-        graph=this.drawMgFrGraph(data, station);
+        graph = this.drawMgFrGraph(data, station);
         break;
       case "WindRose":
-        graph=this.drawWindRoseGraph(data, latlng);
+        graph = this.drawWindRoseGraph(data, latlng);
         break;
     }
     this.parent.completeGraph(graph);
   }
 
-  public drawSerialGraph(url: any, latlng: CsLatLong):Dygraph {
+  public drawSerialGraph(url: any, latlng: CsLatLong): Dygraph {
+    var graph = new Dygraph(
+      document.getElementById("popGraph"),
+      url,
+      {
+        labelsDiv: document.getElementById('labels'),
+        digitsAfterDecimal: 3,
+        delimiter: ";",
+        title: this.graphTitle + ' ' + this.parent.getTranslation('en_la_coordenada')  + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
+        ylabel: this.parent.getState().legendTitle,
+        xlabel: dateText,
+        showRangeSelector: true,
+        plotter: function (e: any) {
+          let ctx = e.drawingContext;
+          let region = new Path2D();
+
+          // --- Recupero la posición Y en el canvas para el valor Y = 0
+          let yPos;
+          let canvasy0 = 0;
+          let pointAnt = e.points[0];
+          for (let point of e.points) {
+            if (pointAnt.yval >= 0 && point.yval < 0) {  // --- Primer segmento que cruza el valor y=0
+              let porcentaje = Math.abs(100 * point.yval / Math.abs(pointAnt.yval - point.yval)) // --- Calculo la distancia (en %) del último punto positivo al valor y=0
+              canvasy0 = point.canvasy - ((point.canvasy - pointAnt.canvasy) * porcentaje) / 100; // --- Estimo el punto canvas y = 0 en función de ese % 
+              break;
+            }
+            pointAnt = point;
+          }
+          yPos = e.plotArea.y + canvasy0 - 29;  // --- Hay 29 pixels de desplazamiento (dygraph-title)
+
+          // let title = document.querySelector<HTMLElement>('.dygraph-title');
+          // console.log(title.offsetHeight)
+          // console.log(document.getElementsByClassName('dygraph-title')[0].style.height)
+
+          // ---- PRIMER PUNTO DEL POLÍGONO A PINTAR - (0,0) DE LA GRÁFICA: e.plotArea.x, e.plotArea.y + canvasy 
+          region.moveTo(e.plotArea.x, yPos);
+          
+          // ---- PINTO EL RESTO DE LA GRÁFICA 
+          for (let point of e.points) {
+            ctx.lineTo(point.canvasx, point.canvasy);       // --- LÍNEA DE VALORES
+            region.lineTo(point.canvasx, point.canvasy);    // --- ÁREA RELLENO CON COLORES
+          }
+
+          // ---- ÚLTIMO PUNTO DEL POLÍGONO A PINTAR - (XMax,0) DE LA GRÁFICA: e.points[e.points.length - 1].canvasx, e.plotArea.y + canvasy 
+          region.lineTo(e.points[e.points.length - 1].canvasx, yPos);
+          ctx.stroke();
+          ctx.fillStyle = "rgba(255,125,125,1)";
+
+          if (canvasy0 != 0) {
+            // --- GRADIENTE DE COLORES FORZADO A 0.001px EN TORNO A LA POSICIÓN Y = 0    
+            let gradientFill = ctx.createLinearGradient(0, 0, 0, e.plotArea.h);
+            gradientFill.addColorStop(0, "rgba(217,236,236,1)");
+            gradientFill.addColorStop(yPos / e.plotArea.h - 0.001, "rgba(217,236,236,1)"); // --- VERDE PARA VALORES POSITIVOS
+            gradientFill.addColorStop(yPos / e.plotArea.h + 0.001, "rgba(255,125,125,1)"); // --- ROJO PARA VALORES NEGATIVOS
+            gradientFill.addColorStop(1, "rgba(255,125,125,1)");
+
+            ctx.fillStyle = gradientFill;
+            ctx.fill(region, "evenodd");
+          }
+        },
+        xValueParser: function (str: any): number {
+          let readTime: string
+          if (typeof str == "string") {
+            readTime = str;
+          } else {
+            readTime = this.parent.getState().times[str - 1];
+          }
+          return parseDate(readTime);
+        },
+        axes: {
+          x: {
+            // pixelsPerLabel: 10,
+            valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
+              var fecha = new Date(millis);
+              return fecha.getDate() + "/" + (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
+
+            },
+            axisLabelFormatter(number, granularity, opts, dygraph) {
+              var fecha = new Date(number);
+              return (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
+            }
+          },
+          y: {
+            valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
+              return " " + millis.toFixed(2);
+            }
+          }
+        }
+      }
+    );
+    return graph;
+  }
+
+  /* public drawSerialGraph(url: any, latlng: CsLatLong):Dygraph {
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -146,8 +236,8 @@ export class CsGraph extends BaseFrame {
     );
     return graph;
   }
-
-  public drawLinearGraph(url: any, station: any):Dygraph {
+ */
+  public drawLinearGraph(url: any, station: any): Dygraph {
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -185,13 +275,13 @@ export class CsGraph extends BaseFrame {
     return graph
   }
 
-  public drawCummulativeGraph(url: any, latlng: CsLatLong):Dygraph {
+  public drawCummulativeGraph(url: any, latlng: CsLatLong): Dygraph {
     document.getElementById("popGraph").innerHTML = 'PENDIENTE: AÑADIR TIPO DE GRÁFICO DE SUMA ACUMULATIVA en la celda [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']';
     return undefined
   }
 
-  public drawMgFrGraph(url: any, station: any):Dygraph {
-    
+  public drawMgFrGraph(url: any, station: any): Dygraph {
+
     url = url.replace('ord,m0.3,p0.9,p1.5,p2.0', 'Años,Preindustrial,Actual,Futuro (1.5 °C),Futuro (2 °C)'); //-- Hacer mejor esto Manuel
     let graph = new Dygraph(
       document.getElementById("popGraph"),
@@ -220,33 +310,16 @@ export class CsGraph extends BaseFrame {
             color: "#000",
           }
         }
-        
-        // series: {
-        //   'm0.3': {
-        //     color: "#0000ee"
-        //   },
-        //   'p0.9': {
-        //     color: "#00ee00",
-        //     strokeWidth: 2
-        //   },
-        //   'p1.5': {
-        //     color: "#ee0000",
-        //     strokePattern: Dygraph.DASHED_LINE
-        //   },
-        //   'p2.0': {
-        //     color: "#000",
-        //   }
-        // }
       }
     );
     return graph
   }
 
-  public drawWindRoseGraph(url: any, latlng: CsLatLong):Dygraph{
+  public drawWindRoseGraph(url: any, latlng: CsLatLong): Dygraph {
     document.getElementById("popGraph").innerHTML = 'PENDIENTE: AÑADIR TIPO DE GRÁFICO DE WIND ROSE en la celda [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']';
     return undefined
   }
-  
+
   public minimize(): void {
 
   }

@@ -4,7 +4,7 @@
     SIDEBAR STYLE
 ----------------------------------------------------- */
 
-#logo {
+#logoDiv {
     width: 160px;
 }
 
@@ -39,7 +39,7 @@
     max-width: 250px;
     background: #ffffff00;
     position: fixed;
-    top: 6em;
+    top: 8em;
     z-index: 50;
     color: $color_4;
     transition: all 0.3s;
@@ -196,9 +196,10 @@
     align-items: stretch;
 }
 
+
 #SideBar.active {
-    min-width: 202px;
-    max-width: 202px;
+    min-width: 226px;
+    max-width: 226px;
     text-align: center;
 
     .sidebar-header {
@@ -373,8 +374,18 @@ a.article {
         min-width: 50px !important;
     }
 
-    #logo img {
+    #logo {
         width: 100px;
+    }
+
+    .big{
+        width: 160px !important;
+        margin-left: 0px !important;
+    }
+
+    .lcsc {
+        width: 70px !important;
+        margin-left: 40px !important;
     }
 
     #title {
@@ -409,8 +420,13 @@ a.article {
             width: 120px;
             margin-left: 7%;
         }
-    }
 
+      
+    }
+}
+
+.alone {
+    padding: 1.2rem 0rem!important;
 }
 
 .smallBar {
@@ -430,7 +446,7 @@ a.article {
         width: 100% !important;
     }
 
-    #inputs{
+    #inputs {
         margin: 1.2em auto;
     }
 
@@ -486,7 +502,7 @@ ul .two-columns {
     background-color: $color_8;
     border-color: $color_4;
     font-size: 12px;
-    margin-left:20px!important;
+    margin-left: 20px !important;
 }
 
 .popover-header {
@@ -497,7 +513,6 @@ ul .two-columns {
 .popover-body {
     color: $color_4 !important;
 }
-
 
 @media (max-width: 768px) {
     #SideBar {
