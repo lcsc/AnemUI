@@ -26,7 +26,7 @@ import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import { SideBar, SideBarListener } from "./ui/SideBar";
-import Translate from "cs-viewer-anemui-core/src/language/translate";
+import Translate from "./language/translate";
 
 export const zip = require("@zip.js/zip.js");
 
