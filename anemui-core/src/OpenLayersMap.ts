@@ -24,6 +24,8 @@ import ImageSource from "ol/source/Image";
 proj4.defs([
   ['EPSG:25830',
     '+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs'],
+  ['EPSG:23030',
+    '+proj=utm +zone=30 +ellps=intl +units=m +no_defs +type=crs'],  
   ['recorte_aemet',
     '+proj=lcc +lat_1=40 +lat_0=40 +lon_0=-5 +k_0=1 +x_0=1424212.62930891 +y_0=1064393.31507647 +R=6367470 +units=m +no_defs +type=crs']
 ]);

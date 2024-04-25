@@ -24,6 +24,7 @@ export class MenuBar extends BaseFrame {
     private topBar: HTMLElement
     private menuCentral: HTMLElement
     private loading: HTMLDivElement
+    private titleDiv: HTMLElement
 
     private displaySpSupport: HTMLDivElement
     private displayTpSupport: HTMLDivElement
@@ -63,8 +64,8 @@ export class MenuBar extends BaseFrame {
         let element =
             (<div id="MainBarFrame">
                 <div id="TopBar" className="row" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
-                    <div id="logo" className="col mt-1 text-left pt-1 pl-1 float-start">
-                        <img src={'./images/'+logo}></img>
+                    <div id="logoDiv" className="col mt-1 text-left pt-1 pl-1 float-start">
+                        <img id="logo" src={'./images/'+logo}></img>
                     </div>
                     <div id="central" className="col-8 float-start">
                         <div id="menu-title" className="menu-info text-center">
@@ -72,8 +73,8 @@ export class MenuBar extends BaseFrame {
                         </div>
                         <div id="menu-central" className="col-12 text-center">
                             {/* <form id="search">
-                                <label >
-                                    <input name="q" id="search-q" className="p" value="Search location...">z/</input>
+                                <label>
+                                    <input name="q" id="search-q" className="p" value="Search location..."></input>
                                 </label>
                                 {/* <ul className="d"><li className="progress">No results found.</li></ul> */}
                             {/* <a className="r" title="Find my location"></a>
@@ -115,6 +116,7 @@ export class MenuBar extends BaseFrame {
         
         this.topBar = document.getElementById('TopBar') as HTMLElement;
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
+        this.titleDiv = document.getElementById('title') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
@@ -158,6 +160,13 @@ export class MenuBar extends BaseFrame {
             this.displayParam.hidden = true;
             document.getElementById("inputs").classList.add('no-wrap');
             this.displaySelection.classList.add('Input-group-end');
+        }
+        if (!this.parent.hasSubTitle()){ 
+            this.menuCentral.hidden = true;
+            this.titleDiv.classList.add('alone'); 
+        }
+        if (this.parent.logoStyle()!='basic') {
+            document.getElementById("logo").classList.add(this.parent.logoStyle());
         }
     }
 

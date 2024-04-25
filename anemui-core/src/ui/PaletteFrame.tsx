@@ -3,7 +3,7 @@ import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { PaletteManager } from '../PaletteManager';
 import { ChangeEvent } from 'react';
 
-export class PaletteFrame  extends BaseFrame{
+export default class PaletteFrame  extends BaseFrame{
 
     public render():JSX.Element{
         let self=this;
@@ -27,10 +27,10 @@ export class PaletteFrame  extends BaseFrame{
             </div>
             <div className='paletteSelect' onMouseEnter={()=>this.showSelect()} onMouseLeave={()=>this.hideSelect()}  >
                 <span>
-                    Paleta: {mgr.getSelected()}
+                    {this.parent.getTranslation('paleta')}: {mgr.getSelected()}
                 </span>
-            
-                <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event)}
+                {/* <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event)}   */}
+                <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event.target.value)}
                  >
                     {palettes.map((val,index)=>{
                         if(mgr.getSelected()==val){
@@ -42,7 +42,7 @@ export class PaletteFrame  extends BaseFrame{
             
             </div>
         </div>);
-        console.log("Palete selected on render= "+mgr.getSelected() )
+        // console.log("Palete selected on render= "+mgr.getSelected() )
         return element;
     }
 
@@ -56,9 +56,16 @@ export class PaletteFrame  extends BaseFrame{
     }
 
 
-    changePalette(event: ChangeEvent<HTMLSelectElement>): void {
+    // changePalette(event: ChangeEvent<HTMLSelectElement>): void {
+    //     let mgr=PaletteManager.getInstance();
+    //     mgr.setSelected(event.target.value);
+    //     this.parent.update();
+    //     this.container.querySelector("div.paletteSelect").classList.remove("visible")
+    // }
+
+    changePalette(value: string): void {
         let mgr=PaletteManager.getInstance();
-        mgr.setSelected(event.target.value);
+        mgr.setSelected(value);
         this.parent.update();
         this.container.querySelector("div.paletteSelect").classList.remove("visible")
     }
@@ -97,7 +104,7 @@ export class PaletteFrame  extends BaseFrame{
             addChild(data, (<div style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>));
             
             });
-        this.container.querySelector(".paletteSelect span").textContent="Paleta: "+mgr.getSelected();
+        this.container.querySelector(".paletteSelect span").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
     }
 }
 

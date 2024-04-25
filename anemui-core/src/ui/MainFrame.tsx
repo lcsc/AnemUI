@@ -4,26 +4,10 @@ import { CsDropdown, CsDropdownListener } from './CsDropdown';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
 
-/* export interface MainFrameListener {
-    spatialSelected(index: number, value?: string, values?: string[]): void;
-    varSelected(index: number, value?: string, values?: string[]): void;
-    selectionSelected(index: number, value?: string, values?: string[]): void;
-    selectionParamChanged(param: number): void;
-} */
-
 export class MainFrame extends BaseFrame {
 
     private title: string
     
-    // private listener: MainFrameListener;
-
-    /* constructor(_parent: BaseApp, _listener: MainFrameListener) {
-        super(_parent)
-        let self = this
-        // this.listener = _listener;
-    
-    }
- */
     public setTitle(_title: string) {
         this.title = _title;
         document.title = _title;
@@ -59,11 +43,7 @@ export class MainFrame extends BaseFrame {
     }
 
     public update(): void {
-        // this.displaySpSupport.textContent=this.parent.getState().support;
-        // this.displayVar.textContent=this.parent.getState().varName;
-        // this.displaySelection.textContent=this.parent.getState().selection;
-        // this.displayParam.value=this.parent.getState().selectionParam+"";
-        // this.displayParam.disabled=!this.parent.getState().selectionParamEnable;
+
     }
 }
 

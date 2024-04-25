@@ -1,7 +1,6 @@
-import { Dropdown } from "bootstrap";
+import { Dropdown, Popover } from "bootstrap";
 import { addChild, createElement } from "tsx-create-element";
 import { BaseUiElement } from "./BaseFrame";
-import { Popover } from "bootstrap";
 
 export interface CsDropdownListener {
   valueSelected(origin: CsDropdown, index: number, value?: string, values?: string[]): void;
@@ -23,7 +22,7 @@ export class CsDropdown extends BaseUiElement {
     this.listenter = _listener
   }
 
-  public setValues(_values: string[], hasPopData:boolean = false) {
+  public setValues(_values: string[], hasPopData: boolean = false) {
     this.values = _values;
     if (this.container != undefined) {
       //alert("needs Update")
@@ -31,10 +30,10 @@ export class CsDropdown extends BaseUiElement {
       ul.innerHTML = "";
       this.values.map((val, index) => {
         var popOverAttrs = {
-          id: val.startsWith("~")?val.substring(1):val,
+          id: val.startsWith("~") ? val.substring(1) : val,
           'data-toggle': 'popover'
         };
-        if(val.startsWith("~")){
+        if (val.startsWith("~")) {
           addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
         } else {
           addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>))
@@ -45,16 +44,20 @@ export class CsDropdown extends BaseUiElement {
   }
 
   public select(index: number) {
+   let elements = document.getElementsByClassName('popover');
+    for (let i = 0; i < elements.length; i++) {
+      elements[i].classList.remove("show");
+    }
     this.listenter.valueSelected(this, index, this.values[index], this.values);
   }
 
-  protected renderValues(hasPopData:boolean = false) : JSX.Element {
+  protected renderValues(hasPopData: boolean = false): JSX.Element {
     let self = this;
     return (<ul className="dropdown-menu">
       {
         this.values.map((val, index) => {
           var popOverAttrs = {
-            id: val.startsWith("~")?val.substring(1):val,
+            id: val.startsWith("~") ? val.substring(1) : val,
             'data-toggle': 'popover'
           };
           if (val.startsWith("~")) {
@@ -62,11 +65,11 @@ export class CsDropdown extends BaseUiElement {
           }
           return (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>)
         }
-      )}
+        )}
     </ul>)
   }
 
-  public render(hasPopData:boolean = false): JSX.Element {
+  public render(hasPopData: boolean = false): JSX.Element {
     return (<div id={this.id} className="btn-group dropend">
       <button type="button" className="btn btn-md navbar-btn navbar-btn-title"><span >{this.text}</span></button>
       <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">

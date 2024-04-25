@@ -1,7 +1,8 @@
 import { createElement, addChild } from 'tsx-create-element';
 //import {DatepickerOptions} from 'bootstrap-datepicker'
 import 'bootstrap-datepicker'
-import * as $ from "jquery";
+// import * as $ from "jquery";
+import $ from "jquery";
 import 'bootstrap-slider'
 import { default as Slider } from 'bootstrap-slider'; 
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
