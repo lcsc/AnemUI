@@ -200,6 +200,12 @@ const development={
         changeOrigin:true,
         "target": moduleConfig.proxyDataUrl
       },
+      "/popData.json": {
+        "secure": false,
+        "logger": console,
+        changeOrigin:true,
+        "target": moduleConfig.proxyDataUrl
+      },
       "/geoserver":{
         "secure": false,
         "logger": console,
