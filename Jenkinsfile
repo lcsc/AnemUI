@@ -16,9 +16,6 @@ pipeline {
             }
             steps {
                 checkout scm
-                sh 'echo $NEXUS_FILE'
-                sh 'pwd && ls'
-                sh 'more $NEXUS_FILE'
                 sh 'cp $NEXUS_FILE .npmrc'
             }
         }
