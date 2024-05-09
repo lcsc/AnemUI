@@ -15,6 +15,10 @@ pipeline {
                 NEXUS_FILE = credentials('nexus_credential')
             }
             steps {
+                checkout scm
+                sh 'cat $NEXUS_FILE'
+                sh 'pwd && ls'
+                sh 'more $NEXUS_FILE'
                 sh 'cp $NEXUS_FILE .npmrc'
             }
         }
