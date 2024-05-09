@@ -13,6 +13,7 @@ pipeline {
         stage('Configure Build') {
             steps {
                 checkout scm
+                sh 'git config user.email "jenkins@amadis.eead.csic.es"'
                 sh 'npm version -ws --include-workspace-root prerelease'
             }
         }
