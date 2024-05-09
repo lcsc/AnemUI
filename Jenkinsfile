@@ -13,7 +13,7 @@ pipeline {
         stage('Configure Build') {
             steps {
                 checkout scm
-                sh 'npm version --no-git-tag-version prerelase'
+                sh 'npm version --no-git-tag-version prerelease'
             }
         }
         stage('Build') { 
