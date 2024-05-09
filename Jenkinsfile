@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('NPM: Config') {
             environment {
-                NEXUS_FILE = credentials('my-nexus_credential')
+                NEXUS_FILE = credentials('nexus_credential')
             }
             steps {
                 sh "cp $NEXUS_FILE .npmrc"
