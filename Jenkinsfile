@@ -13,7 +13,7 @@ pipeline {
         stage('Configure Build') {
             steps {
                 checkout scm
-                sh 'npm version --no-git-tag-version prerelease'
+                sh 'npm version -ws --include-workspace-root prerelease'
             }
         }
         stage('Build') { 
@@ -28,7 +28,7 @@ pipeline {
             steps {
                 sh 'cp $NEXUS_FILE .npmrc'
                 sh 'npm publish -ws' 
-                sh 'git push'
+                sh 'git push origin/main'
             }
         }
     }
