@@ -15,7 +15,7 @@ pipeline {
                 NEXUS_FILE = credentials('nexus_credential')
             }
             steps {
-                sh "cp $NEXUS_FILE .npmrc"
+                sh 'cp $NEXUS_FILE .npmrc'
             }
         }
         stage('Build') { 
