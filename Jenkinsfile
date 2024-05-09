@@ -10,13 +10,10 @@ pipeline {
         In Jenkins upload your ~/.npmrc
     */
     stages {
-        stage('NPM: Config') {
-            environment {
-                NEXUS_FILE = credentials('nexus_credential')
-            }
+        stage('Configure Build') {
             steps {
                 checkout scm
-                sh 'cp $NEXUS_FILE .npmrc'
+                sh 'npm version --no-git-tag-version prerelase'
             }
         }
         stage('Build') { 
@@ -25,8 +22,13 @@ pipeline {
             }
         }
         stage('Publish') { 
+            environment {
+                NEXUS_FILE = credentials('nexus_credential')
+            }
             steps {
+                sh 'cp $NEXUS_FILE .npmrc'
                 sh 'npm publish -ws' 
+                sh 'git push'
             }
         }
     }
