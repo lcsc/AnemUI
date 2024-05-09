@@ -12,9 +12,8 @@ pipeline {
     stages {
         stage('Configure Build') {
             steps {
-                checkout scm
-                sh 'git config user.email "jenkins@amadis.eead.csic.es"'
-                sh 'npm version -ws --include-workspace-root prerelease'
+//                checkout scm
+                sh 'npm version -ws --include-workspace-root npm 0.0.2-$(date +"%Y%m%d%H%M")'
             }
         }
         stage('Build') { 
@@ -29,7 +28,6 @@ pipeline {
             steps {
                 sh 'cp $NEXUS_FILE .npmrc'
                 sh 'npm publish -ws' 
-                sh 'git push origin HEAD:main'
             }
         }
     }
