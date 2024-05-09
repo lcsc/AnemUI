@@ -29,7 +29,7 @@ pipeline {
             steps {
                 sh 'cp $NEXUS_FILE .npmrc'
                 sh 'npm publish -ws' 
-                sh 'git push origin main'
+                sh 'git push origin HEAD:main'
             }
         }
     }
