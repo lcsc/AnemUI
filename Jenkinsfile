@@ -1,13 +1,21 @@
 pipeline {
     agent { label 'nodejs' }
+    /*
+        Require credentials named "nexus_credential"
+        in a local machine execute
+        "npm login --scope=@lcsc --registry=https://mirror.lcsc.csic.es/repository/anemui/"
+        # user: anemui
+        # pw: You should already know
+
+        In Jenkins upload your ~/.npmrc
+    */
     stages {
         stage('NPM: Config') {
+            environment {
+                NEXUS_FILE = credentials('my-nexus_credential')
+            }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'nexus_credential', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
-                    sh(returnStdout: true, script: "set +x && curl -s -k -H \"Accept: application/json\" -H \"Content-Type:application/json\" -X PUT --data '{\"name\": \"$NEXUS_USERNAME\", \"password\": \"$NEXUS_PASSWORD\"}' https://mirror.lcsc.csic.es/repository/anemui/-/user/org.couchdb.user:$NEXUS_USERNAME 2>&1 | grep -Po '(?<=\"token\":\")[^\"]*' > token.txt" )
-                    sh "cat token.txt"
-                    sh "set +x && echo \"//mirror.lcsc.csic.es/repository/anemui/:_authToken=$token\" >> .npmrc"
-                }
+                sh "cp $NEXUS_FILE .npmrc"
             }
         }
         stage('Build') { 
@@ -15,7 +23,7 @@ pipeline {
                 sh 'npm install' 
             }
         }
-        stage('publish') { 
+        stage('Publish') { 
             steps {
                 sh 'npm publish -ws' 
             }
