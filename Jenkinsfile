@@ -13,7 +13,7 @@ pipeline {
         stage('Configure Build') {
             steps {
 //                checkout scm
-                sh 'npm version -ws --include-workspace-root 0.0.2-$(date +"%Y%m%d%H%M")'
+                sh 'npm version -ws --include-workspace-root --no-git-tag-version 0.0.2-$(date +"%Y%m%d%H%M")'
             }
         }
         stage('Build') { 
