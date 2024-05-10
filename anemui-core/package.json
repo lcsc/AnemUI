@@ -1,6 +1,6 @@
 {
   "name": "@lcsc/anemui-core",
-  "version": "0.0.2-202405100859",
+  "version": "0.0.2-SNAPSHOT",
   "description": "Climatic Services Viewer Core",
   "main": "index.js",
   "scripts": {

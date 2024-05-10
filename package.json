@@ -1,10 +1,11 @@
 {
   "name": "@lcsc/anemui-parent",
-  "version": "0.0.2-202405100859",
+  "version": "0.0.2-SNAPSHOT",
   "description": "Climatic Services Viewer",
   "scripts": {
     "test": "mocha --timeout 10000",
-    "setVersion": "npm version -ws --include-workspace-root --no-git-tag-version $(sed -e \"s/SNAPSHOT/$(date +\"%Y%m%d%H%M\")/g\" version)"
+    "setVersion": "npm version -ws --include-workspace-root --no-git-tag-version $(sed -e \"s/SNAPSHOT/$(date +\"%Y%m%d%H%M\")/g\" version)", 
+    "setVersionFile": "npm version --ws --include-workspace-root --no-git-tag-version $(cat version)"
   },
   "repository": {
     "type": "git",
