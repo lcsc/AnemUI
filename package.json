@@ -1,9 +1,10 @@
 {
   "name": "@lcsc/anemui-parent",
-  "version": "0.0.1",
+  "version": "0.0.2-202405100859",
   "description": "Climatic Services Viewer",
   "scripts": {
-    "test": "mocha --timeout 10000"
+    "test": "mocha --timeout 10000",
+    "setVersion": "npm version -ws --include-workspace-root --no-git-tag-version $(sed -e \"s/SNAPSHOT/$(date +\"%Y%m%d%H%M\")/g\" version)"
   },
   "repository": {
     "type": "git",
@@ -26,10 +27,6 @@
     "anemui-test",
     "anemui-demo"
   ],
-  "devDependencies": {
-
-  },
-  "dependencies": {
-
-  }
+  "devDependencies": {},
+  "dependencies": {}
 }
