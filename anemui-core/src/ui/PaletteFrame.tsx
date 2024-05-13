@@ -2,8 +2,11 @@ import { createElement, addChild } from 'tsx-create-element';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { PaletteManager } from '../PaletteManager';
 import { ChangeEvent } from 'react';
+import Slider from 'bootstrap-slider';
 
 export default class PaletteFrame  extends BaseFrame{
+
+    protected slider: Slider
 
     public render():JSX.Element{
         let self=this;
@@ -26,8 +29,15 @@ export default class PaletteFrame  extends BaseFrame{
                  ))}
             </div>
             <div className='paletteSelect' onMouseEnter={()=>this.showSelect()} onMouseLeave={()=>this.hideSelect()}  >
-                <span>
-                    {this.parent.getTranslation('paleta')}: {mgr.getSelected()}
+                <span aria-label='base'>
+                    {this.parent.getTranslation('base_layer')}: Arqgis
+                </span>
+                <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changePalette(event.target.value)}
+                 >
+                
+                </select>
+                <span aria-label='paleta'>
+                    {this.parent.getTranslation('paleta')}:{mgr.getSelected()}
                 </span>
                 {/* <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event)}   */}
                 <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event.target.value)}
@@ -39,7 +49,13 @@ export default class PaletteFrame  extends BaseFrame{
                        return (<option value={val}>{val}</option>)
                     })}
                 </select>
-            
+                <input id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
+                <span aria-label='base'>
+                    {this.parent.getTranslation('top_layer')}: 
+                </span>
+                <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changePalette(event.target.value)}
+                 >
+                </select>
             </div>
         </div>);
         // console.log("Palete selected on render= "+mgr.getSelected() )
@@ -74,6 +90,14 @@ export default class PaletteFrame  extends BaseFrame{
         this.container=document.getElementById("PaletteFrame") as HTMLDivElement
         let select = this.container.querySelector("select");
         select.addEventListener('focusout',()=>this.hideSelect())
+
+        this.slider=new Slider(document.getElementById("transparencySlider"),{
+            natural_arrow_keys: true,
+            //tooltip: "always",
+            min: 0,
+            max: 100,
+            value: this.parent.getState().selectedTimeIndex
+        })
             
     }
 
@@ -104,7 +128,7 @@ export default class PaletteFrame  extends BaseFrame{
             addChild(data, (<div style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>));
             
             });
-        this.container.querySelector(".paletteSelect span").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
+        this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
     }
 }
 

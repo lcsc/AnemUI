@@ -23,7 +23,9 @@ export default class Translate {
             "en_la_coordenada": "at cell",
             "serie_temporal": "Time series",
             "modelo_lineal":"Time series with linear trend model + confidence intervals",
-            "modelo_mg_fr":"Frequency-Magnitude distribution"
+            "modelo_mg_fr":"Frequency-Magnitude distribution",
+            "base_layer":"Base Layer",
+            "top_layer":"Data Layer"
         },
         es: {
             "descargar_nc": "Descargar NC",
@@ -36,7 +38,9 @@ export default class Translate {
             "en_la_coordenada": "en la coordenada",
             "serie_temporal": "Serie temporal",
             "modelo_lineal":"Serie temporal con modelo lineal + intervalos de confianza",
-            "modelo_mg_fr":"Modelo magnitud / frecuencia"
+            "modelo_mg_fr":"Modelo magnitud / frecuencia",
+            "base_layer":"Capa Base",
+            "top_layer":"Capa Info"
         }
     }
 
