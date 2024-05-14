@@ -193,6 +193,7 @@ export class PaletteManager {
         let opacity = 100-this.transparency
         opacity= parseInt(255*opacity/100+"");
         let ALPHA_VAL = opacity.toString(16);
+        if(ALPHA_VAL.length==1)ALPHA_VAL="0"+ALPHA_VAL;
         //console.log("Trans: "+ this.transparency  +" ->  "+ opacity+" - > "+ALPHA_VAL)
         let paletteStr: string[] = this.palettes[this.selected]()
         let gradient = new Uint32Array(paletteStr.length); // RGBA values
