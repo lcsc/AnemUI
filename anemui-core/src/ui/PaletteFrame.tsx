@@ -22,6 +22,7 @@ export default class PaletteFrame  extends BaseFrame{
         let name = this.parent.getState().legendTitle;
         let palettes=mgr.getPalettesNames();
         let baseLayers=lmgr.getBaseLayerNames();
+        let topLayers=lmgr.getTopLayerNames();
         let bgcolor;
         let color = '#ffffff';
         let element=
@@ -65,8 +66,14 @@ export default class PaletteFrame  extends BaseFrame{
                 <span aria-label='top'>
                     {this.parent.getTranslation('top_layer')}:Politico
                 </span>
-                <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changePalette(event.target.value)}
+                <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}
                  >
+                    {topLayers.map((val,index)=>{
+                        if(lmgr.getTopSelected()==val){
+                            return (<option value={val} selected>{val}</option>)
+                        }
+                       return (<option value={val}>{val}</option>)
+                    })}
                 </select>
             </div>
         </div>);
@@ -101,6 +108,13 @@ export default class PaletteFrame  extends BaseFrame{
     changeBaseLayer(value:string):void{
         let mgr=LayerManager.getInstance();
         mgr.setBaseSelected(value);
+        this.parent.update();
+        this.container.querySelector("div.paletteSelect").classList.remove("visible")
+    }
+
+    changeTopLayer(value:string):void{
+        let mgr=LayerManager.getInstance();
+        mgr.setTopSelected(value);
         this.parent.update();
         this.container.querySelector("div.paletteSelect").classList.remove("visible")
     }
@@ -156,6 +170,8 @@ export default class PaletteFrame  extends BaseFrame{
         this.container.querySelector(".paletteSelect span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
         this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
         this.container.querySelector(".paletteSelect span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
+        this.container.querySelector(".paletteSelect span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
     }
 }
+
 
