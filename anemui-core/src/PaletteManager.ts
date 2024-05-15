@@ -119,7 +119,7 @@ export class CsDynamicPainter implements Painter{
 }
 
 //const ALPHA_VAL = "bb";
-const ALPHA_VAL = "ff";
+//const ALPHA_VAL = "ff";
 export class PaletteManager {
     private static instance: PaletteManager;
 
@@ -138,6 +138,7 @@ export class PaletteManager {
     private paletteBuffer: ArrayBuffer;
     private palette: Uint8Array;
     private painter:Painter;
+    private transparency:number;
 
     private constructor() {
         this.selected = "spei";
@@ -154,6 +155,7 @@ export class PaletteManager {
         this.paletteBuffer = new ArrayBuffer(256 * 4);
         this.palette = new Uint8Array(this.paletteBuffer);
         this.painter=new CsDynamicPainter();
+        this.transparency=0;
     }
 
     public addPalette(name: string, palette: PaletteUpdater,_painter?:Painter): void {
@@ -188,6 +190,11 @@ export class PaletteManager {
     }
 
     public updatePalete32():Uint32Array{
+        let opacity = 100-this.transparency
+        opacity= parseInt(255*opacity/100+"");
+        let ALPHA_VAL = opacity.toString(16);
+        if(ALPHA_VAL.length==1)ALPHA_VAL="0"+ALPHA_VAL;
+        //console.log("Trans: "+ this.transparency  +" ->  "+ opacity+" - > "+ALPHA_VAL)
         let paletteStr: string[] = this.palettes[this.selected]()
         let gradient = new Uint32Array(paletteStr.length); // RGBA values
         let rgba = new Uint8Array(gradient.buffer);
@@ -241,6 +248,16 @@ export class PaletteManager {
     public getPainter():Painter{
         if(this.painters[this.selected]!=undefined)return this.painters[this.selected]
         return this.painter;
+    }
+
+    public getTransparency():number{
+        return this.transparency;
+    }
+
+    public setTransparency(_transparency:number){
+        if(_transparency<0)_transparency=0;
+        if(_transparency>100)_transparency=100;
+        this.transparency=_transparency;
     }
 
 }

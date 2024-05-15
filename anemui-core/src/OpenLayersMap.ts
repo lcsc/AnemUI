@@ -19,6 +19,8 @@ import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import BaseLayer from "ol/layer/Base";
 import ImageSource from "ol/source/Image";
+import { LayerManager } from "./LayerManager";
+import DataTileSource from "ol/source/DataTile";
 
 // Define alternative projections
 proj4.defs([
@@ -76,6 +78,8 @@ export class OpenLayerMap implements CsMapController{
     protected ncExtents: Array4Portion = {};
     protected lastSupport:string;
     protected geoLayer:CsOpenLayerGeoJsonLayer;
+    protected terrainLayer:Layer;
+    protected politicalLayer:Layer;
 
     protected setExtents(timesJs: CsTimesJsData, varId: string): void {
         timesJs.portions[varId].forEach((portion: string, index, array) => {
@@ -162,19 +166,16 @@ export class OpenLayerMap implements CsMapController{
     }
 
     private buildChunkLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
+      let lmgr = LayerManager.getInstance();
       let layers: (ImageLayer<Static> | TileLayer)[] = [];
 
       let terrain = new TileLayer({
-        source: new OSM({
-          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        })
+        source: lmgr.getBaseLayerSource() as DataTileSource
       });
+      this.terrainLayer=terrain;
 
-      let political = new TileLayer({
-        source: new OSM({
-          url: 'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken
-        })
-      });
+      let political = lmgr.getTopLayerOlLayer() as TileLayer;
+      this.politicalLayer=political
 
       this.dataTilesLayer = [];
 
@@ -335,6 +336,22 @@ export class OpenLayerMap implements CsMapController{
       }
       if(this.geoLayer!=undefined){
         this.geoLayer.refresh();
+      }
+      let lmgr = LayerManager.getInstance();
+      let tSource = lmgr.getBaseLayerSource();
+      if(this.terrainLayer.getSource()!=tSource){
+        this.terrainLayer.setSource(tSource);
+      }
+
+      let pLayer=lmgr.getTopLayerOlLayer();
+      if(pLayer!=this.politicalLayer){
+        this.map.removeLayer(this.politicalLayer)
+        this.map.addLayer(pLayer)
+        this.politicalLayer=pLayer;
+      }
+      let pSource = lmgr.getTopLayerSource();
+      if(this.politicalLayer.getSource()!=pSource){
+        this.politicalLayer.setSource(lmgr.getTopLayerSource());
       }
     }
 

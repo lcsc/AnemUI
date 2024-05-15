@@ -73,7 +73,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     // protected language: string;
     // protected es: es;
     // protected en: en;
-    protected translate: any;
+    protected translate: Translate;
 
     protected constructor() {
         this.menuBar = new MenuBar(this, this);
