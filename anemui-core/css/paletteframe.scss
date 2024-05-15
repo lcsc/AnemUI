@@ -78,10 +78,9 @@ div.paletteFrame {
         border-radius: 0px 0px 10px 10px;
         box-shadow: 0 1.5px 3px rgba(0, 0, 0, .25);
 
-        select {
+        select, div.slider {
             display: none;
         }
-
         span {
             display: block;
             color: $title_color;
@@ -90,7 +89,7 @@ div.paletteFrame {
     }
 
     div.paletteSelect.visible {
-        select {
+        select{
             margin: 0px auto;
             display: block;
             width: 90%;
@@ -100,6 +99,13 @@ div.paletteFrame {
                 cursor: pointer;
             }
 
+            cursor: pointer;
+        }
+
+        div.slider {
+            display:inline-block;
+            margin: 0px auto;
+            width: 90%;
             cursor: pointer;
         }
 
