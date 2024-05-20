@@ -8,7 +8,7 @@ import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif } from "../Env";
+import { ncSignif, maxWhenInf, minWhenInf} from "../Env";
 
 
 export type ArrayDownloadDone = (data: number[]) => void;
@@ -122,7 +122,7 @@ function getMinMax(arr: number[]): [number, number] {
 
 // Obtener el chunk correspondiente y terminar llamando doneCb(data, filename, 'text/plain')
 // x    Índice CSV contando desde 1
-export function downloadTCSVChunked(x: number, varName: string, portion: string, doneCb: CsvDownloadDone): void {
+export function downloadTCSVChunked(x: number, varName: string, portion: string, doneCb: CsvDownloadDone, graph: boolean = false): void {
     let timesJs: CsTimesJsData = window.CsViewerApp.getTimesJs();
 
     downloadTChunk(x, varName, portion, timesJs)
@@ -136,6 +136,10 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
                 if (!isNaN(value[1])) download = true;
                 asciiResult += value[0];
                 asciiResult += ';';
+                if (graph) {
+                    if (value[1] == Infinity || value[1] > maxWhenInf) value[1] = maxWhenInf
+                    if (value[1] == -Infinity || value[1] < minWhenInf) value[1] = minWhenInf
+                }
                 if (['e', 'f', 'd'].includes(timesJs.varType))
                     asciiResult += parseFloat(value[1].toPrecision(ncSignif)) + "\n";
                 else

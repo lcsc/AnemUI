@@ -283,7 +283,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         }
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open);
+        downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
 
         //downloadCSV(this.lastLlData.value,this.state.varId,open)
     }
