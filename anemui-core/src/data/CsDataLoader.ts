@@ -26,6 +26,8 @@ export async function loadTimesJs(): Promise<CsTimesJsData> {
                         times : parsedJson.times,
                         varMin : parsedJson.varMin,
                         varMax : parsedJson.varMax,
+                        minVal : parsedJson.minVal,
+                        maxVal : parsedJson.maxVal,
 
                         //Data of chunks
                         portions : parsedJson.portions, // Suffix for the nc files
