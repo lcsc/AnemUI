@@ -5,10 +5,14 @@ import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
 import { mgrs } from 'proj4';
 import { LayerManager } from '../LayerManager';
+import { showLayers }  from "../Env";
 
 export default class PaletteFrame  extends BaseFrame{
 
     protected slider: Slider
+    private baseDiv: HTMLElement
+    private dataDiv: HTMLElement
+    private trpDiv: HTMLElement
 
     public render():JSX.Element{
         let self=this;
@@ -34,18 +38,20 @@ export default class PaletteFrame  extends BaseFrame{
                  ))}
             </div>
             <div className='paletteSelect' onMouseEnter={()=>this.showSelect()} onMouseLeave={()=>this.hideSelect()}  >
-                <span aria-label='base'>
-                    {this.parent.getTranslation('base_layer')}: Arqgis
-                </span>
-                <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeBaseLayer(event.target.value)}
-                 >
-                    {baseLayers.map((val,index)=>{
-                        if(lmgr.getBaseSelected()==val){
-                            return (<option value={val} selected>{val}</option>)
-                        }
-                       return (<option value={val}>{val}</option>)
-                    })}
-                </select>
+                <div id="base-div">
+                    <span aria-label='base'>
+                        {this.parent.getTranslation('base_layer')}: Arqgis
+                    </span>
+                    <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeBaseLayer(event.target.value)}
+                    >
+                        {baseLayers.map((val,index)=>{
+                            if(lmgr.getBaseSelected()==val){
+                                return (<option value={val} selected>{val}</option>)
+                            }
+                        return (<option value={val}>{val}</option>)
+                        })}
+                    </select>
+                </div>
                 <span aria-label='paleta'>
                     {this.parent.getTranslation('paleta')}:{mgr.getSelected()}
                 </span>
@@ -59,22 +65,26 @@ export default class PaletteFrame  extends BaseFrame{
                        return (<option value={val}>{val}</option>)
                     })}
                 </select>
-                <span aria-label='transparency'>
-                    {this.parent.getTranslation('transparency')}:{mgr.getTransparency()}
-                </span>
-                <input id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
-                <span aria-label='top'>
-                    {this.parent.getTranslation('top_layer')}:Politico
-                </span>
-                <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}
-                 >
-                    {topLayers.map((val,index)=>{
-                        if(lmgr.getTopSelected()==val){
-                            return (<option value={val} selected>{val}</option>)
-                        }
-                       return (<option value={val}>{val}</option>)
-                    })}
-                </select>
+                <div id="trp-div">
+                    <span aria-label='transparency'>
+                        {this.parent.getTranslation('transparency')}:{mgr.getTransparency()}
+                    </span>
+                    <input id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
+                </div>
+                <div id="data-div">
+                    <span aria-label='top'>
+                        {this.parent.getTranslation('top_layer')}:Politico
+                    </span>
+                    <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}
+                    >
+                        {topLayers.map((val,index)=>{
+                            if(lmgr.getTopSelected()==val){
+                                return (<option value={val} selected>{val}</option>)
+                            }
+                        return (<option value={val}>{val}</option>)
+                        })}
+                    </select>
+                </div>
             </div>
         </div>);
         // console.log("Palete selected on render= "+mgr.getSelected() )
@@ -121,6 +131,9 @@ export default class PaletteFrame  extends BaseFrame{
 
     public build(){
         this.container=document.getElementById("PaletteFrame") as HTMLDivElement
+        this.baseDiv = document.getElementById('base-div') as HTMLElement;
+        this.dataDiv = document.getElementById('data-div') as HTMLElement;
+        this.trpDiv = document.getElementById('trp-div') as HTMLElement;
         let select = this.container.querySelector("select");
         select.addEventListener('focusout',()=>this.hideSelect())
 
@@ -137,6 +150,12 @@ export default class PaletteFrame  extends BaseFrame{
             mgr.setTransparency(val)
             this.parent.update();
         })
+
+        if (!showLayers){
+            this.baseDiv.hidden = true;
+            this.dataDiv.hidden = true;
+            this.trpDiv.hidden = true;
+        } 
     }
 
     public minimize():void{
