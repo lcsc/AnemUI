@@ -5,6 +5,7 @@ import { CsLatLongData } from '../data/CsDataTypes';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { Dropdown } from 'bootstrap';
 import { modal } from 'tingle.js';
+import { disableDownload }  from "../Env";
 
 export const DownloadIframe = () => {
     return (<iframe id="download_iframe"></iframe>);
@@ -103,7 +104,7 @@ export class DownloadFrame extends BaseFrame {
         let ncContainer = this.container.querySelector("[role=dropNc]")
         this.dropNc = new Dropdown(ncContainer);
         this.dropNcDownButton = ncContainer.getElementsByTagName("button")[1]
-        if (this.parent.disableDownload()) {
+        if (disableDownload) {
             this.disableDwButtons();
         }
     }
