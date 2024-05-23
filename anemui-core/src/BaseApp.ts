@@ -10,7 +10,7 @@ import { DateSelectorFrame } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, maxWhenInf, minWhenInf} from "./Env";
+import { isKeyCloakEnabled, avoidMin, maxWhenInf, minWhenInf} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { defaultRender } from "./tiles/Support";
 import { defaultTpRender } from "./tiles/tpSupport";
@@ -121,8 +121,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public getTranslation(text:string): string {
-        console.log(text);
-        // return 'hhhh';
         return this.translate.locale(text) ;
     } 
     
@@ -194,7 +192,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     onDragStart(event: CsMapEvent): void {
-        if (this.avoidMin()) return;
+        if (avoidMin) return;
         this.menuBar.minimize();
         this.sideBar.minimize();
         this.downloadFrame.minimize();
@@ -430,46 +428,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         }
 
         return values;
-    }
-
-    public hasButtons(): boolean {
-        return true;
-    }
-
-    public hasSubTitle(): boolean {
-        return true;
-    }
-
-    public hasSpSupport(): boolean {
-        return true;
-    }
-
-    public hasSubVars(): boolean {
-        return false;
-    }
-
-    public hasTpSupport(): boolean {
-        return false;
-    }
-
-    public varHasPopData(): boolean {
-        return false;
-    }
-
-    public sbVarHasPopData(): boolean {
-        return false;
-    }
-
-    public logoStyle(): string {
-        return 'basic';
-    }
-
-    public disableDownload(): boolean {
-        return false;   
-    }
-
-    public avoidMin(): boolean {
-        return false;
     }
 
     public configureStations(data: GeoJSON.Feature[]): void {

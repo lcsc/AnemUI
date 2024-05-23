@@ -2,6 +2,7 @@ import { BaseApp } from "./BaseApp";
 import { downloadXYArrayChunked } from "./data/ChunkDownloader";
 import { CsViewerData } from "./data/CsDataTypes";
 import { DateFrameMode } from "./ui/DateFrame";
+import { hasSubVars } from "./Env";
 
 export const P_Hight=[">P 90",">P 95",">P 97",">P 99"]
 export const P_Low=["<P 5","<P 1","<P 3","<P 10"]
@@ -29,19 +30,23 @@ export class CsOptionsService {
     public varText(state: CsViewerData): string {
         return "Variable"
     }
-
     public isSubVarVisible(state: CsViewerData): boolean {
         return true;
     }
     public subVarText(state: CsViewerData): string {
         return "SubVariable"
     }
-
     public isSelectionVisible(state: CsViewerData): boolean {
         return true
     }
+    public isTpSupportVisible(state: CsViewerData): boolean {
+        return false
+    }
     public selectionText(state: CsViewerData): string {
         return "Umbral"
+    }
+    public tpSupportText(state: CsViewerData): string {
+        return "Periodo"
     }
     public showDateEventsButtons(state: CsViewerData) {
         return false;
@@ -66,6 +71,7 @@ export abstract class DataServiceApp extends BaseApp {
         sb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
         sb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
         sb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
+        // sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
@@ -96,7 +102,7 @@ export abstract class DataServiceApp extends BaseApp {
         this.state.selectedTimeIndex = newIndex;
         this.state.legendTitle = this.timesJs.legendTitle[this.state.varId];
 
-        if (this.hasSubVars()) {
+        if (hasSubVars) {
             let subVars = this.service.getSubVars(this.state)
             this.getSideBar().setSubVariables(subVars);
             this.subVarSelected(0, subVars[0], subVars);
@@ -118,11 +124,9 @@ export abstract class DataServiceApp extends BaseApp {
             this.state.subVarName = value;
             this.state.selectedTimeIndex = newIndex;
         }
-
         let selections = this.service.getSelections(this.state)
         this.getSideBar().setSelection(selections)
         this.selectionSelected(0, selections[0], selections)
-
     }
 
     public selectionSelected(index: number, value?: string, values?: string[]): void {

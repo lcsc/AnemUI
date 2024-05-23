@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo } from '../Env';
+import { logo, logoStyle, hasSubTitle, hasSubVars, hasTpSupport } from '../Env';
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -135,11 +135,11 @@ export class MenuBar extends BaseFrame {
         this.displayVar = this.container.querySelector("[role=var]")
         this.displaySelection = this.container.querySelector("[role=selection]")
         this.displayParam = this.container.querySelector("[role=selection-param]")
-        if (this.parent.hasSubVars()) {
+        if (hasSubVars) {
             this.displaySubVar = this.container.querySelector("[role=subVar]")
             this.displaySubVar.hidden = false;
         }
-        if (this.parent.hasTpSupport()) {
+        if (hasTpSupport) {
             this.displayTpSupport = this.container.querySelector("[role=tpSupport]")
             this.displayTpSupport.hidden = false;
         }
@@ -147,9 +147,9 @@ export class MenuBar extends BaseFrame {
         if (this.selectionHidden) {
             this.displaySelection.hidden = true;
             document.getElementById("inputs").classList.add('no-wrap');
-            if (this.parent.hasTpSupport()) {
+            if (hasTpSupport) {
                 this.displayTpSupport.classList.add('Input-group-end');
-            } else if (this.parent.hasSubVars()) {
+            } else if (hasSubVars) {
                 this.displaySubVar.classList.add('Input-group-end');
             } else {
                 this.displayVar.classList.add('Input-group-end');
@@ -161,12 +161,12 @@ export class MenuBar extends BaseFrame {
             document.getElementById("inputs").classList.add('no-wrap');
             this.displaySelection.classList.add('Input-group-end');
         }
-        if (!this.parent.hasSubTitle()){ 
+        if (!hasSubTitle){ 
             this.menuCentral.hidden = true;
             this.titleDiv.classList.add('alone'); 
         }
-        if (this.parent.logoStyle()!='basic') {
-            document.getElementById("logo").classList.add(this.parent.logoStyle());
+        if (logoStyle!='basic') {
+            document.getElementById("logo").classList.add(logoStyle);
         }
     }
 
@@ -203,14 +203,14 @@ export class MenuBar extends BaseFrame {
 
     public update(): void {
         this.displaySpSupport.textContent = this.parent.getState().support;
-        if (this.parent.hasTpSupport()) {
+        if (hasTpSupport) {
             this.displayTpSupport.textContent = this.parent.getState().tpSupport;
         }
         this.displayVar.textContent = this.parent.getState().varName;
         this.displaySelection.textContent = this.parent.getState().selection;
         this.displayParam.value = this.parent.getState().selectionParam + "";
         this.displayParam.disabled = !this.parent.getState().selectionParamEnable;
-        if (this.parent.hasSubVars()) {
+        if (hasSubVars) {
             this.displaySubVar.textContent = this.parent.getState().subVarName;
         }
     }
