@@ -25,7 +25,7 @@ export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhe
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
 export const hasSubTitle:boolean = typeof ENV.hasSubTitle !== 'undefined'? ENV.hasSubTitle:true;
 export const hasSpSupport:boolean = typeof ENV.hasSpSupport !== 'undefined'? ENV.hasSpSupport:true;
-export const hasSubVars:boolean = typeof ENV.hasSubVars !== 'undefined'? ENV.hasSubVarst:false;
+export const hasSubVars:boolean = typeof ENV.hasSubVars !== 'undefined'? ENV.hasSubVars:false;
 export const hasTpSupport:boolean = typeof ENV.hasTpSupport !== 'undefined'? ENV.hasTpSupport:false;
 export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? ENV.varHasPopData:false;
 export const sbVarHasPopData:boolean = typeof ENV.sbVarHasPopData !== 'undefined'? ENV.sbVarHasPopData:false;
