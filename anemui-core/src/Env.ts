@@ -31,5 +31,7 @@ export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? E
 export const sbVarHasPopData:boolean = typeof ENV.sbVarHasPopData !== 'undefined'? ENV.sbVarHasPopData:false;
 export const disableDownload:boolean = typeof ENV.disableDownload !== 'undefined'? ENV.disableDownload:false;
 export const avoidMin:boolean = typeof ENV.avoidMin !== 'undefined'? ENV.avoidMin:false;
-export const showLayers:string = typeof ENV.showLayers !== 'undefined'? ENV.showLayers:true;
+export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.showLayers:true;
+export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'basic';
+
