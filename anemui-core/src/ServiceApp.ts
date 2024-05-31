@@ -71,7 +71,7 @@ export abstract class DataServiceApp extends BaseApp {
         sb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
         sb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
         sb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
-        // sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
+        sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
@@ -165,22 +165,33 @@ export abstract class DataServiceApp extends BaseApp {
 
     public temporalSelected(index: number, value?: string, values?: string[]): void {
         this.state.tpSupport=value;
-        let varId = this.service.getVarId(this.state);
-        let newIndex = this.searchNearestDate(this.state.times[this.state.selectedTimeIndex], this.timesJs.times[varId]);
-        if (varId != this.state.varId) {
-            let varName = this.state.varName
-            let subVarName= this.state.subVarName
-            let selection = this.state.selection
-            let selectionValue = this.state.selectionParam
-            this.setTimesJs(this.timesJs, this.service.getVarId(this.state))
-            this.state.varName=varName
-            this.state.subVarName=subVarName
-            this.state.selection=selection
-            this.state.selectionParam=selectionValue
-            this.state.tpSupport=value;
-            this.state.selectedTimeIndex = newIndex;
-            this.update();
+        if (this.state.tpSupport == 'Climatología') {
+            this.getSideBar().showClimFrame();
+            let varId = this.service.getVarId(this.state);
+        } else { 
+            this.getSideBar().hideClimFrame();
+            let varId = this.service.getVarId(this.state);
+            let newIndex = this.searchNearestDate(this.state.times[this.state.selectedTimeIndex], this.timesJs.times[varId]);
+            if (varId != this.state.varId) {
+                let varName = this.state.varName
+                let subVarName= this.state.subVarName
+                let selection = this.state.selection
+                let selectionValue = this.state.selectionParam
+                this.setTimesJs(this.timesJs, this.service.getVarId(this.state))
+                this.state.varName=varName
+                this.state.subVarName=subVarName
+                this.state.selection=selection
+                this.state.selectionParam=selectionValue
+                this.state.tpSupport=value;
+                this.state.selectedTimeIndex = newIndex;
+                this.update();
+            }
         }   
+    }
+
+    // dropdownSelected
+    public dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void {
+
     }
 
     // The same but for Chunked Data

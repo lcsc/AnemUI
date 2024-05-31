@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { hasButtons, hasSpSupport, hasSubVars, hasTpSupport, varHasPopData, sbVarHasPopData   }  from "../Env";
+import { hasButtons, hasSpSupport, hasSubVars, hasTpSupport, varHasPopData, sbVarHasPopData, hasClimatology}  from "../Env";
 
 
 export interface SideBarListener {
@@ -12,20 +12,25 @@ export interface SideBarListener {
     varSelected(index: number, value?: string, values?: string[]): void;
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
+    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
+
     selectionParamChanged(param: number): void;
 }
 
 export class SideBar extends BaseFrame {
     private menuContainer: Element
     private buttonStrip: HTMLElement
+    private baseFrame: HTMLElement
+    private climatologyFrame: HTMLElement
 
     private spatialSupport: CsDropdown;
     private temporalSupport: CsDropdown;
     private variable: CsDropdown;
     private subVariable: CsDropdown;
     private selection: CsDropdown;
-    private popData: any;
+    private extraDropDowns: CsDropdown[];
 
+    private popData: any;
     private extraBtns: BaseUiElement[];
 
     private listener: SideBarListener
@@ -65,6 +70,7 @@ export class SideBar extends BaseFrame {
                 self.listener.selectionSelected(index, value, values)
             },
         });
+        this.extraDropDowns = []
         this.extraBtns = []
     }
 
@@ -75,12 +81,24 @@ export class SideBar extends BaseFrame {
         if (!this.buttonStrip.hidden) return;
         this.buttonStrip.hidden = false;
     }
+    public hideClimFrame(): void {
+        this.climatologyFrame.classList.remove("d-grid");
+        this.climatologyFrame.hidden = true;
+    }
+    public showClimFrame(): void {
+        if (!this.climatologyFrame.hidden) return;
+        this.climatologyFrame.classList.add("d-grid");
+        this.climatologyFrame.hidden = false;
+    }
     public render(): JSX.Element {
         let self = this
         return (<div id="SideBar" className="active z-depth-1">
             <div id="SideBarInfo">
                 <div id="ButtonStrip">
-                    <div className='menu-container mx-auto d-grid gap-2' />
+                    <div className='menu-container mx-auto d-grid gap-2'>
+                        <div id="BaseFrame" className='mx-auto d-grid gap-2'></div>
+                        <div id="ClimatologyFrame" className='mx-auto gap-2'></div>
+                    </div>
                 </div>
             </div>
         </div>);
@@ -88,34 +106,44 @@ export class SideBar extends BaseFrame {
     public build(): void {
         this.container = document.getElementById("SideBar") as HTMLDivElement;
         this.menuContainer = this.container.getElementsByClassName("menu-container")[0] as HTMLElement;
+        this.baseFrame = document.getElementById("BaseFrame") as HTMLElement;
+        this.climatologyFrame = document.getElementById("ClimatologyFrame") as HTMLElement;
         this.buttonStrip = document.getElementById("ButtonStrip") as HTMLElement;
 
         if (hasButtons) {
-            if (hasSpSupport) {
-                addChild(this.menuContainer, this.spatialSupport.render());
-                this.spatialSupport.build()
-            }
-
-            addChild(this.menuContainer, this.variable.render(varHasPopData));
+            addChild(this.baseFrame, this.variable.render(varHasPopData));
             this.variable.build()
 
             if (hasSubVars) {
-                addChild(this.menuContainer, this.subVariable.render(sbVarHasPopData));
+                addChild(this.baseFrame, this.subVariable.render(sbVarHasPopData));
                 this.subVariable.build()
             }
 
+            if (hasSpSupport) {
+                addChild(this.baseFrame, this.spatialSupport.render());
+                this.spatialSupport.build()
+            }
+
             if (hasTpSupport) {
-                addChild(this.menuContainer, this.temporalSupport.render());
+                addChild(this.baseFrame, this.temporalSupport.render());
                 this.temporalSupport.build();
             }
 
-            addChild(this.menuContainer, this.selection.render());
+            addChild(this.baseFrame, this.selection.render());
             this.selection.build()
 
             this.extraBtns.forEach((btn) => {
-                addChild(this.menuContainer, btn.render());
+                addChild(this.baseFrame, btn.render());
                 btn.build()
             });
+
+            if (hasClimatology) {
+                this.extraDropDowns.forEach((dpn) => {
+                    addChild(this.climatologyFrame, dpn.render());
+                    dpn.build()
+                });
+                this.climatologyFrame.hidden = true;
+            }
 
             if (varHasPopData) {
                 this.variable.configPopOver(this.popData);
@@ -139,10 +167,10 @@ export class SideBar extends BaseFrame {
         }
     }
 
-    /* public configTpSupport(visible: boolean, shortVisible?: boolean, newText?: string) {
+    public configTpSupport(visible: boolean, shortVisible?: boolean, newText?: string) {
         if (!hasButtons) return;
         this.temporalSupport.config(visible, newText);
-    } */
+    }
 
     public setVariables(_variables: string[]) {
         this.variable.setValues(_variables, varHasPopData);
@@ -175,6 +203,20 @@ export class SideBar extends BaseFrame {
     public configSelection(visible: boolean, shortVisible?: boolean, newText?: string) {
         if (!hasButtons) return;
         this.selection.config(visible, newText);
+    }
+
+    public setExtraDropdown(btnName: string, btnTitle: string, options: string[]) {
+        let listener = this.listener
+
+        this.extraDropDowns.push( new CsDropdown (btnName , btnTitle,  {
+            valueSelected(origin, index, value, values) {
+                listener.dropdownSelected(btnName, index, value, values)
+            },
+        }))
+
+        for (let i = 0; i < this.extraDropDowns.length; i++) {
+            if (this.extraDropDowns[i]['id'] == btnName) this.extraDropDowns[i].setValues(options);
+        }
     }
 
     public setPopIfo(popData: any) {

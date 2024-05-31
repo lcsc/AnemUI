@@ -144,8 +144,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public render(): BaseApp {
-        // let language = this.getLanguage()== "es"? lan.es:lan.en;
-        // console.log(language);
         zip.workerScriptsPath = "zip_js/";
         zip.configure({
             workerScripts: {
@@ -248,7 +246,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
                 console.log("error: " + reason)
             })
     }
-
 
     protected getUrlForNC(suffix?: string): string {
         let currUrl = new URL(document.location.toString())
@@ -408,6 +405,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
 
     }
     public abstract selectionSelected(index: number, value?: string, values?: string[]): void;
+
+    // Method handling generic dropdowns
+    public abstract dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     public abstract selectionParamChanged(param: number): void;
     public abstract getLegendValues(): number[];
 
