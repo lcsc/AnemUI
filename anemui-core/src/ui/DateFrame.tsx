@@ -6,6 +6,7 @@ import $ from "jquery";
 import 'bootstrap-slider'
 import { default as Slider } from 'bootstrap-slider'; 
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
+import {  hasClimatology }  from "../Env";
 
 type dateHashMap = {
     //year month day -> index
@@ -23,10 +24,14 @@ export enum DateFrameMode{
 export class DateSelectorFrame extends BaseFrame {
     protected datepickerEl: HTMLElement;
     protected datepicker: JQuery<HTMLDivElement>
+    private climatologyPicker: HTMLElement
+    private climTitle: HTMLElement
+    private basicPicker: HTMLElement
     protected dates: string[];
     protected dateIndex: dateHashMap;
     //protected slider: JQuery<HTMLInputElement>
     protected slider: Slider
+    protected sliderFrame: HTMLElement 
     protected var:string;
     protected mode:DateFrameMode;
 
@@ -92,18 +97,38 @@ export class DateSelectorFrame extends BaseFrame {
         let self = this;
         let element =
             (<div id="DateSelectorFrame" className='DateSelectorFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
-                <div className='datePickerGroup'>
-                    <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
-                    <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
-                    <div id="datePicker" className="input-group date">
-                        <input type="text" className="form-control"></input>
-                        <span className="input-group-addon input-group-text"><i className="bi bi-calendar4-week"></i></span>
+                <div id="BasicPicker" className='datePickerGroup'>
+                    <div className='row gap-2'>
+                        <div className="col">
+                            <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
+                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
+                        </div>
+                        <div id="datePicker" className="col-6 input-group date">
+                            <input type="text" className="form-control"></input>
+                            <span className="input-group-addon input-group-text"><i className="bi bi-calendar4-week"></i></span>
+                        </div>
+                        <div className="col">
+                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
+                            <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
+                        </div>
                     </div>
-                    <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
-                    <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
-                    
                 </div>
-                <input id="datesSlider" data-slider-id='ex1Slider' type="text" data-slider-step="1"/>
+                <div id="ClimatologyPicker" className='datePickerGroup'>
+                    <div className='row'>
+                        <div className="col">
+                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
+                        </div>
+                        <div id="climPicker" className="col-6">
+                            <p id="climTitle">Marco climatología</p>
+                        </div>
+                        <div className="col">
+                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
+                        </div>
+                    </div>
+                </div>
+                <div id="sliderFrame">
+                    <input id="datesSlider" data-slider-id='ex1Slider' type="text" data-slider-step="1"/>
+                </div>
             </div>);
         return element;
     }
@@ -113,7 +138,11 @@ export class DateSelectorFrame extends BaseFrame {
         this.container = document.getElementById("DateSelectorFrame") as HTMLDivElement
         this.datepickerEl = document.getElementById("datePicker")
         let options: DatepickerOptions;
-
+        this.basicPicker = document.getElementById("BasicPicker") as HTMLElement;
+        this.climatologyPicker = document.getElementById("ClimatologyPicker") as HTMLElement;
+        this.climTitle = document.getElementById("climTitle") as HTMLElement;
+        this.sliderFrame = document.getElementById("sliderFrame") as HTMLElement;
+        
         let self = this
         options = {
             format: "yyyy-mm-dd",
@@ -173,6 +202,8 @@ export class DateSelectorFrame extends BaseFrame {
         if(this.mode==undefined){
             this.mode=DateFrameMode.DateFrameDate;
         }
+        this.climatologyPicker.hidden = true;
+        
         this.updateMode();
 
     }
@@ -185,6 +216,14 @@ export class DateSelectorFrame extends BaseFrame {
         this.container.classList.remove("small");
     }
     public update(): void {
+        // if (this.parent.getState().tpSupport == 'Climatología') {
+        if (this.parent.getState().climatology == true) {
+            // this.climTitle.innerHTML = typeof this.parent.getState().times === 'string'? '':this.showPeriod(this.parent.getState().selectedTimeIndex,this.parent.getState().times.length)
+            this.showClimFrame()
+        } else {
+            this.hideClimFrame()
+        }
+
         if(this.parent.getState().varId!=this.var){
             this.setValidDates(this.parent.getState().times)
             const endDate = this.dates.length - 1; 
@@ -226,6 +265,30 @@ export class DateSelectorFrame extends BaseFrame {
         this.updateMode();
     }
 
+    public hideClimFrame(): void {
+        this.basicPicker.hidden = false;
+        this.climatologyPicker.hidden = true;
+        this.sliderFrame.hidden = false
+    }
+
+    public showClimFrame(): void {
+        // if (!this.climatologyPicker.hidden) return;
+        this.basicPicker.hidden = true;
+        if(typeof this.parent.getState().times === 'string') {
+            this.sliderFrame.hidden = true
+            this.climatologyPicker.hidden = true
+        } else {
+            this.climTitle.innerHTML = typeof this.parent.getState().times === 'string'? '':this.showPeriod(this.parent.getState().selectedTimeIndex,this.parent.getState().times.length)
+            this.sliderFrame.hidden = false
+            this.climatologyPicker.hidden = false
+        }
+    }
+
+    public showPeriod(valSelected: number , valCount: number): string {
+        let period = valCount==4? this.parent.getTranslation('season'):this.parent.getTranslation('month')
+        return period[valSelected]
+        // return valCount==4? this.parent.getTranslation('season',valSelected):this.parent.getTranslation('month',valSelected)
+    }
 }
 
 

@@ -20,8 +20,8 @@ export interface SideBarListener {
 export class SideBar extends BaseFrame {
     private menuContainer: Element
     private buttonStrip: HTMLElement
-    private baseFrame: HTMLElement
-    private climatologyFrame: HTMLElement
+    private basicButtons: HTMLElement
+    private climatologyButtons: HTMLElement
 
     private spatialSupport: CsDropdown;
     private temporalSupport: CsDropdown;
@@ -82,13 +82,12 @@ export class SideBar extends BaseFrame {
         this.buttonStrip.hidden = false;
     }
     public hideClimFrame(): void {
-        this.climatologyFrame.classList.remove("d-grid");
-        this.climatologyFrame.hidden = true;
+        this.climatologyButtons.hidden = true;
     }
     public showClimFrame(): void {
-        if (!this.climatologyFrame.hidden) return;
-        this.climatologyFrame.classList.add("d-grid");
-        this.climatologyFrame.hidden = false;
+        if (!this.climatologyButtons.hidden) return;
+        this.climatologyButtons.classList.add("d-grid");
+        this.climatologyButtons.hidden = false;
     }
     public render(): JSX.Element {
         let self = this
@@ -96,8 +95,8 @@ export class SideBar extends BaseFrame {
             <div id="SideBarInfo">
                 <div id="ButtonStrip">
                     <div className='menu-container mx-auto d-grid gap-2'>
-                        <div id="BaseFrame" className='mx-auto d-grid gap-2'></div>
-                        <div id="ClimatologyFrame" className='mx-auto gap-2'></div>
+                        <div id="BasicButtons" className='mx-auto d-grid gap-2'></div>
+                        <div id="ClimatologyButtons" className='mx-auto gap-2'></div>
                     </div>
                 </div>
             </div>
@@ -106,43 +105,43 @@ export class SideBar extends BaseFrame {
     public build(): void {
         this.container = document.getElementById("SideBar") as HTMLDivElement;
         this.menuContainer = this.container.getElementsByClassName("menu-container")[0] as HTMLElement;
-        this.baseFrame = document.getElementById("BaseFrame") as HTMLElement;
-        this.climatologyFrame = document.getElementById("ClimatologyFrame") as HTMLElement;
+        this.basicButtons = document.getElementById("BasicButtons") as HTMLElement;
+        this.climatologyButtons = document.getElementById("ClimatologyButtons") as HTMLElement;
         this.buttonStrip = document.getElementById("ButtonStrip") as HTMLElement;
 
         if (hasButtons) {
-            addChild(this.baseFrame, this.variable.render(varHasPopData));
+            addChild(this.basicButtons, this.variable.render(varHasPopData));
             this.variable.build()
 
             if (hasSubVars) {
-                addChild(this.baseFrame, this.subVariable.render(sbVarHasPopData));
+                addChild(this.basicButtons, this.subVariable.render(sbVarHasPopData));
                 this.subVariable.build()
             }
 
             if (hasSpSupport) {
-                addChild(this.baseFrame, this.spatialSupport.render());
+                addChild(this.basicButtons, this.spatialSupport.render());
                 this.spatialSupport.build()
             }
 
             if (hasTpSupport) {
-                addChild(this.baseFrame, this.temporalSupport.render());
+                addChild(this.basicButtons, this.temporalSupport.render());
                 this.temporalSupport.build();
             }
 
-            addChild(this.baseFrame, this.selection.render());
+            addChild(this.basicButtons, this.selection.render());
             this.selection.build()
 
             this.extraBtns.forEach((btn) => {
-                addChild(this.baseFrame, btn.render());
+                addChild(this.basicButtons, btn.render());
                 btn.build()
             });
 
             if (hasClimatology) {
                 this.extraDropDowns.forEach((dpn) => {
-                    addChild(this.climatologyFrame, dpn.render());
+                    addChild(this.climatologyButtons, dpn.render());
                     dpn.build()
                 });
-                this.climatologyFrame.hidden = true;
+                this.climatologyButtons.hidden = true;
             }
 
             if (varHasPopData) {
@@ -154,6 +153,13 @@ export class SideBar extends BaseFrame {
             }
 
             this.menuContainer.classList.add("my-4");
+        }
+    }
+    public update(): void {
+        if (this.parent.getState().climatology == true) {
+            this.showClimFrame()
+        } else {
+            this.hideClimFrame()
         }
     }
 
