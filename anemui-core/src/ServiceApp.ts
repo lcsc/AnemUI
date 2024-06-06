@@ -42,6 +42,9 @@ export class CsOptionsService {
     public isTpSupportVisible(state: CsViewerData): boolean {
         return false
     }
+    public isClimatologyVisible(state: CsViewerData): boolean {
+        return false
+    }
     public selectionText(state: CsViewerData): string {
         return "Umbral"
     }
@@ -51,7 +54,6 @@ export class CsOptionsService {
     public showDateEventsButtons(state: CsViewerData) {
         return false;
     }
-
     public getDateFrameMode(state:CsViewerData):DateFrameMode{
         return DateFrameMode.DateFrameDate;
     }
@@ -75,7 +77,6 @@ export abstract class DataServiceApp extends BaseApp {
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
-
     }
 
     public render(): BaseApp {
@@ -146,7 +147,7 @@ export abstract class DataServiceApp extends BaseApp {
     // Looking for the index of the old date in the list of new dates.
     // If not, we will look for the nearest date.
     public searchNearestDate(oldDate: string, newDates: string[]): number {
-        let newIndex = newDates.indexOf(oldDate);
+        let newIndex = typeof newDates === 'string'? 0:newDates.indexOf(oldDate);
         if (newIndex != -1) return newIndex;
 
         let oldDateMs = Date.parse(oldDate);
@@ -165,28 +166,22 @@ export abstract class DataServiceApp extends BaseApp {
 
     public temporalSelected(index: number, value?: string, values?: string[]): void {
         this.state.tpSupport=value;
-        if (this.state.tpSupport == 'Climatología') {
-            this.getSideBar().showClimFrame();
-            let varId = this.service.getVarId(this.state);
-        } else { 
-            this.getSideBar().hideClimFrame();
-            let varId = this.service.getVarId(this.state);
-            let newIndex = this.searchNearestDate(this.state.times[this.state.selectedTimeIndex], this.timesJs.times[varId]);
-            if (varId != this.state.varId) {
-                let varName = this.state.varName
-                let subVarName= this.state.subVarName
-                let selection = this.state.selection
-                let selectionValue = this.state.selectionParam
-                this.setTimesJs(this.timesJs, this.service.getVarId(this.state))
-                this.state.varName=varName
-                this.state.subVarName=subVarName
-                this.state.selection=selection
-                this.state.selectionParam=selectionValue
-                this.state.tpSupport=value;
-                this.state.selectedTimeIndex = newIndex;
-                this.update();
-            }
-        }   
+        let varId = this.service.getVarId(this.state);
+        let newIndex = this.searchNearestDate(this.state.times[this.state.selectedTimeIndex], this.timesJs.times[varId]);
+        if (varId != this.state.varId) {
+            let varName = this.state.varName
+            let subVarName= this.state.subVarName
+            let selection = this.state.selection
+            let selectionValue = this.state.selectionParam
+            this.setTimesJs(this.timesJs, this.service.getVarId(this.state))
+            this.state.varName=varName
+            this.state.subVarName=subVarName
+            this.state.selection=selection
+            this.state.selectionParam=selectionValue
+            this.state.tpSupport=value;
+            this.state.selectedTimeIndex = newIndex;
+            this.update();
+        }
     }
 
     // dropdownSelected

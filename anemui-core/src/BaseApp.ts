@@ -46,7 +46,8 @@ const INITIAL_STATE: CsViewerData = {
     legendTitle: "",
     selection: "",
     selectionParam: 0,
-    selectionParamEnable: false
+    selectionParamEnable: false,
+    climatology: false
 }
 
 export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener {
@@ -70,9 +71,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
 
     protected stationsLayer: CsGeoJsonLayer
 
-    // protected language: string;
-    // protected es: es;
-    // protected en: en;
     protected translate: Translate;
 
     protected constructor() {
@@ -370,7 +368,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         } else if (this.stationsLayer != undefined) {
             this.stationsLayer.hide()
         }
+        if (this.state.tpSupport == 'Climatología') {
+            this.state.climatology = true;
+        } else { 
+            this.state.climatology = false;
+        }
         this.menuBar.update();
+        this.sideBar.update();
         this.paletteFrame.update();
         this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
         this.csMap.updateRender(this.state.support)
@@ -565,6 +569,15 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         return date.getMonth();
     }
 
+    public showClimatology(){
+        this.sideBar.showClimFrame();
+        this.dateSelectorFrame.showClimFrame();
+    }
+
+    public hideClimatology(){
+        this.sideBar.hideClimFrame();
+        this.dateSelectorFrame.hideClimFrame();
+    }
 
     //Methods to modify the data at will (Change units, filter fillValues,...)
 
