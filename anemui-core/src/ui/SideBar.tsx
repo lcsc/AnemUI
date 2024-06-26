@@ -13,7 +13,6 @@ export interface SideBarListener {
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
     dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
-
     selectionParamChanged(param: number): void;
 }
 
@@ -82,6 +81,7 @@ export class SideBar extends BaseFrame {
         this.buttonStrip.hidden = false;
     }
     public hideClimFrame(): void {
+        this.climatologyButtons.classList.remove("d-grid");
         this.climatologyButtons.hidden = true;
     }
     public showClimFrame(): void {
@@ -174,7 +174,7 @@ export class SideBar extends BaseFrame {
     }
 
     public configTpSupport(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons) return;
+        if (!hasButtons|| !hasTpSupport) return;
         this.temporalSupport.config(visible, newText);
     }
 

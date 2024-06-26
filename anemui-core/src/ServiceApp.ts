@@ -21,8 +21,6 @@ export interface CsDataService {
     getVarId(state: CsViewerData): string
 }
 
-
-
 export class CsOptionsService {
     public isVarVisible(state: CsViewerData): boolean {
         return true;
@@ -180,14 +178,22 @@ export abstract class DataServiceApp extends BaseApp {
             this.state.selectionParam=selectionValue
             this.state.tpSupport=value;
             this.state.selectedTimeIndex = newIndex;
+            if (this.state.tpSupport == 'Climatología') {
+                this.state.climatology = true;
+            } else { 
+                this.state.climatology = false;
+            }
             this.update();
         }
     }
 
-    // dropdownSelected
-    public dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void {
-
+    public seasonSelected(index: number, value?: string, values?: string[]): void {
+        console.log('ServiceApp' + index, value, values)
     }
+    public monthSelected(index: number, value?: string, values?: string[]): void {
+        console.log('ServiceApp' + index, value, values)
+    }
+    public dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void {}
 
     // The same but for Chunked Data
     public async filterValues(values: number[], t: number, varName: string, portion: string): Promise<number[]> {
