@@ -90,7 +90,9 @@ export type CsViewerData={
     times:string[],
     selectedTimeIndex:number,
     legendTitle:string,
-    climatology:boolean
+    climatology:boolean,
+    season:string,
+    month:string
 }
 
 export type Array4Portion={ [portion: string]: number[] }
