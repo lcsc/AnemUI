@@ -372,6 +372,14 @@ a.article {
 
     .input-group-text {
         min-width: 50px !important;
+        margin: 0px 2px;
+        border-radius: 5px;
+        background-color: #a7b9cc;
+        border: 1px solid #70869c;
+        /* border-radius: 6px; */
+        width: fit-content !important;
+        font: 12px Arial, sans-serif;
+        color: #f6f6f6;
     }
 
     #logo {
