@@ -364,7 +364,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         return ret
     }
 
-    public update(): void {
+    public update(dateChanged: boolean = false): void {
         if (this.state.support == "Estaciones") {
             this.stationsLayer.show()
         } else if (this.stationsLayer != undefined) {
@@ -380,7 +380,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.paletteFrame.update();
         this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
         this.csMap.updateRender(this.state.support)
-        this.dateSelectorFrame.update();
+        if (!dateChanged) this.dateSelectorFrame.update();
         this.changeUrl();
     }
 
@@ -412,7 +412,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     public abstract selectionSelected(index: number, value?: string, values?: string[]): void;
 
     public seasonSelected(index: number, value?: string, values?: string[]): void {
-
+        console.log('BaseApp' + index, value, values)
+        this.state.season = value;
+        this.update( true );
     }
     public monthSelected(index: number, value?: string, values?: string[]): void {
 

@@ -21,6 +21,7 @@ export default class Translate {
             "grafico_pixel": "Point Graph",
             "paleta": "Palette",
             "en_la_coordenada": "at cell",
+            "en_la_estacion": "at station",
             "serie_temporal": "Time series",
             "modelo_lineal":"Time series with linear trend model + confidence intervals",
             "modelo_mg_fr":"Frequency-Magnitude distribution",
@@ -44,10 +45,10 @@ export default class Translate {
                 12: "December"
             },
             'season': {
-                1: 'Jun - Sep',
-                2: 'Sep - Dic',
-                3: 'Dic - Mar',
-                4: 'Mar - Jun'
+                0: 'Jan - Mar',
+                1: 'Apr - Jun',
+                2: 'Jul - Sep',
+                3: 'Oct - Dec'
             }
         },
         es: {
@@ -59,6 +60,7 @@ export default class Translate {
             "grafico_pixel": "Gráfico de Píxel",
             "paleta": "Paleta",
             "en_la_coordenada": "en la coordenada",
+            "en_la_estacion": "en la estación",
             "serie_temporal": "Serie temporal",
             "modelo_lineal":"Serie temporal con modelo lineal + intervalos de confianza",
             "modelo_mg_fr":"Modelo magnitud / frecuencia",
@@ -82,12 +84,11 @@ export default class Translate {
                 11: "Diciembre"
             },
             'season': {
-                0: 'Jun - Sep',
-                1: 'Sep - Dic',
-                2: 'Dic - Mar',
-                3: 'Mar - Jun'
+                1: 'Ene - Mar',
+                2: 'Abr - Jun',
+                3: 'Jul - Sep',
+                4:' Oct - Dic'
             }
-
         }
     }
 

@@ -85,8 +85,8 @@ export abstract class DataServiceApp extends BaseApp {
         return this
     }
 
-    public update(): void {
-        super.update()
+    public update(dateChanged: boolean = false): void {
+        super.update(dateChanged)
         if (this.optionsService != undefined) {
             this.updateOptions();
         }
@@ -187,12 +187,13 @@ export abstract class DataServiceApp extends BaseApp {
         }
     }
 
-    public seasonSelected(index: number, value?: string, values?: string[]): void {
-        console.log('ServiceApp' + index, value, values)
-    }
-    public monthSelected(index: number, value?: string, values?: string[]): void {
-        console.log('ServiceApp' + index, value, values)
-    }
+    // public seasonSelected(index: number, value?: string, values?: string[]): void {
+    //     this.state.season = value;
+    //     this.update();
+    // }
+    // public monthSelected(index: number, value?: string, values?: string[]): void {
+    //     console.log('ServiceApp' + index, value, values)
+    // }
     public dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void {}
 
     // The same but for Chunked Data
