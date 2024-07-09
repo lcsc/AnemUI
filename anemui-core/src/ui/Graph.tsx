@@ -8,10 +8,19 @@ import { CsLatLong } from '../CsMapTypes';
 
 require("dygraphs/dist/dygraph.css")
 
-export type GraphType = "Serial" | "Linear" | "Cummulative" | "MgFr" | "WindRose"
+export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose"
+
+// ---- PENDIENTE DE HACER: SUSTITUIR GRAPHTYPE POR GRAPHMODE -> UNIFICAR LA LÓGICA CON DATEFRAMEMODE 
+export enum GraphMode {
+  Serial,
+  Area,
+  Linear,
+  Cummulative,
+  MgFr,
+  WindRose
+}
 
 export class CsGraph extends BaseFrame {
-
   private graphTitle: string;
   private graphType: GraphType;
   public byPoint: boolean;
@@ -53,6 +62,7 @@ export class CsGraph extends BaseFrame {
     this.byPoint = _byPoint;
     switch (_type) {
       case "Serial":
+      case "Area":
         this.graphTitle += ": " + this.parent.getTranslation('serie_temporal');
         break;
       case "Cummulative":
@@ -73,13 +83,19 @@ export class CsGraph extends BaseFrame {
     //console.log("opening Graph")
     this.container.hidden = false;
     let graph: Dygraph
+    let url
 
     switch (this.graphType) {
       case "Serial":
         var file = new Blob([data], { type: 'text/plain' });
-        let url = URL.createObjectURL(file);
+        url = URL.createObjectURL(file);
         graph = this.drawSerialGraph(url, latlng);
         break;
+      case "Area":
+        var file = new Blob([data], { type: 'text/plain' });
+        url = URL.createObjectURL(file);
+        graph = this.drawAreaGraph(url, latlng);
+        break;  
       case "Linear":
         graph = this.drawLinearGraph(data, station);
         break;
@@ -96,7 +112,53 @@ export class CsGraph extends BaseFrame {
     this.parent.completeGraph(graph);
   }
 
-  public drawSerialGraph(url: any, latlng: CsLatLong): Dygraph {
+  public drawSerialGraph(url: any, latlng: CsLatLong):Dygraph {
+    var graph = new Dygraph(
+      document.getElementById("popGraph"),
+      url,
+      {
+        labelsDiv: document.getElementById('labels'),
+        digitsAfterDecimal: 3,
+        delimiter: ";",
+        title: this.graphTitle + ' ' + this.parent.getTranslation('en_la_coordenada') + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
+        ylabel: this.parent.getState().legendTitle,
+        xlabel: dateText,
+        showRangeSelector: true,
+        xValueParser: function (str: any): number {
+
+          let readTime: string
+          if (typeof str == "string") {
+            readTime = str;
+          } else {
+            readTime = this.parent.getState().times[str - 1];
+          }
+          return parseDate(readTime);
+        },
+        axes: {
+          x: {
+            // pixelsPerLabel: 10,
+            valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
+              var fecha = new Date(millis);
+              return fecha.getDate() + "/" + (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
+
+            },
+            axisLabelFormatter(number, granularity, opts, dygraph) {
+              var fecha = new Date(number);
+              return (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
+            }
+          },
+          y: {
+            valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
+              return " " + millis.toFixed(2);
+            }
+          }
+        }
+      }
+    );
+    return graph;
+  }
+  
+  public drawAreaGraph(url: any, latlng: CsLatLong): Dygraph {
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -119,7 +181,7 @@ export class CsGraph extends BaseFrame {
           for (let point of e.points) {
             if (pointAnt.yval >= 0 && point.yval < 0) {  // --- Primer segmento que cruza el valor y=0
               let porcentaje = Math.abs(100 * point.yval / Math.abs(pointAnt.yval - point.yval)) // --- Calculo la distancia (en %) del último punto positivo al valor y=0
-              canvasy0 = point.canvasy - ((point.canvasy - pointAnt.canvasy) * porcentaje) / 100; // --- Estimo el punto canvas y = 0 en función de ese % 
+              canvasy0 = point.canvasy - ((point.canvasy - pointAnt.canvasy) * porcentaje) / 100; // --- Estimo el punto canvas y=0 en función de ese % 
               break;
             }
             pointAnt = point;
@@ -189,54 +251,6 @@ export class CsGraph extends BaseFrame {
     return graph;
   }
 
-  /* public drawSerialGraph(url: any, latlng: CsLatLong):Dygraph {
-    var graph = new Dygraph(
-      document.getElementById("popGraph"),
-      url,
-      {
-        labelsDiv: document.getElementById('labels'),
-        digitsAfterDecimal: 3,
-        fillGraph: true,
-        delimiter: ";",
-        // title: this.graphTitle + ' at cell [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
-        title: this.graphTitle + ' en la coordenada [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
-        ylabel: this.parent.getState().legendTitle,
-        xlabel: dateText,
-        showRangeSelector: true,
-        xValueParser: function (str: any): number {
-
-          let readTime: string
-          if (typeof str == "string") {
-            readTime = str;
-          } else {
-            readTime = this.parent.getState().times[str - 1];
-          }
-          return parseDate(readTime);
-        },
-        axes: {
-          x: {
-            // pixelsPerLabel: 10,
-            valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
-              var fecha = new Date(millis);
-              return fecha.getDate() + "/" + (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
-
-            },
-            axisLabelFormatter(number, granularity, opts, dygraph) {
-              var fecha = new Date(number);
-              return (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
-            }
-          },
-          y: {
-            valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
-              return " " + millis.toFixed(2);
-            }
-          }
-        }
-      }
-    );
-    return graph;
-  }
- */
   public drawLinearGraph(url: any, station: any): Dygraph {
     var graph = new Dygraph(
       document.getElementById("popGraph"),
@@ -244,7 +258,7 @@ export class CsGraph extends BaseFrame {
       {
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 3,
-        title: this.graphTitle + ' en la estación ' + station['name'],
+        title: this.graphTitle  + ' ' + this.parent.getTranslation('en_la_estacion')  + ' ' +  station['name'],
         ylabel: this.parent.getState().legendTitle,
         xlabel: dateText,
         series: {
