@@ -51,6 +51,7 @@ export class LayerManager {
         this.addBaseLayer({name:"osm",url:undefined,type:AL_TYPE_OSM})
         //this.topSelected="mapbox";
         this.addTopLayer({name:"mapbox",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM})   
+        // from https://ec.europa.eu/eurostat/web/gisco/geodata/statistical-units/territorial-units-statistics
         this.addTopLayer({name:"EU NUTS",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON})
         this.topSelected="mapbox";
     }
