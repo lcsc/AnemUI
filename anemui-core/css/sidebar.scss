@@ -417,19 +417,17 @@ a.article {
     }
 
     @include md-desktop {
-        width: 85%;
+        width: 97%;
     }
 
     @include xl-desktop {
-        width: 90%;
+        width: 97%;
         padding-top: 0em;
 
         #logo img {
             width: 120px;
             margin-left: 7%;
         }
-
-      
     }
 }
 

@@ -52,6 +52,8 @@ const INITIAL_STATE: CsViewerData = {
     month: ""
 }
 
+export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
+
 export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener, DateFrameListener {
 
     protected menuBar: MenuBar;
@@ -297,7 +299,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     protected setTimesJs(_timesJs: CsTimesJsData, varId: string) {
         this.timesJs = _timesJs;
         //TODO on change
-        let timeIndex = _timesJs.times[varId].length - 1
+        // let timeIndex = _timesJs.times[varId].length - 1
+        let timeIndex = typeof _timesJs.times[varId] === 'string'? 0:_timesJs.times[varId].length - 1
         let legendTitle: string;
         if (_timesJs.legendTitle[varId] != undefined) {
             legendTitle = _timesJs.legendTitle[varId]
@@ -370,11 +373,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         } else if (this.stationsLayer != undefined) {
             this.stationsLayer.hide()
         }
-        if (this.state.tpSupport == 'Climatología') {
-            this.state.climatology = true;
-        } else { 
-            this.state.climatology = false;
-        }
+
+        this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
         this.menuBar.update();
         this.sideBar.update();
         this.paletteFrame.update();
