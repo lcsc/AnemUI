@@ -68,6 +68,7 @@ export class DateSelectorFrame extends BaseFrame {
     private season: CsDropdown;
     private month: CsDropdown;
     private listener: DateFrameListener;
+    private pickerNotClicked: boolean;
     
     constructor(_parent: BaseApp, _listener: DateFrameListener) {
         super(_parent)
@@ -135,6 +136,7 @@ export class DateSelectorFrame extends BaseFrame {
                     this.datepicker.datepicker('setEndDate', this.years[this.years.length - 1]);
                     this.setSeason(selectedMonth)
                 }
+                break;
             case DateFrameMode.DateFrameYear:
                 if (_varChanged) {
                     this.yearIndex = {};
@@ -227,6 +229,16 @@ export class DateSelectorFrame extends BaseFrame {
         return true
     }
 
+    public dateDateBack() {
+        this.pickerNotClicked = true;
+        this.parent.dateDateBack();
+    }
+
+    public dateDateForward() {
+        this.pickerNotClicked = true;
+        this.parent.dateDateForward();
+    }
+
     public seasonSelected(index: number, value?: string, values?: string[]): void {
         this.season.config(true, value);
         let [selectedYear,,] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
@@ -241,7 +253,7 @@ export class DateSelectorFrame extends BaseFrame {
     };
 
     private getSeason (season: string): string {
-        switch (season) {
+        switch (season.trim()) {
             case 'Abr - Jun':
                 return '04'
             case 'Jul - Sep':
@@ -253,8 +265,7 @@ export class DateSelectorFrame extends BaseFrame {
         }
     }
 
-    public setSeason(seasonId: string) {
-        console.log(seasonId)
+    public setSeason (seasonId: string) {
         let season: string;
         switch (seasonId) {
             case '04':
@@ -327,6 +338,7 @@ export class DateSelectorFrame extends BaseFrame {
                     language: "es"
                 }
                 pickerId = 'seasonPicker'
+                this.pickerNotClicked = true;
                 break;
             case DateFrameMode.DateFrameYear:
                 options = {
@@ -363,16 +375,27 @@ export class DateSelectorFrame extends BaseFrame {
             let periods = this.getPeriods(this.periods[1]);
             this.season.setValues(periods);
             document.getElementById("SeasonDD").classList.remove("navbar-btn-title");
+            // this.seasonClicked = false;
         }
 
-        this.datepicker.on("changeDate", (event:DatepickerEventObject)=>{
-            if (this.mode == DateFrameMode.DateFrameSeason) return 0
+        this.datepicker.on("changeDate", (event:DatepickerEventObject) => {
+            if (this.mode == DateFrameMode.DateFrameSeason && this.pickerNotClicked) {
+                this.pickerNotClicked = false;
+                let index = this.parent.getState().selectedTimeIndex
+                this.slider.setValue(index,false,false)
+                this.parent.update( true ); 
+                return 0
+            }
             //Set the action
             let index = this.indexOfDate(event.date)
-            if(index>=0 && index!=this.parent.getState().selectedTimeIndex){
+            if (index>=0 && index!=this.parent.getState().selectedTimeIndex) {
                 this.slider.setValue(index,false,false)
                 this.parent.getState().selectedTimeIndex=index;
                 this.parent.update( true );
+            }
+            if (this.mode == DateFrameMode.DateFrameSeason && !this.pickerNotClicked) {
+                let [, selectedMonth, ] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
+                this.setSeason(selectedMonth)
             }
         })
     }
@@ -411,11 +434,11 @@ export class DateSelectorFrame extends BaseFrame {
                     <div className='row gap-2'>
                         <div className="col leftButtons">
                             <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
-                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
+                            <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
                         </div>
                         <div id="PickerFrame" className="col-6"></div>
                         <div className="col rightButtons">
-                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
+                            <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
                             <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
                         </div>
                     </div>

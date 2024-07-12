@@ -1,3 +1,4 @@
+
 @import "media-queries.scss";
 
 div.paletteFrame.paletteSmall {
@@ -39,7 +40,7 @@ div.paletteFrame {
     // bottom: 7.5em;
     padding-top: 0px !important;
     padding-right: 0px !important;
-    top: 7.5em;
+    top: 11em;
     right: 2%;
 
     img {
@@ -114,7 +115,7 @@ div.paletteFrame {
         }
     }
 
-    @include md-desktop {
-         top: 2em;
-    }
+    // @include md-desktop {
+    //      top: 2em;
+    // }
 }

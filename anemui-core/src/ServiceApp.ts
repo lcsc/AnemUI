@@ -145,7 +145,7 @@ export abstract class DataServiceApp extends BaseApp {
     // Looking for the index of the old date in the list of new dates.
     // If not, we will look for the nearest date.
     public searchNearestDate(oldDate: string, newDates: string[]): number {
-        let newIndex = typeof newDates === 'string'? 0:newDates.indexOf(oldDate);
+        let newIndex = newDates.indexOf(oldDate);
         if (newIndex != -1) return newIndex;
 
         let oldDateMs = Date.parse(oldDate);
