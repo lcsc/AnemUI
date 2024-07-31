@@ -320,10 +320,10 @@ export class OpenLayerMap implements CsMapController{
       if(support!=this.lastSupport){
   
         switch (support){
-          case "Estaciones":
+          case "Puntual (estaciones)":
             this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
             break;
-          case "Raster":
+          case "Malla (raster)":
             //this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().insertAt(1, layer));  # No es necesario insertar de nuevo las capas ya que setDate/buildDataTilesLayers lo hace antes
             break;
           case "Municipio":

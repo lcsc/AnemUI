@@ -28,6 +28,7 @@ export class SideBar extends BaseFrame {
     private subVariable: CsDropdown;
     private selection: CsDropdown;
     private extraDropDowns: CsDropdown[];
+    private dropDownOrder: string[]
 
     private popData: any;
     private extraBtns: BaseUiElement[];
@@ -71,6 +72,7 @@ export class SideBar extends BaseFrame {
         });
         this.extraDropDowns = []
         this.extraBtns = []
+        this.dropDownOrder = []
     }
 
     public minimize(): void {
@@ -110,17 +112,17 @@ export class SideBar extends BaseFrame {
         this.buttonStrip = document.getElementById("ButtonStrip") as HTMLElement;
 
         if (hasButtons) {
+            if (hasSpSupport) {
+                addChild(this.basicButtons, this.spatialSupport.render());
+                this.spatialSupport.build()
+            }
+            
             addChild(this.basicButtons, this.variable.render(varHasPopData));
             this.variable.build()
 
             if (hasSubVars) {
                 addChild(this.basicButtons, this.subVariable.render(sbVarHasPopData));
                 this.subVariable.build()
-            }
-
-            if (hasSpSupport) {
-                addChild(this.basicButtons, this.spatialSupport.render());
-                this.spatialSupport.build()
             }
 
             if (hasTpSupport) {
@@ -153,6 +155,10 @@ export class SideBar extends BaseFrame {
             }
 
             this.menuContainer.classList.add("my-4");
+
+            if(this.dropDownOrder.length) {
+                this.changeDropDownOrder()
+            }
         }
     }
     public update(): void {
@@ -229,4 +235,15 @@ export class SideBar extends BaseFrame {
         this.popData = popData
     }
 
+    public setDropDownOrder(order:string[]) {
+        this.dropDownOrder = order
+    }
+
+    public changeDropDownOrder() {
+        let k: number = 0
+        document.querySelectorAll('.inputDiv').forEach((elem:HTMLButtonElement)=>{
+            elem.style.order = this.dropDownOrder[k]
+            k++
+        })
+    }
 }
