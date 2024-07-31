@@ -410,6 +410,28 @@ a.article {
         }
     }
 
+    #inputs {
+        flex-direction: row;
+        #input1 {
+            order: 1;
+        }
+        #input2 {
+            order: 2;
+        }
+        #input3 {
+            order: 3;
+        }
+        #input4 {
+            order: 4;
+        }
+        #input5 {
+            order: 5;
+        }
+        #climatologyDisplay {
+            order: 6;
+        }
+    }
+
     #TopRightBar {
         @include xl-desktop {
             padding-top: 0.2em;

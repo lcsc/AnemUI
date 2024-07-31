@@ -71,6 +71,14 @@ div.paletteFrame {
         border-radius: 10px 10px 0px 0px;
     }
 
+    .mediumText {
+        font-size: 18px;
+    }
+
+    .smallText {
+        font-size: 12px;
+    }
+
     div.paletteSelect {
         text-align: center;
         background-color: $title_bgcolor;
