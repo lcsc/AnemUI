@@ -34,16 +34,16 @@ export default class PaletteFrame  extends BaseFrame{
             <div className="info legend">
                 <div id="units"><span>{name}</span><br/></div>
                 {values.map((val, index) => (
-                    <div style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>
+                    <div className='legendText mediumText' style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>
                  ))}
+                <div id="legendBottom"></div> 
             </div>
             <div className='paletteSelect' onMouseEnter={()=>this.showSelect()} onMouseLeave={()=>this.hideSelect()}  >
-                <div id="base-div">
+                <div id="base-div" className="selectDiv">
                     <span aria-label='base'>
                         {this.parent.getTranslation('base_layer')}: Arqgis
                     </span>
-                    <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeBaseLayer(event.target.value)}
-                    >
+                    <select className="form-select form-select-sm palette-select" aria-label="Change Base" onChange={(event)=>self.changeBaseLayer(event.target.value)}>
                         {baseLayers.map((val,index)=>{
                             if(lmgr.getBaseSelected()==val){
                                 return (<option value={val} selected>{val}</option>)
@@ -52,11 +52,26 @@ export default class PaletteFrame  extends BaseFrame{
                         })}
                     </select>
                 </div>
-                <span aria-label='paleta'>
+                <div id="palette-div" className="selectDiv">
+                    <span aria-label='paleta'>
+                        {this.parent.getTranslation('paleta')}:{mgr.getSelected()}
+                    </span>
+                    {/* <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event)}   */}
+                    <select className="form-select form-select-sm palette-select" aria-label="Change Palette" onChange={(event)=>self.changePalette(event.target.value)}
+                    >
+                        {palettes.map((val,index)=>{
+                            if(mgr.getSelected()==val){
+                                return (<option value={val} selected>{val}</option>)
+                            }
+                        return (<option value={val}>{val}</option>)
+                        })}
+                    </select>
+                </div>
+                {/* <span aria-label='paleta'>
                     {this.parent.getTranslation('paleta')}:{mgr.getSelected()}
-                </span>
+                </span> */}
                 {/* <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event)}   */}
-                <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event.target.value)}
+                {/* <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event.target.value)}
                  >
                     {palettes.map((val,index)=>{
                         if(mgr.getSelected()==val){
@@ -64,18 +79,18 @@ export default class PaletteFrame  extends BaseFrame{
                         }
                        return (<option value={val}>{val}</option>)
                     })}
-                </select>
-                <div id="trp-div">
+                </select> */}
+                <div id="trp-div" className="selectDiv">
                     <span aria-label='transparency'>
                         {this.parent.getTranslation('transparency')}:{mgr.getTransparency()}
                     </span>
                     <input id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
                 </div>
-                <div id="data-div">
+                <div id="data-div" className="selectDiv">
                     <span aria-label='top'>
                         {this.parent.getTranslation('top_layer')}:Politico
                     </span>
-                    <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}
+                    <select className="form-select form-select-sm palette-select" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}
                     >
                         {topLayers.map((val,index)=>{
                             if(lmgr.getTopSelected()==val){
@@ -92,12 +107,14 @@ export default class PaletteFrame  extends BaseFrame{
     }
 
     public showSelect(){
+        // this.container.querySelector("div.paletteSpan").classList.remove("visible")
         this.container.querySelector("div.paletteSelect").classList.add("visible")
     }
     public hideSelect(){
         let select = this.container.querySelector("select");
         if(select != document.activeElement)
             this.container.querySelector("div.paletteSelect").classList.remove("visible")
+        // this.container.querySelector("div.paletteSpan").classList.add("visible")
     }
 
 
@@ -162,9 +179,11 @@ export default class PaletteFrame  extends BaseFrame{
         this.container.classList.add("paletteSmall")
         
     }
+
     public showFrame():void{
         this.container.classList.remove("paletteSmall")
     }
+
     public update(): void {
         let values= [...this.parent.getLegendValues()].reverse();
         let texts=[...this.parent.getLegendText()].reverse();
@@ -183,13 +202,15 @@ export default class PaletteFrame  extends BaseFrame{
         
         data.innerHTML="<div id='units'><span>"+name+"</span><br/></div>"
         values.map((val, index) =>{ 
-            addChild(data, (<div style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>));
+            let textSize = texts[index].length > 4? 'smallText':'mediumText'
+            addChild(data, (<div className={`legendText ${textSize}`}  style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>));
             
             });
         this.container.querySelector(".paletteSelect span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
         this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
         this.container.querySelector(".paletteSelect span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
         this.container.querySelector(".paletteSelect span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
+       
     }
 }
 

@@ -21,8 +21,6 @@ export interface CsDataService {
     getVarId(state: CsViewerData): string
 }
 
-
-
 export class CsOptionsService {
     public isVarVisible(state: CsViewerData): boolean {
         return true;
@@ -42,6 +40,9 @@ export class CsOptionsService {
     public isTpSupportVisible(state: CsViewerData): boolean {
         return false
     }
+    public isClimatologyVisible(state: CsViewerData): boolean {
+        return false
+    }
     public selectionText(state: CsViewerData): string {
         return "Umbral"
     }
@@ -51,7 +52,6 @@ export class CsOptionsService {
     public showDateEventsButtons(state: CsViewerData) {
         return false;
     }
-
     public getDateFrameMode(state:CsViewerData):DateFrameMode{
         return DateFrameMode.DateFrameDate;
     }
@@ -71,11 +71,10 @@ export abstract class DataServiceApp extends BaseApp {
         sb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
         sb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
         sb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
-        // sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
+        sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
-
     }
 
     public render(): BaseApp {
@@ -86,8 +85,8 @@ export abstract class DataServiceApp extends BaseApp {
         return this
     }
 
-    public update(): void {
-        super.update()
+    public update(dateChanged: boolean = false): void {
+        super.update(dateChanged)
         if (this.optionsService != undefined) {
             this.updateOptions();
         }
@@ -179,9 +178,23 @@ export abstract class DataServiceApp extends BaseApp {
             this.state.selectionParam=selectionValue
             this.state.tpSupport=value;
             this.state.selectedTimeIndex = newIndex;
+            if (this.state.tpSupport == 'Climatología') {
+                this.state.climatology = true;
+            } else { 
+                this.state.climatology = false;
+            }
             this.update();
-        }   
+        }
     }
+
+    // public seasonSelected(index: number, value?: string, values?: string[]): void {
+    //     this.state.season = value;
+    //     this.update();
+    // }
+    // public monthSelected(index: number, value?: string, values?: string[]): void {
+    //     console.log('ServiceApp' + index, value, values)
+    // }
+    public dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void {}
 
     // The same but for Chunked Data
     public async filterValues(values: number[], t: number, varName: string, portion: string): Promise<number[]> {

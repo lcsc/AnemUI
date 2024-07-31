@@ -372,6 +372,14 @@ a.article {
 
     .input-group-text {
         min-width: 50px !important;
+        margin: 0px 2px;
+        border-radius: 5px;
+        background-color: #a7b9cc;
+        border: 1px solid #70869c;
+        /* border-radius: 6px; */
+        width: fit-content !important;
+        font: 12px Arial, sans-serif;
+        color: #f6f6f6;
     }
 
     #logo {
@@ -402,6 +410,28 @@ a.article {
         }
     }
 
+    #inputs {
+        flex-direction: row;
+        #input1 {
+            order: 1;
+        }
+        #input2 {
+            order: 2;
+        }
+        #input3 {
+            order: 3;
+        }
+        #input4 {
+            order: 4;
+        }
+        #input5 {
+            order: 5;
+        }
+        #climatologyDisplay {
+            order: 6;
+        }
+    }
+
     #TopRightBar {
         @include xl-desktop {
             padding-top: 0.2em;
@@ -409,19 +439,17 @@ a.article {
     }
 
     @include md-desktop {
-        width: 85%;
+        width: 97%;
     }
 
     @include xl-desktop {
-        width: 90%;
+        width: 97%;
         padding-top: 0em;
 
         #logo img {
             width: 120px;
             margin-left: 7%;
         }
-
-      
     }
 }
 

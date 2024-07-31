@@ -1,5 +1,5 @@
 export const defaultRender="Raster"
-export var renderers=["~Estaciones","Raster","~Municipio","~Provincia","~CCAA"]
+export var renderers=["~Puntual (estaciones)","Malla (raster)","~Municipio","~Provincia","~CCAA"]
 
 export function enableRenderer(i:number){
     if(renderers[i].startsWith("~")){
