@@ -1,4 +1,4 @@
-export const defaultRender="Raster"
+export const defaultRender="Malla (raster)"
 export var renderers=["~Puntual (estaciones)","Malla (raster)","~Municipio","~Provincia","~CCAA"]
 
 export function enableRenderer(i:number){
