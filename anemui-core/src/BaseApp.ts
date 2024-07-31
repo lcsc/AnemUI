@@ -6,7 +6,7 @@ import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
 import PaletteFrame from "./ui/PaletteFrame";
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
-import { DateSelectorFrame } from "./ui/DateFrame";
+import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
@@ -46,10 +46,15 @@ const INITIAL_STATE: CsViewerData = {
     legendTitle: "",
     selection: "",
     selectionParam: 0,
-    selectionParamEnable: false
+    selectionParamEnable: false,
+    climatology: false,
+    season: "",
+    month: ""
 }
 
-export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener {
+export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
+
+export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener, DateFrameListener {
 
     protected menuBar: MenuBar;
     protected sideBar: SideBar;
@@ -70,9 +75,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
 
     protected stationsLayer: CsGeoJsonLayer
 
-    // protected language: string;
-    // protected es: es;
-    // protected en: en;
     protected translate: Translate;
 
     protected constructor() {
@@ -84,7 +86,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.mainFrame = new MainFrame(this);
         this.downloadFrame = new DownloadFrame(this);
         this.paletteFrame = new PaletteFrame(this);
-        this.dateSelectorFrame = new DateSelectorFrame(this);
+        this.dateSelectorFrame = new DateSelectorFrame(this, this);
         this.graph = new CsGraph(this);
         this.infoFrame = new InfoFrame(this);
 
@@ -144,8 +146,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public render(): BaseApp {
-        // let language = this.getLanguage()== "es"? lan.es:lan.en;
-        // console.log(language);
         zip.workerScriptsPath = "zip_js/";
         zip.configure({
             workerScripts: {
@@ -249,7 +249,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
             })
     }
 
-
     protected getUrlForNC(suffix?: string): string {
         let currUrl = new URL(document.location.toString())
         currUrl.search = "";
@@ -300,7 +299,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     protected setTimesJs(_timesJs: CsTimesJsData, varId: string) {
         this.timesJs = _timesJs;
         //TODO on change
-        let timeIndex = _timesJs.times[varId].length - 1
+        // let timeIndex = _timesJs.times[varId].length - 1
+        let timeIndex = typeof _timesJs.times[varId] === 'string'? 0:_timesJs.times[varId].length - 1
         let legendTitle: string;
         if (_timesJs.legendTitle[varId] != undefined) {
             legendTitle = _timesJs.legendTitle[varId]
@@ -367,17 +367,20 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         return ret
     }
 
-    public update(): void {
+    public update(dateChanged: boolean = false): void {
         if (this.state.support == "Estaciones") {
             this.stationsLayer.show()
         } else if (this.stationsLayer != undefined) {
             this.stationsLayer.hide()
         }
+
+        this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
         this.menuBar.update();
+        this.sideBar.update();
         this.paletteFrame.update();
         this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
         this.csMap.updateRender(this.state.support)
-        this.dateSelectorFrame.update();
+        if (!dateChanged) this.dateSelectorFrame.update();
         this.changeUrl();
     }
 
@@ -393,7 +396,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     public temporalSelected(index: number, value?: string, values?: string[]): void {
         this.state.tpSupport = value;
         this.update();
-
     }
 
     public setPalette(palette: string) {
@@ -408,8 +410,24 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
 
     }
     public abstract selectionSelected(index: number, value?: string, values?: string[]): void;
+
+    public seasonSelected(index: number, value?: string, values?: string[]): void {
+        console.log('BaseApp' + index, value, values)
+        this.state.season = value;
+        this.update( true );
+    }
+    public monthSelected(index: number, value?: string, values?: string[]): void {
+
+    }
+
+
+    // Generic dropdown handling
+    public abstract dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
+    
     public abstract selectionParamChanged(param: number): void;
     public abstract getLegendValues(): number[];
+
+    
 
     public getLegendText() {
         let ret: string[]
@@ -565,6 +583,17 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         return date.getMonth();
     }
 
+    public showClimatology(){
+        this.sideBar.showClimFrame();
+        this.menuBar.showClimFrame();
+        // this.dateSelectorFrame.showClimFrame();
+    }
+
+    public hideClimatology(){
+        this.sideBar.hideClimFrame();
+        this.menuBar.hideClimFrame();
+        // this.dateSelectorFrame.hideClimFrame();
+    }
 
     //Methods to modify the data at will (Change units, filter fillValues,...)
 

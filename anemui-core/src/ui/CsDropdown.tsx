@@ -57,6 +57,7 @@ export class CsDropdown extends BaseUiElement {
       {
         this.values.map((val, index) => {
           var popOverAttrs = {
+            
             id: val.startsWith("~") ? val.substring(1) : val,
             'data-toggle': 'popover'
           };

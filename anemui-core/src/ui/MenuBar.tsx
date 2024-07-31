@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasSubTitle, hasSubVars, hasTpSupport } from '../Env';
+import { logo, logoStyle, hasSubTitle, hasSubVars, hasTpSupport, hasClimatology}  from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -11,7 +11,37 @@ export interface MenuBarListener {
     varSelected(index: number, value?: string, values?: string[]): void;
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
+    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     selectionParamChanged(param: number): void;
+}
+
+export class simpleDiv extends BaseUiElement {
+    // protected container: HTMLDivElement;
+    public id: string
+    public title: string
+
+    constructor( _id: string,  _title: string) {
+       super();
+        this.id = _id;
+        this.title = _title;
+    }
+    public build(): void {
+        // this.container = document.getElementById(this.containerId) as HTMLDivElement
+    }
+    public minimize(): void {
+        throw new Error("Method not implemented.");
+    }
+    public showFrame(): void {
+        throw new Error("Method not implemented.");
+    }
+    
+    public render(): JSX.Element {
+        return (<div id={this.id} className="input-group-text">{this.title}</div>);
+    }
+
+    /* public getDiv(): HTMLDivElement {
+        return this.container;
+    } */
 }
 
 export class MenuBar extends BaseFrame {
@@ -32,6 +62,10 @@ export class MenuBar extends BaseFrame {
     private displaySubVar: HTMLDivElement
     private displaySelection: HTMLDivElement
     private displayParam: HTMLInputElement
+    
+    private climatologyDisplay: HTMLDivElement
+    private extraDisplays: simpleDiv[];
+    private inputOrder: string[]
 
     private selectionHidden: boolean;
     private paramHidden: boolean;
@@ -45,8 +79,9 @@ export class MenuBar extends BaseFrame {
         let self = this
         this.listener = _listener;
 
+        this.extraDisplays = []
         this.extraBtns = []
-
+        this.inputOrder = []
     }
 
 
@@ -83,11 +118,12 @@ export class MenuBar extends BaseFrame {
                                 {/* <div className="col-10 mt-1"> */}
                                 <form className="gy-1 gx-1 align-items-center" onSubmit={() => { this.fireParamChanged(); return false }}>
                                     <div id="inputs" className="input-group input-group-sm">
-                                        <div role="spSupport" className="input-group-text">{this.parent.getState().support}</div>
-                                        <div role="var" className="input-group-text">{this.parent.getState().varName}</div>
-                                        <div role="subVar" className="input-group-text" hidden={true}>{this.parent.getState().subVarName}</div>
-                                        <div role="tpSupport" className="input-group-text" hidden={true}>{this.parent.getState().tpSupport}</div>
-                                        <div role="selection" className="input-group-text">{this.parent.getState().selection}</div>
+                                        <div id="input1" role="spSupport" className="input-group-text inputDiv">{this.parent.getState().support}</div>
+                                        <div id="input2" role="var" className="input-group-text inputDiv">{this.parent.getState().varName}</div>
+                                        <div id="input3" role="subVar" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().subVarName}</div>
+                                        <div id="input4" role="tpSupport" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().tpSupport}</div>
+                                        <div id="input5" role="selection" className="input-group-text inputDiv">{this.parent.getState().selection}</div>
+                                        <div id="climatologyDisplay" className='row'></div> 
                                         <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
                                             placeholder="Selection Param" value={this.parent.getState().selectionParam}
                                             disabled={!this.parent.getState().selectionParamEnable}
@@ -112,16 +148,13 @@ export class MenuBar extends BaseFrame {
 
     public build() {
         this.container = document.getElementById("MainBarFrame") as HTMLDivElement;
-        
-        
         this.topBar = document.getElementById('TopBar') as HTMLElement;
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
-
-
+        this.climatologyDisplay = document.getElementById('climatologyDisplay') as HTMLDivElement;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
         height = height - 6;
@@ -161,12 +194,22 @@ export class MenuBar extends BaseFrame {
             document.getElementById("inputs").classList.add('no-wrap');
             this.displaySelection.classList.add('Input-group-end');
         }
+        if (hasClimatology) {
+            this.extraDisplays.forEach((dpn) => {
+                addChild(this.climatologyDisplay, dpn.render());
+                dpn.build()
+            });
+            this.climatologyDisplay.hidden = true;
+        }
         if (!hasSubTitle){ 
             this.menuCentral.hidden = true;
             this.titleDiv.classList.add('alone'); 
         }
         if (logoStyle!='basic') {
             document.getElementById("logo").classList.add(logoStyle);
+        }
+        if(this.inputOrder.length) {
+            this.changeInputOrder()
         }
     }
 
@@ -183,7 +226,6 @@ export class MenuBar extends BaseFrame {
         this.menuCentral.classList.add('col-md');
         this.topBar.classList.remove('smallBar');
     }
-
     public showLoading(): void {
         this.loading.hidden = false;
 
@@ -196,7 +238,6 @@ export class MenuBar extends BaseFrame {
         this.selectionHidden = true;
 
     }
-
     public hideParam() {
         this.paramHidden = true;
     }
@@ -213,10 +254,67 @@ export class MenuBar extends BaseFrame {
         if (hasSubVars) {
             this.displaySubVar.textContent = this.parent.getState().subVarName;
         }
+        if (this.parent.getState().climatology == true) {
+            this.showClimFrame()
+        } else {
+            this.hideClimFrame()
+        }
     }
 
     //Llamar en el configure antes del build
     public addButton(btn: BaseUiElement): void {
         this.extraBtns.push(btn)
+    }
+
+    public hideClimFrame(): void {
+        // this.climatologyDisplay.classList.remove("d-grid");
+        const elements: HTMLElement[] = Array.from(this.climatologyDisplay.children as HTMLCollectionOf<HTMLElement>);
+        elements.forEach((el) => {
+            if (el.innerHTML != '') {
+                el.innerHTML == ''
+                el.hidden = false
+            } 
+        })
+        this.climatologyDisplay.hidden = true;
+    }
+    
+    public showClimFrame(): void {
+        let hasText: boolean = false
+        const elements: HTMLElement[] = Array.from(this.climatologyDisplay.children as HTMLCollectionOf<HTMLElement>);
+        elements.forEach((el: HTMLElement) => {
+            if (el.innerHTML != '') {
+                hasText = true
+                el.hidden = false
+            } else {
+                hasText = false
+                el.hidden = true
+            }
+        })
+        // this.climatologyDisplay.classList.add("d-grid");
+        this.climatologyDisplay.hidden = false;
+    }
+    
+    public setExtraDisplay(displayId: string, displayTitle:string) {
+        this.extraDisplays.push( new simpleDiv (displayId, displayTitle))
+    }
+
+    public updateExtraDisplay(displayId: string, displayTitle:string) {
+        const elements: HTMLElement[] = Array.from(this.climatologyDisplay.children as HTMLCollectionOf<HTMLElement>);
+        elements.forEach((el: HTMLElement) => {
+            if (el.id == displayId) 
+                el.innerHTML = displayTitle
+        })
+    }
+
+    public setInputOrder(order:string[]) {
+        this.inputOrder = order
+    }
+
+    public changeInputOrder() {
+        let k: number = 0
+        document.querySelectorAll('.inputDiv').forEach((elem:HTMLButtonElement)=>{
+            elem.style.order = this.inputOrder[k]
+            k++
+        })
     }
 }
