@@ -115,6 +115,53 @@
     .selected {
         margin-left: 20px;
     }
+
+    #BasicButtons {
+        flex-direction: column;
+        #SpatialSupportDD {
+            order: 1;
+        }
+        #VariableDD {
+            order: 2;
+        }
+        #SubVariableDD {
+            order: 3;
+        }
+        #TemporalSupportDD {
+            order: 4;
+        }
+        #SelectionDD {
+            order: 5;
+        }
+    }
+}
+
+div.menu {
+    min-width: 40%;
+    max-width: fit-content;
+    left:0;
+    right:0;
+    margin-left:auto;
+    margin-right:auto;
+    margin-top: 0.5em;
+    @include blurBgFrame(3em);
+
+    div.menu-container{
+        min-height: 1em;
+        max-width: fit-content;
+       // background-color: aquamarine;
+    }
+    div.menu-title{
+        min-height: 1em;
+        max-width: fit-content;
+    }
+    button {
+        margin-left:10px
+    }
+    div.spinner-grow{
+        margin-top:2px;
+        margin-left:1em;
+    }
 }
 
 .navbar {
