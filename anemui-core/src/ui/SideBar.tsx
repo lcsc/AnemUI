@@ -241,7 +241,7 @@ export class SideBar extends BaseFrame {
 
     public changeDropDownOrder() {
         let k: number = 0
-        document.querySelectorAll('.inputDiv').forEach((elem:HTMLButtonElement)=>{
+        document.querySelectorAll('.basicBtn').forEach((elem:HTMLButtonElement)=>{
             elem.style.order = this.dropDownOrder[k]
             k++
         })
