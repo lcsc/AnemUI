@@ -368,7 +368,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public update(dateChanged: boolean = false): void {
-        if (this.state.support == "Estaciones") {
+        if (this.state.support == "Puntual (estaciones)") {
             this.stationsLayer.show()
         } else if (this.stationsLayer != undefined) {
             this.stationsLayer.hide()
