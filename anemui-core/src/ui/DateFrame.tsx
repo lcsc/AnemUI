@@ -83,13 +83,13 @@ export class DateSelectorFrame extends BaseFrame {
         switch(this.mode) {
             case DateFrameMode.DateFrameDate:
                 if (_varChanged) {
-                    this.dateIndex = {};
-                    for (let i = 0; i < this.dates.length; i++) {
-                        const [year, month, day] = this.dates[i].split('-');
-                        if (this.dateIndex[year] == undefined) this.dateIndex[year] = {}
-                        if (this.dateIndex[year][month] == undefined) this.dateIndex[year][month] = {}
-                        this.dateIndex[year][month][day] = i;
-                    }
+                this.dateIndex = {};
+                        for (let i = 0; i < this.dates.length; i++) {
+                    const [year, month, day] = this.dates[i].split('-');
+                    if (this.dateIndex[year] == undefined) this.dateIndex[year] = {}
+                    if (this.dateIndex[year][month] == undefined) this.dateIndex[year][month] = {}
+                    this.dateIndex[year][month][day] = i;
+                }
                 }
                 if (this.datepicker != undefined) {
                     this.datepicker.datepicker('setDate', this.dates[this.parent.getState().selectedTimeIndex]);
@@ -167,7 +167,7 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     private indexOfDate(date:Date):number{
-        if (date==undefined) return -1;
+                if (date==undefined) return -1;
         let year: string;
         let month: string;
         let season: string;
@@ -207,7 +207,6 @@ export class DateSelectorFrame extends BaseFrame {
         let index=this.indexOfDate(date)
         return index >= 0;
     }
-
     private isMonthValid(date:Date):boolean{
         if (this.dateIndex == undefined) return false;
         let year: string;
@@ -224,7 +223,6 @@ export class DateSelectorFrame extends BaseFrame {
         if (this.dateIndex == undefined) return false;
         let year: string;
         year = date.getFullYear() + ""
-        console.log(year)
         if (this.dateIndex[year] == undefined) return false;
         return true
     }
@@ -431,15 +429,15 @@ export class DateSelectorFrame extends BaseFrame {
         let element =
             (<div id="DateSelectorFrame" className='DateSelectorFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                 <div id="TimeSeriesFrame" className='datePickerGroup'>
-                    <div className='row gap-2'>
+                <div className='row gap-2'>
                         <div className="col leftButtons">
-                            <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
-                            <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
-                        </div>
+                    <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
+                    <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
+                    </div>
                         <div id="PickerFrame" className="col-6"></div>
                         <div className="col rightButtons">
-                            <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
-                            <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
+                        <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
+                        <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
                         </div>
                     </div>
                 </div>
@@ -452,8 +450,8 @@ export class DateSelectorFrame extends BaseFrame {
                             <p id="climTitle">Marco climatología</p>
                         </div>
                         <div className="col">
-                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
-                        </div>
+                    <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
+                    </div>
                     </div>
                 </div>
                 <div id="sliderFrame">
@@ -472,7 +470,7 @@ export class DateSelectorFrame extends BaseFrame {
         this.climTitle = document.getElementById("climTitle") as HTMLElement;
         this.sliderFrame = document.getElementById("sliderFrame") as HTMLElement;
         this.periods = [1,4,12]
-        
+
         let self = this
         this.updateMode();
         this.updatePicker();
@@ -494,7 +492,7 @@ export class DateSelectorFrame extends BaseFrame {
             if(val==this.parent.getState().selectedTimeIndex)return;
             this.parent.getState().selectedTimeIndex=val;
             this.datepicker.datepicker('setDate', this.dates[val])
-            if (this.mode == DateFrameMode.DateFrameSeason) {
+        if (this.mode == DateFrameMode.DateFrameSeason) {
                 let season = this.getSeason(this.dates[val]) 
             }
             this.parent.update();
@@ -510,13 +508,13 @@ export class DateSelectorFrame extends BaseFrame {
     public minimize(): void {
         this.container.classList.add("small");
     }
-    
+
     public showFrame(): void {
         this.container.classList.remove("small");
     }
-    
+
     public update(): void {
-        let varChanged: boolean = false
+    let varChanged: boolean = false
         if(this.parent.getState().varId!=this.var){
             varChanged = true
             this.updateMode();
@@ -527,11 +525,11 @@ export class DateSelectorFrame extends BaseFrame {
             this.slider.setAttribute("max",endDate)
             this.slider.setValue(this.parent.getState().selectedTimeIndex);
             this.var=this.parent.getState().varId;
-            return
+                        return
         }
         this.setValidDates(this.parent.getState().times, varChanged);
         this.slider.setValue(this.parent.getState().selectedTimeIndex,false,false);
-    }
+            }
 
     protected updateMode(){
         let time = this.getTime(this.parent.getState().times)
@@ -540,13 +538,13 @@ export class DateSelectorFrame extends BaseFrame {
             this.climatologyFrame.hidden = true;
             this.sliderFrame.hidden = false
             switch (time) {
-                case 1: 
+            case 1: 
                     this.mode = DateFrameMode.DateFrameYear;
                     break;
                 case 4:
-                    this.mode = DateFrameMode.DateFrameSeason;
-                    break;
-                case 12:
+                this.mode = DateFrameMode.DateFrameSeason;
+                break;
+            case 12:
                     this.mode = DateFrameMode.DateFrameMonth;
                     break;
                 default:
@@ -581,6 +579,10 @@ export class DateSelectorFrame extends BaseFrame {
         this.updateMode();
     }
 
+    public getMode():DateFrameMode{
+        return this.mode;
+    }
+
     public getPeriods(time: number): string[] {
         let period = time==4? this.parent.getTranslation('season'):this.parent.getTranslation('month')
         return Object.values(period);       
@@ -599,5 +601,3 @@ export class DateSelectorFrame extends BaseFrame {
         return time.length / result.length;
     }
 }
-
-

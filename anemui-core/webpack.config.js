@@ -163,6 +163,10 @@ const development={
         runtimeErrors: true,
       },
     },
+    headers:[{
+      key: 'Cache-Control',
+      value: 'no-cache'
+    }],
     proxy: {
       "/maps": {
         "secure": false,

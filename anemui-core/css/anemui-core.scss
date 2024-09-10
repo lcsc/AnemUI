@@ -70,3 +70,43 @@ body {
 //     right:0.25em;
 //     position: absolute;
 // }
+
+/* Menú cookies 
+    Inspirado en https://www.csic.es/es
+    Sin Bootstrap
+*/
+
+#cookies_div {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgb(7, 121, 191);
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+  }
+  
+  #cookies_button {
+    background-color: rgb(237, 237, 237);
+    color: rgb(0, 0, 0);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    background-image: linear-gradient(rgb(237, 237, 237) 5%, rgb(223, 223, 223) 100%);
+    float: right;
+  }
+  
+  #cookies_no_button {
+    background-color: rgb(7, 121, 191);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    float: right;
+  }

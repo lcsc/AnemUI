@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { hasButtons, hasSpSupport, hasSubVars, hasTpSupport, varHasPopData, sbVarHasPopData, hasClimatology}  from "../Env";
+import { hasButtons, hasSpSupport, hasVars, hasSubVars, hasTpSupport, varHasPopData, sbVarHasPopData, hasClimatology}  from "../Env";
 
 
 export interface SideBarListener {
@@ -12,7 +12,7 @@ export interface SideBarListener {
     varSelected(index: number, value?: string, values?: string[]): void;
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
-    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
+dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     selectionParamChanged(param: number): void;
 }
 
@@ -46,11 +46,13 @@ export class SideBar extends BaseFrame {
                 },
             });
         }
+        if (hasVars) {
         this.variable = new CsDropdown("VariableDD", "Variable", {
             valueSelected(origin, index, value, values) {
                 self.listener.varSelected(index, value, values)
             },
         });
+        }
         if (hasSubVars) {
             this.subVariable = new CsDropdown("SubVariableDD", "SubVariable", {
                 valueSelected(origin, index, value, values) {
@@ -107,7 +109,7 @@ export class SideBar extends BaseFrame {
     public build(): void {
         this.container = document.getElementById("SideBar") as HTMLDivElement;
         this.menuContainer = this.container.getElementsByClassName("menu-container")[0] as HTMLElement;
-        this.basicButtons = document.getElementById("BasicButtons") as HTMLElement;
+this.basicButtons = document.getElementById("BasicButtons") as HTMLElement;
         this.climatologyButtons = document.getElementById("ClimatologyButtons") as HTMLElement;
         this.buttonStrip = document.getElementById("ButtonStrip") as HTMLElement;
 
@@ -116,13 +118,17 @@ export class SideBar extends BaseFrame {
                 addChild(this.basicButtons, this.spatialSupport.render());
                 this.spatialSupport.build()
             }
-            
-            addChild(this.basicButtons, this.variable.render(varHasPopData));
+
+            if (hasVars) {
+                addChild(this.basicButtons, this.variable.render(varHasPopData))
             this.variable.build()
+if (varHasPopData) this.variable.configPopOver(this.popData)
+            }
 
             if (hasSubVars) {
                 addChild(this.basicButtons, this.subVariable.render(sbVarHasPopData));
                 this.subVariable.build()
+if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
             }
 
             if (hasTpSupport) {
@@ -146,16 +152,8 @@ export class SideBar extends BaseFrame {
                 this.climatologyButtons.hidden = true;
             }
 
-            if (varHasPopData) {
-                this.variable.configPopOver(this.popData);
-            }
-            
-            if (sbVarHasPopData) {
-                this.subVariable.configPopOver(this.popData);
-            }
-
             this.menuContainer.classList.add("my-4");
-
+        
             if(this.dropDownOrder.length) {
                 this.changeDropDownOrder()
             }
@@ -172,7 +170,7 @@ export class SideBar extends BaseFrame {
     public setSupportValues(_supportValues: string[]) {
         this.spatialSupport.setValues(_supportValues)
     }
-   
+
     public setTpSupportValues(_tpSupportValues: string[]) {
         if (hasTpSupport) {
             this.temporalSupport.setValues(_tpSupportValues)
@@ -228,6 +226,15 @@ export class SideBar extends BaseFrame {
 
         for (let i = 0; i < this.extraDropDowns.length; i++) {
             if (this.extraDropDowns[i]['id'] == btnName) this.extraDropDowns[i].setValues(options);
+        }
+    }
+
+    public updateExtraDropdown(btnName: string, btnTitle: string, options: string[]) {
+        for (let i = 0; i < this.extraDropDowns.length; i++) {
+            if (this.extraDropDowns[i]['id'] == btnName) {
+                this.extraDropDowns[i].setTitle(btnTitle)
+                this.extraDropDowns[i].setValues(options);
+            }
         }
     }
 

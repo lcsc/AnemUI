@@ -10,10 +10,11 @@ import { showLayers }  from "../Env";
 export default class PaletteFrame  extends BaseFrame{
 
     protected slider: Slider
-    private baseDiv: HTMLElement
+private baseDiv: HTMLElement
     private dataDiv: HTMLElement
     private trpDiv: HTMLElement
-
+    private uncertaintyFrame: HTMLElement; 
+    
     public render():JSX.Element{
         let self=this;
         let values= [...this.parent.getLegendValues()].reverse();
@@ -29,12 +30,14 @@ export default class PaletteFrame  extends BaseFrame{
         let topLayers=lmgr.getTopLayerNames();
         let bgcolor;
         let color = '#ffffff';
+        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
+        mgr.setUncertaintyLayerChecked(true)
         let element=
         (<div id="PaletteFrame" className='paletteFrame' onMouseOver={(event:React.MouseEvent)=>{mouseOverFrame(self,event)}}>
             <div className="info legend">
                 <div id="units"><span>{name}</span><br/></div>
                 {values.map((val, index) => (
-                    <div className='legendText mediumText' style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>
+                    <div className='legendText smallText' style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>
                  ))}
                 <div id="legendBottom"></div> 
             </div>
@@ -54,16 +57,18 @@ export default class PaletteFrame  extends BaseFrame{
                 </div>
                 <div id="palette-div" className="selectDiv">
                     <span aria-label='paleta'>
-                        {this.parent.getTranslation('paleta')}:{mgr.getSelected()}
+                        {this.parent.getTranslation('paleta')}: {mgr.getSelected()}
                     </span>
                     {/* <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>self.changePalette(event)}   */}
                     <select className="form-select form-select-sm palette-select" aria-label="Change Palette" onChange={(event)=>self.changePalette(event.target.value)}
                     >
                         {palettes.map((val,index)=>{
-                            if(mgr.getSelected()==val){
-                                return (<option value={val} selected>{val}</option>)
+                            if (val != 'uncertainty') {
+                                if(mgr.getSelected()==val){
+                                    return (<option value={val} selected>{val}</option>)
+                                }
+                                return (<option value={val}>{val}</option>)
                             }
-                        return (<option value={val}>{val}</option>)
                         })}
                     </select>
                 </div>
@@ -82,13 +87,13 @@ export default class PaletteFrame  extends BaseFrame{
                 </select> */}
                 <div id="trp-div" className="selectDiv">
                     <span aria-label='transparency'>
-                        {this.parent.getTranslation('transparency')}:{mgr.getTransparency()}
+                        {this.parent.getTranslation('transparency')}: {mgr.getTransparency()}
                     </span>
                     <input id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
                 </div>
                 <div id="data-div" className="selectDiv">
                     <span aria-label='top'>
-                        {this.parent.getTranslation('top_layer')}:Politico
+                        {this.parent.getTranslation('top_layer')}: Politico
                     </span>
                     <select className="form-select form-select-sm palette-select" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}
                     >
@@ -100,23 +105,32 @@ export default class PaletteFrame  extends BaseFrame{
                         })}
                     </select>
                 </div>
+                <div id="uncertainty-frame" className="selectDiv" hidden>
+                    {uncertaintyLayer &&
+                        <div className="form-check form-switch">
+                            <span id='uncertainty-text' aria-label='uncertainty'>
+                                {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()}
+                            </span>
+                            <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>self.toggleuncertaintyLayer(event.target.checked)} checked />
+                        </div>
+                    }
+                </div>
             </div>
         </div>);
-        // console.log("Palete selected on render= "+mgr.getSelected() )
-        return element;
+                return element;
     }
 
     public showSelect(){
-        // this.container.querySelector("div.paletteSpan").classList.remove("visible")
+// this.container.querySelector("div.paletteSpan").classList.remove("visible")
         this.container.querySelector("div.paletteSelect").classList.add("visible")
     }
+
     public hideSelect(){
         let select = this.container.querySelector("select");
         if(select != document.activeElement)
             this.container.querySelector("div.paletteSelect").classList.remove("visible")
-        // this.container.querySelector("div.paletteSpan").classList.add("visible")
+// this.container.querySelector("div.paletteSpan").classList.add("visible")
     }
-
 
     // changePalette(event: ChangeEvent<HTMLSelectElement>): void {
     //     let mgr=PaletteManager.getInstance();
@@ -144,6 +158,28 @@ export default class PaletteFrame  extends BaseFrame{
         mgr.setTopSelected(value);
         this.parent.update();
         this.container.querySelector("div.paletteSelect").classList.remove("visible")
+    }
+
+    toggleuncertaintyLayer (checked: boolean) {
+        let ptMgr=PaletteManager.getInstance();
+        ptMgr.setUncertaintyLayerChecked(checked)
+        let uncertaintyText = document.querySelector("#uncertainty-text")
+        uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + ptMgr.getUncertaintyLayerChecked() 
+        let mgr=LayerManager.getInstance();
+        mgr.showuncertaintyLayer(checked)
+    }
+
+    public renderuncertaintyFrame():JSX.Element {
+        let mgr=PaletteManager.getInstance();
+        mgr.setUncertaintyLayerChecked(true)
+        return (
+            <div className="form-check form-switch">
+                <span id='uncertainty-text' aria-label='uncertainty'>
+                    {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()} 
+                </span>
+                <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleuncertaintyLayer(event.target.checked)} checked/>
+            </div>
+        );
     }
 
     public build(){
@@ -202,16 +238,31 @@ export default class PaletteFrame  extends BaseFrame{
         
         data.innerHTML="<div id='units'><span>"+name+"</span><br/></div>"
         values.map((val, index) =>{ 
-            let textSize = texts[index].length > 4? 'smallText':'mediumText'
+            // let textSize = texts[index].length > 4? 'smallText':'mediumText'
+            let textSize = 'smallText'
             addChild(data, (<div className={`legendText ${textSize}`}  style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span> {texts[index]}</span><br/></div>));
             
             });
+        data.innerHTML+="<div id='legendBottom'></div> "
         this.container.querySelector(".paletteSelect span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
         this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
         this.container.querySelector(".paletteSelect span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
         this.container.querySelector(".paletteSelect span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
-       
+        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
+        
+        this.uncertaintyFrame = this.container.querySelector("#uncertainty-frame")
+        if (uncertaintyLayer) {
+            this.uncertaintyFrame.hidden = false;
+            if (this.uncertaintyFrame.children.length == 0) {
+                addChild(this.uncertaintyFrame,this.renderuncertaintyFrame())
+            }
+        } else {
+            this.uncertaintyFrame.hidden = true;
+            if (this.uncertaintyFrame.children.length > 0) {
+                while (this.uncertaintyFrame.firstChild) {
+                    this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
+                }
+            }
+        }
     }
 }
-
-

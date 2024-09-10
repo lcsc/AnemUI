@@ -136,7 +136,7 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
                 if (!isNaN(value[1])) download = true;
                 asciiResult += value[0];
                 asciiResult += ';';
-                if (graph && hasInf) {
+if (graph && hasInf) {
                     if (value[1] == Infinity || value[1] > maxWhenInf) value[1] = maxWhenInf
                     if (value[1] == -Infinity || value[1] < minWhenInf) value[1] = minWhenInf
                 }
@@ -216,7 +216,7 @@ async function downloadTChunk(x: number, varName: string, portion: string, times
 }
 
 
-export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion) {
+export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
     // We can only determine the maximums and minimums and draw the data layers when all the promises are resolved.
     Promise.all(promises).then((floatArrays) => {
         // We determine the minimum and maximum of the data layer values excluding the NaNs
@@ -241,11 +241,10 @@ export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, 
         floatArrays.forEach((floatArray, index) => {
             const width: number = timesJs.lonNum[status.varId + timesJs.portions[status.varId][index]];
             const height: number = timesJs.latNum[status.varId + timesJs.portions[status.varId][index]];
-
             // We call filterValues to apply the selection filter and the comparison filter if necessary and when it is resolved we paint the data layer.
             app.filterValues(floatArray, status.selectedTimeIndex, status.varId, timesJs.portions[status.varId][index])
                 .then((floatArray) => {
-                    painter.paintValues(floatArray, width, height, minArray, maxArray, pxTransparent)
+                    painter.paintValues(floatArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer)
                         .then((canvas) => {
                             dataTilesLayer[index].setSource(new Static({
                                 url: canvas.toDataURL('image/png'),
@@ -260,6 +259,49 @@ export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, 
     });
 }
 
+export function buildPattern (promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
+    // We can only determine the maximums and minimums and draw the data layers when all the promises are resolved.
+    Promise.all(promises).then((floatArrays) => {
+        // We determine the minimum and maximum of the data layer values excluding the NaNs
+        let minArray: number = Number.MAX_VALUE;
+        let maxArray: number = Number.MIN_VALUE;
+        let painter = PaletteManager.getInstance().getPainter();
+        floatArrays.forEach((floatArray, index) => {
+            floatArray.forEach((value) => {
+                if (!isNaN(value)) {
+                    minArray = Math.min(minArray, value);
+                    maxArray = Math.max(maxArray, value);
+                }
+            });
+        });
+        timesJs.varMin[status.varId][status.selectedTimeIndex] = minArray;
+        timesJs.varMax[status.varId][status.selectedTimeIndex] = maxArray;
+        app.notifyMaxMinChanged();
+        minArray = timesJs.varMin[status.varId][status.selectedTimeIndex];
+        maxArray = timesJs.varMax[status.varId][status.selectedTimeIndex];
+
+        // Now that we have the absolute maximums and minimums, we paint the data layers.
+        floatArrays.forEach((floatArray, index) => {
+            const width: number = timesJs.lonNum[status.varId + timesJs.portions[status.varId][index]];
+            const height: number = timesJs.latNum[status.varId + timesJs.portions[status.varId][index]];
+            // We call filterValues to apply the selection filter and the comparison filter if necessary and when it is resolved we paint the data layer.
+            app.filterValues(floatArray, status.selectedTimeIndex, status.varId, timesJs.portions[status.varId][index])
+                .then((floatArray) => {
+                    // --- No está terminado: se intenta pintar un carácter '·' por pixel en los que sean significativos y mostrarlo como una capa vecorial 
+                   /*  painter.paintPattern(floatArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer)
+                        .then((canvas) => {
+                            dataTilesLayer[index].setSource(new Static({
+                                url: canvas.toDataURL('image/png'),
+                                crossOrigin: '',
+                                projection: timesJs.projection,
+                                imageExtent: ncExtents[timesJs.portions[status.varId][index]],
+                                interpolate: false
+                            }));
+                        }); */
+                });
+        });
+    });
+}
 
 export function downloadXYArrayChunked(x: number, varName: string, portion: string, doneCb: ArrayDownloadDone): void {
     let timesJs: CsTimesJsData = window.CsViewerApp.getTimesJs();
