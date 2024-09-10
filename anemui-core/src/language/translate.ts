@@ -28,6 +28,7 @@ export default class Translate {
             "base_layer":"Base Layer",
             "top_layer":"Data Layer",
             "transparency":"Transparency",
+            "uncertainty":"Uncertainty",
             'estadistico': 'Statistic',
             'periodo_referencia':'Reference period',
             'month': {
@@ -67,6 +68,7 @@ export default class Translate {
             "base_layer":"Capa Base",
             "top_layer":"Capa Info",
             "transparency":"Transparencia",
+            "uncertainty":"Incertidumbre",
             'estadistico': 'Estadístico',
             'periodo_referencia':'Período de referencia',
             'month': {

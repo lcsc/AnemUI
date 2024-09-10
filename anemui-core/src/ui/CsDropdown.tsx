@@ -43,6 +43,12 @@ export class CsDropdown extends BaseUiElement {
     }
   }
 
+  public setTitle(_title: string) {
+    if (this.container != undefined) {
+      this.container.querySelector("#title").innerHTML = _title
+    }
+  }
+
   public select(index: number) {
    let elements = document.getElementsByClassName('popover');
     for (let i = 0; i < elements.length; i++) {
@@ -57,7 +63,6 @@ export class CsDropdown extends BaseUiElement {
       {
         this.values.map((val, index) => {
           var popOverAttrs = {
-            
             id: val.startsWith("~") ? val.substring(1) : val,
             'data-toggle': 'popover'
           };
@@ -72,7 +77,7 @@ export class CsDropdown extends BaseUiElement {
 
   public render(hasPopData: boolean = false): JSX.Element {
     return (<div id={this.id} className="basicBtn btn-group dropend">
-      <button type="button" className="btn btn-md navbar-btn navbar-btn-title"><span >{this.text}</span></button>
+      <button type="button" className="btn btn-md navbar-btn navbar-btn-title"><span id="title">{this.text}</span></button>
       <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
         <span className="sr-only"></span>
       </button>

@@ -51,7 +51,7 @@ export interface CsTimesJsData{
     times: CsTimesJsVarData<string> // Dates with data
     varMin: CsTimesJsVarData<number> //Min value for date
     varMax: CsTimesJsVarData<number> //Max value for date
-    minVal: CsTimesJsVarData<number> //Min value for variable
+minVal: CsTimesJsVarData<number> //Min value for variable
     maxVal: CsTimesJsVarData<number> //Max value for variable
 
     //Data of chunks
@@ -91,6 +91,7 @@ export type CsViewerData={
     selectedTimeIndex:number,
     legendTitle:string,
     climatology:boolean,
+    uncertaintyLayer:boolean,
     season:string,
     month:string
 }
