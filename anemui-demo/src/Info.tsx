@@ -2,7 +2,7 @@ import { InfoDiv } from "@lcsc/anemui-core/src/ui/InfoPanel";
 import { BaseApp } from "@lcsc/anemui-core/src/BaseApp";
 import { createElement } from "tsx-create-element";
 
-export class EtmInfo extends InfoDiv{
+export class DemoInfo extends InfoDiv{
     constructor(_parent: BaseApp, _id: string){
         super(_parent, _id);
     }

@@ -1,11 +1,11 @@
 // EvapotranspirationMonitorService
 
-import { CsDataService } from "@lcsc/anemui-core/src/ServiceApp";
+import { CsDataService, STR_ALL } from "@lcsc/anemui-core/src/ServiceApp";
 import { CsViewerData } from "@lcsc/anemui-core/src/data/CsDataTypes";
 import { renderers } from "@lcsc/anemui-core/src/tiles/Support";
 
 
-export class EtoService implements CsDataService{
+export class DemoService implements CsDataService{
     
     getSubVars(state: CsViewerData): string[] {
         throw new Error("Method not implemented.");
@@ -18,23 +18,16 @@ export class EtoService implements CsDataService{
     }
 
     public getVars(): string[] {
-        return ["Evapotranspiración de Referencia", "Incertidumbre",
-            "Componente Aerodinámico", "Componente Radiativo"];
+        return ["Max","Min"];
     }
     public getSelections(state: CsViewerData): string[] {
         let ret: string[];
         switch (state.varName) {
-            case "Evapotranspiración de Referencia":
-                ret = ["0mm", "10mm", "25mm", "50mm", "100mm"];
+            case "Max":
+                ret = [STR_ALL,"25 ºC","30 ºC","35 ºC"];
                 break;
-            case "Incertidumbre":
-                ret = ["0mm", "10mm", "25mm", "50mm", "100mm"];
-                break;
-            case "Componente Aerodinámico":
-                ret = ["0mm", "10mm", "25mm", "50mm", "100mm"];
-                break;
-            case "Componente Radiativo":
-                ret = ["0mm", "10mm", "25mm", "50mm", "100mm"];
+            case "Min":
+                ret = [STR_ALL,"5 ºC","10 ºC","15 ºC"];
                 break;
             default:
                 ret = [];
@@ -54,17 +47,11 @@ export class EtoService implements CsDataService{
 
     public getVarId(state: CsViewerData): string {
         switch (state.varName) {
-            case "Evapotranspiración de Referencia":
-                return "ETo";
+            case "Max":
+                return "tmax";
                 break;
-            case "Incertidumbre":
-                return "ETo_var";
-                break;
-            case "Componente Aerodinámico":
-                return "ETo_Ae";
-                break;
-            case "Componente Radiativo":
-                return "ETo_Ra";
+            case "Min":
+                return "tmin";
                 break;
             default:
                 return "";

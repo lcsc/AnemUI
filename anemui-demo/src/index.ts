@@ -1,5 +1,5 @@
-import { AppETO } from "./App";
-export const app = AppETO.getInstance();
+import { AppDemo } from "./App";
+export const app = AppDemo.getInstance();
 
 app.configure()
     .then((res) => { app.render() })

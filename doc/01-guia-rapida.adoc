@@ -20,7 +20,7 @@ Para instalar `nvm` solo hay que ejecutar el auto instalador
 .Instalacion de nvm
 [source,console]
 ----
-$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 $ echo 'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm' >> ~/.bash_profile
 $ source ~/.bash_profile
@@ -28,28 +28,29 @@ $ source ~/.bash_profile
 
 Con esto tendremos el gestor de versiones de node instaladas que nos facilitara seleccionar la version de node más adecuada, segun queramos. Con lo que procederemos a instalar la version 16 de node y actualizar npm a la ultima version.
 
-.Instalacion de Node.JS 16
+.Instalacion de Node.JS 20 (ultima LTS)
 [source,console]
 ----
-$ nvm install 16
-$ nvm use 16
+$ nvm install 20
+$ nvm use 20
 $ node -v
 $ npm -v
 $ npm install -g npm@latest
 $ npm -v
 ----
 
-== Visor de Precipitaciones Extremas
+== Visor de Ejemplo
 
-=== Primera Ejecuccion del visor de Precipitaciones Extremas
-Para ejecutar el visor de Precipiataciones Extremas, debemos invocar el comando `dev` dentro del workspace `extreme-precipitation-monitor` con todas las depencias descargadas
+=== Primera Ejecuccion del visor de Eejemplo
+Para ejecutar el visor de ejemplo, debemos invocar el comando `dev` dentro del workspace `anemui-dev` con todas las depencias descargadas
 
 .Primera ejecucion del visor
 [source,console]
 ----
-$ cd VisorServiciosClimaticos # <1>
+$ #git clone https://github.com/lcsc/AnemUI.git
+$ cd AnemUI # <1>
 $ npm install # <2>
-$ npm -w extreme-precipitation-monitor run dev # <3>
+$ npm -w anemui-demo run dev # <3>
 ----
 <1> Nos situamos en el directorio
 <2> Descargamos las depencias, solo es necesario la primera vez
@@ -62,7 +63,7 @@ NOTE: A partir del punto <2> solo sera necerario ejecutar `npm -w [visor] run [c
 Una vez lanzado se abrira una pagina web con el visor
 
 [.text-center]
-.Home del visor de Precipitaciones Extremas
+.Home del visor de Ejemplo
 image::images/SC-EP-home.png["Home Visor",align=center]
 
 WebPack lanzara un pequeño servidor web, que estara sirviendo las paginas al vuelo. De tal forma que si se hace una modificacion en los ficheros que usa la applicacion, esta se recompilara y se recargara en el navegador. 
