@@ -64,27 +64,27 @@
   width: 120px;
   left: unset;
   top: 7.5em;
-  right: 3%;
+  right: 2%;
   padding-left: 15px;
   background: transparent;
 
   button {
-    float: left;
+    float: right;
     width: 40px;
     height: 40px;
     border-radius: 10px !important;
     font-size: 1.6rem !important;
     padding-bottom: 0.5rem;
-    margin-right: 8px;
+    margin-left: 8px;
     cursor: pointer;
-    background-color: #2c6d9a;
-    color: #fff;
-    border: solid 1px #fff;
+    background-color: $color_8;
+    color: $color_4;
+    border: solid 1px $color_4;
   }
 
   button:hover {
-    background-color: #aeddff;
-    color: #2c6d9a;
+    background-color: $color_1;
+    color: $color_8;
   }
 
   @include md-desktop {

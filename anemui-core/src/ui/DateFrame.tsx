@@ -58,8 +58,8 @@ export class DateSelectorFrame extends BaseFrame {
     //protected slider: JQuery<HTMLInputElement>
     protected slider: Slider
     protected sliderFrame: HTMLElement 
-    protected var:string;
-    protected mode:DateFrameMode;
+    protected var: string;
+    protected mode: DateFrameMode;
     protected periods: number[]
     protected dates: string[];
     protected years: string[];
@@ -364,7 +364,6 @@ export class DateSelectorFrame extends BaseFrame {
             let self = this
             this.season = new CsDropdown("SeasonDD", "Estación", {
                 valueSelected(origin, index, value, values) {
-                    // self.listener.seasonSelected(index, value, values)
                     self.seasonSelected(index, value, values)
                 },
             });
@@ -373,7 +372,6 @@ export class DateSelectorFrame extends BaseFrame {
             let periods = this.getPeriods(this.periods[1]);
             this.season.setValues(periods);
             document.getElementById("SeasonDD").classList.remove("navbar-btn-title");
-            // this.seasonClicked = false;
         }
 
         this.datepicker.on("changeDate", (event:DatepickerEventObject) => {

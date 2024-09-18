@@ -33,7 +33,7 @@ proj4.defs([
 ]);
 register(proj4);
 
-const imgConfidence = new CircleStyle({
+const imgUncertainty = new CircleStyle({
   radius: 1,
   fill: new Fill({color:'#65656580'})
 });
@@ -42,7 +42,7 @@ const imgStation = new CircleStyle({
   fill: new Fill({color:'#00f855CC'}),
   stroke: new Stroke({color: '#FFFFFF', width: 1}),
 });
-export const DEF_STYLE_CONFIDENCE=new Style({image:imgConfidence,})
+export const DEF_STYLE_UNC=new Style({image:imgUncertainty,})
 export const DEF_STYLE_STATIONS=new Style({image:imgStation,})
 
 //const SLD='<?xml version="1.0" encoding="ISO-8859-1"?>'+
@@ -86,8 +86,8 @@ export class OpenLayerMap implements CsMapController{
     protected geoLayer:CsOpenLayerGeoJsonLayer;
     protected terrainLayer:Layer;
     protected politicalLayer:Layer;
-protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
-    protected confidenceVectorLayer: Layer;
+    protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
+    protected uncertaintyVectorLayer: Layer;
 
     protected setExtents(timesJs: CsTimesJsData, varId: string): void {
         timesJs.portions[varId].forEach((portion: string, index, array) => {
@@ -190,7 +190,7 @@ this.uncertaintyLayer = [];
       this.dataTilesLayer = [];
 // this.uncertaintyLayer = [];
       this.uncertaintyLayer = lmgr.getuncertaintyLayer();
-      this.confidenceVectorLayer = lmgr.getConfidenceVectorLayer();
+      this.uncertaintyVectorLayer = lmgr.getuncertaintyVectorLayer();
 
       layers.push(terrain);
       layers.push(political);
@@ -286,29 +286,29 @@ this.uncertaintyLayer = [];
         let lmgr = LayerManager.getInstance();
         let app = window.CsViewerApp;
         
-        // Remove all confidence layers
+        // Remove all uncertainty layers
         // this.uncertaintyLayer.forEach((layer: ImageLayer<Static>) => this.map.getLayers().remove(layer));
         // this.uncertaintyLayer = [];
         this.uncertaintyLayer = lmgr.getuncertaintyLayer();
-        this.confidenceVectorLayer = lmgr.getConfidenceVectorLayer();
+        this.uncertaintyVectorLayer = lmgr.getuncertaintyVectorLayer();
 
-        // Add confidence layers
-        timesJs.portions[state.varId + '_confidence'].forEach((portion: string, index, array) => {
+        // Add uncertainty layers
+        timesJs.portions[state.varId + '_uncertainty'].forEach((portion: string, index, array) => {
           let imageLayer: ImageLayer<Static> = new ImageLayer({});
           this.uncertaintyLayer.push(imageLayer);
           this.map.getLayers().insertAt(2, imageLayer);
         });
 
-        // Download and build new confidence layers
+        // Download and build new uncertainty layers
         let promises: Promise<number[]>[] = [];
-        this.setExtents(timesJs, state.varId + '_confidence');
-        timesJs.portions[state.varId + '_confidence'].forEach((portion: string, index, array) => {
-          promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId + '_confidence', portion, timesJs));
+        this.setExtents(timesJs, state.varId + '_uncertainty');
+        timesJs.portions[state.varId + '_uncertainty'].forEach((portion: string, index, array) => {
+          promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId + '_uncertainty', portion, timesJs));
         });
 
         // Draw new data layers
         buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
-        buildPattern(promises, this.confidenceVectorLayer, state, timesJs, app, this.ncExtents, true);
+        buildPattern(promises, this.uncertaintyVectorLayer, state, timesJs, app, this.ncExtents, true);
       
     } 
 
@@ -318,7 +318,7 @@ this.uncertaintyLayer = [];
           this.dataWMSLayer.refresh();
         } else {
           this.buildDataTilesLayers(state, this.parent.getParent().getTimesJs());
-// Remove all confidence layers
+// Remove all uncertainty layers
           this.uncertaintyLayer.forEach((layer: ImageLayer<Static>) => this.map.getLayers().remove(layer));
           this.uncertaintyLayer = [];
           if (state.uncertaintyLayer) this.builduncertaintyLayer(state, this.parent.getParent().getTimesJs());
@@ -407,8 +407,8 @@ this.uncertaintyLayer = [];
       return this.parent.getParent().getFeatureStyle(feature);
     }
 
-    public getConfidenceStyle(feature: Feature):Style {
-      return this.parent.getParent().getConfidenceStyle(feature);
+    public getuncertaintyStyle(feature: Feature):Style {
+      return this.parent.getParent().getuncertaintyStyle(feature);
     }
 }
 

@@ -12,7 +12,7 @@ export interface SideBarListener {
     varSelected(index: number, value?: string, values?: string[]): void;
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
-dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
+    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     selectionParamChanged(param: number): void;
 }
 
@@ -93,6 +93,7 @@ export class SideBar extends BaseFrame {
         this.climatologyButtons.classList.add("d-grid");
         this.climatologyButtons.hidden = false;
     }
+   
     public render(): JSX.Element {
         let self = this
         return (<div id="SideBar" className="active z-depth-1">
@@ -109,7 +110,7 @@ export class SideBar extends BaseFrame {
     public build(): void {
         this.container = document.getElementById("SideBar") as HTMLDivElement;
         this.menuContainer = this.container.getElementsByClassName("menu-container")[0] as HTMLElement;
-this.basicButtons = document.getElementById("BasicButtons") as HTMLElement;
+        this.basicButtons = document.getElementById("BasicButtons") as HTMLElement;
         this.climatologyButtons = document.getElementById("ClimatologyButtons") as HTMLElement;
         this.buttonStrip = document.getElementById("ButtonStrip") as HTMLElement;
 
@@ -121,14 +122,14 @@ this.basicButtons = document.getElementById("BasicButtons") as HTMLElement;
 
             if (hasVars) {
                 addChild(this.basicButtons, this.variable.render(varHasPopData))
-            this.variable.build()
-if (varHasPopData) this.variable.configPopOver(this.popData)
+                this.variable.build()
+                if (varHasPopData) this.variable.configPopOver(this.popData)
             }
 
             if (hasSubVars) {
                 addChild(this.basicButtons, this.subVariable.render(sbVarHasPopData));
                 this.subVariable.build()
-if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
+                if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
             }
 
             if (hasTpSupport) {
@@ -160,10 +161,14 @@ if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
         }
     }
     public update(): void {
+        let years = [3,6]
         if (this.parent.getState().climatology == true) {
             this.showClimFrame()
+            if(years.includes(this.parent.getDateSelectorFrame().getMode())) this.parent.hidePointButtons()
+            else this.parent.showPointButtons()
         } else {
             this.hideClimFrame()
+            this.parent.showPointButtons()
         }
     }
 

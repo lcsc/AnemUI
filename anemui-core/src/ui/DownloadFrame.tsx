@@ -24,6 +24,7 @@ export class DownloadFrame extends BaseFrame {
     protected btnGraph: HTMLButtonElement;
     protected parent: BaseApp;
     protected dropPointContainter: HTMLDivElement;
+    protected pointButtonsContainer: HTMLDivElement;
     protected dropPoint: Dropdown;
     protected dropNc: Dropdown
     protected dropNcDownButton: HTMLButtonElement
@@ -56,17 +57,21 @@ export class DownloadFrame extends BaseFrame {
                                 }
                             </ul>
                         </div>
-                        <div id="dropPoint" className="btn-group dropend" role="dropPoint">
-                            <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
-                            <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                <span className="visually-hidden"></span>
-                            </button>
-                            <ul className="dropdown-menu">
-                                <li><a className="dropdown-item" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</a></li>
-                                <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
-                            </ul>
+                        <div id="point-buttons">
+                            <div id="dropPoint" className="btn-group dropend" role="dropPoint">
+                                <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
+                                <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                                    <span className="visually-hidden"></span>
+                                </button>
+                                <ul className="dropdown-menu">
+                                    <li><a className="dropdown-item" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</a></li>
+                                    <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
+                                </ul>
+                            </div>
+                            <div id="graphDiv">
+                                <button type="button" role="graph" className="btn navbar-btn" style={this.parent.getGraph().byPoint ? { visibility: "visible" } : { visibility: "hidden" }} disabled onClick={() => { this.parent.showGraph() }}>{this.parent.getTranslation('grafico_pixel')}</button>
+                            </div>
                         </div>
-                        <button type="button" role="graph" className="btn navbar-btn" style={this.parent.getGraph().byPoint == true ? { visibility: "visible" } : { visibility: "hidden" }} disabled onClick={() => { this.parent.showGraph() }}>{this.parent.getTranslation('grafico_pixel')}</button>
                     </div>
                 </div>
                 <div className='download-handler'>
@@ -94,6 +99,7 @@ export class DownloadFrame extends BaseFrame {
         this.container = document.getElementById("DownloadFrame") as HTMLDivElement
         this.containerButons = this.container.getElementsByClassName("downlad-buttons")[0] as HTMLElement
         this.containerHandler = this.container.getElementsByClassName("download-handler")[0] as HTMLElement
+        this.pointButtonsContainer = this.container.querySelector("[id=point-buttons]") as HTMLDivElement
 
         this.containerHandler.hidden = true;
 
@@ -138,6 +144,12 @@ export class DownloadFrame extends BaseFrame {
             let dropItem:  HTMLLinkElement = dropItems[i] as HTMLLinkElement;
             dropItem.disabled = true; 
         }
+    }
+    public hidePointButtons(): void {
+        this.pointButtonsContainer.hidden = true;
+    }
+    public showPointButtons(): void {
+        this.pointButtonsContainer.hidden = false;
     }
 }
 
