@@ -31,6 +31,10 @@ export default class Translate {
             "uncertainty":"Uncertainty",
             'estadistico': 'Statistic',
             'periodo_referencia':'Reference period',
+            'cookies_usr':'We use cookies on this site to improve your user experience',
+            'cookies_info':'More info',
+            'cookies_accept':'Accept',
+            'cookies_decline':'Decline',
             'month': {
                 1: "January",
                 2: "February",
@@ -71,6 +75,10 @@ export default class Translate {
             "uncertainty":"Incertidumbre",
             'estadistico': 'Estadístico',
             'periodo_referencia':'Período de referencia',
+            'cookies_usr':'Utilizamos cookies en este sitio para mejorar su experiencia de usuario',
+            'cookies_info':'Más información',
+            'cookies_accept':'Aceptar',
+            'cookies_decline':'Rechazar',
             'month': {
                 0: "Enero",
                 1: "Febrero",

@@ -115,7 +115,6 @@ export class MenuBar extends BaseFrame {
                             {/* <a className="r" title="Find my location"></a>
                             </form> */}
                             <div id="SubBar" className="row d-flex">
-                                {/* <div className="col-10 mt-1"> */}
                                 <form className="gy-1 gx-1 align-items-center" onSubmit={() => { this.fireParamChanged(); return false }}>
                                     <div id="inputs" className="input-group input-group-sm">
                                         <div id="input1" role="spSupport" className="input-group-text inputDiv">{this.parent.getState().support}</div>
@@ -133,7 +132,6 @@ export class MenuBar extends BaseFrame {
                                         </div>
                                     </div>
                                 </form>
-                                {/* </div> */}
                             </div>
                         </div>
                     </div>

@@ -42,8 +42,8 @@ export class LayerManager {
     private topSelected:string;
     private topLayerTile:WebGLTile;
     private topLayerVector:Layer;
-protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
-    protected confidenceVectorLayer: Layer;
+    protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
+    protected uncertaintyVectorLayer: Layer;
 
 
     private constructor() {
@@ -100,9 +100,9 @@ this.uncertaintyLayer = [];
         }
     }
 
-public showuncertaintyLayer(show: boolean) {
+    public showUncertaintyLayer(show: boolean) {
         this.uncertaintyLayer[0].setVisible(show);
-        // this.confidenceVectorLayer.setVisible(show);
+        // this.uncertaintyVectorLayer.setVisible(show);
     }
 
     public getTopLayerOlLayer():Layer{
@@ -154,9 +154,9 @@ public showuncertaintyLayer(show: boolean) {
         return this.uncertaintyLayer;
     }
 
-    public getConfidenceVectorLayer():Layer {
-        this.confidenceVectorLayer = new VectorLayer;
-        return this.confidenceVectorLayer;
+    public getuncertaintyVectorLayer():Layer {
+        this.uncertaintyVectorLayer = new VectorLayer;
+        return this.uncertaintyVectorLayer;
     }
 
     

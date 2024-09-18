@@ -62,7 +62,7 @@ export class CsGraph extends BaseFrame {
     this.byPoint = _byPoint;
     switch (_type) {
       case "Serial":
-case "Area":
+      case "Area":
         this.graphTitle += ": " + this.parent.getTranslation('serie_temporal');
         break;
       case "Cummulative":
