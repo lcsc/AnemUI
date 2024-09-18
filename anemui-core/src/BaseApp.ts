@@ -16,7 +16,7 @@ import { defaultRender } from "./tiles/Support";
 import { defaultTpRender } from "./tiles/tpSupport";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, getPortionForPoint } from "./data/ChunkDownloader";
 import { calcPixelIndex, downloadTCSVChunked } from "./data/ChunkDownloader";
-import { DEF_STYLE_STATIONS, DEF_STYLE_CONFIDENCE, OpenLayerMap } from "./OpenLayersMap";
+import { DEF_STYLE_STATIONS, DEF_STYLE_UNC, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
 import proj4 from 'proj4';
@@ -27,6 +27,7 @@ import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import { SideBar, SideBarListener } from "./ui/SideBar";
 import Translate from "./language/translate";
+import CsCookies from "./cookies/CsCookies";
 
 export const zip = require("@zip.js/zip.js");
 
@@ -54,7 +55,7 @@ const INITIAL_STATE: CsViewerData = {
 }
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
-export const CONFIDENCE_LAYER = '_confidence'
+export const UNCERTAINTY_LAYER = '_uncertainty'
 
 export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener, DateFrameListener {
 
@@ -78,6 +79,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     protected stationsLayer: CsGeoJsonLayer
 
     protected translate: Translate;
+    protected cookies: CsCookies;
 
     protected constructor() {
         this.menuBar = new MenuBar(this, this);
@@ -98,6 +100,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         window.CsViewerApp = this;
         // this.language = 'es';
         this.translate = Translate.getInstance();
+        this.cookies = new CsCookies(this);
     }
 
     public getMenuBar(): MenuBar {
@@ -190,6 +193,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         addChild(document.getElementById('MainFrame'), DownloadIframe())  //Iframe to download
 
         this.initMap()
+        this.cookies.addCookies()
         return this;
     }
 
@@ -220,6 +224,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.downloadFrame.enableDataButtons(data.latlng)
         this.downloadFrame.showFrame();
         //console.log("Value at point: "+data.value)
+    }
+
+    public hidePointButtons(): void {
+        this.downloadFrame.hidePointButtons()
+    }
+
+    public showPointButtons(): void {
+        this.downloadFrame.showPointButtons()
     }
 
     onClick(event: CsMapEvent): void {
@@ -315,7 +327,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
             varName = varId
         }
         
-        let confidence = _timesJs.times[varId  + CONFIDENCE_LAYER] != undefined 
+        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined 
         
         if (this.state == undefined) this.state = INITIAL_STATE;
         this.state = {
@@ -328,7 +340,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
             selection: "",
             selectionParam: 0,
             selectionParamEnable: false,
-            uncertaintyLayer: confidence
+            uncertaintyLayer: uncertainty
         }
     }
 
@@ -615,8 +627,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
 
     }
 
-    public getConfidenceStyle(feature: FeatureLike): Style {
-        return DEF_STYLE_CONFIDENCE;
+    public getuncertaintyStyle(feature: FeatureLike): Style {
+        return DEF_STYLE_UNC;
     }
 
     public getFeatureStyle(feature: FeatureLike): Style {
