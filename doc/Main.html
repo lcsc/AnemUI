@@ -112,6 +112,7 @@
 <li><a href="#_modificacion_espacio_de_trabajo">Modificacion Espacio de trabajo</a></li>
 <li><a href="#_publicacion_automatica_de_cambios">Publicacion Automatica de cambios.</a></li>
 <li><a href="#_publicacion_manual_de_cambios">Publicacion Manual de cambios</a></li>
+<li><a href="#_estabiliacion_de_version">Estabiliacion de Version.</a></li>
 <li><a href="#_pruebas_de_software">Pruebas de software</a></li>
 <li><a href="#_mocha">Mocha</a></li>
 <li><a href="#_selenium">Selenium</a></li>
@@ -2234,7 +2235,7 @@ Es posible usar submodulos de git, pero complica un poco la subida de codigo al 
 npm run setVersion
 npm install
 npm publish --workspaces --if-present
-git restore *</code></pre>
+npm run setVersionFile #deshace los cambios de version</code></pre>
 </div>
 </div>
 <div class="sidebarblock">
@@ -2251,6 +2252,35 @@ Estamos haciendo versiones <strong>SNAPSHOT</strong>, por lo que se ejecuta setV
 </tr>
 </table>
 </div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_estabiliacion_de_version">Estabiliacion de Version.</h3>
+<div class="paragraph">
+<p>Para cerrar una version <strong>[VERSION]</strong> y dejar main preparado para la <strong>[NEXT_VERSION]</strong> los pasos a seguir son:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ya cerrados y comitados todos los cambios
+
+echo [VERSION] &gt;version
+npm run setVersion
+npm install
+
+#npm login .... #Si es necesario
+npm publish --workspaces --if-present
+
+git add .
+git commit -m "Version [VERSION]"
+git push
+git tag -a [VERSION] -m "Version [VERSION]"
+git push --tags
+
+echo [NEXT-VERSION]-SNAPSHOT &gt;version
+npm run setVersionFile #Lo deja preparado
+git commit -m "SNAPSHOT para [NEXT_VERSION]"
+git push</code></pre>
 </div>
 </div>
 </div>
@@ -2638,7 +2668,7 @@ $ npm -w agro-meteorology-monitor run test <i class="conum" data-value="2"></i><
 <div id="footer">
 <div id="footer-text">
 Version 0.1<br>
-Last updated 2024-09-19 10:25:03 +0200
+Last updated 2024-09-19 10:33:46 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>

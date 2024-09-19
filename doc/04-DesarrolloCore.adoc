@@ -88,10 +88,37 @@ npm login --scope=@lcsc --registry=https://mirror.lcsc.csic.es/repository/anemui
 npm run setVersion
 npm install
 npm publish --workspaces --if-present
-git restore *
+npm run setVersionFile #deshace los cambios de version
 ----
 
 [sidebar]
 ****
 WARNING: Estamos haciendo versiones *SNAPSHOT*, por lo que se ejecuta setVersion para modificarla. esto modifica los json del versiones, es necesario revertir los cambios al final, para que siga funcionado. Por lo que *ANTES* de nada nos aseguraremos de tener todos los cambios comiteados
 ****
+
+== Estabiliacion de Version.
+
+Para cerrar una version *[VERSION]* y dejar main preparado para la *[NEXT_VERSION]* los pasos a seguir son:
+[source,bash]
+----
+
+# Ya cerrados y comitados todos los cambios
+
+echo [VERSION] >version
+npm run setVersion
+npm install
+
+#npm login .... #Si es necesario
+npm publish --workspaces --if-present
+
+git add .
+git commit -m "Version [VERSION]"
+git push
+git tag -a [VERSION] -m "Version [VERSION]"
+git push --tags
+
+echo [NEXT-VERSION]-SNAPSHOT >version
+npm run setVersionFile #Lo deja preparado
+git commit -m "SNAPSHOT para [NEXT_VERSION]"
+git push
+----
