@@ -75,8 +75,8 @@ Por ultimo generaremos la carpeta `dist` con los ficheros HTML, JS y similares q
 
 [source,console]
 ----
-$ rm -rf extreme-precipitation-monitor/dist/ # <1>
-$ npm -w extreme-precipitation-monitor run build # <2>
+$ rm -rf anemui-demo/dist/ # <1>
+$ npm -w anemui-demo run build # <2>
 ----
 <1> borramos la carpeta, para asegurarnos que la cache se borra.
 <2> lanzamos el comando `build` para generar la carpeta dist
@@ -89,7 +89,7 @@ image::images/CarpetaDist.png["",align=center]
 
 [sidebar]
 ****
-WARNING: Ojo, estos ficheros requieren estar publicados en el mismo nivel que los artefactos generados por `NcWebMapper`. Los ficheros (como times.js, nc/...) son localizados de forma relativa. 
+WARNING: Ojo, estos ficheros requieren estar publicados en el mismo nivel que los artefactos generados por `NcWebMapper`. Los ficheros generado (como times.js, nc/...) son localizados de forma relativa. 
 ****
 
 == Basic Drought Monitor
@@ -100,33 +100,12 @@ En este paso lo que haremos sera copiar la carpeta y modificar los ficheros nece
 
 [source,console]
 ----
-$ cp -a extreme-precipitation-monitor my-drought-monitor
+$ cd ..
+$ cp -a AnemUI/anemui-demo my-drought-monitor
+$ cd my-drought-monitor
 ----
 
-Lo siguiente es añadir `my-drough-monitor` a los workspaces de Node.JS modificando el fichero *`package.json` de la raiz*
-
-[source,json]
-.package.json
-----
-{
-  "name": "cs-viewer",
-  "version": "0.0.1",
-  "description": "Climatic Services Viewer",
-...
-  "workspaces": [
-    "core",
-...    
-    "extreme-temperature-monitor",
-    "my-drought-monitor", <1>
-    "evapotranspiration-monitor",
-...
-  ],
-...
-}
-----
-<1> Añadir esta linea y ojo con el formato JSON (comas y omitir el 1)
-
-Una vez añadido al WorkSpace configuraremos el nuevo visor. Primeramente los atributos Node.JS, modificando el *`package.json` del proyecto: `my-drought-monitor/package.json`*
+Una vez que tengamos copiada la carpeta configuraremos el nuevo visor. Primeramente los atributos Node.JS, modificando el *`package.json` del proyecto: `my-drought-monitor/package.json`*
 
 [source,json]
 .my-drought-monitor/package.json
@@ -162,7 +141,7 @@ En este punto conviene lanzar este nuevo visor para aseguranos que todo sigue fu
 [source,console]
 ----
 $ npm i # <1>
-$ npm -w my-drought-monitor run dev # <2>
+$ npm run dev # <2>
 ----
 <1> actualizamos las dependencias para que npm cree un enlace al nuevo proyecto. Esto se debe ejectuar al menos una vez
 <2> lanzamos la aplicacion

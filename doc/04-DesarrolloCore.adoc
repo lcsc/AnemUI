@@ -1,0 +1,97 @@
+= Desarrollo del AnemUI-core
+
+Desde la creacion del repositorio AnemUI se ha separado el Core de los visores, por lo que el workspace de los visores no contienen el core. Siendo el core una depencia más disponible para más proyectos.
+
+Esto nos obliga a tener que hacer una gestion y publicacion de los paquetes, pero nos permite aislar codigos y reutilizar el core en todos nuestros visores.
+
+Par poder modificar el core debemos bajarnos el codigo y "engañar" a `node_modules` para tener el codigo disponible y reconocible .
+
+== Modificacion Espacio de trabajo
+
+[sidebar]
+****
+WARNING: Crea antes una rama tanto en AnemUI (*<rama_core>*) como en tu visor (*<rama_visor>*) ya sea en la pagina de github o por `cli`
+
+[source,bash]
+----
+$ git checkout -b <rama>
+$ git push -u origin <rama>
+----
+****
+
+Una vez que tengamos las ramas solo ejecutaremos lo siguiente
+[source,bash]
+----
+$ cd [ruta_al_visor] <1>
+# Cambiamos a la rama visor (cli) <2>
+$ git fetch
+$ git checkout -b <rama_visor>
+$ git pull
+
+# Modificamos el node_modules <3>
+$ npm i
+$ rm -r node_modules/@lcsc
+$ git clone git@github.com:lcsc/AnemUI.git -b <rama_core>
+$ mkdir node_modules/@lcsc
+$ ln -s ../../AnemUI/anemui-core  node_modules/@lcsc/anemui-core
+$ ln -s ../../AnemUI/anemui-test  node_modules/@lcsc/anemui-test
+
+# Nos aseguramos que AnemUI es ignorado
+$ echo AnemUI >> .gitignore <4>
+----
+<1> Nos situamos el en el visor
+<2> Pasamos el WorkDir a la rama nueva del visor. Podemos hacerlo en el editor
+<3> Modificacion en si del node modules
+<4> Ejecutar solo una vez, o si al hacer `git status` aparecen cambios de AnemUI
+
+A partir de este momento tenemos en nuestra carpeta del visor el codigo del core y lo podemos modificar a voluntad.
+
+[sidebar]
+****
+WARNING: Ahora hay dos repositorios que hay que actualizar, vs_code puede subir a los dos, pero si se quiere usar el cli hay que ejecutar
+
+[source,bash]
+----
+# Repo Visor
+$ git add ....
+$ git commit ....
+$ git push
+# Repo anemui, hacer cd y los anteriores o
+$ git -c AnemUI add ....
+$ git -c AnemUI commit ....
+$ git -c AnemUI push
+----
+****
+
+[sidebar]
+****
+NOTE: Es posible usar submodulos de git, pero complica un poco la subida de codigo al repo del core.
+****
+
+
+== Publicacion Automatica de cambios.
+Tenemos un jenkins que se encarga de que cada vez que haya cambios en la *rama main* del repositorio ejecute el proceso de publicacion en nuestro https://mirror.lcsc.csic.es/#browse/browse:anemui[nexus]
+
+Como Se tiene que desarrollar en una rama propia lo que hay que hacer es Mergear el codigo a *main*. Se debe ir a la pagina de https://github.com/lcsc/AnemUI/pulls[github] y crear un pull request. Alguien dara el visto bueno y lo integrara en la rama y se generara el artefacto en el nexus.
+
+Cuando ya este el desplegado (Quien de el visto bueno, lo notificara) habra que ejecutar `npm upgrade` para que se actualicen las dependencias a la nueva version.
+
+
+== Publicacion Manual de cambios
+En el caso de querer hacer manualmente la publicacion (por ejemplo falle el jenkins) los pasos que hay que hacer son los siguientes:
+
+[source,bash]
+----
+npm login --scope=@lcsc --registry=https://mirror.lcsc.csic.es/repository/anemui/
+# user: anemui
+# pw: la misma que la wiki
+npm run setVersion
+npm install
+npm publish --workspaces --if-present
+git restore *
+----
+
+[sidebar]
+****
+WARNING: Estamos haciendo versiones *SNAPSHOT*, por lo que se ejecuta setVersion para modificarla. esto modifica los json del versiones, es necesario revertir los cambios al final, para que siga funcionado. Por lo que *ANTES* de nada nos aseguraremos de tener todos los cambios comiteados
+****

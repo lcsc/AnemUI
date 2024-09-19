@@ -22,3 +22,6 @@ include::00-intro.adoc[leveloffset=1]
 include::01-guia-rapida.adoc[leveloffset=1]
 include::02-Esqueleto-Visor.adoc[leveloffset=1]
 include::03-Entorno-Ejecucion.adoc[leveloffset=1]
+include::04-DesarrolloCore.adoc[leveloffset=1]
+include::05-testing.adoc[leveloffset=1]
+

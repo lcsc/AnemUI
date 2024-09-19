@@ -55,17 +55,17 @@ Pondremos aqui ejemplos del monitor de precipitaciones extremas.
 <6> Las dependencias unicas al visor se pueden añadir, usando los comandos `npm` a necesidad.
 
 [source,json]
-.extreme-precipitation-monitor/tsconfig.json
+.anemui-demo/tsconfig.json
 ----
-include::../extreme-precipitation-monitor/tsconfig.json[]
+include::../anemui-demo/tsconfig.json[]
 ----
 
 Este Fichero configura el compilador de TypeScript, no es necesario tocarlo. En caso de necesidad se puede usar el del core.
 
 [source,js]
-.extreme-precipitation-monitor/webpack.config.js
+.anemui-demo/webpack.config.js
 ----
-include::../extreme-precipitation-monitor/webpack.config.js[]
+include::../anemui-demo/webpack.config.js[]
 ----
 
 Por ultimo este fichero configura WebPack, pero como se puede ver lo que hace es llamar al fichero de igual nombre del `core`. La version del core, utilizara el `environment` y el fichero `csconfig.js` para configurar WebPack para ejecutar el comando y generar el entregable.  
@@ -76,9 +76,9 @@ Los entornos o `environments` es un tema para un apartado completo. El resumen e
 En general existira un fichero llamado `env.[environment].js` por cada entorno declarado en los commandos declarados en el `package.json`.
 
 [source,js]
-.core/env/env.wms.js
+.anemui-core/env/env.wms.js
 ----
-include::../core/env/env.wms.js[]
+include::../anemui-core/env/env.wms.js[]
 ----
 
 Como se puede ver, solo hay que exportar el objeto con los datos que necesitemos. Y ya veremos como acceder a ellos.

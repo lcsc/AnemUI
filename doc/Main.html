@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.17">
+<meta name="generator" content="Asciidoctor 2.0.22">
 <meta name="description" content="Documento Arquitectura GUI de los Servicios Climaticos">
 <meta name="author" content="LCSC">
 <title>LCSC CS-UI-FW</title>
@@ -35,9 +35,9 @@
 <ul class="sectlevel2">
 <li><a href="#_prerequisitos">PreRequisitos</a></li>
 <li><a href="#_instalacion_de_node_js">Instalacion de Node.JS</a></li>
-<li><a href="#_visor_de_precipitaciones_extremas">Visor de Precipitaciones Extremas</a>
+<li><a href="#_visor_de_ejemplo">Visor de Ejemplo</a>
 <ul class="sectlevel3">
-<li><a href="#_primera_ejecuccion_del_visor_de_precipitaciones_extremas">Primera Ejecuccion del visor de Precipitaciones Extremas</a></li>
+<li><a href="#_primera_ejecuccion_del_visor_de_eejemplo">Primera Ejecuccion del visor de Eejemplo</a></li>
 <li><a href="#_creacion_de_ficheros_publicables">Creacion de ficheros publicables</a></li>
 </ul>
 </li>
@@ -105,6 +105,21 @@
 </li>
 <li><a href="#_jobs">Jobs</a></li>
 <li><a href="#_utilidades">Utilidades</a></li>
+</ul>
+</li>
+<li><a href="#_desarrollo_del_anemui_core">Desarrollo del AnemUI-core</a>
+<ul class="sectlevel2">
+<li><a href="#_modificacion_espacio_de_trabajo">Modificacion Espacio de trabajo</a></li>
+<li><a href="#_publicacion_automatica_de_cambios">Publicacion Automatica de cambios.</a></li>
+<li><a href="#_publicacion_manual_de_cambios">Publicacion Manual de cambios</a></li>
+<li><a href="#_pruebas_de_software">Pruebas de software</a></li>
+<li><a href="#_mocha">Mocha</a></li>
+<li><a href="#_selenium">Selenium</a></li>
+<li><a href="#_estructura_del_código_de_pruebas">Estructura del código de pruebas</a></li>
+<li><a href="#_tests_método_it">Tests (método "it")</a></li>
+<li><a href="#_utilización_de_la_clase_cstest_desde_los_script_de_cada_visor">Utilización de la clase csTest desde los script de cada visor</a></li>
+<li><a href="#_ejecución_de_los_test">Ejecución de los test</a></li>
+<li><a href="#_toma_de_imágenes_de_pantalla_y_borrado_de_archivos">Toma de imágenes de pantalla y borrado de archivos</a></li>
 </ul>
 </li>
 </ul>
@@ -268,7 +283,7 @@ Para windows existe el mismo comando, que se puede instalar <a href="https://git
 <div class="listingblock">
 <div class="title">Instalacion de nvm</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 $ echo 'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] &amp;&amp; printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 [ -s "$NVM_DIR/nvm.sh" ] &amp;&amp; \. "$NVM_DIR/nvm.sh" # This loads nvm' &gt;&gt; ~/.bash_profile
 $ source ~/.bash_profile</code></pre>
@@ -278,10 +293,10 @@ $ source ~/.bash_profile</code></pre>
 <p>Con esto tendremos el gestor de versiones de node instaladas que nos facilitara seleccionar la version de node más adecuada, segun queramos. Con lo que procederemos a instalar la version 16 de node y actualizar npm a la ultima version.</p>
 </div>
 <div class="listingblock">
-<div class="title">Instalacion de Node.JS 16</div>
+<div class="title">Instalacion de Node.JS 20 (ultima LTS)</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ nvm install 16
-$ nvm use 16
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ nvm install 20
+$ nvm use 20
 $ node -v
 $ npm -v
 $ npm install -g npm@latest
@@ -290,18 +305,19 @@ $ npm -v</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_visor_de_precipitaciones_extremas">Visor de Precipitaciones Extremas</h3>
+<h3 id="_visor_de_ejemplo">Visor de Ejemplo</h3>
 <div class="sect3">
-<h4 id="_primera_ejecuccion_del_visor_de_precipitaciones_extremas">Primera Ejecuccion del visor de Precipitaciones Extremas</h4>
+<h4 id="_primera_ejecuccion_del_visor_de_eejemplo">Primera Ejecuccion del visor de Eejemplo</h4>
 <div class="paragraph">
-<p>Para ejecutar el visor de Precipiataciones Extremas, debemos invocar el comando <code>dev</code> dentro del workspace <code>extreme-precipitation-monitor</code> con todas las depencias descargadas</p>
+<p>Para ejecutar el visor de ejemplo, debemos invocar el comando <code>dev</code> dentro del workspace <code>anemui-dev</code> con todas las depencias descargadas</p>
 </div>
 <div class="listingblock">
 <div class="title">Primera ejecucion del visor</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ cd VisorServiciosClimaticos <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ #git clone https://github.com/lcsc/AnemUI.git
+$ cd AnemUI <i class="conum" data-value="1"></i><b>(1)</b>
 $ npm install <i class="conum" data-value="2"></i><b>(2)</b>
-$ npm -w extreme-precipitation-monitor run dev <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+$ npm -w anemui-demo run dev <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -343,7 +359,7 @@ A partir del punto &lt;2&gt; solo sera necerario ejecutar <code>npm -w [visor] r
 <div class="content">
 <img src="images/SC-EP-home.png" alt="Home Visor">
 </div>
-<div class="title">Figure 2. Home del visor de Precipitaciones Extremas</div>
+<div class="title">Figure 2. Home del visor de Ejemplo</div>
 </div>
 <div class="paragraph">
 <p>WebPack lanzara un pequeño servidor web, que estara sirviendo las paginas al vuelo. De tal forma que si se hace una modificacion en los ficheros que usa la applicacion, esta se recompilara y se recargara en el navegador.</p>
@@ -359,8 +375,8 @@ A partir del punto &lt;2&gt; solo sera necerario ejecutar <code>npm -w [visor] r
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ rm -rf extreme-precipitation-monitor/dist/ <i class="conum" data-value="1"></i><b>(1)</b>
-$ npm -w extreme-precipitation-monitor run build <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ rm -rf anemui-demo/dist/ <i class="conum" data-value="1"></i><b>(1)</b>
+$ npm -w anemui-demo run build <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -393,7 +409,7 @@ $ npm -w extreme-precipitation-monitor run build <i class="conum" data-value="2"
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-Ojo, estos ficheros requieren estar publicados en el mismo nivel que los artefactos generados por <code>NcWebMapper</code>. Los ficheros (como times.js, nc/&#8230;&#8203;) son localizados de forma relativa.
+Ojo, estos ficheros requieren estar publicados en el mismo nivel que los artefactos generados por <code>NcWebMapper</code>. Los ficheros generado (como times.js, nc/&#8230;&#8203;) son localizados de forma relativa.
 </td>
 </tr>
 </table>
@@ -414,42 +430,13 @@ Ojo, estos ficheros requieren estar publicados en el mismo nivel que los artefac
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ cp -a extreme-precipitation-monitor my-drought-monitor</code></pre>
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ cd ..
+$ cp -a AnemUI/anemui-demo my-drought-monitor
+$ cd my-drought-monitor</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Lo siguiente es añadir <code>my-drough-monitor</code> a los workspaces de Node.JS modificando el fichero <strong><code>package.json</code> de la raiz</strong></p>
-</div>
-<div class="listingblock">
-<div class="title">package.json</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
-  "name": "cs-viewer",
-  "version": "0.0.1",
-  "description": "Climatic Services Viewer",
-...
-  "workspaces": [
-    "core",
-...
-    "extreme-temperature-monitor",
-    "my-drought-monitor", <i class="conum" data-value="1"></i><b>(1)</b>
-    "evapotranspiration-monitor",
-...
-  ],
-...
-}</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Añadir esta linea y ojo con el formato JSON (comas y omitir el 1)</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Una vez añadido al WorkSpace configuraremos el nuevo visor. Primeramente los atributos Node.JS, modificando el <strong><code>package.json</code> del proyecto: <code>my-drought-monitor/package.json</code></strong></p>
+<p>Una vez que tengamos copiada la carpeta configuraremos el nuevo visor. Primeramente los atributos Node.JS, modificando el <strong><code>package.json</code> del proyecto: <code>my-drought-monitor/package.json</code></strong></p>
 </div>
 <div class="listingblock">
 <div class="title">my-drought-monitor/package.json</div>
@@ -506,7 +493,7 @@ module.exports = {
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ npm i <i class="conum" data-value="1"></i><b>(1)</b>
-$ npm -w my-drought-monitor run dev <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+$ npm run dev <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -953,7 +940,7 @@ Es posible que de errores de compilacion hasta que no salvemos los dos ficheros
 </table>
 </div>
 <div class="listingblock">
-<div class="title">extreme-precipitation-monitor/tsconfig.json</div>
+<div class="title">anemui-demo/tsconfig.json</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
     "compilerOptions": {
@@ -966,7 +953,7 @@ Es posible que de errores de compilacion hasta que no salvemos los dos ficheros
       "jsxFactory": "createElement",
       "allowJs": true,
       "moduleResolution": "node",
-      "allowSyntheticDefaultImports":true,
+      "allowSyntheticDefaultImports":true
     }
   }</code></pre>
 </div>
@@ -975,12 +962,17 @@ Es posible que de errores de compilacion hasta que no salvemos los dos ficheros
 <p>Este Fichero configura el compilador de TypeScript, no es necesario tocarlo. En caso de necesidad se puede usar el del core.</p>
 </div>
 <div class="listingblock">
-<div class="title">extreme-precipitation-monitor/webpack.config.js</div>
+<div class="title">anemui-demo/webpack.config.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const coreCfg  = require('anemui-core/webpack.config');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const coreCfg  = require('@lcsc/anemui-core/webpack.config');
+//const path = require('path');
+//const distPath= path.resolve(__dirname, 'dist');
 
 module.exports = (env,argv) =&gt; {
     let ret = coreCfg(env,argv);
+
+//    ret.output.path=distPath;
+    
     return ret;
 }</code></pre>
 </div>
@@ -998,7 +990,7 @@ module.exports = (env,argv) =&gt; {
 <p>En general existira un fichero llamado <code>env.[environment].js</code> por cada entorno declarado en los commandos declarados en el <code>package.json</code>.</p>
 </div>
 <div class="listingblock">
-<div class="title">core/env/env.wms.js</div>
+<div class="title">anemui-core/env/env.wms.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">module.exports={
     isWmsEnabled:true,
@@ -2090,18 +2082,570 @@ print("Done")</code></pre>
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_desarrollo_del_anemui_core">Desarrollo del AnemUI-core</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Desde la creacion del repositorio AnemUI se ha separado el Core de los visores, por lo que el workspace de los visores no contienen el core. Siendo el core una depencia más disponible para más proyectos.</p>
+</div>
+<div class="paragraph">
+<p>Esto nos obliga a tener que hacer una gestion y publicacion de los paquetes, pero nos permite aislar codigos y reutilizar el core en todos nuestros visores.</p>
+</div>
+<div class="paragraph">
+<p>Par poder modificar el core debemos bajarnos el codigo y "engañar" a <code>node_modules</code> para tener el codigo disponible y reconocible .</p>
+</div>
+<div class="sect2">
+<h3 id="_modificacion_espacio_de_trabajo">Modificacion Espacio de trabajo</h3>
+<div class="sidebarblock">
+<div class="content">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Crea antes una rama tanto en AnemUI (<strong>&lt;rama_core&gt;</strong>) como en tu visor (<strong>&lt;rama_visor&gt;</strong>) ya sea en la pagina de github o por <code>cli</code>
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ git checkout -b &lt;rama&gt;
+$ git push -u origin &lt;rama&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Una vez que tengamos las ramas solo ejecutaremos lo siguiente</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ cd [ruta_al_visor] <i class="conum" data-value="1"></i><b>(1)</b>
+# Cambiamos a la rama visor (cli) <i class="conum" data-value="2"></i><b>(2)</b>
+$ git fetch
+$ git checkout -b &lt;rama_visor&gt;
+$ git pull
+
+# Modificamos el node_modules <i class="conum" data-value="3"></i><b>(3)</b>
+$ npm i
+$ rm -r node_modules/@lcsc
+$ git clone git@github.com:lcsc/AnemUI.git -b &lt;rama_core&gt;
+$ mkdir node_modules/@lcsc
+$ ln -s ../../AnemUI/anemui-core  node_modules/@lcsc/anemui-core
+$ ln -s ../../AnemUI/anemui-test  node_modules/@lcsc/anemui-test
+
+# Nos aseguramos que AnemUI es ignorado
+$ echo AnemUI &gt;&gt; .gitignore <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Nos situamos el en el visor</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Pasamos el WorkDir a la rama nueva del visor. Podemos hacerlo en el editor</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Modificacion en si del node modules</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Ejecutar solo una vez, o si al hacer <code>git status</code> aparecen cambios de AnemUI</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>A partir de este momento tenemos en nuestra carpeta del visor el codigo del core y lo podemos modificar a voluntad.</p>
+</div>
+<div class="sidebarblock">
+<div class="content">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Ahora hay dos repositorios que hay que actualizar, vs_code puede subir a los dos, pero si se quiere usar el cli hay que ejecutar
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Repo Visor
+$ git add ....
+$ git commit ....
+$ git push
+# Repo anemui, hacer cd y los anteriores o
+$ git -c AnemUI add ....
+$ git -c AnemUI commit ....
+$ git -c AnemUI push</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sidebarblock">
+<div class="content">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Es posible usar submodulos de git, pero complica un poco la subida de codigo al repo del core.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_publicacion_automatica_de_cambios">Publicacion Automatica de cambios.</h3>
+<div class="paragraph">
+<p>Tenemos un jenkins que se encarga de que cada vez que haya cambios en la <strong>rama main</strong> del repositorio ejecute el proceso de publicacion en nuestro <a href="https://mirror.lcsc.csic.es/#browse/browse:anemui">nexus</a></p>
+</div>
+<div class="paragraph">
+<p>Como Se tiene que desarrollar en una rama propia lo que hay que hacer es Mergear el codigo a <strong>main</strong>. Se debe ir a la pagina de <a href="https://github.com/lcsc/AnemUI/pulls">github</a> y crear un pull request. Alguien dara el visto bueno y lo integrara en la rama y se generara el artefacto en el nexus.</p>
+</div>
+<div class="paragraph">
+<p>Cuando ya este el desplegado (Quien de el visto bueno, lo notificara) habra que ejecutar <code>npm upgrade</code> para que se actualicen las dependencias a la nueva version.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_publicacion_manual_de_cambios">Publicacion Manual de cambios</h3>
+<div class="paragraph">
+<p>En el caso de querer hacer manualmente la publicacion (por ejemplo falle el jenkins) los pasos que hay que hacer son los siguientes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">npm login --scope=@lcsc --registry=https://mirror.lcsc.csic.es/repository/anemui/
+# user: anemui
+# pw: la misma que la wiki
+npm run setVersion
+npm install
+npm publish --workspaces --if-present
+git restore *</code></pre>
+</div>
+</div>
+<div class="sidebarblock">
+<div class="content">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Estamos haciendo versiones <strong>SNAPSHOT</strong>, por lo que se ejecuta setVersion para modificarla. esto modifica los json del versiones, es necesario revertir los cambios al final, para que siga funcionado. Por lo que <strong>ANTES</strong> de nada nos aseguraremos de tener todos los cambios comiteados
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pruebas_de_software">Pruebas de software</h3>
+<div class="paragraph">
+<p>Se ha realizado una serie de Pruebas de integración para probar las interacciones entre componentes de los distintos visores, y validar de una manera eficiente que el código de la aplicación funciona como se pretende. Para crear un marco de automatización de dichas pruebas se ha elegido Selenium + Mocha</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_mocha">Mocha</h3>
+<div class="paragraph">
+<p>Mocha es un entorno de prueba de JavaScript para programas de Node.js muy popular que nos permite organizar nuestros casos de prueba y se encarga de ejecutarlos. Ofrece compatibilidad con navegadores, pruebas asincrónicas, informes de cobertura de pruebas y el uso de cualquier biblioteca de aserciones. Para incorporarlo al proyecto y que sea ejecutable desde cada visor, se debe instalar y actualizar el comando de prueba "test" en el package.json de cada uno de ellos para que contenga el script ejecutable de Mocha.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ npm install mocha</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">package.json</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">"scripts": {
+    "test": "mocha (+ algunas opciones)"
+  },</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Por ejemplo, El package.json del Sistema de información agrometeorológica tiene este aspecto:</p>
+</div>
+<div class="listingblock">
+<div class="title">package.json</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "name": "aam-monitor",
+  "version": "0.0.1",
+  "description": "Agro-meteorology Monitor",
+  "main": "src/index.ts",
+  "devDependencies": {},
+  "scripts": {
+    "build": "NODE_ENV=development webpack",
+    "prod": "NODE_ENV=production webpack",
+    "build-wms": "NODE_ENV=wms webpack",
+    "watch": "webpack --watch",
+    "start": "webpack serve --open",
+    "dev": "NODE_ENV=development webpack serve --open",
+    "dev-wms": "NODE_ENV=developmentWms webpack serve --open",
+    "test":"mocha  --timeout 10000"
+  },
+  /// .......
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Sin embargo, Mocha por sí solo no verifica el comportamiento de nuestro código, para ello necesitamos una herramienta que nos permita grabar/reproducir las pruebas, ahí entra Selenium.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_selenium">Selenium</h3>
+<div class="paragraph">
+<p>Selenium es una herramienta de automatización de pruebas también muy popular y ampliamente utilizada en el campo del desarrollo de software. Permite a los desarrolladores y testers simular interacciones de un usuario con una aplicación web, lo que facilita la detección de errores y la validación de la funcionalidad.</p>
+</div>
+<div class="paragraph">
+<p>Se ha preferido frente a otras plataformas como Cypress, Playwright o WebdriverIO por su compatibilidad con las herramientas de desarrollo utilizadas en la plataforma (Nodejs/npm, Javascript), por su facilidad de uso y por existir ya experiencia previa en el equipo.</p>
+</div>
+<div class="paragraph">
+<p>La instalación de Selenium Webdriver es sencilla si previamente tenemos Node.js y npm instalados, simplemente basta con ejecutar el siguiente código en el terminal:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ npm install selenium-WebDriver</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Una vez instalado Selenium WebDriver, en el archivo package.json del raíz debería aparecer el paquete Selenium WebDriver instalado entre las dependencias del proyecto:</p>
+</div>
+<div class="listingblock">
+<div class="title">package.json</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">"dependencies": {
+
+    "selenium-webdriver": "^4.17.0"
+
+  }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>La estructura básica del archivo de pruebas realizado con Selenium consta de:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js"><i class="conum" data-value="1"></i><b>(1)</b>
+const {Browser} = require('selenium-webdriver');
+const {suite} = require('selenium-webdriver/testing');
+const firefox = require('selenium-webdriver/firefox');
+
+suite(function (env) {
+  describe('Título del conjunto de pruebas', function () {
+    let driver;
+
+     <i class="conum" data-value="2"></i><b>(2)</b>
+    before(async function () {
+      let options = new firefox.Options();
+      driver = await env.builder() <i class="conum" data-value="3"></i><b>(3)</b>
+        .setFirefoxOptions(options)
+        .build();
+    });
+
+    <i class="conum" data-value="4"></i><b>(4)</b>
+    after(async () =&gt; await driver.quit());
+
+    it('Título de la prueba 1', async function () {
+        await driver.get('https://servicios-climaticos.pti-clima.csic.es/amm-dev/'); <i class="conum" data-value="5"></i><b>(5)</b>
+      ///  Aquí va el código del test 1 <i class="conum" data-value="6"></i><b>(6)</b>
+      ........
+    });
+
+    it('Título de la prueba 2', async function () {
+        await driver.get('https://servicios-climaticos.pti-clima.csic.es/amm-dev/'); <i class="conum" data-value="5"></i><b>(5)</b>
+      ///  Aquí va el código del test 2 <i class="conum" data-value="6"></i><b>(6)</b>
+    });
+
+    ....
+
+  });
+}, { browsers: [Browser.FIREFOX]});</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Carga de las librerías necesarias</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>before: Inicializa el driver, en este caso con Firefox como navegador</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Conexión al navegador</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Finaliza el driver</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>after: Inicializa la web</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>it: Ejecuta el test</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_estructura_del_código_de_pruebas">Estructura del código de pruebas</h3>
+<div class="paragraph">
+<p>Siguiendo la estructura de la aplicación, se han centralizado las pruebas en un código común a todos los visores donde se han reunido todos los test a realizar, accesible desde cada visor a través de un pequeño script alojado en la carpeta correspondiente a cada uno de ellos, y en el que se inicializan los parámetros específicos para poder probarlos.</p>
+</div>
+<div class="paragraph">
+<p>Así, en la estructura de directorios de la aplicación:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>En el raíz se ha añadido una carpeta "test" donde está el archivo principal "test.js" que ejecuta las pruebas. Todo el código de este archivo se ha agrupado en la clase csTest, siendo el método performTest el encargado de ejecutar las pruebas.</p>
+</li>
+<li>
+<p>Dentro de cada visor se ha incluido una estructura idéntica: en una carpeta también llamada "test", el respectivo script de arranque "test.js". Por ejemplo, en el visor de</p>
+</li>
+<li>
+<p>Se ha configurado el archivo principal como un paquete de Nodejs para que pueda ser importado desde cada unos de los archivos de los visores</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">test/test.js (Clase csTest)</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">// --- IMPORTACIÓN DE LIBRERÍAS NECESARIAS
+const VAR_USR = 'aemet';
+const VAR_PWD = 'pticlima';
+const VAR_WEB_DOMAIN = "servicios-climaticos.pti-clima.csic.es/";
+///-- OTRAS VARIABLES Y CONSTANTES QUE NECESITAMOS
+
+class csTest {
+
+// --- OTROS MÉTODOS
+
+    performTest(params, testGraph = true) {
+        // --- INICIALIZACIÓN DE CONSTANTES NECESARIAS
+        const serviceCode = params["serviceCode"];
+
+        suite((env) =&gt; {
+            describe('Tests - ' + serviceFolder, function () {
+                // --- INICIALIZACIÓN DE OTRAS PROPIEDADES
+                const webPage = VAR_WEB_DOMAIN + serviceCode + "-dev/";
+
+                before(async function () {
+                   // ---- INICIALIZACIÓN DEL DRIVER
+                });
+
+                after(async () =&gt; await driver.quit());  // --- DESCONEXIÓN DEL DRIVER
+
+                it(VAR_TEST_1, async () =&gt; {
+                    this.timeout(0);
+                    if (browserName == 'chrome') {
+                        const connection = await driver.createCDPConnection('page');
+                        await driver.register(VAR_USR, VAR_PWD, connection);
+                        await driver.get('https://' + webPage);
+                    } else {
+                        await driver.get('https://' + VAR_USR + ':' + VAR_PWD + '@' + webPage);
+                    }
+                    ///------------  TEST 1
+                });
+
+                it(VAR_TEST_2, async () =&gt; {
+                    if (browserName == 'chrome') {
+                        const connection = await driver.createCDPConnection('page');
+                        await driver.register(VAR_USR, VAR_PWD, connection);
+                        await driver.get('https://' + webPage);
+                    } else {
+                        await driver.get('https://' + VAR_USR + ':' + VAR_PWD + '@' + webPage);
+                    }
+                    ///------------  TEST 2
+                });
+            }
+
+          });
+        }, { browsers: [Browser.CHROME, Browser.FIREFOX] });
+    }
+}
+
+module.exports = csTest;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tests_método_it">Tests (método "it")</h3>
+<div class="paragraph">
+<p>Cada unos delos tests está englobado dentro de un método "it" de la suite selenium-webdriver. De modo que para añadir nuevos test, habría que copiar una estructura it de las ya codificadas y modificar su contenido. (Se pueden ponerntodos los test seguidos sin necesidad de utilizar esta funcionalidad, el método "it" lo que hace es organizar la ejecución)</p>
+</div>
+<div class="paragraph">
+<p>El código que debe permanecer común a todas ella es el de conexión con la URL a testear, se ve que es diferente según testeemos en chrome o en el resto de navegadores. Esto es porque en nuestro caso estamos utilizando la configuración de Apache para que pida user/password para permitir acceder a la aplicación. Durante las pruebas, de manera empírica se comprobó que la manera de autenticar una URL con esta característica varía según el navegador. Esta es la razón de ese código. (ver <a href="https://www.browserstack.com/docs/automate/selenium/basic-http-authentication" class="bare">https://www.browserstack.com/docs/automate/selenium/basic-http-authentication</a>. Para la autenticación con Chrome ver <a href="https://rajendraak.medium.com/chrome-devtools-protocol-with-selenium-e9ffaca4b0f4" class="bare">https://rajendraak.medium.com/chrome-devtools-protocol-with-selenium-e9ffaca4b0f4</a>)</p>
+</div>
+<div class="paragraph">
+<p>Selenium dispone de un repositorio en Github con ejemplos de script en varios lenguales de programación. De ahí se puede sacar inspiración para futuros tests <a href="https://github.com/SeleniumHQ/seleniumhq.github.io/blob/trunk/examples/javascript/test/getting_started/openFirefoxTest.spec.js" class="bare">https://github.com/SeleniumHQ/seleniumhq.github.io/blob/trunk/examples/javascript/test/getting_started/openFirefoxTest.spec.js</a></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_utilización_de_la_clase_cstest_desde_los_script_de_cada_visor">Utilización de la clase csTest desde los script de cada visor</h3>
+<div class="paragraph">
+<p>El código desarrollado para las pruebas se ha integrado en la estructura de la plataforma en forma de paquete de Nodejs, de modo que pueda ser utilizado importándolo desde cada script individual.</p>
+</div>
+<div class="paragraph">
+<p>Para tal fin, se ha generado el package.json de la carpeta test raíz,</p>
+</div>
+<div class="listingblock">
+<div class="title">test/package.json</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+  "name": "common-test",
+  "version": "0.0.1",
+  "description": "Climatic Services Test Suite",
+  "main": "src/index.ts",
+  "devDependencies": {},
+  "scripts": {
+    "test":"mocha  --timeout 10000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lcsc/VisorServiciosClimaticos.git"
+  },
+  "author": "LCSC",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/lcsc/VisorServiciosClimaticos/issues"
+  },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false
+  },
+  "homepage": "https://github.com/lcsc/VisorServiciosClimaticos#readme"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Posteriormente se ha instalado como un paquete de Node.js con el nombre "common-test". Así ya se puede importar el script desde cada visor para poder ser utilizado. Por ejemplo, en el test.js del Sistema de información agrometeorológica:</p>
+</div>
+<div class="listingblock">
+<div class="title">agrometeorology-monitor/test/test.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const csTest = require('common-test/test'); <i class="conum" data-value="1"></i><b>(1)</b>
+
+let test = new csTest; <i class="conum" data-value="2"></i><b>(2)</b>
+
+const serviceCode   = "amm"; <i class="conum" data-value="3"></i><b>(3)</b>
+const serviceFolder = "agro-meteorology-monitor";
+const serviceTitle  = "Sistema de información agrometeorológica";
+const dropDownId    = "VariableDD";
+const dropDownVars  =  ["cereal de invierno", "maíz", "frutales/vid"];
+
+const params = {
+    "serviceCode" : serviceCode,
+    "serviceFolder" : serviceFolder,
+    "serviceTitle" : serviceTitle,
+    "dropDownId" : dropDownId,
+    "dropDownVars" : dropDownVars
+}
+
+test.performTest(params); <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Se importa la clase csTest</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Se instancia la clase csTest</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Se inicializan las variables específicas de cada visor</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Se ejecuta el test (método performTest)</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ejecución_de_los_test">Ejecución de los test</h3>
+<div class="paragraph">
+<p>Para ejecutar los scirpt de test de cada visor, invocamos el comando <code>test</code> en la consola, dentro del directorio de la aplicación.</p>
+</div>
+<div class="listingblock">
+<div class="title">Ejecución del test en el visor agro-meteorology-monitor</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ cd VisorServiciosClimaticos <i class="conum" data-value="1"></i><b>(1)</b>
+$ npm -w agro-meteorology-monitor run test <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Nos situamos en el directorio</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Ejecucion propiamente dicha</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_toma_de_imágenes_de_pantalla_y_borrado_de_archivos">Toma de imágenes de pantalla y borrado de archivos</h3>
+<div class="paragraph">
+<p>La clase csTest dispone de dos métodos auxiliares:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>takeScreendhot: graba una imagen de pantalla en el momneto de que se invoca al método</p>
+</li>
+<li>
+<p>deleteFiles: borra los archivos contenidos en la carpeta que se le pasa como parámetro</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Se utilizan para aportar información visual de apoyo a cada uno de los tests.</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Version 0.1<br>
-Last updated 2024-01-18 13:55:51 +0100
+Last updated 2024-09-19 10:25:03 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
 <script>
 if (!hljs.initHighlighting.called) {
   hljs.initHighlighting.called = true
-  ;[].slice.call(document.querySelectorAll('pre.highlight > code')).forEach(function (el) { hljs.highlightBlock(el) })
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })
 }
 </script>
 </body>
