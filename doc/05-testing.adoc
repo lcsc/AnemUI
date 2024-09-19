@@ -1,4 +1,4 @@
-== Pruebas de software 
+= Pruebas de software 
 Se ha realizado una serie de Pruebas de integración para probar las interacciones entre componentes de los distintos visores, y validar de una manera eficiente que el código de la aplicación funciona como se pretende. Para crear un marco de automatización de dichas pruebas se ha elegido Selenium + Mocha
 
 == Mocha
