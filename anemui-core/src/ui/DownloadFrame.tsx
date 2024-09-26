@@ -41,7 +41,7 @@ export class DownloadFrame extends BaseFrame {
                 <div className='downlad-buttons'>
                     <div id="latlong" role="latLong" style={{ visibility: "hidden" }}><i className="bi bi-pin-map"></i> <span>latLng</span></div>
                     <div className='d-grid mx-auto gap-2'>
-                        <div id="dropNc" className="btn-group dropend" role="dropNc">
+                        <div id="dropNc" className="btn-group dropend droppDownButton" role="dropNc">
                             <button type="button" role="nc" className="btn btn-md navbar-btn navbar-btn-title" onClick={() => { this.displayNcDownloads() }}>{this.parent.getTranslation('descargar_nc')}</button>
                             <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                                 <span className="visually-hidden"></span>
@@ -58,7 +58,7 @@ export class DownloadFrame extends BaseFrame {
                             </ul>
                         </div>
                         <div id="point-buttons">
-                            <div id="dropPoint" className="btn-group dropend" role="dropPoint">
+                            <div id="dropPoint" className="btn-group dropend droppDownButton" role="dropPoint">
                                 <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
                                 <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                                     <span className="visually-hidden"></span>
@@ -68,7 +68,7 @@ export class DownloadFrame extends BaseFrame {
                                     <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
                                 </ul>
                             </div>
-                            <div id="graphDiv">
+                            <div id="graphDiv" className="droppDownButton">
                                 <button type="button" role="graph" className="btn navbar-btn" style={this.parent.getGraph().byPoint ? { visibility: "visible" } : { visibility: "hidden" }} disabled onClick={() => { this.parent.showGraph() }}>{this.parent.getTranslation('grafico_pixel')}</button>
                             </div>
                         </div>

@@ -60,34 +60,39 @@
 }
 
 
-.ol-zoom {
-  width: 120px;
-  left: unset;
-  top: 7.5em;
-  right: 2%;
-  padding-left: 15px;
-  background: transparent;
-
-  button {
-    float: right;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px !important;
-    font-size: 1.6rem !important;
-    padding-bottom: 0.5rem;
-    margin-left: 8px;
-    cursor: pointer;
-    background-color: $color_8;
-    color: $color_4;
-    border: solid 1px $color_4;
-  }
-
-  button:hover {
-    background-color: $color_1;
-    color: $color_8;
-  }
-
-  @include md-desktop {
-    top: 7.5em;
-  }
+.ol-zoom{
+  display:none;
 }
+
+// .ol-zoom {
+//   width: 120px;
+//   left: unset;
+//   top: 7.5em;
+//   right: 2%;
+//   padding-left: 15px;
+//   background: transparent;
+
+//   button {
+//     float: right;
+//     width: 40px;
+//     height: 40px;
+//     border-radius: 10px !important;
+//     font-size: 1.6rem !important;
+//     padding-bottom: 0.5rem;
+//     margin-left: 8px;
+//     cursor: pointer;
+//     background-color: $color_8;
+//     color: $color_4;
+//     border: solid 1px $color_4;
+//     box-shadow: 0 1.5px 3px $color_3;
+//   }
+
+//   button:hover {
+//     background-color: $color_1;
+//     color: $color_8;
+//   }
+
+//   @include md-desktop {
+//     top: 7.5em;
+//   }
+// }

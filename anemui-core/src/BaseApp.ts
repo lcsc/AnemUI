@@ -10,7 +10,7 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, avoidMin, maxWhenInf, minWhenInf} from "./Env";
+import { isKeyCloakEnabled, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { defaultRender } from "./tiles/Support";
 import { defaultTpRender } from "./tiles/tpSupport";
@@ -94,13 +94,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.graph = new CsGraph(this);
         this.infoFrame = new InfoFrame(this);
 
-        if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);
-
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
-        // this.language = 'es';
+        
         this.translate = Translate.getInstance();
-        this.cookies = new CsCookies(this);
+        
+        if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);
+        if (hasCookies) this.cookies = new CsCookies(this);
     }
 
     public getMenuBar(): MenuBar {
@@ -177,7 +177,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.graph.build();
         addChild(document.getElementById('MainFrame'), this.infoDiv.render())
         let tl = document.createElement("div")
-        tl.className = "TopRightFrame d-flex flex-row-reverse pt-2"
+        tl.className = "TopRightFrame"
         addChild(document.getElementById('info'), tl);
         this.infoDiv.build()
         addChild(tl, this.infoFrame.render())
@@ -193,7 +193,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         addChild(document.getElementById('MainFrame'), DownloadIframe())  //Iframe to download
 
         this.initMap()
-        this.cookies.addCookies()
+        
+        if (hasCookies) this.cookies.addCookies()
+
         return this;
     }
 
