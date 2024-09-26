@@ -86,9 +86,11 @@ export class InfoFrame extends BaseFrame {
 
     public render(): JSX.Element {
         let self = this
-        return (<div className='infoFrame max' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }} onClick={(event: React.MouseEvent) => { self.onClick() }}>
-            <button type="button" role="nc" className="navbar-sm-btn"><i role="infoBtn" className="bi bi-info"></i></button>
-        </div>)
+        return (
+            <div className='infoFrame max' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }} onClick={(event: React.MouseEvent) => { self.onClick() }}>
+                <button type="button" role="nc" className="navbar-sm-btn"><i role="infoBtn" className="bi bi-info"></i></button>
+            </div>
+        )
     }
 
     public build(): void {

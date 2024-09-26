@@ -83,7 +83,7 @@ export class CsGraph extends BaseFrame {
     //console.log("opening Graph")
     this.container.hidden = false;
     let graph: Dygraph
-    let url
+let url
 
     switch (this.graphType) {
       case "Serial":
@@ -113,6 +113,7 @@ export class CsGraph extends BaseFrame {
   }
 
   public drawSerialGraph(url: any, latlng: CsLatLong):Dygraph {
+    let self = this
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -138,18 +139,22 @@ export class CsGraph extends BaseFrame {
           x: {
             // pixelsPerLabel: 10,
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
-              var fecha = new Date(millis);
-              return fecha.getDate() + "/" + (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
+              let fecha = new Date(millis);
+              let value = self.formatDate(fecha)
+              return value;
 
             },
             axisLabelFormatter(number, granularity, opts, dygraph) {
               var fecha = new Date(number);
-              return (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
+              let value = self.formatDate(fecha)
+              return value;
+              // return (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
             }
           },
           y: {
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
-              return " " + millis.toFixed(2);
+              // return " " + millis.toFixed(2);
+              return " " + (millis < 0.01? millis.toFixed(3) : millis.toFixed(2));
             }
           }
         }
@@ -181,7 +186,7 @@ export class CsGraph extends BaseFrame {
           for (let point of e.points) {
             if (pointAnt.yval >= 0 && point.yval < 0) {  // --- Primer segmento que cruza el valor y=0
               let porcentaje = Math.abs(100 * point.yval / Math.abs(pointAnt.yval - point.yval)) // --- Calculo la distancia (en %) del último punto positivo al valor y=0
-              canvasy0 = point.canvasy - ((point.canvasy - pointAnt.canvasy) * porcentaje) / 100; // --- Estimo el punto canvas y=0 en función de ese % 
+              canvasy0 = point.canvasy - ((point.canvasy - pointAnt.canvasy) * porcentaje) / 100; // --- Estimo el punto canvas y = 0 en función de ese % 
               break;
             }
             pointAnt = point;
@@ -251,7 +256,7 @@ export class CsGraph extends BaseFrame {
     return graph;
   }
 
-  public drawLinearGraph(url: any, station: any): Dygraph {
+    public drawLinearGraph(url: any, station: any): Dygraph {
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -332,6 +337,24 @@ export class CsGraph extends BaseFrame {
   public drawWindRoseGraph(url: any, latlng: CsLatLong): Dygraph {
     document.getElementById("popGraph").innerHTML = 'PENDIENTE: AÑADIR TIPO DE GRÁFICO DE WIND ROSE en la celda [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']';
     return undefined
+}
+
+  public formatDate (date: Date):string {
+    let dateMode = this.parent.getDateSelectorFrame().getMode();
+    let value
+    switch (dateMode) {
+      case 0:
+        value = date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear() + " "
+        break;
+      case 1:
+      case 2:
+        value = (date.getMonth() + 1) + "/" + date.getFullYear() + " "
+        break;
+      case 3:
+        value = date.getFullYear() + " "
+        break;  
+    }
+    return value;
   }
 
   public minimize(): void {

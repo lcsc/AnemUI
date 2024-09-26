@@ -12,5 +12,6 @@
       "resolveJsonModule": true,
       "esModuleInterop": true,
       "allowSyntheticDefaultImports":true,
+      "types": ["@types/gtag.js"]
     }
   }

@@ -4,7 +4,10 @@ $bootstrap-icons-font-src: url("~bootstrap-icons/font/fonts/bootstrap-icons.woff
 @import "~bootstrap-icons/font/bootstrap-icons.scss";
 @import "~bootstrap-slider/src/sass/bootstrap-slider.scss";
 
-
+body.noscroll{
+    position:fixed;
+    overflow:hidden;
+}
 
 html,
 body,
@@ -48,11 +51,12 @@ body {
 
 @mixin topBgFrame($b_radius: 1em) {
     @include bgFrame($b_radius);
-    background-color: rgb(220, 220, 220);
+    // background-color: rgb(220, 220, 220);
 
 }
 
 // @import "menubar.scss";
+@import "cookies.scss";
 @import "sidebar.scss";
 @import "downloadframe.scss";
 @import "paletteframe.scss";
@@ -70,3 +74,4 @@ body {
 //     right:0.25em;
 //     position: absolute;
 // }
+
