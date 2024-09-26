@@ -1,3 +1,4 @@
+
 const _ENV:unknown = process.env.ENV;
 const _CS_CONFIG:unknown=process.env.CS_CONFIG;
 
@@ -17,6 +18,7 @@ export const olProjection:string=ENV.olProjection;
 export const logo:string=ENV.logo;
 export const initialZoom:number=ENV.initialZoom;
 export const ncSignif:number=ENV.ncSignif;
+export const hasCookies:boolean = typeof ENV.hasCookies !== 'undefined'? ENV.hasCookies:false;
 export const hasInf:boolean = typeof ENV.hasInf !== 'undefined'? ENV.hasInf:false;
 export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
@@ -25,6 +27,7 @@ export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhe
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
 export const hasSubTitle:boolean = typeof ENV.hasSubTitle !== 'undefined'? ENV.hasSubTitle:true;
 export const hasSpSupport:boolean = typeof ENV.hasSpSupport !== 'undefined'? ENV.hasSpSupport:true;
+export const hasVars:boolean = typeof ENV.hasVars !== 'undefined'? ENV.hasVars:true;
 export const hasSubVars:boolean = typeof ENV.hasSubVars !== 'undefined'? ENV.hasSubVars:false;
 export const hasTpSupport:boolean = typeof ENV.hasTpSupport !== 'undefined'? ENV.hasTpSupport:false;
 export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? ENV.varHasPopData:false;
@@ -33,5 +36,4 @@ export const disableDownload:boolean = typeof ENV.disableDownload !== 'undefined
 export const avoidMin:boolean = typeof ENV.avoidMin !== 'undefined'? ENV.avoidMin:false;
 export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.showLayers:true;
 export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
-export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'basic';
-
+export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';

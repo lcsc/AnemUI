@@ -48,6 +48,7 @@ export class MenuBar extends BaseFrame {
 
     private title: string
 
+    private menuopRight1: HTMLElement
     private menuInfo1: HTMLElement
     private menuInfo2: HTMLElement
 
@@ -94,65 +95,116 @@ export class MenuBar extends BaseFrame {
         this.listener.selectionParamChanged(parseFloat(this.displayParam.value));
     }
 
+    // ------------------------------------- VERSIÓN BANNER LOGOS ARRIBA / TÍTULO-MENÚ-INFO ABAJO
     public render(): JSX.Element {
         let self = this;
         let element =
-            (<div id="MainBarFrame">
-                <div id="TopBar" className="row" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
-                    <div id="logoDiv" className="col mt-1 text-left pt-1 pl-1 float-start">
-                        <img id="logo" src={'./images/'+logo}></img>
-                    </div>
-                    <div id="central" className="col-8 float-start">
-                        <div id="menu-title" className="menu-info text-center">
-                            <h3 id="title">{this.title}</h3>
+            (
+                <div id="TopBarFrame">
+                    <div id="TopBar" className="row fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
+                        {/* <div className="navbar navbar-toggleable-md">
+                            <img src="./images/logos.png"></img>
+                        </div> */}
+                        <div className={"navbar " + logoStyle}>
+                            {/* <img src="./images/logos.png"></img> */}
+                            <img src={'./images/'+logo}></img>
                         </div>
-                        <div id="menu-central" className="col-12 text-center">
-                            {/* <form id="search">
-                                <label>
-                                    <input name="q" id="search-q" className="p" value="Search location..."></input>
-                                </label>
-                                {/* <ul className="d"><li className="progress">No results found.</li></ul> */}
-                            {/* <a className="r" title="Find my location"></a>
-                            </form> */}
-                            <div id="SubBar" className="row d-flex">
-                                {/* <div className="col-10 mt-1"> */}
-                                <form className="gy-1 gx-1 align-items-center" onSubmit={() => { this.fireParamChanged(); return false }}>
-                                    <div id="inputs" className="input-group input-group-sm">
-                                        <div id="input1" role="spSupport" className="input-group-text inputDiv">{this.parent.getState().support}</div>
-                                        <div id="input2" role="var" className="input-group-text inputDiv">{this.parent.getState().varName}</div>
-                                        <div id="input3" role="subVar" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().subVarName}</div>
-                                        <div id="input4" role="tpSupport" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().tpSupport}</div>
-                                        <div id="input5" role="selection" className="input-group-text inputDiv">{this.parent.getState().selection}</div>
-                                        <div id="climatologyDisplay" className='row'></div> 
-                                        <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
-                                            placeholder="Selection Param" value={this.parent.getState().selectionParam}
-                                            disabled={!this.parent.getState().selectionParamEnable}
-                                            onChange={() => { this.fireParamChanged(); return false }} />
-                                        <div className="col-auto">
-                                            <div className="spinner-grow text-info" role="status" hidden />
+                        <div id="menu-title" className="menu-info text-left row mx-0 px-4">
+                            <div className={"col " + logoStyle}>
+                            {/* <div class="col" style="padding-left: 200px;"> */}
+                                <h3 id="title">{this.title}</h3>
+                            </div>
+                            <div id="menu-central" className="col text-center">
+                                <div id="SubBar" className="d-flex">
+                                    <form className="gy-1 gx-1 align-items-center" onSubmit={() => { this.fireParamChanged(); return false }}>
+                                        <div id="inputs" className="input-group input-group-sm">
+                                            <div id="input1" role="spSupport" className="input-group-text inputDiv">{this.parent.getState().support}</div>
+                                            <div id="input2" role="var" className="input-group-text inputDiv">{this.parent.getState().varName}</div>
+                                            <div id="input3" role="subVar" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().subVarName}</div>
+                                            <div id="input4" role="tpSupport" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().tpSupport}</div>
+                                            <div id="input5" role="selection" className="input-group-text inputDiv">{this.parent.getState().selection}</div>
+                                            <div id="climatologyDisplay" className='row'></div> 
+                                            <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
+                                                placeholder="Selection Param" value={this.parent.getState().selectionParam}
+                                                disabled={!this.parent.getState().selectionParamEnable}
+                                                onChange={() => { this.fireParamChanged(); return false }} />
+                                            <div className="col-auto">
+                                                <div className="spinner-grow text-info" role="status" hidden />
+                                            </div>
                                         </div>
-                                    </div>
-                                </form>
-                                {/* </div> */}
+                                    </form>
+                                </div>
+                            </div>
+                            <div className="col-1 menu-info d-flex flex-row-reverse" id="info">
+
                             </div>
                         </div>
                     </div>
-                    <div className="col menu-info" id="info">
-
-                    </div>
                 </div>
-            </div>
             );
         return element;
     }
 
+    // ------------------------------------------ PRIMERA VERSIÓN
+    // public render(): JSX.Element {
+    //     let self = this;
+    //     let element =
+    //         (<div id="TopBarFrame">
+    //             <div id="TopBar" className="row" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
+    //                 <div id="logoDiv" className="col mt-1 text-left pt-1 pl-1 float-start">
+    //                     <img id="logo" src={'./images/'+logo}></img>
+    //                 </div>
+    //                 <div id="central" className="col-8 float-start">
+    //                     <div id="menu-title" className="menu-info text-center">
+    //                         <h3 id="title">{this.title}</h3>
+    //                     </div>
+    //                     <div id="menu-central" className="col-12 text-center">
+    //                         {/* <form id="search">
+    //                             <label>
+    //                                 <input name="q" id="search-q" className="p" value="Search location..."></input>
+    //                             </label>
+    //                             {/* <ul className="d"><li className="progress">No results found.</li></ul> */}
+    //                         {/* <a className="r" title="Find my location"></a>
+    //                         </form> */}
+    //                         <div id="SubBar" className="row d-flex">
+    //                             {/* <div className="col-10 mt-1"> */}
+    //                             <form className="gy-1 gx-1 align-items-center" onSubmit={() => { this.fireParamChanged(); return false }}>
+    //                                 <div id="inputs" className="input-group input-group-sm">
+    //                                     <div id="input1" role="spSupport" className="input-group-text inputDiv">{this.parent.getState().support}</div>
+    //                                     <div id="input2" role="var" className="input-group-text inputDiv">{this.parent.getState().varName}</div>
+    //                                     <div id="input3" role="subVar" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().subVarName}</div>
+    //                                     <div id="input4" role="tpSupport" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().tpSupport}</div>
+    //                                     <div id="input5" role="selection" className="input-group-text inputDiv">{this.parent.getState().selection}</div>
+    //                                     <div id="climatologyDisplay" className='row'></div> 
+    //                                     <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
+    //                                         placeholder="Selection Param" value={this.parent.getState().selectionParam}
+    //                                         disabled={!this.parent.getState().selectionParamEnable}
+    //                                         onChange={() => { this.fireParamChanged(); return false }} />
+    //                                     <div className="col-auto">
+    //                                         <div className="spinner-grow text-info" role="status" hidden />
+    //                                     </div>
+    //                                 </div>
+    //                             </form>
+    //                             {/* </div> */}
+    //                         </div>
+    //                     </div>
+    //                 </div>
+    //                 <div className="col menu-info" id="info">
+
+    //                 </div>
+    //             </div>
+    //         </div>
+    //         );
+    //     return element;
+    // }
+
     public build() {
-        this.container = document.getElementById("MainBarFrame") as HTMLDivElement;
+        this.container = document.getElementById("TopBarFrame") as HTMLDivElement;
         this.topBar = document.getElementById('TopBar') as HTMLElement;
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
-        this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
+        // this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.climatologyDisplay = document.getElementById('climatologyDisplay') as HTMLDivElement;
 
@@ -176,7 +228,6 @@ export class MenuBar extends BaseFrame {
             this.displayTpSupport = this.container.querySelector("[role=tpSupport]")
             this.displayTpSupport.hidden = false;
         }
-
         if (this.selectionHidden) {
             this.displaySelection.hidden = true;
             document.getElementById("inputs").classList.add('no-wrap');
@@ -203,11 +254,9 @@ export class MenuBar extends BaseFrame {
         }
         if (!hasSubTitle){ 
             this.menuCentral.hidden = true;
-            this.titleDiv.classList.add('alone'); 
+        //     this.titleDiv.classList.add('alone'); 
         }
-        if (logoStyle!='basic') {
-            document.getElementById("logo").classList.add(logoStyle);
-        }
+       
         if(this.inputOrder.length) {
             this.changeInputOrder()
         }
@@ -215,13 +264,13 @@ export class MenuBar extends BaseFrame {
 
     public minimize(): void {
         this.menuInfo1.hidden = true;
-        this.menuInfo2.hidden = true;
+        // this.menuInfo2.hidden = true;
         this.menuCentral.classList.remove('col-md');
         this.topBar.classList.add('smallBar');
     }
     public showFrame(): void {
         this.menuInfo1.hidden = false;
-        this.menuInfo2.hidden = false;
+        // this.menuInfo2.hidden = false;
         
         this.menuCentral.classList.add('col-md');
         this.topBar.classList.remove('smallBar');

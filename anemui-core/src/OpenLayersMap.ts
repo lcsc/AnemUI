@@ -12,7 +12,7 @@ import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, mapboxAccessToken, mapboxMapID, olProjection, initialZoom } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, pxTransparent } from "./data/ChunkDownloader";
+import { buildImages, buildPattern, downloadXYChunk, pxTransparent } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
@@ -33,11 +33,16 @@ proj4.defs([
 ]);
 register(proj4);
 
+const imgUncertainty = new CircleStyle({
+  radius: 1,
+  fill: new Fill({color:'#65656580'})
+});
 const imgStation = new CircleStyle({
   radius: 8,
   fill: new Fill({color:'#00f855CC'}),
   stroke: new Stroke({color: '#FFFFFF', width: 1}),
 });
+export const DEF_STYLE_UNC=new Style({image:imgUncertainty,})
 export const DEF_STYLE_STATIONS=new Style({image:imgStation,})
 
 //const SLD='<?xml version="1.0" encoding="ISO-8859-1"?>'+
@@ -74,12 +79,15 @@ export class OpenLayerMap implements CsMapController{
 
     protected dataWMSLayer: TileWMS;
     protected dataTilesLayer: (ImageLayer<Static> | TileLayer)[];
+
     // Definimos un diccionario vacío
     protected ncExtents: Array4Portion = {};
     protected lastSupport:string;
     protected geoLayer:CsOpenLayerGeoJsonLayer;
     protected terrainLayer:Layer;
     protected politicalLayer:Layer;
+    protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
+    protected uncertaintyVectorLayer: Layer;
 
     protected setExtents(timesJs: CsTimesJsData, varId: string): void {
         timesJs.portions[varId].forEach((portion: string, index, array) => {
@@ -132,8 +140,10 @@ export class OpenLayerMap implements CsMapController{
         this.initLayers();    
         this.marker=new Marker(center);*/
         this.lastSupport="Raster"
-        if (!isWmsEnabled)
+        if (!isWmsEnabled) {
           this.buildDataTilesLayers(state, timesJs);
+if (state.uncertaintyLayer) this.builduncertaintyLayer(state, timesJs);
+        }
     }
 
     private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
@@ -146,11 +156,11 @@ export class OpenLayerMap implements CsMapController{
       });
       this.dataWMSLayer.updateParams({STYLES: undefined, SLD_BODY: this.getSld()});
       this.dataTilesLayer = [];
+this.uncertaintyLayer = [];
       let tileLayer = new TileLayer({
         source: this.dataWMSLayer
       });
-      this.dataTilesLayer.push(tileLayer);
-      return [
+            return [
         new TileLayer({
           source: new XYZ({
             url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
@@ -178,6 +188,9 @@ export class OpenLayerMap implements CsMapController{
       this.politicalLayer=political
 
       this.dataTilesLayer = [];
+// this.uncertaintyLayer = [];
+      this.uncertaintyLayer = lmgr.getuncertaintyLayer();
+      this.uncertaintyVectorLayer = lmgr.getuncertaintyVectorLayer();
 
       layers.push(terrain);
       layers.push(political);
@@ -240,11 +253,11 @@ export class OpenLayerMap implements CsMapController{
         this.parent.onMapClick(this.toCsMapEvent(event))
     }
 
-    putMarker(pos: CsLatLong): void {
+    public putMarker(pos: CsLatLong): void {
         this.marker.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
     }
 
-    buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
+    public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
       let app = window.CsViewerApp;
 
       // Remove all data layers
@@ -266,22 +279,57 @@ export class OpenLayerMap implements CsMapController{
       });
 
       // Draw new data layers
-      buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents);
+      buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
     }
 
-    setDate(dateIndex: number, state: CsViewerData): void {
+    public builduncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
+        let lmgr = LayerManager.getInstance();
+        let app = window.CsViewerApp;
+        
+        // Remove all uncertainty layers
+        // this.uncertaintyLayer.forEach((layer: ImageLayer<Static>) => this.map.getLayers().remove(layer));
+        // this.uncertaintyLayer = [];
+        this.uncertaintyLayer = lmgr.getuncertaintyLayer();
+        this.uncertaintyVectorLayer = lmgr.getuncertaintyVectorLayer();
+
+        // Add uncertainty layers
+        timesJs.portions[state.varId + '_uncertainty'].forEach((portion: string, index, array) => {
+          let imageLayer: ImageLayer<Static> = new ImageLayer({});
+          this.uncertaintyLayer.push(imageLayer);
+          this.map.getLayers().insertAt(2, imageLayer);
+        });
+
+        // Download and build new uncertainty layers
+        let promises: Promise<number[]>[] = [];
+        this.setExtents(timesJs, state.varId + '_uncertainty');
+        timesJs.portions[state.varId + '_uncertainty'].forEach((portion: string, index, array) => {
+          promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId + '_uncertainty', portion, timesJs));
+        });
+
+        // Draw new data layers
+        buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
+        buildPattern(promises, this.uncertaintyVectorLayer, state, timesJs, app, this.ncExtents, true);
+      
+    } 
+
+    public setDate(dateIndex: number, state: CsViewerData): void {
         if (isWmsEnabled) {
           this.dataWMSLayer.updateParams({ "time": state.times[state.selectedTimeIndex], STYLES: undefined, SLD_BODY: this.getSld() });
           this.dataWMSLayer.refresh();
-        } else
+        } else {
           this.buildDataTilesLayers(state, this.parent.getParent().getTimesJs());
+// Remove all uncertainty layers
+          this.uncertaintyLayer.forEach((layer: ImageLayer<Static>) => this.map.getLayers().remove(layer));
+          this.uncertaintyLayer = [];
+          if (state.uncertaintyLayer) this.builduncertaintyLayer(state, this.parent.getParent().getTimesJs());
+        }
     }
 
-    getZoom(): number {
+    public getZoom(): number {
         return this.map.getView().getZoom();
     }
 
-    showValue(pos: CsLatLong, value: number): void {
+    public showValue(pos: CsLatLong, value: number): void {
         if(Number.isNaN(value)){
           this.value.setPosition(undefined)
           return;
@@ -357,6 +405,10 @@ export class OpenLayerMap implements CsMapController{
 
     public getFeatureStyle(feature: Feature):Style {
       return this.parent.getParent().getFeatureStyle(feature);
+    }
+
+    public getuncertaintyStyle(feature: Feature):Style {
+      return this.parent.getParent().getuncertaintyStyle(feature);
     }
 }
 

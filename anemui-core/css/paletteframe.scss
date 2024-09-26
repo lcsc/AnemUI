@@ -1,4 +1,3 @@
-
 @import "media-queries.scss";
 
 div.paletteFrame.paletteSmall {
@@ -40,8 +39,9 @@ div.paletteFrame {
     // bottom: 7.5em;
     padding-top: 0px !important;
     padding-right: 0px !important;
-    top: 11em;
+    top: 7.6em;
     right: 2%;
+    text-align: right;
 
     img {
         width: 100px;
@@ -49,17 +49,32 @@ div.paletteFrame {
     }
 
     div.legend {
-        width: 120px;
         line-height: 20px;
         text-align: center;
+        display: inline-flex;
+        flex-direction: column;
+        overflow: hidden;
+        width: auto;
+        max-width: 40px;
+        min-width: 40px;
+        -webkit-transition: all 0.3s;
+        transition: all 0.3s;
     }
 
-    div.legend i {
-        width: 20px;
-        height: 20px;
-        float: left;
-        //margin-right: 8px;
-        opacity: 1.0;
+    div.legend .legendText {
+        visibility: hidden;
+        white-space: nowrap;
+        padding-block: 5px;;
+    }
+
+    div.legend:hover {
+        max-width: 190px;
+        min-width: 190px;
+        cursor:pointer;
+    }
+
+    div.legend:hover .legendText{
+        visibility:visible;
     }
 
     #units {
@@ -71,6 +86,12 @@ div.paletteFrame {
         border-radius: 10px 10px 0px 0px;
     }
 
+    #legendBottom {
+        height: 15px;
+        background-color: $title_bgcolor;
+        border-radius: 0px 0px 10px 10px;
+    }
+
     .mediumText {
         font-size: 18px;
     }
@@ -80,25 +101,22 @@ div.paletteFrame {
     }
 
     div.paletteSelect {
-        text-align: center;
-        background-color: $title_bgcolor;
+        text-align: right;
         padding: 0.5em 0.1em;
         min-height: 47px;
         border-radius: 0px 0px 10px 10px;
-        box-shadow: 0 1.5px 3px rgba(0, 0, 0, .25);
-
-        select, div.slider {
-            display: none;
+        
+        .form-check-input {
+            visibility: hidden;
         }
-        span {
-            display: block;
-            color: $title_color;
-            font-size: small;
+
+        .form-switch {
+            padding-left: 0em !important;
         }
     }
 
     div.paletteSelect.visible {
-        select{
+        select {
             margin: 0px auto;
             display: block;
             width: 90%;
@@ -107,12 +125,11 @@ div.paletteFrame {
             option {
                 cursor: pointer;
             }
-
             cursor: pointer;
         }
 
         div.slider {
-            display:inline-block;
+            display: inline-block;
             margin: 0px auto;
             width: 90%;
             cursor: pointer;
@@ -121,9 +138,145 @@ div.paletteFrame {
         span {
             display: none;
         }
+
+        .form-check-input {
+            visibility: visible;
+            margin: 10px auto;
+            width: 4em !important;
+            height: 2em !important;
+            background-color: $color_8;
+        }
+
+        .selectDiv {
+            padding: 0.25rem;
+            margin-top: 10px;
+            outline: none !important;
+            display: block;
+            background-color: transparent;
+            border: none;
+            color: $color_4 !important;
+            text-align: center;
+        }
     }
 
     // @include md-desktop {
     //      top: 2em;
     // }
+
+    div.row.selectDiv{
+        width: 160px;
+        margin: 0.45em 0em;
+    }
+
+    // --- BUTTON EXPAND HOVER
+    .buttonDiv.visible {
+        height: 40px;
+        padding: 0.46rem;
+        font-size: 0.875rem;
+        margin-top: 5px;
+        box-shadow: 0.5px 0.5px 3px $color_3;
+        outline: none !important;
+        background-color: $color_8;
+        color: $color_4 !important;
+        border-radius: 50px;
+        border: solid 1px $color_4;
+        text-decoration: none;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        overflow: hidden;
+        width: auto;
+        max-width: 40px;
+        transition: max-width 0.3s;
+
+        .icon {
+            font-size: 24px !important;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .text {
+            white-space: nowrap;
+            padding-right: 15px;
+        }
+    }
+
+    .buttonDiv.visible:hover {
+        cursor: pointer;
+        max-width: 300px;
+    }
+
+    select.selectDiv.visible{
+        margin: 0px auto;
+        display: block;
+        width: 90%;
+        text-align: center;
+
+        option {
+            cursor: pointer;
+        }
+
+        cursor: pointer;
+    }
+
+    .uncDiv input.form-check-input {
+        visibility: visible;
+        margin: 0px auto;
+        width: 4em !important;
+        height: 2em !important;
+        background-color: $color_8;
+        box-shadow: 0.5px 0.5px 3px $color_3;
+        cursor:pointer;
+    }
+
+    .slider.slider-horizontal {
+        width: 140px;
+        height: 20px;
+    }
+
+    div.slider.visible {
+        display: inline-block;
+        margin: 0px auto;
+        width: 90%;
+        cursor: pointer;
+    }
+
+    .selectDiv .slider-track {
+        height: 5px !important;
+        margin-top: -3px !important;
+        width: 75% !important;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .closeDiv .icon {
+        height: 30px;
+        width: 30px;
+        font-size: 1.8em !important;
+        box-shadow: 0.5px 1px 5px $color_3;
+        background-color: $color_8;
+        color: $color_4 !important;
+        border-radius: 50px;
+        border: solid 1px $color_4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .closeDiv .icon:hover {
+        cursor:pointer;
+        background-color: $color_6;
+        color: $color_8;
+    }
+
+    @include md-desktop {
+        top: 8.6em;
+    }
+
+    @include xl-desktop {
+        top: 9.6em;
+    }
 }

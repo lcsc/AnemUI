@@ -1,0 +1,50 @@
+/* Menú cookies 
+    Inspirado en https://www.csic.es/es
+    Sin Bootstrap
+*/
+@import "media-queries.scss";
+
+#cookies_h2{
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+}
+
+#cookies_link{
+    color:$color_4;
+}
+
+#cookies_div {
+    display: none;
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: $color_8;
+    color: $color_4;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 1px 1px 3px $color_3;
+    z-index: 9999;
+  }
+  
+  #cookies_button {
+    background-color: $color_1;
+    color: rgb(0, 0, 0);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    background-image: linear-gradient(rgb(237, 237, 237) 5%, rgb(223, 223, 223) 100%);
+    float: right;
+  }
+  
+  #cookies_no_button {
+    background-color: rgb(7, 121, 191);
+    color: $color_4;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    float: right;
+    margin-left: 10px;
+  }

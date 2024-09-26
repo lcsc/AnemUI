@@ -1,13 +1,12 @@
 import { Source } from "ol/source";
-import { OSM, Vector } from "ol/source";
+import { OSM, Vector, ImageStatic} from "ol/source";
 import {TopoJSON, } from "ol/format"
 import { mapboxAccessToken, mapboxMapID } from "./Env";
-import {Layer, WebGLTile} from "ol/layer";
+import {Image, Layer, WebGLTile} from "ol/layer";
 import VectorLayer from "ol/layer/Vector";
 import DataTileSource from "ol/source/DataTile";
 import VectorSource from "ol/source/Vector";
 import { Stroke, Style } from "ol/style";
-
 
 
 export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"
@@ -43,6 +42,8 @@ export class LayerManager {
     private topSelected:string;
     private topLayerTile:WebGLTile;
     private topLayerVector:Layer;
+    protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
+    protected uncertaintyVectorLayer: Layer;
 
 
     private constructor() {
@@ -54,7 +55,9 @@ export class LayerManager {
         // from https://ec.europa.eu/eurostat/web/gisco/geodata/statistical-units/territorial-units-statistics
         this.addTopLayer({name:"EU NUTS",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON})
         this.topSelected="mapbox";
+this.uncertaintyLayer = [];
     }
+
     // Base Layer
     public addBaseLayer(layer:AnemuiLayer){
         this.baseLayers[layer.name]=layer;
@@ -98,6 +101,10 @@ export class LayerManager {
         }
     }
 
+    public showUncertaintyLayer(show: boolean) {
+        this.uncertaintyLayer[0].setVisible(show);
+        // this.uncertaintyVectorLayer.setVisible(show);
+    }
 
     public getTopLayerOlLayer():Layer{
         let tLayer = this.topLayers[this.topSelected]
@@ -123,7 +130,6 @@ export class LayerManager {
         }
     }
 
-
     public getTopLayerSource():Source {
         if(this.topLayers[this.topSelected].source==undefined){
             if(this.topLayers[this.topSelected].type == AL_TYPE_OSM){
@@ -143,4 +149,16 @@ export class LayerManager {
         }
         return this.topLayers[this.topSelected].source
     }
+
+    public getuncertaintyLayer():(Image<ImageStatic> | WebGLTile)[] {
+        this.uncertaintyLayer = [];
+        return this.uncertaintyLayer;
+    }
+
+    public getuncertaintyVectorLayer():Layer {
+        this.uncertaintyVectorLayer = new VectorLayer;
+        return this.uncertaintyVectorLayer;
+    }
+
+    
 }
