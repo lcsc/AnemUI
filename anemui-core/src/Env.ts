@@ -18,6 +18,7 @@ export const olProjection:string=ENV.olProjection;
 export const logo:string=ENV.logo;
 export const initialZoom:number=ENV.initialZoom;
 export const ncSignif:number=ENV.ncSignif;
+export const hasCookies:boolean = typeof ENV.hasCookies !== 'undefined'? ENV.hasCookies:false;
 export const hasInf:boolean = typeof ENV.hasInf !== 'undefined'? ENV.hasInf:false;
 export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
@@ -35,4 +36,4 @@ export const disableDownload:boolean = typeof ENV.disableDownload !== 'undefined
 export const avoidMin:boolean = typeof ENV.avoidMin !== 'undefined'? ENV.avoidMin:false;
 export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.showLayers:true;
 export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
-export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'basic';
+export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';

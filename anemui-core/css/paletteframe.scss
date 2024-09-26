@@ -39,7 +39,7 @@ div.paletteFrame {
     // bottom: 7.5em;
     padding-top: 0px !important;
     padding-right: 0px !important;
-    top: 11em;
+    top: 7.6em;
     right: 2%;
     text-align: right;
 
@@ -174,9 +174,8 @@ div.paletteFrame {
         padding: 0.46rem;
         font-size: 0.875rem;
         margin-top: 5px;
-        box-shadow: none;
+        box-shadow: 0.5px 0.5px 3px $color_3;
         outline: none !important;
-        text-shadow: none;
         background-color: $color_8;
         color: $color_4 !important;
         border-radius: 50px;
@@ -227,6 +226,7 @@ div.paletteFrame {
         width: 4em !important;
         height: 2em !important;
         background-color: $color_8;
+        box-shadow: 0.5px 0.5px 3px $color_3;
         cursor:pointer;
     }
 
@@ -256,23 +256,27 @@ div.paletteFrame {
         height: 30px;
         width: 30px;
         font-size: 1.8em !important;
-        display: flex;
-        align-items: center;
-        padding-left: 0.02em;
-        padding-bottom: 0.05em;
-        box-shadow: none;
-        outline: none !important;
-        text-shadow: none;
+        box-shadow: 0.5px 1px 5px $color_3;
         background-color: $color_8;
         color: $color_4 !important;
         border-radius: 50px;
         border: solid 1px $color_4;
-        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .closeDiv .icon:hover {
         cursor:pointer;
         background-color: $color_6;
         color: $color_8;
+    }
+
+    @include md-desktop {
+        top: 8.6em;
+    }
+
+    @include xl-desktop {
+        top: 9.6em;
     }
 }

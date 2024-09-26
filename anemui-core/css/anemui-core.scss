@@ -51,7 +51,7 @@ body {
 
 @mixin topBgFrame($b_radius: 1em) {
     @include bgFrame($b_radius);
-    background-color: rgb(220, 220, 220);
+    // background-color: rgb(220, 220, 220);
 
 }
 

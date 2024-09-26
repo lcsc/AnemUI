@@ -429,13 +429,13 @@ export class DateSelectorFrame extends BaseFrame {
                 <div id="TimeSeriesFrame" className='datePickerGroup'>
                 <div className='row gap-2'>
                         <div className="col leftButtons">
-                    <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
-                    <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
+                    <button type="button" role="event-btn" className="btn navbar-btn navbar-md-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
+                    <button type="button" className="btn navbar-btn navbar-md-btn" onClick={() => { self.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
                     </div>
                         <div id="PickerFrame" className="col-6"></div>
                         <div className="col rightButtons">
-                        <button type="button" className="btn navbar-btn" onClick={() => { self.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
-                        <button type="button" role="event-btn" className="btn navbar-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
+                        <button type="button" className="btn navbar-btn navbar-md-btn" onClick={() => { self.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
+                        <button type="button" role="event-btn" className="btn navbar-btn navbar-md-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
                         </div>
                     </div>
                 </div>
