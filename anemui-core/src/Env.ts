@@ -18,6 +18,7 @@ export const olProjection:string=ENV.olProjection;
 export const logo:string=ENV.logo;
 export const initialZoom:number=ENV.initialZoom;
 export const ncSignif:number=ENV.ncSignif;
+export const locale:string = typeof ENV.locale !== 'undefined'? ENV.locale:'es';
 export const hasCookies:boolean = typeof ENV.hasCookies !== 'undefined'? ENV.hasCookies:false;
 export const hasInf:boolean = typeof ENV.hasInf !== 'undefined'? ENV.hasInf:false;
 export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;

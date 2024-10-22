@@ -10,7 +10,7 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
+import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { defaultRender } from "./tiles/Support";
 import { defaultTpRender } from "./tiles/tpSupport";
@@ -26,6 +26,7 @@ import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import { SideBar, SideBarListener } from "./ui/SideBar";
+// import { SideBar } from "./ui/SideBar_01"; // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
 import Translate from "./language/translate";
 import CsCookies from "./cookies/CsCookies";
 
@@ -83,7 +84,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
 
     protected constructor() {
         this.menuBar = new MenuBar(this, this);
-        this.sideBar = new SideBar(this, this)
+        this.sideBar = new SideBar(this, this) // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.sideBar = new SideBar(this) // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
 
         this.csMap = new CsMap(this, new OpenLayerMap(), this);
 
@@ -159,6 +161,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
             }
         });
 
+        this.setLanguage(locale);
+        
         if (this.infoDiv == null) this.infoDiv = new InfoDiv(this, "infoDiv");
 
         mount(this.mainFrame.render(), document.body)
@@ -167,8 +171,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.menuBar.build();
         addChild(document.getElementById('MainFrame'), this.sideBar.render());
         this.sideBar.build();
-        addChild(document.getElementById('SideBarInfo'), this.downloadFrame.render());
-        this.downloadFrame.build();
+        addChild(document.getElementById('SideBarInfo'), this.downloadFrame.render());  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        this.downloadFrame.build();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // addChild(document.getElementById('SideBar'), this.downloadFrame.render());  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        // this.downloadFrame.build();  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
         addChild(document.getElementById('MainFrame'), this.paletteFrame.render())
         this.paletteFrame.build();
         addChild(document.getElementById('MainFrame'), this.dateSelectorFrame.render())
@@ -393,7 +399,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
             this.stationsLayer.hide()
         }
 
-        this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
+        // this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
         this.menuBar.update();
         this.sideBar.update();
         this.paletteFrame.update();
@@ -603,13 +609,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public showClimatology(){
-        this.sideBar.showClimFrame();
+        this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.showClimFrame();
         // this.dateSelectorFrame.showClimFrame();
     }
 
     public hideClimatology(){
-        this.sideBar.hideClimFrame();
+        this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.hideClimFrame();
         // this.dateSelectorFrame.hideClimFrame();
     }

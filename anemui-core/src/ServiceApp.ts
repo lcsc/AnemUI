@@ -68,10 +68,12 @@ export abstract class DataServiceApp extends BaseApp {
         let svc = this.optionsService;
         let state = this.state
 
+        // - VERSIÓN SIDEBAR_00 (DROPDOWNS)
         sb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
         sb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
         sb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
         sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
+        // - VERSIÓN SIDEBAR_00 (DROPDOWNS)
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
@@ -103,11 +105,11 @@ export abstract class DataServiceApp extends BaseApp {
 
         if (hasSubVars) {
             let subVars = this.service.getSubVars(this.state)
-            this.getSideBar().setSubVariables(subVars);
+            this.getSideBar().setSubVariables(subVars);    // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
             this.subVarSelected(0, subVars[0], subVars);
         } else {
             let selections = this.service.getSelections(this.state);
-            this.getSideBar().setSelection(selections);
+            this.getSideBar().setSelection(selections);  // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
             this.selectionSelected(0, selections[0], selections);
         }
     }
@@ -124,7 +126,7 @@ export abstract class DataServiceApp extends BaseApp {
             this.state.selectedTimeIndex = newIndex;
         }
         let selections = this.service.getSelections(this.state)
-        this.getSideBar().setSelection(selections)
+        this.getSideBar().setSelection(selections)  // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.selectionSelected(0, selections[0], selections)
     }
 
@@ -187,13 +189,6 @@ export abstract class DataServiceApp extends BaseApp {
         }
     }
 
-    // public seasonSelected(index: number, value?: string, values?: string[]): void {
-    //     this.state.season = value;
-    //     this.update();
-    // }
-    // public monthSelected(index: number, value?: string, values?: string[]): void {
-    //     console.log('ServiceApp' + index, value, values)
-    // }
     public dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void {}
 
     // The same but for Chunked Data
