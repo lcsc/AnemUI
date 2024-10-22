@@ -18,9 +18,11 @@
   border: 1px solid #cccccc;
   bottom: 12px;
   left: -42px;
+  min-width: 100px; 
   width: fit-content;
   font-size: small;
   white-space: nowrap;
+  text-align:center;
 }
 
 .ol-popup:after,

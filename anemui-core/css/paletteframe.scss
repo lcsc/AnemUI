@@ -49,27 +49,30 @@ div.paletteFrame {
     }
 
     div.legend {
-        line-height: 20px;
+        line-height: 12px;
         text-align: center;
         display: inline-flex;
         flex-direction: column;
         overflow: hidden;
+        box-shadow: 0.5px 0.5px 3px $color_3;
+        border-radius: 10px;
         width: auto;
         max-width: 40px;
         min-width: 40px;
-        -webkit-transition: all 0.3s;
-        transition: all 0.3s;
+        -webkit-transition: all 0.6s;
+        transition: all 0.6s;
     }
 
     div.legend .legendText {
         visibility: hidden;
         white-space: nowrap;
-        padding-block: 5px;;
+        padding-block: 5px;
+        margin: 10px;
     }
 
     div.legend:hover {
-        max-width: 190px;
-        min-width: 190px;
+        max-width: fit-content;
+        min-width: fit-content;
         cursor:pointer;
     }
 
@@ -100,64 +103,64 @@ div.paletteFrame {
         font-size: 12px;
     }
 
-    div.paletteSelect {
-        text-align: right;
-        padding: 0.5em 0.1em;
-        min-height: 47px;
-        border-radius: 0px 0px 10px 10px;
+    // div.paletteSelect {
+    //     text-align: right;
+    //     padding: 0.5em 0.1em;
+    //     min-height: 47px;
+    //     border-radius: 0px 0px 10px 10px;
         
-        .form-check-input {
-            visibility: hidden;
-        }
+    //     .form-check-input {
+    //         visibility: hidden;
+    //     }
 
-        .form-switch {
-            padding-left: 0em !important;
-        }
-    }
+    //     .form-switch {
+    //         padding-left: 0em !important;
+    //     }
+    // }
 
-    div.paletteSelect.visible {
-        select {
-            margin: 0px auto;
-            display: block;
-            width: 90%;
-            text-align: center;
+    // div.paletteSelect.visible {
+    //     select {
+    //         margin: 0px auto;
+    //         display: block;
+    //         width: 90%;
+    //         text-align: center;
 
-            option {
-                cursor: pointer;
-            }
-            cursor: pointer;
-        }
+    //         option {
+    //             cursor: pointer;
+    //         }
+    //         cursor: pointer;
+    //     }
 
-        div.slider {
-            display: inline-block;
-            margin: 0px auto;
-            width: 90%;
-            cursor: pointer;
-        }
+    //     div.slider {
+    //         display: inline-block;
+    //         margin: 0px auto;
+    //         width: 90%;
+    //         cursor: pointer;
+    //     }
 
-        span {
-            display: none;
-        }
+    //     span {
+    //         display: none;
+    //     }
 
-        .form-check-input {
-            visibility: visible;
-            margin: 10px auto;
-            width: 4em !important;
-            height: 2em !important;
-            background-color: $color_8;
-        }
+    //     .form-check-input {
+    //         visibility: visible;
+    //         margin: 10px auto;
+    //         width: 4em !important;
+    //         height: 2em !important;
+    //         background-color: $color_8;
+    //     }
 
-        .selectDiv {
-            padding: 0.25rem;
-            margin-top: 10px;
-            outline: none !important;
-            display: block;
-            background-color: transparent;
-            border: none;
-            color: $color_4 !important;
-            text-align: center;
-        }
-    }
+    //     .selectDiv {
+    //         padding: 0.25rem;
+    //         margin-top: 10px;
+    //         outline: none !important;
+    //         display: block;
+    //         background-color: transparent;
+    //         border: none;
+    //         color: $color_4 !important;
+    //         text-align: center;
+    //     }
+    // }
 
     // @include md-desktop {
     //      top: 2em;
@@ -169,56 +172,56 @@ div.paletteFrame {
     }
 
     // --- BUTTON EXPAND HOVER
-    .buttonDiv.visible {
-        height: 40px;
-        padding: 0.46rem;
-        font-size: 0.875rem;
-        margin-top: 5px;
-        box-shadow: 0.5px 0.5px 3px $color_3;
-        outline: none !important;
-        background-color: $color_8;
-        color: $color_4 !important;
-        border-radius: 50px;
-        border: solid 1px $color_4;
-        text-decoration: none;
-        border-radius: 20px;
-        display: inline-flex;
-        align-items: center;
-        overflow: hidden;
-        width: auto;
-        max-width: 40px;
-        transition: max-width 0.3s;
+    // .buttonDiv.visible {
+    //     height: 40px;
+    //     padding: 0.46rem;
+    //     font-size: 0.875rem;
+    //     margin-top: 5px;
+    //     box-shadow: 0.5px 0.5px 3px $color_3;
+    //     outline: none !important;
+    //     background-color: $color_8;
+    //     color: $color_4 !important;
+    //     border-radius: 50px;
+    //     border: solid 1px $color_4;
+    //     text-decoration: none;
+    //     border-radius: 20px;
+    //     display: inline-flex;
+    //     align-items: center;
+    //     overflow: hidden;
+    //     width: auto;
+    //     max-width: 40px;
+    //     transition: max-width 0.3s;
 
-        .icon {
-            font-size: 24px !important;
-            margin-right: 15px;
-            display: flex;
-            align-items: center;
-        }
+    //     .icon {
+    //         font-size: 24px !important;
+    //         margin-right: 15px;
+    //         display: flex;
+    //         align-items: center;
+    //     }
 
-        .text {
-            white-space: nowrap;
-            padding-right: 15px;
-        }
-    }
+    //     .text {
+    //         white-space: nowrap;
+    //         padding-right: 15px;
+    //     }
+    // }
 
-    .buttonDiv.visible:hover {
-        cursor: pointer;
-        max-width: 300px;
-    }
+    // .buttonDiv.visible:hover {
+    //     cursor: pointer;
+    //     max-width: 300px;
+    // }
 
-    select.selectDiv.visible{
-        margin: 0px auto;
-        display: block;
-        width: 90%;
-        text-align: center;
+    // select.selectDiv.visible{
+    //     margin: 0px auto;
+    //     display: block;
+    //     width: 90%;
+    //     text-align: center;
 
-        option {
-            cursor: pointer;
-        }
+    //     option {
+    //         cursor: pointer;
+    //     }
 
-        cursor: pointer;
-    }
+    //     cursor: pointer;
+    // }
 
     .uncDiv input.form-check-input {
         visibility: visible;
@@ -274,9 +277,15 @@ div.paletteFrame {
 
     @include md-desktop {
         top: 8.6em;
+        div.legend {
+            line-height: 14px;
+        }
     }
 
     @include xl-desktop {
         top: 9.6em;
+        div.legend {
+            line-height: 18px;
+        }
     }
 }
