@@ -45,7 +45,7 @@ export class CsDropdown extends BaseUiElement {
 
   public setTitle(_title: string) {
     if (this.container != undefined) {
-      this.container.querySelector("#title").innerHTML = _title
+      this.container.querySelector(".navbar-btn-title span").textContent  = _title
     }
   }
 
@@ -62,7 +62,7 @@ export class CsDropdown extends BaseUiElement {
     return (<ul className="dropdown-menu">
       {
         this.values.map((val, index) => {
-          var popOverAttrs = {
+          let popOverAttrs = {
             id: val.startsWith("~") ? val.substring(1) : val,
             'data-toggle': 'popover'
           };
@@ -75,9 +75,9 @@ export class CsDropdown extends BaseUiElement {
     </ul>)
   }
 
-  public render(hasPopData: boolean = false): JSX.Element {
-    return (<div id={this.id} className="basicBtn btn-group dropend">
-      <button type="button" className="btn btn-md navbar-btn navbar-btn-title"><span id="title">{this.text}</span></button>
+  public render(hasPopData: boolean = false, btnType: string = 'basicBtn'): JSX.Element {
+    return (<div id={this.id} className={btnType + " ordBtn btn-group dropend"}>
+      <button type="button" className="btn btn-md navbar-btn navbar-btn-title"><span>{this.text}</span></button>
       <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
         <span className="sr-only"></span>
       </button>
