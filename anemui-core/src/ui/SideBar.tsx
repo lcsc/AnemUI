@@ -17,11 +17,8 @@ export interface SideBarListener {
 }
 
 export class SideBar extends BaseFrame {
-    private menuContainer: Element
-    private buttonStrip: HTMLElement
-    private basicButtons: HTMLElement
-    private climatologyButtons: HTMLElement
-
+    private menuContainer: HTMLElement
+    private climBtnArray: HTMLElement[]
     private spatialSupport: CsDropdown;
     private temporalSupport: CsDropdown;
     private variable: CsDropdown;
@@ -78,89 +75,91 @@ export class SideBar extends BaseFrame {
     }
 
     public minimize(): void {
-        this.buttonStrip.hidden = true;
+        this.menuContainer.hidden = true;
+      
     }
     public showFrame(): void {
-        if (!this.buttonStrip.hidden) return;
-        this.buttonStrip.hidden = false;
+        if (!this.menuContainer.hidden) return;
+        this.menuContainer.hidden = false;
     }
     public hideClimFrame(): void {
-        this.climatologyButtons.classList.remove("d-grid");
-        this.climatologyButtons.hidden = true;
+        this.climBtnArray.forEach((btn) =>{
+            btn.hidden = true;
+        })
     }
     public showClimFrame(): void {
-        if (!this.climatologyButtons.hidden) return;
-        this.climatologyButtons.classList.add("d-grid");
-        this.climatologyButtons.hidden = false;
+        this.climBtnArray.forEach((btn) =>{
+            btn.hidden = false;
+        })
     }
    
     public render(): JSX.Element {
         let self = this
         return (<div id="SideBar" className="active z-depth-1">
             <div id="SideBarInfo">
-                <div id="ButtonStrip">
-                    <div className='menu-container mx-auto d-grid gap-2'>
-                        <div id="BasicButtons" className='mx-auto d-grid gap-2'></div>
-                        <div id="ClimatologyButtons" className='mx-auto gap-2'></div>
-                    </div>
-                </div>
+                <div id="menuContainer" className='menu-container mx-auto d-grid gap-2 my-4'></div>
             </div>
         </div>);
     }
+    
     public build(): void {
         this.container = document.getElementById("SideBar") as HTMLDivElement;
-        this.menuContainer = this.container.getElementsByClassName("menu-container")[0] as HTMLElement;
-        this.basicButtons = document.getElementById("BasicButtons") as HTMLElement;
-        this.climatologyButtons = document.getElementById("ClimatologyButtons") as HTMLElement;
-        this.buttonStrip = document.getElementById("ButtonStrip") as HTMLElement;
+        this.menuContainer = document.getElementById("menuContainer") as HTMLElement;
 
         if (hasButtons) {
             if (hasSpSupport) {
-                addChild(this.basicButtons, this.spatialSupport.render());
+                addChild(this.menuContainer, this.spatialSupport.render());
                 this.spatialSupport.build()
             }
 
             if (hasVars) {
-                addChild(this.basicButtons, this.variable.render(varHasPopData))
+                addChild(this.menuContainer, this.variable.render(varHasPopData))
                 this.variable.build()
                 if (varHasPopData) this.variable.configPopOver(this.popData)
             }
 
             if (hasSubVars) {
-                addChild(this.basicButtons, this.subVariable.render(sbVarHasPopData));
+                addChild(this.menuContainer, this.subVariable.render(sbVarHasPopData));
                 this.subVariable.build()
                 if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
             }
 
             if (hasTpSupport) {
-                addChild(this.basicButtons, this.temporalSupport.render());
+                addChild(this.menuContainer, this.temporalSupport.render());
                 this.temporalSupport.build();
             }
 
-            addChild(this.basicButtons, this.selection.render());
+            addChild(this.menuContainer, this.selection.render());
             this.selection.build()
 
             this.extraBtns.forEach((btn) => {
-                addChild(this.basicButtons, btn.render());
+                addChild(this.menuContainer, btn.render());
                 btn.build()
             });
 
             if (hasClimatology) {
                 this.extraDropDowns.forEach((dpn) => {
-                    addChild(this.climatologyButtons, dpn.render());
+                    addChild(this.menuContainer, dpn.render(false, 'climBtn'));
                     dpn.build()
                 });
-                this.climatologyButtons.hidden = true;
             }
 
-            this.menuContainer.classList.add("my-4");
-        
+            
             if(this.dropDownOrder.length) {
                 this.changeDropDownOrder()
             }
+
+            this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
+            
+            this.climBtnArray.forEach((btn) =>{
+                btn.hidden = true;
+            })
         }
+       
     }
+
     public update(): void {
+        if (!hasClimatology) return
         let years = [3,6]
         if (this.parent.getState().climatology == true) {
             this.showClimFrame()
@@ -183,7 +182,7 @@ export class SideBar extends BaseFrame {
     }
 
     public configTpSupport(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons|| !hasTpSupport) return;
+        if (!hasButtons || !hasTpSupport) return;
         this.temporalSupport.config(visible, newText);
     }
 
@@ -192,7 +191,7 @@ export class SideBar extends BaseFrame {
     }
 
     public configVariables(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons) return;
+        if (!hasButtons || !hasVars) return;
         this.variable.config(visible, newText);
         if (varHasPopData) {
             this.variable.configPopOver(this.popData);
@@ -253,7 +252,7 @@ export class SideBar extends BaseFrame {
 
     public changeDropDownOrder() {
         let k: number = 0
-        document.querySelectorAll('.basicBtn').forEach((elem:HTMLButtonElement)=>{
+        document.querySelectorAll('.ordBtn').forEach((elem:HTMLButtonElement)=>{
             elem.style.order = this.dropDownOrder[k]
             k++
         })

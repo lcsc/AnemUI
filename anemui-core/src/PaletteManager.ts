@@ -13,6 +13,7 @@ type CS_RGBA_Info = {
 export interface Painter{
     paintValues(floatArray:number[],width:number,height:number,minArray:number,maxArray:number,pxTransparent:number,uncertaintyLayer:boolean):Promise<HTMLCanvasElement>
     getColorString(val: number, min: number, max: number): string
+    getValIndex(val:number):number
 }
 
 export class CategoryRangePainter implements Painter{
@@ -87,7 +88,7 @@ export class CategoryRangePainter implements Painter{
         return canvas;
     }
 
-    private getValIndex(val:number):number{
+    getValIndex(val:number):number{
         for (let i =0;i<this.ranges.length;i++){
             let range=this.ranges[i]
             if(val>=range.a && val<range.b) return i;
@@ -153,6 +154,10 @@ export class CsDynamicPainter implements Painter{
         }
         context.putImageData(imgData, 0, 0);
         return canvas;
+    }
+
+    getValIndex(val:number):number{
+        return 0;
     }
 }
 

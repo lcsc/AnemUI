@@ -31,7 +31,8 @@ export default class PaletteFrame  extends BaseFrame{
         let bgcolor;
         let color = '#ffffff';
         let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
-        mgr.setUncertaintyLayerChecked(true)
+        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
+        mgr.setUncertaintyLayerChecked(false)
         let element=
         (<div id="PaletteFrame" className='paletteFrame' onMouseOver={(event:React.MouseEvent)=>{mouseOverFrame(self,event)}}>
             <div className="info legend">
@@ -41,7 +42,7 @@ export default class PaletteFrame  extends BaseFrame{
                  ))}
                 <div id="legendBottom"></div> 
             </div>
-            <div className='paletteSelect'>
+            <div className='paletteSelect btnSelect right'>
                 <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
                         <span className="icon"><i className="bi bi-globe-europe-africa"></i></span>
@@ -120,10 +121,11 @@ export default class PaletteFrame  extends BaseFrame{
                         <div className='col-8 p-0'>
                             <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}>
                                 {topLayers.map((val,index)=>{
+                                    let trVal = this.parent.getTranslation(val)
                                     if(lmgr.getTopSelected()==val){
-                                        return (<option value={val} selected>{val}</option>)
+                                        return (<option value={val} selected>{this.parent.getTranslation(val)}</option>)
                                     }
-                                return (<option value={val}>{val}</option>)
+                                    return (<option value={val}>{val}</option>)
                                 })}
                             </select>
                         </div>
@@ -143,7 +145,7 @@ export default class PaletteFrame  extends BaseFrame{
                                     <span className="icon"><i className="bi bi-x"></i></span>
                                 </div>
                                 <div className='col-8 p-0'>    
-                                    <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>self.toggleUncertaintyLayer(event.target.checked)} checked />
+                                    <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>self.toggleUncertaintyLayer(event.target.checked)} />
                                 </div>
                             </div>
                         </div>
@@ -160,48 +162,6 @@ export default class PaletteFrame  extends BaseFrame{
         this.container.querySelector(".buttonDiv." + select).classList.toggle("visible")
         this.container.querySelector(".selectDiv." + select).classList.toggle("visible")
     }
-
-    // // public showSelect(){
-    // public showSelect(select: string){
-    //     // this.container.querySelector("div.paletteSpan").classList.remove("visible")
-    //     // this.container.querySelector("div.paletteSelect").classList.add("visible")
-    //     switch (select) {
-    //         case 'trpDiv':
-    //         case 'uncDiv':
-    //             this.container.querySelector("input." + select).classList.add("visible")
-    //             break;
-    //         default:     
-    //             this.container.querySelector("select." + select).classList.add("visible")
-    //             break;
-    //     }
-    //     this.container.querySelector("span." + select).classList.remove("visible")
-    // }
-
-    // // public hideSelect(){
-    // public hideSelect(select: string){
-    //     /* let select = this.container.querySelector("select");
-    //     if(select != document.activeElement)
-    //         this.container.querySelector("div.paletteSelect").classList.remove("visible") */
-    //     switch (select) {
-    //         case 'trpDiv':
-    //         case 'uncDiv':
-    //             this.container.querySelector("input." + select).classList.remove("visible")
-    //             break;
-    //         default:     
-    //             this.container.querySelector("select." + select).classList.remove("visible")
-    //             break;
-    //     }
-    //     this.container.querySelector("span." + select).classList.add("visible")
-    // }
-
-    // this.container.querySelector("div.paletteSpan").classList.add("visible")
-    
-    // changePalette(event: ChangeEvent<HTMLSelectElement>): void {
-    //     let mgr=PaletteManager.getInstance();
-    //     mgr.setSelected(event.target.value);
-    //     this.parent.update();
-    //     this.container.querySelector("div.paletteSelect").classList.remove("visible")
-    // }
 
     public changePalette(value: string): void {
         let mgr=PaletteManager.getInstance();
@@ -235,7 +195,8 @@ export default class PaletteFrame  extends BaseFrame{
 
     public renderUncertaintyFrame():JSX.Element {
         let mgr=PaletteManager.getInstance();
-        mgr.setUncertaintyLayerChecked(true)
+        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL
+        mgr.setUncertaintyLayerChecked(false)
         return (
             <div>
                 <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
@@ -249,7 +210,8 @@ export default class PaletteFrame  extends BaseFrame{
                         <span className="icon"><i className="bi bi-x"></i></span>
                     </div>
                     <div className='col-8 p-0'>    
-                        <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} checked />
+                        {/* <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} checked /> */}
+                        <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} />
                     </div>
                 </div>
             </div>
@@ -263,9 +225,9 @@ export default class PaletteFrame  extends BaseFrame{
         this.trpDiv = document.getElementById('trp-div') as HTMLElement;
         /* let select = this.container.querySelector("select");
         select.addEventListener('focusout',()=>this.hideSelect()) */
-        // this.baseDiv.addEventListener('focusout',()=>this.hideSelect('baseDiv'))
-        // this.dataDiv.addEventListener('focusout',()=>this.hideSelect('dataDiv'))
-        // this.trpDiv.addEventListener('focusout',()=>this.hideSelect('trpDiv'))
+       /*  this.baseDiv.addEventListener('focusout',()=>this.hideSelect('baseDiv'))
+        this.dataDiv.addEventListener('focusout',()=>this.hideSelect('dataDiv'))
+        this.trpDiv.addEventListener('focusout',()=>this.hideSelect('trpDiv')) */
 
         this.slider=new Slider(document.getElementById("transparencySlider"),{
             natural_arrow_keys: true,

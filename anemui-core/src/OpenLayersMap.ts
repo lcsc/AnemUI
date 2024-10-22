@@ -12,7 +12,7 @@ import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, mapboxAccessToken, mapboxMapID, olProjection, initialZoom } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, buildPattern, downloadXYChunk, pxTransparent } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, pxTransparent } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
@@ -87,8 +87,7 @@ export class OpenLayerMap implements CsMapController{
     protected terrainLayer:Layer;
     protected politicalLayer:Layer;
     protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
-    protected uncertaintyVectorLayer: Layer;
-
+    
     protected setExtents(timesJs: CsTimesJsData, varId: string): void {
         timesJs.portions[varId].forEach((portion: string, index, array) => {
           let selector = varId + portion;
@@ -98,7 +97,6 @@ export class OpenLayerMap implements CsMapController{
     }
 
     init(_parent: CsMap): void {
-
         this.parent=_parent;
         const state= this.parent.getParent().getState();
         const timesJs= this.parent.getParent().getTimesJs();
@@ -142,7 +140,7 @@ export class OpenLayerMap implements CsMapController{
         this.lastSupport="Raster"
         if (!isWmsEnabled) {
           this.buildDataTilesLayers(state, timesJs);
-if (state.uncertaintyLayer) this.builduncertaintyLayer(state, timesJs);
+            if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
         }
     }
 
@@ -156,11 +154,11 @@ if (state.uncertaintyLayer) this.builduncertaintyLayer(state, timesJs);
       });
       this.dataWMSLayer.updateParams({STYLES: undefined, SLD_BODY: this.getSld()});
       this.dataTilesLayer = [];
-this.uncertaintyLayer = [];
+      this.uncertaintyLayer = [];
       let tileLayer = new TileLayer({
         source: this.dataWMSLayer
       });
-            return [
+      return [
         new TileLayer({
           source: new XYZ({
             url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
@@ -188,10 +186,8 @@ this.uncertaintyLayer = [];
       this.politicalLayer=political
 
       this.dataTilesLayer = [];
-// this.uncertaintyLayer = [];
-      this.uncertaintyLayer = lmgr.getuncertaintyLayer();
-      this.uncertaintyVectorLayer = lmgr.getuncertaintyVectorLayer();
-
+      this.uncertaintyLayer = lmgr.getUncertaintyLayer();
+     
       layers.push(terrain);
       layers.push(political);
 
@@ -282,16 +278,12 @@ this.uncertaintyLayer = [];
       buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
     }
 
-    public builduncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
+    public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
         let lmgr = LayerManager.getInstance();
         let app = window.CsViewerApp;
         
-        // Remove all uncertainty layers
-        // this.uncertaintyLayer.forEach((layer: ImageLayer<Static>) => this.map.getLayers().remove(layer));
-        // this.uncertaintyLayer = [];
-        this.uncertaintyLayer = lmgr.getuncertaintyLayer();
-        this.uncertaintyVectorLayer = lmgr.getuncertaintyVectorLayer();
-
+        this.uncertaintyLayer = lmgr.getUncertaintyLayer();
+      
         // Add uncertainty layers
         timesJs.portions[state.varId + '_uncertainty'].forEach((portion: string, index, array) => {
           let imageLayer: ImageLayer<Static> = new ImageLayer({});
@@ -308,8 +300,7 @@ this.uncertaintyLayer = [];
 
         // Draw new data layers
         buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
-        buildPattern(promises, this.uncertaintyVectorLayer, state, timesJs, app, this.ncExtents, true);
-      
+        lmgr.showUncertaintyLayer(false); // ---------------- Por defecto desactivada
     } 
 
     public setDate(dateIndex: number, state: CsViewerData): void {
@@ -321,7 +312,7 @@ this.uncertaintyLayer = [];
 // Remove all uncertainty layers
           this.uncertaintyLayer.forEach((layer: ImageLayer<Static>) => this.map.getLayers().remove(layer));
           this.uncertaintyLayer = [];
-          if (state.uncertaintyLayer) this.builduncertaintyLayer(state, this.parent.getParent().getTimesJs());
+          if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, this.parent.getParent().getTimesJs());
         }
     }
 
