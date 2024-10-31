@@ -54,13 +54,7 @@ export class CsGraph extends BaseFrame {
 
   public build(): void {
     this.container = document.getElementById("GraphContainer") as HTMLDivElement
-  }
-
-  public setParams(_title: string, _type: GraphType, _byPoint: boolean) {
-    this.graphTitle = _title;
-    this.graphType = _type;
-    this.byPoint = _byPoint;
-    switch (_type) {
+    switch (this.graphType) {
       case "Serial":
       case "Area":
         this.graphTitle += ": " + this.parent.getTranslation('serie_temporal');
@@ -74,6 +68,12 @@ export class CsGraph extends BaseFrame {
     }
   }
 
+  public setParams(_title: string, _type: GraphType, _byPoint: boolean) {
+    this.graphTitle = _title;
+    this.graphType = _type;
+    this.byPoint = _byPoint;
+  }
+
   public closeGraph() {
     this.container.hidden = true
   }
@@ -83,7 +83,7 @@ export class CsGraph extends BaseFrame {
     //console.log("opening Graph")
     this.container.hidden = false;
     let graph: Dygraph
-let url
+    let url
 
     switch (this.graphType) {
       case "Serial":
@@ -125,6 +125,10 @@ let url
         ylabel: this.parent.getState().legendTitle,
         xlabel: dateText,
         showRangeSelector: true,
+        /* plotter: function (e: any) {
+          let points = e.points
+
+        }, */
         xValueParser: function (str: any): number {
 
           let readTime: string
@@ -156,7 +160,17 @@ let url
               // return " " + millis.toFixed(2);
               return " " + (millis < 0.01? millis.toFixed(3) : millis.toFixed(2));
             }
-          }
+          },
+          /* y: {
+            ticker: function(min, max, pixels):any {
+              let ticks = [];
+              for (var i = 0.0; i <= 7.0; i = i + 1.0) {
+                ticks.push({v: i});
+                ticks.push({label_v: i, label: i});
+              }
+              return ticks;
+            }
+          } */
         }
       }
     );

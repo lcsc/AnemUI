@@ -16,6 +16,11 @@ body,
     width: 100%;
 }
 
+#map {
+    position: absolute;
+    top: 80px;
+}
+
 #download_iframe {
     display: none;
 }

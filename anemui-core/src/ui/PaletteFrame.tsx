@@ -195,7 +195,7 @@ export default class PaletteFrame  extends BaseFrame{
 
     public renderUncertaintyFrame():JSX.Element {
         let mgr=PaletteManager.getInstance();
-        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL
+        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL - La capa de incertidumbre queda activa por defecto
         mgr.setUncertaintyLayerChecked(false)
         return (
             <div>

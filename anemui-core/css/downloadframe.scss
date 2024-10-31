@@ -17,10 +17,13 @@ div.downloadFrame {
         height: 10px;
     }
 
-    #graphDiv {
-        margin-top: 0.5em;
+    .droppDownButton {
         button {
             width:100%;
         }
+    }
+
+    #graphDiv {
+        margin-top: 0.5em;
     }
 }
