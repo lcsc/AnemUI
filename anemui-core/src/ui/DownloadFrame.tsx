@@ -22,6 +22,7 @@ export class DownloadFrame extends BaseFrame {
     protected containerHandler: HTMLElement;
     protected containerLatLong: HTMLDivElement
     protected btnGraph: HTMLButtonElement;
+    protected btnDrpPoint: HTMLButtonElement;
     protected parent: BaseApp;
     protected dropPointContainter: HTMLDivElement;
     protected pointButtonsContainer: HTMLDivElement;
@@ -58,7 +59,7 @@ export class DownloadFrame extends BaseFrame {
                             </ul>
                         </div>
                         <div id="point-buttons">
-                            <div id="dropPoint" className="btn-group dropend droppDownButton" role="dropPoint">
+                            {/* <div id="dropPoint" className="btn-group dropend droppDownButton" role="dropPoint">
                                 <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
                                 <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                                     <span className="visually-hidden"></span>
@@ -67,6 +68,9 @@ export class DownloadFrame extends BaseFrame {
                                     <li><a className="dropdown-item" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</a></li>
                                     <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
                                 </ul>
+                            </div> */}
+                            <div id="dropBtn" className="droppDownButton">
+                                <button type="button" role="dropPointBtn" className="btn navbar-btn" disabled  onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
                             </div>
                             <div id="graphDiv" className="droppDownButton">
                                 <button type="button" role="graph" className="btn navbar-btn" style={this.parent.getGraph().byPoint ? { visibility: "visible" } : { visibility: "hidden" }} disabled onClick={() => { this.parent.showGraph() }}>{this.parent.getTranslation('grafico_pixel')}</button>
@@ -104,9 +108,10 @@ export class DownloadFrame extends BaseFrame {
         this.containerHandler.hidden = true;
 
         this.btnGraph = this.container.querySelector("[role=graph]");
+        this.btnDrpPoint = this.container.querySelector("[role=dropPointBtn]");
         this.containerLatLong = this.container.querySelector("[role=latLong]") as HTMLDivElement
         this.dropPointContainter = this.container.querySelector("[role=dropPoint]")
-        this.dropPoint = new Dropdown(this.dropPointContainter)
+        // this.dropPoint = new Dropdown(this.dropPointContainter)
         let ncContainer = this.container.querySelector("[role=dropNc]")
         this.dropNc = new Dropdown(ncContainer);
         this.dropNcDownButton = ncContainer.getElementsByTagName("button")[1]
@@ -129,6 +134,7 @@ export class DownloadFrame extends BaseFrame {
     public enableDataButtons(latlng: CsLatLong): void {
         this.pointCoords = latlng
         this.btnGraph.disabled = false
+        this.btnDrpPoint.disabled = false
         let btns = this.dropPointContainter.getElementsByTagName("button")
         for (let i = 0; i < btns.length; i++) {
             let btn: HTMLButtonElement = btns[i] as HTMLButtonElement;

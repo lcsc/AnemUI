@@ -12,8 +12,6 @@ import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
-import { defaultRender } from "./tiles/Support";
-import { defaultTpRender } from "./tiles/tpSupport";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, getPortionForPoint } from "./data/ChunkDownloader";
 import { calcPixelIndex, downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, DEF_STYLE_UNC, OpenLayerMap } from "./OpenLayersMap";
@@ -26,7 +24,7 @@ import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import { SideBar, SideBarListener } from "./ui/SideBar";
-// import { SideBar } from "./ui/SideBar_01"; // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+// import { SideBar } from "./ui/SideBar_01"; // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
 import Translate from "./language/translate";
 import CsCookies from "./cookies/CsCookies";
 
