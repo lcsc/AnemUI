@@ -160,17 +160,7 @@ export class CsGraph extends BaseFrame {
               // return " " + millis.toFixed(2);
               return " " + (millis < 0.01? millis.toFixed(3) : millis.toFixed(2));
             }
-          },
-          /* y: {
-            ticker: function(min, max, pixels):any {
-              let ticks = [];
-              for (var i = 0.0; i <= 7.0; i = i + 1.0) {
-                ticks.push({v: i});
-                ticks.push({label_v: i, label: i});
-              }
-              return ticks;
-            }
-          } */
+          }
         }
       }
     );
