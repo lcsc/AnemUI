@@ -3,6 +3,7 @@ import { downloadXYArrayChunked } from "./data/ChunkDownloader";
 import { CsViewerData } from "./data/CsDataTypes";
 import { DateFrameMode } from "./ui/DateFrame";
 import { hasSubVars } from "./Env";
+import Dygraph from "dygraphs";
 
 export const P_Hight=[">P 90",">P 95",">P 97",">P 99"]
 export const P_Low=["<P 5","<P 1","<P 3","<P 10"]
@@ -256,5 +257,9 @@ export abstract class DataServiceApp extends BaseApp {
             //Por defecto como si fuera ">"
             return data<=value;
         }
+    }
+
+    public completeGraph(graph: Dygraph) {
+
     }
 }
