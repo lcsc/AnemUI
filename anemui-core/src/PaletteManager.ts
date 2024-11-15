@@ -1,3 +1,4 @@
+import Gradient from "javascript-color-gradient";
 
 export type PaletteUpdater = () => string[];
 
@@ -52,42 +53,6 @@ export class CategoryRangePainter implements Painter{
         return canvas;
     }
 
-    private async paintPattern(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number,uncertaintyLayer:boolean): Promise<HTMLCanvasElement> {
-        let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
-        canvas.width = width;
-        canvas.height = height;
-        let imgData: ImageData = context.getImageData(0, 0, width, height);
-        let characters = DEFAULT_CHARACTERS
-        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
-        for (let y: number = 0; y < height; y++) {
-            for (let x: number = 0; x < width; x++) {
-                let ncIndex: number = x + y * width;
-                let value: number = floatArray[ncIndex];
-                let pxIndex: number = x + ((height - 1) - y) * width;
-                if (!isNaN(value)) {
-                    value = Math.max(minArray, Math.min(value, maxArray));
-                        let index: number = uncertaintyLayer? value: this.getValIndex(value);
-                        // --- No está terminado: se intenta pintar un carácter '·' por pixel en los que sean significativos y mostrarlo como una capa vecorial 
-                        // bitmap[pxIndex] = characters[index]; // copy RGBA values in a single action
-                        /* let vectorSource:VectorSource = new VectorSource({
-                            features: new GeoJSON().readFeatures({type: 'FeatureCollection',features:this.data}),
-                          })
-                          this.geoLayer= new VectorLayer({
-                            source: vectorSource,
-                            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
-                          });
-                          setTimeout(()=>this.geoLayer.changed()); */
-                    
-                }else{
-                    bitmap[pxIndex]=pxTransparent;
-                }
-            }
-        }
-
-        return canvas;
-    }
-
     getValIndex(val:number):number{
         for (let i =0;i<this.ranges.length;i++){
             let range=this.ranges[i]
@@ -108,9 +73,70 @@ export class CategoryRangePainter implements Painter{
 
 }
 
+export class GradientPainter implements Painter{
+    protected values: number[];
+    protected colorGradient;
+    constructor(colors:string[], values:number[], points:number){
+        this.values = values;
+        this.colorGradient = new Gradient()
+        .setColorGradient(colors[0], colors[1], colors[2], colors[3])
+        .setMidpoint(points)
+        .getColors();
+    }
+    
+    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number,uncertaintyLayer:boolean): Promise<HTMLCanvasElement> {
+        let canvas: HTMLCanvasElement = document.createElement('canvas');
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+        canvas.width = width;
+        canvas.height = height;
+        let imgData: ImageData = context.getImageData(0, 0, width, height);
+        // let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
+        let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer, this.colorGradient);
+
+        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
+        
+        // colorize canvas
+        for (let y: number = 0; y < height; y++) {
+            for (let x: number = 0; x < width; x++) {
+                let ncIndex: number = x + y * width;
+                let value: number = floatArray[ncIndex];
+                let pxIndex: number = x + ((height - 1) - y) * width;
+                if (!isNaN(value)) {
+                    value = Math.max(minArray, Math.min(value, maxArray));
+                    let index: number = uncertaintyLayer? value: /* this.getValRange(value) */ this.getValIndex(value);
+                    bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
+                }else{
+                    bitmap[pxIndex]=pxTransparent;
+                }
+            }
+        }
+        context.putImageData(imgData, 0, 0);
+        return canvas;
+    }
+
+    getValIndex(val:number):number{
+        if(val > this.values[this.values.length - 1]) return this.values.length -1 ;
+        let valAnt = 0;
+        for (let i =0;i<this.values.length;i++){
+            if(val == this.values[i]) return i;
+            if(val > valAnt && val<= this.values[i]) return i;
+            valAnt == this.values[i];
+        }
+        return -1
+    }
+
+    getColorString(val: number, min: number, max: number): string {
+        let mgr = PaletteManager.getInstance()
+        // let paletteStr: string[] = mgr.updatePaletteStrings();
+        let paletteStr: string[] = this.colorGradient;
+        let index = this.getValIndex(val)
+        if(index >=0) return paletteStr[index]
+        return "#000000"//black
+    }
+
+}
+
 export class CsDynamicPainter implements Painter{
-
-
     public getColorString(val: number, min: number, max: number): string {
         let mgr = PaletteManager.getInstance()
         let paletteStr: string[] = mgr.updatePaletteStrings()
@@ -236,13 +262,13 @@ export class PaletteManager {
         return this.palette;
     }
 
-    public updatePalete32(uncertaintyLayer:boolean):Uint32Array{
+    public updatePalete32(uncertaintyLayer:boolean, _palette: string[]= []):Uint32Array{
         let opacity = 100-this.transparency
         opacity= parseInt(255*opacity/100+"");
         let ALPHA_VAL = opacity.toString(16);
         if(ALPHA_VAL.length==1)ALPHA_VAL="0"+ALPHA_VAL;
         //console.log("Trans: "+ this.transparency  +" ->  "+ opacity+" - > "+ALPHA_VAL)
-        let paletteStr: string[] = uncertaintyLayer? this.palettes['uncertainty']():this.palettes[this.selected]()
+        let paletteStr: string[] = uncertaintyLayer? this.palettes['uncertainty']():(_palette.length == 0? this.palettes[this.selected]():_palette)
         let gradient = new Uint32Array(paletteStr.length); // RGBA values
         let rgba = new Uint8Array(gradient.buffer);
         for (var i = 0; i < paletteStr.length; i++) {
