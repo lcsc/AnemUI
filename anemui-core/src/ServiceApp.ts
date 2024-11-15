@@ -259,7 +259,6 @@ export abstract class DataServiceApp extends BaseApp {
         }
     }
 
-    public completeGraph(graph: Dygraph) {
-
+    public completeGraph(graph: Dygraph, data: any) {
     }
 }
