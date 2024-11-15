@@ -109,7 +109,7 @@ export class CsGraph extends BaseFrame {
         graph = this.drawWindRoseGraph(data, latlng);
         break;
     }
-    this.parent.completeGraph(graph);
+    this.parent.completeGraph(graph, data);
   }
 
   public drawSerialGraph(url: any, latlng: CsLatLong):Dygraph {

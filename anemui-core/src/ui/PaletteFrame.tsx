@@ -1,6 +1,6 @@
 import { createElement, addChild } from 'tsx-create-element';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
-import { PaletteManager } from '../PaletteManager';
+import { GradientPainter, PaletteManager } from '../PaletteManager';
 import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
 import { mgrs } from 'proj4';
@@ -37,9 +37,15 @@ export default class PaletteFrame  extends BaseFrame{
         (<div id="PaletteFrame" className='paletteFrame' onMouseOver={(event:React.MouseEvent)=>{mouseOverFrame(self,event)}}>
             <div className="info legend">
                 <div id="units"><span className='legendText'>{name}</span><br/></div>
-                {values.map((val, index) => (
-                    <div style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className='legendText smallText'> {texts[index]}</span><br/></div>
-                 ))}
+                { 
+                    values.map((val, index) =>  {
+                        if (ptr instanceof GradientPainter){
+                            return (<div style={{background:ptr.getColorString(val,min,max), height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>
+                        )} else {
+                            return (<div style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className='legendText smallText'> {texts[index]}</span><br/></div>)
+                        }
+                    })
+                }
                 <div id="legendBottom"></div> 
             </div>
             <div className='paletteSelect btnSelect right'>
@@ -276,12 +282,14 @@ export default class PaletteFrame  extends BaseFrame{
         
         data.innerHTML="<div id='units'><span class='legendText'>"+name+"</span><br/></div>"
         values.map((val, index) =>{ 
-            // let textSize = texts[index].length > 4? 'smallText':'mediumText'
-            let textSize = 'smallText'
-            addChild(data, (<div style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className={`legendText ${textSize}`} > {texts[index]}</span><br/></div>));
-            
-            });
-        data.innerHTML+="<div id='legendBottom'></div> "
+            if (ptr instanceof GradientPainter){
+                addChild(data, (<div style={{background:ptr.getColorString(val,min,max), height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>));
+            } else {
+                addChild(data, (<div style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className={`legendText smallText`} > {texts[index]}</span><br/></div>));
+            }
+        });
+        data.innerHTML+="<div id='legendBottom'></div>"
+
         this.container.querySelector(".paletteSelect span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
         this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
         this.container.querySelector(".paletteSelect span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();

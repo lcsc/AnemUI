@@ -629,7 +629,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         //Do nothing
     }
 
-    public completeGraph(graph: Dygraph) {
+    public completeGraph(graph: Dygraph, data: any) {
 
     }
 
