@@ -136,7 +136,7 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
                 if (!isNaN(value[1])) download = true;
                 asciiResult += value[0];
                 asciiResult += ';';
-if (graph && hasInf) {
+                if (graph && hasInf) {
                     if (value[1] == Infinity || value[1] > maxWhenInf) value[1] = maxWhenInf
                     if (value[1] == -Infinity || value[1] < minWhenInf) value[1] = minWhenInf
                 }
