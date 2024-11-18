@@ -26,7 +26,7 @@ ln -s node_modules/@lcsc AnemUI
 
 # Creamos la rama, omitir si ya esta en una rama
 git -C AnemUI checkout -b <rama_core>
-git -C Anemui push -u origin <rama_core>
+git -C AnemUI push -u origin <rama_core>
 # Repetimos en el visor y creamos la misma rama
 git checkout -b <rama_core>
 git push -u origin <rama_core>
