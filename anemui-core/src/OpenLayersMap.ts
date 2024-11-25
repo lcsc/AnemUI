@@ -177,10 +177,21 @@ export class OpenLayerMap implements CsMapController{
       let lmgr = LayerManager.getInstance();
       let layers: (ImageLayer<Static> | TileLayer)[] = [];
 
-      let terrain = new TileLayer({
-        source: lmgr.getBaseLayerSource() as DataTileSource
-      });
-      this.terrainLayer=terrain;
+      let layersLength =  lmgr.initBaseSelected(initialZoom)
+
+      for (let i = 0; i <= layersLength; i++) {
+        let terrain = new TileLayer({
+          source: lmgr.getBaseLayerSource(i) as DataTileSource
+        });
+        this.terrainLayer=terrain;
+        layers.push(terrain);
+      }
+
+      //  --- original
+      // let terrain = new TileLayer({
+      //   source: lmgr.getBaseLayerSource() as DataTileSource
+      // });
+      // this.terrainLayer=terrain;
 
       let political = lmgr.getTopLayerOlLayer() as TileLayer;
       this.politicalLayer=political
@@ -188,7 +199,7 @@ export class OpenLayerMap implements CsMapController{
       this.dataTilesLayer = [];
       this.uncertaintyLayer = lmgr.getUncertaintyLayer();
      
-      layers.push(terrain);
+      // layers.push(terrain);
       layers.push(political);
 
       if (isTileDebugEnabled)
@@ -264,7 +275,7 @@ export class OpenLayerMap implements CsMapController{
       timesJs.portions[state.varId].forEach((portion: string, index, array) => {
         let imageLayer: ImageLayer<Static> = new ImageLayer({});
         this.dataTilesLayer.push(imageLayer);
-        this.map.getLayers().insertAt(1, imageLayer);
+        this.map.getLayers().insertAt(this.map.getLayers().getLength() - 1, imageLayer);
       });
 
       // Download and build new data layers
@@ -288,7 +299,7 @@ export class OpenLayerMap implements CsMapController{
         timesJs.portions[state.varId + '_uncertainty'].forEach((portion: string, index, array) => {
           let imageLayer: ImageLayer<Static> = new ImageLayer({});
           this.uncertaintyLayer.push(imageLayer);
-          this.map.getLayers().insertAt(2, imageLayer);
+          this.map.getLayers().insertAt(this.map.getLayers().getLength() - 1, imageLayer);
         });
 
         // Download and build new uncertainty layers
@@ -356,6 +367,9 @@ export class OpenLayerMap implements CsMapController{
       return this.geoLayer
     }
     public updateRender(support: string): void {
+
+       console.log("zoom: " + this.getZoom()) 
+
       if(support!=this.lastSupport){
   
         switch (support){
@@ -377,9 +391,19 @@ export class OpenLayerMap implements CsMapController{
         this.geoLayer.refresh();
       }
       let lmgr = LayerManager.getInstance();
-      let tSource = lmgr.getBaseLayerSource();
+      /* let tSource = lmgr.getBaseLayerSource();
       if(this.terrainLayer.getSource()!=tSource){
         this.terrainLayer.setSource(tSource);
+      }
+ */
+      // let layersLength =  lmgr.initBaseSelected(this.getZoom())
+
+      let layersLength =  lmgr.getBaseSelected().length
+      for (let i = 0; i < layersLength; i++) {
+        let tSource = lmgr.getBaseLayerSource(i);
+        if(this.terrainLayer.getSource()!=tSource){
+          this.terrainLayer.setSource(tSource);
+        }
       }
 
       let pLayer=lmgr.getTopLayerOlLayer();
