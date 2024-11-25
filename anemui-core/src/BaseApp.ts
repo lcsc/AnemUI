@@ -4,6 +4,7 @@ import { MenuBarListener } from "./ui/MenuBar";
 import { MenuBar } from './ui/MenuBar';
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
+// import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
 import PaletteFrame from "./ui/PaletteFrame";
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
@@ -56,7 +57,7 @@ const INITIAL_STATE: CsViewerData = {
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
 
-export abstract class BaseApp implements CsMapListener, MenuBarListener, /* SideBarListener, */ DateFrameListener {
+export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener, DateFrameListener {
 
     protected menuBar: MenuBar;
     protected sideBar: SideBar;
