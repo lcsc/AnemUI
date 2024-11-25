@@ -9,15 +9,27 @@ import DataTileSource from "ol/source/DataTile";
 import VectorSource from "ol/source/Vector";
 import { Stroke, Style } from "ol/style";
 
+import WMTS from 'ol/source/WMTS.js';
+import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
+import * as proj from 'ol/proj';
+import { getTopLeft, getWidth } from 'ol/extent';
 
-export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"|"ImageLayer"|"WMS"
+export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"|"ImageLayer"|"WMS"|"WMTS"
 export const AL_TYPE_OSM="OSM"
 export const AL_TYPE_TOPO_JSON="TopoJson"
 export const AL_TYPE_GEO_JSON="GeoJson"
 export const AL_TYPE_IMG_LAYER="Image"
 export const AL_TYPE_WMS="WMS"
+export const AL_TYPE_WMTS="WMTS"
 
-export type AnemuiLayer={name:string,url:string, type:string, source?:Source, layer?: string }
+export type AnemuiLayer={
+    name:string,
+    url:string, 
+    type:string,
+    global: boolean, 
+    source?:Source, 
+    layer?: string 
+}
 
 const baseStyle= new Style({
     stroke: new Stroke({
@@ -26,6 +38,16 @@ const baseStyle= new Style({
     })
   });
 
+let projection = proj.get('EPSG:3857');
+let projectionExtent = projection.getExtent();
+const size = getWidth(projectionExtent) / 256;
+let resolutions = new Array(19);
+let matrixIds = new Array(19);
+for (let z = 0; z < 19; ++z) {
+    // generate resolutions and matrixIds arrays for this WMTS
+    resolutions[z] = size / Math.pow(2, z);
+    matrixIds[z] = z;
+}  
 
 export class LayerManager {
     private static instance: LayerManager;
@@ -39,7 +61,7 @@ export class LayerManager {
     }
 
     protected baseLayers: { [key: string]: AnemuiLayer } = {}
-    private baseSelected:string;
+    private baseSelected:string[];
     protected topLayers: { [key: string]: AnemuiLayer } = {}
     private topSelected:string;
     private topLayerTile:WebGLTile;
@@ -49,17 +71,33 @@ export class LayerManager {
     protected uncertaintyVectorLayer: Layer;
 
     private constructor() {
-        this.baseSelected = "arcgis";
-        this.addBaseLayer({name:"arcgis",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM})
-        this.addBaseLayer({name:"osm",url:undefined,type:AL_TYPE_OSM})
-        // this.addBaseLayer({name:"PNOA",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage'})
+        // CAPAS BASE
+        // ------ Global ()
+        this.addBaseLayer({name:"ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true})
+        this.addBaseLayer({name:"OSM",url:undefined,type:AL_TYPE_OSM, global:true})
+        this.addBaseLayer({name:"EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true})
+        // ------ Estatal ()
+        this.addBaseLayer({name:"IGN-BASE",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false})
+        this.addBaseLayer({name:"PNOA",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false})
+        this.addBaseLayer({name:"LIDAR",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false})
         // this.topSelected="mapbox";
-        this.addTopLayer({name:"mapbox",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM})   
-        this.addTopLayer({name:"EU NUTS",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON})
-        // this.addTopLayer({name:"unidad_adminiastrativa",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary'})
-        // this.addTopLayer({name:"demarcaciones_hidrograficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict'})
-        // this.addTopLayer({name:"comarcas_agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces'})
-        // this.addTopLayer({name:"comarcas_ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces'})
+        
+        // CAPAS SUPERPUESTAS
+        // ------ Global ()
+        this.addTopLayer({name:"mapbox",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM, global:true})   
+        this.addTopLayer({name:"EU NUTS",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true})
+        // ------ Estatal ()
+        this.addTopLayer({name:"unidad_administrativa",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false})
+        this.addTopLayer({name:"demarcaciones_hidrograficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false})
+        this.addTopLayer({name:"comarcas_agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
+        this.addTopLayer({name:"comarcas_ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
+        this.addTopLayer({name:"zonas_inundables-L",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"zonas_inundables-T10",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"zonas_inundables-T50",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"zonas_inundables-T100",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"zonas_inundables-T500",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        
+        // this.baseSelected = "ARCGIS";
         this.topSelected="mapbox";
         this.uncertaintyLayer = [];
     }
@@ -72,31 +110,62 @@ export class LayerManager {
     public getBaseLayerNames():string[]{
         return Object.keys(this.baseLayers);
     }
-    public getBaseSelected():string{
+    public getBaseSelected():string[]{
         return this.baseSelected;
     }
 
-    public setBaseSelected(_selected:string){
-        if(this.baseLayers[_selected]!=undefined){
-            this.baseSelected=_selected;
-        }
+    public initBaseSelected(zoom: number): number{
+        this.baseSelected = zoom >=6.00? ["EUMETSAT","PNOA"]:["ARCGIS"];
+        return this.baseSelected.length - 1
+    } 
+
+    public setBaseSelected(_selected:string[]){
+        let i: number = 0;
+        this.baseSelected = [];
+        _selected.forEach((selected) => {
+            if(this.baseLayers[selected]!=undefined){
+                this.baseSelected[i]=selected;
+                i++;
+            }
+        })
+        // if(this.baseLayers[_selected]!=undefined){
+        //     this.baseSelected[0]=_selected;
+        // }
     }
     
-    public getBaseLayerSource():Source {
-        let bLayer = this.baseLayers[this.baseSelected]
-        if(this.baseLayers[this.baseSelected].source==undefined){
+    public getBaseLayerSource(layer: number):Source {
+        let bLayer = this.baseLayers[this.baseSelected[layer]]
+        if(this.baseLayers[this.baseSelected[layer]].source==undefined){
             switch(bLayer.type) {
                 case AL_TYPE_OSM:
-                        this.baseLayers[this.baseSelected].source = new OSM({
-                            url: this.baseLayers[this.baseSelected].url
+                        this.baseLayers[this.baseSelected[layer]].source = new OSM({
+                            url: this.baseLayers[this.baseSelected[layer]].url
                         })
                     break;
                 case AL_TYPE_WMS:
-                        this.baseLayers[this.baseSelected].source = new TileWMS({
-                            url: this.baseLayers[this.baseSelected].url,
-                            params: { 'LAYERS': this.baseLayers[this.baseSelected].layer }
+                        this.baseLayers[this.baseSelected[layer]].source = new TileWMS({
+                            url: this.baseLayers[this.baseSelected[layer]].url,
+                            params: { 'LAYERS': this.baseLayers[this.baseSelected[layer]].layer }
                         })
                     break;
+                case AL_TYPE_WMTS:
+                    this.baseLayers[this.baseSelected[layer]].source = new WMTS({
+                        url: this.baseLayers[this.baseSelected[layer]].url,
+                        layer: this.baseLayers[this.baseSelected[layer]].layer,
+                        matrixSet: 'GoogleMapsCompatible',
+                        format: 'image/png',
+                        projection: projection,
+                        tileGrid: new WMTSTileGrid({
+                            origin: getTopLeft(projectionExtent),
+                            resolutions: resolutions,
+                            matrixIds: matrixIds,
+                        }),
+                        style: 'default',
+                        wrapX: true,
+                        crossOrigin: 'anonymous' 
+                    })
+                   
+                break;
             }
         }
         // ------------ original
@@ -105,7 +174,7 @@ export class LayerManager {
                 url: this.baseLayers[this.baseSelected].url
               })
         } */
-        return this.baseLayers[this.baseSelected].source
+        return this.baseLayers[this.baseSelected[layer]].source
     }
     //TopLayer
     public addTopLayer(layer:AnemuiLayer){
