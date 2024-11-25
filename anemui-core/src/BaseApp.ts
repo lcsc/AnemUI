@@ -4,6 +4,7 @@ import { MenuBarListener } from "./ui/MenuBar";
 import { MenuBar } from './ui/MenuBar';
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
+// import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
 import PaletteFrame from "./ui/PaletteFrame";
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
@@ -24,7 +25,7 @@ import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import { SideBar, SideBarListener } from "./ui/SideBar";
-// import { SideBar } from "./ui/SideBar_01"; // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
+// import SideBar from "./ui/SideBar_01"; // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
 import Translate from "./language/translate";
 import CsCookies from "./cookies/CsCookies";
 
@@ -163,6 +164,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         
         if (this.infoDiv == null) this.infoDiv = new InfoDiv(this, "infoDiv");
 
+        // addChild(document.body, this.csMap.render())
+        // this.initMap()
+        
         mount(this.mainFrame.render(), document.body)
         this.mainFrame.build();
         addChild(document.getElementById('MainFrame'), this.menuBar.render());
@@ -421,10 +425,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.update();
     }
 
-   /*  public setPalette(palette: string) {
+    public setPalette(palette: string) {
         PaletteManager.getInstance().setSelected(palette);
         this.paletteFrame.update()
-    } */
+    }
 
     //Methods Handling the Menus
     public abstract varSelected(index: number, value?: string, values?: string[]): void;
@@ -607,13 +611,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public showClimatology(){
-        this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.showClimFrame();
         // this.dateSelectorFrame.showClimFrame();
     }
 
     public hideClimatology(){
-        this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.hideClimFrame();
         // this.dateSelectorFrame.hideClimFrame();
     }

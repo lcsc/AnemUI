@@ -167,7 +167,7 @@ div.paletteFrame {
     // }
 
     div.row.selectDiv{
-        width: 160px;
+        width: 200px;
         margin: 0.45em 0em;
     }
 
@@ -234,23 +234,28 @@ div.paletteFrame {
     }
 
     .slider.slider-horizontal {
-        width: 140px;
-        height: 20px;
+        width: 80%;
+        height: auto;
     }
 
     div.slider.visible {
         display: inline-block;
         margin: 0px auto;
-        width: 90%;
+        width: 80%;
         cursor: pointer;
     }
 
     .selectDiv .slider-track {
-        height: 5px !important;
-        margin-top: -3px !important;
-        width: 75% !important;
+        height: 1px !important;
+        width: 100% !important;
+        margin-top: 0px !important;
     }
 
+    .selectDiv .slider-handle {
+        top: 7px;
+        width: 15px;
+        height: 15px;
+    }
     .hidden {
         display: none;
     }
@@ -275,6 +280,77 @@ div.paletteFrame {
         color: $color_8;
     }
 
+
+// ----------------- Prueba CSS radiobuttons
+.inputDiv{
+    background-color:$color_1;
+    border-radius: 10px;
+    box-shadow: 0.5px 1px 5px $color_3;
+}
+
+.radio {
+    width:100%;
+  margin: 0.5rem;
+  text-align: left;
+  font-size: 0.8em;
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    + .radio-label {
+      &:before {
+        content: '';
+        background: $color_1;
+        border-radius: 100%;
+        border: 1px solid darken($color_1, 25%);
+        display: inline-block;
+        width: 1.1em;
+        height: 1.1em;
+        position: relative;
+        top: 0.25em;
+        margin-right: 0.6em !important; 
+        vertical-align: top;
+        cursor: pointer;
+        text-align: left;
+        transition: all 250ms ease;
+      }
+    }
+    &:checked {
+      + .radio-label {
+        &:before {
+          background-color: $color_8;
+          box-shadow: inset 0 0 0 2px $color_1;
+        }
+      }
+    }
+   /*  &:focus {
+      + .radio-label {
+        &:before {
+          outline: none;
+          border-color: $color_8;
+        }
+      }
+    }
+    &:disabled {
+      + .radio-label {
+        &:before {
+          box-shadow: inset 0 0 0 4px $color_1;
+          border-color: darken($color_1, 25%);
+          background: darken($color_1, 25%);
+        }
+      }
+    } */
+    + .radio-label {
+      &:empty {
+        &:before {
+          margin-right: 0;
+        }
+      }
+    }
+  }
+}
+// -----------------
+
     @include md-desktop {
         top: 8.6em;
         div.legend {
@@ -288,4 +364,6 @@ div.paletteFrame {
             line-height: 18px;
         }
     }
+
+
 }

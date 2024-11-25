@@ -5,7 +5,8 @@ import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
 import { mgrs } from 'proj4';
 import { LayerManager } from '../LayerManager';
-import { showLayers }  from "../Env";
+import { showLayers, initialZoom }  from "../Env";
+import { forEach } from 'cypress/types/lodash';
 
 export default class PaletteFrame  extends BaseFrame{
 
@@ -31,6 +32,8 @@ export default class PaletteFrame  extends BaseFrame{
         let bgcolor;
         let color = '#ffffff';
         let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
+        let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
+        let i: number = 0;
         // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
         mgr.setUncertaintyLayerChecked(false)
         let element=
@@ -57,18 +60,32 @@ export default class PaletteFrame  extends BaseFrame{
                         </span>
                     </div>
                     <div className='row selectDiv baseDiv hidden'>
-                        <div className='col-4 closeDiv p-0' onClick={()=>this.toggleSelect('baseDiv')}>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('baseDiv')}>
                             <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
-                        <div className='col-8 p-0'>
-                            <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeBaseLayer(event.target.value)}>
+                        <div className='col-9 ms-1 p-0 inputDiv'>
+                            {/* <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeBaseLayer(event.target.value)}> */}
                                 {baseLayers.map((val,index)=>{
-                                    if(lmgr.getBaseSelected()==val){
-                                        return (<option value={val} selected>{val}</option>)
+                                    i++;
+                                    if(selected.includes(val)){
+                                        {/* return (<option value={val} selected>{val}</option>) */}
+                                        return (
+                                            <label className="radio">
+                                                <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)} checked></input>
+                                                <span className="radio-label"></span>
+                                                {val}
+                                            </label>
+                                        )
                                     }
-                                return (<option value={val}>{val}</option>)
+                                return (
+                                    <label className="radio">
+                                        <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)}></input>
+                                        <span className="radio-label"></span>
+                                        {val}
+                                    </label>
+                                )
                                 })}
-                            </select>
+                            {/* </select> */}
                         </div>
                     </div>
                 </div>
@@ -80,10 +97,10 @@ export default class PaletteFrame  extends BaseFrame{
                         </span>
                     </div>
                     <div className='row selectDiv paletteDiv hidden'>
-                        <div className='col-4 closeDiv p-0' onClick={()=>this.toggleSelect('paletteDiv')}>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('paletteDiv')}>
                             <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
-                        <div className='col-8 p-0'>
+                        <div className='col-9 p-0 inputDiv'>
                             <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>{self.changePalette(event.target.value)}}>
                                 {palettes.map((val,index)=>{
                                     if (val != 'uncertainty') {
@@ -105,10 +122,10 @@ export default class PaletteFrame  extends BaseFrame{
                         </span>
                     </div>
                     <div className='row selectDiv trpDiv hidden'>
-                        <div className='col-4 closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
                             <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
-                        <div className='col-8 p-0'>
+                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
                             <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
                         </div>
                     </div>
@@ -121,10 +138,10 @@ export default class PaletteFrame  extends BaseFrame{
                         </span>
                     </div>
                     <div className='row selectDiv dataDiv hidden'>
-                        <div className='col-4 closeDiv p-0' onClick={()=>this.toggleSelect('dataDiv')}>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('dataDiv')}>
                             <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
-                        <div className='col-8 p-0'>
+                        <div className='col-9 p-0 inputDiv'>
                             <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}>
                                 {topLayers.map((val,index)=>{
                                     let trVal = this.parent.getTranslation(val)
@@ -147,10 +164,10 @@ export default class PaletteFrame  extends BaseFrame{
                                 </span>
                             </div>
                             <div className='row selectDiv uncDiv hidden'>
-                                <div className='col-4 closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
+                                <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
                                     <span className="icon"><i className="bi bi-x"></i></span>
                                 </div>
-                                <div className='col-8 p-0'>    
+                                <div className='col-9 p-0 inputDiv'>    
                                     <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>self.toggleUncertaintyLayer(event.target.checked)} />
                                 </div>
                             </div>
@@ -177,8 +194,13 @@ export default class PaletteFrame  extends BaseFrame{
     }
 
     public changeBaseLayer(value:string):void{
+        let values: string[] = [];
+        let inputs = Array.from(document.getElementsByClassName("baseLayer"));
+        inputs.forEach((input: HTMLInputElement) => {
+            if (input.checked)  values.push(input.value)
+        }) 
         let mgr=LayerManager.getInstance();
-        mgr.setBaseSelected(value);
+        mgr.setBaseSelected(values);
         this.parent.update();
         // this.container.querySelector("div.paletteSelect").classList.remove("visible")
     }
@@ -212,10 +234,10 @@ export default class PaletteFrame  extends BaseFrame{
                     </span>
                 </div>
                 <div className='row selectDiv uncDiv hidden'>
-                    <div className='col-4 closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
+                    <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
                         <span className="icon"><i className="bi bi-x"></i></span>
                     </div>
-                    <div className='col-8 p-0'>    
+                    <div className='col-9 p-0 inputDiv'>    
                         {/* <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} checked /> */}
                         <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} />
                     </div>
@@ -280,7 +302,7 @@ export default class PaletteFrame  extends BaseFrame{
             name = 'Unidades';
         }
         
-        data.innerHTML="<div id='units'><span class='legendText'>"+name+"</span><br/></div>"
+        data.innerHTML="<div id='units'><span className='legendText'>"+name+"</span><br/></div>"
         values.map((val, index) =>{ 
             if (ptr instanceof GradientPainter){
                 addChild(data, (<div style={{background:ptr.getColorString(val,min,max), height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>));
