@@ -314,7 +314,7 @@ export class CsGraph extends BaseFrame {
         digitsAfterDecimal: 2,
         title: this.graphTitle + ' en la estación ' + station['name'],
         ylabel: 'Magnitud (' + this.parent.getState().legendTitle + ')',
-        xlabel: 'Período de retorno (años)',
+        xlabel: 'Período de retorno (años):',
         axes: { x: { logscale: true } },
 
         series: {

@@ -366,10 +366,8 @@ export class OpenLayerMap implements CsMapController{
         this.geoLayer=new CsOpenLayerGeoJsonLayer (data,this.map,this,onClick);
       return this.geoLayer
     }
+    
     public updateRender(support: string): void {
-
-       console.log("zoom: " + this.getZoom()) 
-
       if(support!=this.lastSupport){
   
         switch (support){
