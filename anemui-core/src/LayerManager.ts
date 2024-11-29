@@ -81,7 +81,7 @@ export class LayerManager {
         this.addBaseLayer({name:"PNOA",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false})
         this.addBaseLayer({name:"LIDAR",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false})
         // this.topSelected="mapbox";
-        
+
         // CAPAS SUPERPUESTAS
         // ------ Global ()
         this.addTopLayer({name:"mapbox",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM, global:true})   
@@ -98,6 +98,7 @@ export class LayerManager {
         this.addTopLayer({name:"zonas_inundables-T500",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
         
         // this.baseSelected = "ARCGIS";
+
         this.topSelected="mapbox";
         this.uncertaintyLayer = [];
     }

@@ -574,6 +574,10 @@ a.article {
         @include xl-desktop {
             font-size: 2.0em;
             font-weight: 600;
+
+            &.smallSize{
+                font-size: 1.5em;
+            }
         }
     }
 

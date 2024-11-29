@@ -102,12 +102,10 @@ export class MenuBar extends BaseFrame {
                 <div id="TopBarFrame">
                     <div id="TopBar" className="row fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                         <div className={"navbar " + logoStyle}>
-                            {/* <img src="./images/logos.png"></img> */}
                             <img src={'./images/'+logo}></img>
                         </div>
                         <div id="menu-title" className="menu-info text-left row mx-0 px-4">
-                            <div className={"col " + logoStyle}>
-                            {/* <div class="col" style="padding-left: 200px;"> */}
+                            <div className="col">
                                 <h3 id="title">{this.title}</h3>
                             </div>
                             <div id="menu-central" className="col text-center">
@@ -194,6 +192,9 @@ export class MenuBar extends BaseFrame {
             });
             this.climatologyDisplay.hidden = true;
         }
+
+        if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
+
         if (!hasSubTitle){ 
             this.menuCentral.hidden = true;
         //     this.titleDiv.classList.add('alone'); 
