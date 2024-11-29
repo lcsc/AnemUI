@@ -75,12 +75,15 @@ export class SideBar extends BaseFrame {
     }
 
     public minimize(): void {
-        this.menuContainer.hidden = true;
+        // this.menuContainer.hidden = true;
+        this.container.hidden = true;
       
     }
     public showFrame(): void {
-        if (!this.menuContainer.hidden) return;
-        this.menuContainer.hidden = false;
+        // if (!this.menuContainer.hidden) return;
+        // this.menuContainer.hidden = false;
+        if (!this.container.hidden) return;
+        this.container.hidden = false;
     }
     public hideClimFrame(): void {
         this.climBtnArray.forEach((btn) =>{

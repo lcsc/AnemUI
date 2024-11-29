@@ -4,7 +4,7 @@ import { MenuBarListener } from "./ui/MenuBar";
 import { MenuBar } from './ui/MenuBar';
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
-// import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
+// import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01 (BOTONES CAPAS) -- en desarrollo
 import PaletteFrame from "./ui/PaletteFrame";
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
@@ -245,8 +245,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     onClick(event: CsMapEvent): void {
-        //console.log("Map Clicked");
-
         this.menuBar.showLoading();
         loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
@@ -304,7 +302,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         }
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
+        let varId = this.state.varId.replace("_classes","");
+        downloadTCSVChunked(this.lastLlData.value, varId, portion, open, true);
 
         //downloadCSV(this.lastLlData.value,this.state.varId,open)
     }
@@ -611,13 +610,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public showClimatology(){
-        // this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.showClimFrame();
         // this.dateSelectorFrame.showClimFrame();
     }
 
     public hideClimatology(){
-        // this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.hideClimFrame();
         // this.dateSelectorFrame.hideClimFrame();
     }
