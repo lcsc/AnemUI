@@ -7,5 +7,6 @@ module.exports={
     mapboxAccessToken:'pk.eyJ1IjoiYjByamEiLCJhIjoiY2s5NjhvYjlkMGRsczNlbDQ3YXhvZTBvZyJ9.S3-_Wjl7BXcCLDOXNSbr_A',
     logo:'logo_aemet.png',
     initialZoom:6,
-    ncSignif:7
+    ncSignif:7,
+    dataFormat: 'nc'  // 'nc' or 'zarr'
 }
