@@ -159,7 +159,7 @@ export default class LayerFrame  extends BaseFrame {
         let mgr=LayerManager.getInstance();
         mgr.setTopSelected(value);
         this.parent.update();
-        this.container.querySelector("div.layerFrame").classList.remove("visible")
+        // this.container.querySelector("div.layerFrame").classList.remove("visible")
     }
 
     public toggleUncertaintyLayer (checked: boolean) {

@@ -40,65 +40,64 @@ export class DownloadFrame extends BaseFrame {
                 <div className='downlad-buttons'>
                     <div id="latlong" role="latLong" style={{ visibility: "hidden" }}><i className="bi bi-pin-map"></i> <span>latLng</span></div>
                     <div className='btnSelect left d-grid mx-auto'>
-                        
-                            { !oneOption &&
-                                <div id="dropNc" role="dropNc">
-                                    <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>
-                                        <span className="icon"><i className="bi bi-box-arrow-down"></i></span>
-                                        <span className="text" aria-label='top'>
-                                            {this.parent.getTranslation('descargar_nc')}
-                                        </span>
-                                    </div>
-                                    <div className='row selectDiv dataDiv hidden'>
-                                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('dataDiv')}>
-                                            <span className="icon"><i className="bi bi-x"></i></span>
-                                        </div>
-                                        <div className='col-9 p-0 inputDiv'>
-                                            <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.parent.downloadNc(event.target.value)}>
-                                                {
-                                                this.downloadNcOptions.map((value) => {
-                                                        let option = value.value;
-                                                        return (
-                                                            <option value={this.parent.getTranslation(option)}>{this.parent.getTranslation(option)}</option>
-                                                        )
-                                                    })
-                                                }
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                            { oneOption && 
-                                <fieldset id="btnNc" role="dropNc" className='pointBtn navbar-btn buttonDiv visible' disabled>
+                        { !oneOption &&
+                            <div id="dropNc" role="dropNc">
+                                <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>
                                     <span className="icon"><i className="bi bi-box-arrow-down"></i></span>
-                                    <span className="text" aria-label='base' onClick={() => { this.parent.downloadNc() }}>
+                                    <span className="text" aria-label='top'>
                                         {this.parent.getTranslation('descargar_nc')}
                                     </span>
-                                </fieldset>
-                            }
-                        
-                            {/* <div id="dropPoint" className="btn-group dropend download-btn" role="dropPoint">
-                                <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
-                                <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                    <span className="visually-hidden"></span>
-                                </button>
-                                <ul className="dropdown-menu">
-                                    <li><a className="dropdown-item" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</a></li>
-                                    <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
-                                </ul>
-                            </div> */}
-                            <fieldset id="btnPoint" role="btnPoint" className='pointBtn navbar-btn buttonDiv visible' disabled>
-                                <span className="icon"><i className="bi bi-file-earmark-arrow-down"></i></span>
-                                <span className="text" aria-label='base' onClick={() => { this.parent.downloadPoint() }}>
-                                    {this.parent.getTranslation('descargar_pixel')}
+                                </div>
+                                <div className='row selectDiv dataDiv hidden'>
+                                    <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('dataDiv')}>
+                                        <span className="icon"><i className="bi bi-x"></i></span>
+                                    </div>
+                                    <div className='col-9 p-0 inputDiv'>
+                                        <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.parent.downloadNc(event.target.value)}>
+                                            {
+                                            this.downloadNcOptions.map((value) => {
+                                                    let option = value.value;
+                                                    return (
+                                                        <option value={value.suffix}>{this.parent.getTranslation(option)}</option>
+                                                    )
+                                                })
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        { oneOption && 
+                            <fieldset id="btnNc" role="dropNc" className='pointBtn navbar-btn buttonDiv visible' disabled>
+                                <span className="icon"><i className="bi bi-box-arrow-down"></i></span>
+                                <span className="text" aria-label='base' onClick={() => { this.parent.downloadNc() }}>
+                                    {this.parent.getTranslation('descargar_nc')}
                                 </span>
                             </fieldset>
-                            <fieldset id="btnGraph" role="btnGraph" className='pointBtn navbar-btn buttonDiv visible' disabled style={this.parent.getGraph().byPoint ? { visibility: "visible" } : { visibility: "hidden" }} onClick={() => { this.parent.showGraph() }}>
-                                <span className="icon"><i className="bi bi-graph-up"></i></span>
-                                <span className="text" aria-label='base'>
-                                    {this.parent.getTranslation('grafico_pixel')}
-                                </span>
-                            </fieldset>
+                        }
+                    
+                        {/* <div id="dropPoint" className="btn-group dropend download-btn" role="dropPoint">
+                            <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
+                            <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                                <span className="visually-hidden"></span>
+                            </button>
+                            <ul className="dropdown-menu">
+                                <li><a className="dropdown-item" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</a></li>
+                                <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
+                            </ul>
+                        </div> */}
+                        <fieldset id="btnPoint" role="btnPoint" className='pointBtn navbar-btn buttonDiv visible' disabled>
+                            <span className="icon"><i className="bi bi-file-earmark-arrow-down"></i></span>
+                            <span className="text" aria-label='base' onClick={() => { this.parent.downloadPoint() }}>
+                                {this.parent.getTranslation('descargar_pixel')}
+                            </span>
+                        </fieldset>
+                        <fieldset id="btnGraph" role="btnGraph" className='pointBtn navbar-btn buttonDiv visible' disabled style={this.parent.getGraph().byPoint ? { visibility: "visible" } : { visibility: "hidden" }} onClick={() => { this.parent.showGraph() }}>
+                            <span className="icon"><i className="bi bi-graph-up"></i></span>
+                            <span className="text" aria-label='base'>
+                                {this.parent.getTranslation('grafico_pixel')}
+                            </span>
+                        </fieldset>
                     </div>        
                 </div>
                 <div className='download-handler'>
