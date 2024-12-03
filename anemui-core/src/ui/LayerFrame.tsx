@@ -1,14 +1,12 @@
 import { createElement, addChild } from 'tsx-create-element';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
-import { GradientPainter, PaletteManager } from '../PaletteManager';
+import { PaletteManager } from '../PaletteManager';
 import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
-import { mgrs } from 'proj4';
 import { LayerManager } from '../LayerManager';
 import { showLayers, initialZoom }  from "../Env";
-import { forEach } from 'cypress/types/lodash';
 
-export default class PaletteFrame  extends BaseFrame{
+export default class LayerFrame  extends BaseFrame {
 
     protected slider: Slider
     private baseDiv: HTMLElement
@@ -35,23 +33,10 @@ export default class PaletteFrame  extends BaseFrame{
         let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
         let i: number = 0;
         // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
-        mgr.setUncertaintyLayerChecked(false)
+        // mgr.setUncertaintyLayerChecked(false)
         let element=
-        (<div id="PaletteFrame" className='paletteFrame' onMouseOver={(event:React.MouseEvent)=>{mouseOverFrame(self,event)}}>
-            <div className="info legend">
-                <div id="units"><span className='legendText'>{name}</span><br/></div>
-                { 
-                    values.map((val, index) =>  {
-                        if (ptr instanceof GradientPainter){
-                            return (<div style={{background:ptr.getColorString(val,min,max), height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>
-                        )} else {
-                            return (<div style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className='legendText smallText'> {texts[index]}</span><br/></div>)
-                        }
-                    })
-                }
-                <div id="legendBottom"></div> 
-            </div>
-            <div className='paletteSelect btnSelect right'>
+        (
+            <div id="layer-frame" className='layerFrame btnSelect left'>
                 <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
                         <span className="icon"><i className="bi bi-globe-europe-africa"></i></span>
@@ -64,11 +49,9 @@ export default class PaletteFrame  extends BaseFrame{
                             <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
                         <div className='col-9 ms-1 p-0 inputDiv'>
-                            {/* <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeBaseLayer(event.target.value)}> */}
-                                {baseLayers.map((val,index)=>{
+                                { baseLayers.map((val,index)=>{
                                     i++;
                                     if(selected.includes(val)){
-                                        {/* return (<option value={val} selected>{val}</option>) */}
                                         return (
                                             <label className="radio">
                                                 <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)} checked></input>
@@ -85,32 +68,7 @@ export default class PaletteFrame  extends BaseFrame{
                                     </label>
                                 )
                                 })}
-                            {/* </select> */}
-                        </div>
-                    </div>
-                </div>
-                <div id="palette-div">
-                    <div className="buttonDiv paletteDiv visible"  onClick={()=>this.toggleSelect('paletteDiv')}>
-                        <span className="icon"><i className="bi bi-palette"></i></span>
-                        <span className="text" aria-label='paleta'>
-                            {this.parent.getTranslation('paleta')}: {mgr.getSelected()}
-                        </span>
-                    </div>
-                    <div className='row selectDiv paletteDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('paletteDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 p-0 inputDiv'>
-                            <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event)=>{self.changePalette(event.target.value)}}>
-                                {palettes.map((val,index)=>{
-                                    if (val != 'uncertainty') {
-                                        if(mgr.getSelected()==val){
-                                            return (<option value={val} selected>{val}</option>)
-                                        }
-                                        return (<option value={val}>{val}</option>)
-                                    }
-                                })}
-                            </select>
+                           
                         </div>
                     </div>
                 </div>
@@ -175,7 +133,7 @@ export default class PaletteFrame  extends BaseFrame{
                     }
                 </div>
             </div>
-        </div>);
+        );
         return element;
     }
 
@@ -184,13 +142,6 @@ export default class PaletteFrame  extends BaseFrame{
         this.container.querySelector(".selectDiv." + select).classList.toggle("hidden")
         this.container.querySelector(".buttonDiv." + select).classList.toggle("visible")
         this.container.querySelector(".selectDiv." + select).classList.toggle("visible")
-    }
-
-    public changePalette(value: string): void {
-        let mgr=PaletteManager.getInstance();
-        mgr.setSelected(value);
-        this.parent.update();
-        this.container.querySelector("div.paletteSelect").classList.remove("visible")
     }
 
     public changeBaseLayer(value:string):void{
@@ -202,14 +153,13 @@ export default class PaletteFrame  extends BaseFrame{
         let mgr=LayerManager.getInstance();
         mgr.setBaseSelected(values);
         this.parent.update();
-        // this.container.querySelector("div.paletteSelect").classList.remove("visible")
     }
 
     public changeTopLayer(value:string):void{
         let mgr=LayerManager.getInstance();
         mgr.setTopSelected(value);
         this.parent.update();
-        this.container.querySelector("div.paletteSelect").classList.remove("visible")
+        this.container.querySelector("div.layerFrame").classList.remove("visible")
     }
 
     public toggleUncertaintyLayer (checked: boolean) {
@@ -223,7 +173,6 @@ export default class PaletteFrame  extends BaseFrame{
 
     public renderUncertaintyFrame():JSX.Element {
         let mgr=PaletteManager.getInstance();
-        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL - La capa de incertidumbre queda activa por defecto
         mgr.setUncertaintyLayerChecked(false)
         return (
             <div>
@@ -238,7 +187,6 @@ export default class PaletteFrame  extends BaseFrame{
                         <span className="icon"><i className="bi bi-x"></i></span>
                     </div>
                     <div className='col-9 p-0 inputDiv'>    
-                        {/* <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} checked /> */}
                         <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} />
                     </div>
                 </div>
@@ -247,16 +195,10 @@ export default class PaletteFrame  extends BaseFrame{
     }
 
     public build(){
-        this.container = document.getElementById("PaletteFrame") as HTMLDivElement
+        this.container = document.getElementById("layer-frame") as HTMLDivElement
         this.baseDiv = document.getElementById('base-div') as HTMLElement;
         this.dataDiv = document.getElementById('data-div') as HTMLElement;
         this.trpDiv = document.getElementById('trp-div') as HTMLElement;
-        /* let select = this.container.querySelector("select");
-        select.addEventListener('focusout',()=>this.hideSelect()) */
-       /*  this.baseDiv.addEventListener('focusout',()=>this.hideSelect('baseDiv'))
-        this.dataDiv.addEventListener('focusout',()=>this.hideSelect('dataDiv'))
-        this.trpDiv.addEventListener('focusout',()=>this.hideSelect('trpDiv')) */
-
         this.slider=new Slider(document.getElementById("transparencySlider"),{
             natural_arrow_keys: true,
             //tooltip: "always",
@@ -287,35 +229,19 @@ export default class PaletteFrame  extends BaseFrame{
     }
 
     public update(): void {
-        let values= [...this.parent.getLegendValues()].reverse();
-        let texts=[...this.parent.getLegendText()].reverse();
-        let ptr=PaletteManager.getInstance().getPainter();
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();
         let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let name:string; 
-        let data=this.container.querySelector(".paletteFrame.info")
         if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
             name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
         }else {
             name = 'Unidades';
         }
-        
-        data.innerHTML="<div id='units'><span className='legendText'>"+name+"</span><br/></div>"
-        values.map((val, index) =>{ 
-            if (ptr instanceof GradientPainter){
-                addChild(data, (<div style={{background:ptr.getColorString(val,min,max), height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>));
-            } else {
-                addChild(data, (<div style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className={`legendText smallText`} > {texts[index]}</span><br/></div>));
-            }
-        });
-        data.innerHTML+="<div id='legendBottom'></div>"
-
-        this.container.querySelector(".paletteSelect span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
-        this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
-        this.container.querySelector(".paletteSelect span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
-        this.container.querySelector(".paletteSelect span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
+        this.container.querySelector(".layerFrame span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
+        this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
+        this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
         let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         
         this.uncertaintyFrame = this.container.querySelector("#unc-div")
