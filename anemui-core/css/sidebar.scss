@@ -705,8 +705,151 @@ ul .two-columns {
     -moz-columns: 2;
 }
 
+
 /* ---------------------------------------------------
-    POPOVER STYLES
+    SELECTORES DE CAPAS
+----------------------------------------------------- */
+
+div.row.selectDiv{
+    width: 200px;
+    margin: 0.45em 0em;
+}
+
+.uncDiv input.form-check-input {
+    visibility: visible;
+    margin: 0px auto;
+    width: 4em !important;
+    height: 2em !important;
+    background-color: $color_8;
+    box-shadow: 0.5px 0.5px 3px $color_3;
+    cursor:pointer;
+}
+
+.slider.slider-horizontal {
+    width: 80%;
+    height: auto;
+}
+
+div.slider.visible {
+    display: inline-block;
+    margin: 0px auto;
+    width: 80%;
+    cursor: pointer;
+}
+
+.selectDiv  {
+    .slider-track {
+        height: 1px !important;
+        width: 100% !important;
+        margin-top: 0px !important;
+    }
+    
+    .slider-handle {
+        top: 7px;
+        width: 15px;
+        height: 15px;
+    }
+    
+    .inputDiv{
+        background-color:$color_1;
+        border-radius: 10px;
+        box-shadow: 0.5px 1px 5px $color_3;
+    }
+}
+
+.hidden {
+    display: none;
+}
+
+.closeDiv .icon {
+    height: 30px;
+    width: 30px;
+    font-size: 1.8em !important;
+    box-shadow: 0.5px 1px 5px $color_3;
+    background-color: $color_8;
+    color: $color_4 !important;
+    border-radius: 50px;
+    border: solid 1px $color_4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeDiv .icon:hover {
+    cursor:pointer;
+    background-color: $color_6;
+    color: $color_8;
+}
+
+
+// ----------------- Prueba CSS radiobuttons
+.radio {
+    width:100%;
+  margin: 0.5rem;
+  text-align: left;
+  font-size: 0.8em;
+  color: $color_3;
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    + .radio-label {
+      &:before {
+        content: '';
+        background: $color_1;
+        border-radius: 100%;
+        border: 1px solid darken($color_1, 25%);
+        display: inline-block;
+        width: 1.1em;
+        height: 1.1em;
+        position: relative;
+        top: 0.25em;
+        margin-right: 0.6em !important; 
+        vertical-align: top;
+        cursor: pointer;
+        text-align: left;
+        transition: all 250ms ease;
+      }
+    }
+    &:checked {
+      + .radio-label {
+        &:before {
+          background-color: $color_8;
+          box-shadow: inset 0 0 0 2px $color_1;
+        }
+      }
+    }
+   /*  &:focus {
+      + .radio-label {
+        &:before {
+          outline: none;
+          border-color: $color_8;
+        }
+      }
+    }
+    &:disabled {
+      + .radio-label {
+        &:before {
+          box-shadow: inset 0 0 0 4px $color_1;
+          border-color: darken($color_1, 25%);
+          background: darken($color_1, 25%);
+        }
+      }
+    } */
+    + .radio-label {
+      &:empty {
+        &:before {
+          margin-right: 0;
+        }
+      }
+    }
+  }
+}
+
+// -------------------------------- SELECTORES DE CAPAS
+
+/* ---------------------------------------------------
+    ESTILOS POPOVERS
 ----------------------------------------------------- */
 
 .popover {
