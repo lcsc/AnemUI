@@ -2,7 +2,7 @@ div.GraphContainer {
     @include bgFrame(12px);
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -30%);
     padding: 0.8em 1.5em;
     background-color: rgba(255, 255, 255, 1);
     background: white;
@@ -10,16 +10,22 @@ div.GraphContainer {
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
     z-index: 200;
     width: fit-content;
+    position: relative;
 
+    a.popup-close-button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 300;
+    }
 
     a.popup-close-button i.bi {
         width: 40px;
         height: 40px;
-        padding: 12px 0 0 12px;
-        cursor: pointer;
         font-size: 2rem;
         color: #2c6d9a;
-        padding: 5px 0 0 9px;
+        padding: 5px;
+        cursor: pointer;
     }
 
     a.popup-close-button i.bi:hover {
@@ -68,8 +74,6 @@ div.GraphContainer {
     }
 
     #labels {
-
         text-align: center;
     }
-
 }

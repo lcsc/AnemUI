@@ -106,7 +106,7 @@ export abstract class DataServiceApp extends BaseApp {
 
         if (hasSubVars) {
             let subVars = this.service.getSubVars(this.state)
-            this.getSideBar().setSubVariables(subVars);    // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
+            this.getSideBar().setSubVariables(subVars);  // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
             this.subVarSelected(0, subVars[0], subVars);
         } else {
             let selections = this.service.getSelections(this.state);
