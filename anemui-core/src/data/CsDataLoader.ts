@@ -8,52 +8,52 @@ import { extractValueChunkedFromT, extractDataChunkedFromT, extractValueChunkedF
 
 
 export async function loadTimesJs(): Promise<CsTimesJsData> {
-    let ret = new Promise<CsTimesJsData>((resolve, reject) => {
-        downloadUrl("./times.json", (status: number, response) => {
-            if (status == 200) {
-                let parsedJson: any;
-                try {
-                    parsedJson = JSON.parse(new TextDecoder().decode(response as ArrayBuffer));
-                    let data: CsTimesJsData={
-                        //Geo Data
-                        center : parsedJson.center,
-
-                        //Text data for variables
-                        varTitle : parsedJson.varTitle,
-                        legendTitle : parsedJson.legendTitle,
-
-                        //Data of variables
-                        times : parsedJson.times,
-                        varMin : parsedJson.varMin,
-                        varMax : parsedJson.varMax,
-                        minVal : parsedJson.minVal,
-                        maxVal : parsedJson.maxVal,
-
-                        //Data of chunks
-                        portions : parsedJson.portions, // Suffix for the nc files
-                        lonMin: parsedJson.lonMin, //Min value for longitude dimension
-                        lonMax: parsedJson.lonMax, //Max value for longitude dimension
-                        lonNum: parsedJson.lonNum, //Number of values for longitude dimension
-                        latMin: parsedJson.latMin, //Min value for latitude dimension
-                        latMax: parsedJson.latMax, //Max value for latitude dimension
-                        latNum: parsedJson.latNum, //Number of values for latitude dimension
-                        timeMin: parsedJson.timeMin, //Min value for time dimension
-                        timeMax: parsedJson.timeMax, //Max value for time dimension
-                        timeNum: parsedJson.timeNum, //Number of values for time dimension
-                        varType: parsedJson.varType, //Type of variable as struct definition (e.g. "f" for "float") https://docs.python.org/3/library/struct.html#format-characters
-                        offsetType: parsedJson.offsetType, // Type of offset as struct definition (e.g. "i" for "int") https://docs.python.org/3/library/struct.html#format-characters
-                        sizeType: parsedJson.sizeType, // Type of size as struct definition (e.g. "i" for "int") https://docs.python.org/3/library/struct.html#format-characters
-                        projection: parsedJson.projection, // Projection of the data
-                    }
-                    resolve(data);
-                } catch (e) {
-                    reject(e);
+    try {
+        const response = await new Promise<ArrayBuffer>((resolve, reject) => {
+            downloadUrl("./times.json", (status: number, response) => {
+                if (status == 200) {
+                    resolve(response as ArrayBuffer);
+                } else {
+                    reject(new Error(`Failed to download: status ${status}`));
                 }
-            }
-        })
-    })
+            });
+        });
 
-    return ret;
+        const parsedJson = JSON.parse(new TextDecoder().decode(response));
+        return {
+            //Geo Data
+            center: parsedJson.center,
+
+            //Text data for variables
+            varTitle: parsedJson.varTitle,
+            legendTitle: parsedJson.legendTitle,
+
+            //Data of variables
+            times: parsedJson.times,
+            varMin: parsedJson.varMin,
+            varMax: parsedJson.varMax,
+            minVal: parsedJson.minVal,
+            maxVal: parsedJson.maxVal,
+
+            //Data of chunks
+            portions: parsedJson.portions, // Suffix for the nc files
+            lonMin: parsedJson.lonMin, //Min value for longitude dimension
+            lonMax: parsedJson.lonMax, //Max value for longitude dimension
+            lonNum: parsedJson.lonNum, //Number of values for longitude dimension
+            latMin: parsedJson.latMin, //Min value for latitude dimension
+            latMax: parsedJson.latMax, //Max value for latitude dimension
+            latNum: parsedJson.latNum, //Number of values for latitude dimension
+            timeMin: parsedJson.timeMin, //Min value for time dimension
+            timeMax: parsedJson.timeMax, //Max value for time dimension
+            timeNum: parsedJson.timeNum, //Number of values for time dimension
+            varType: parsedJson.varType, //Type of variable as struct definition (e.g. "f" for "float") https://docs.python.org/3/library/struct.html#format-characters
+            offsetType: parsedJson.offsetType, // Type of offset as struct definition (e.g. "i" for "int") https://docs.python.org/3/library/struct.html#format-characters
+            sizeType: parsedJson.sizeType, // Type of size as struct definition (e.g. "i" for "int") https://docs.python.org/3/library/struct.html#format-characters
+            projection: parsedJson.projection, // Projection of the data
+        };
+    } catch (e) {
+        throw e;
+    }
 }
 
 function degrees2meters(lon:number, lat:number):[number,number] {
