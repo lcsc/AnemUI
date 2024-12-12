@@ -1,6 +1,5 @@
 import { createElement, addChild } from 'tsx-create-element';
 import "../../css/anemui-core.scss"
-import { CsDropdown, CsDropdownListener } from './CsDropdown';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
 import { logo, logoStyle, hasSpSupport, hasSubTitle, hasSubVars, hasTpSupport, hasClimatology, hasVars}  from "../Env";
@@ -55,6 +54,7 @@ export class MenuBar extends BaseFrame {
     private topBar: HTMLElement
     private menuCentral: HTMLElement
     private loading: HTMLDivElement
+    private loadingText: HTMLSpanElement
     private titleDiv: HTMLElement
 
     private displaySpSupport: HTMLDivElement
@@ -102,36 +102,36 @@ export class MenuBar extends BaseFrame {
                 <div id="TopBarFrame">
                     <div id="TopBar" className="row fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                         <div className={"navbar " + logoStyle}>
+                            {/* <img src="./images/logos.png"></img> */}
                             <img src={'./images/'+logo}></img>
                         </div>
                         <div id="menu-title" className="menu-info text-left row mx-0 px-4">
-                            <div className="col">
-                                <h3 id="title">{this.title}</h3>
-                            </div>
+                            <span className="ps-4" id="title">{this.title}</span>
+                            <div className="col-1 menu-info" id="info"></div>
                             <div id="menu-central" className="col text-center">
                                 <div id="SubBar" className="d-flex">
                                     <form className="gy-1 gx-1 align-items-center" onSubmit={() => { this.fireParamChanged(); return false }}>
                                         <div id="inputs" className="input-group input-group-sm">
+                                            <div id="climatologyDisplay" className='row'></div> 
                                             { hasSpSupport && <div id="input1" role="spSupport" className="input-group-text inputDiv">{this.parent.getState().support}</div> }
                                             { hasVars && <div id="input2" role="var" className="input-group-text inputDiv">{this.parent.getState().varName}</div> }
                                             { hasSubVars && <div id="input3" role="subVar" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().subVarName}</div> }
                                             { hasTpSupport && <div id="input4" role="tpSupport" className="input-group-text inputDiv" hidden={true}>{this.parent.getState().tpSupport}</div> }
                                             <div id="input5" role="selection" className="input-group-text inputDiv">{this.parent.getState().selection}</div>
-                                            <div id="climatologyDisplay" className='row'></div> 
+                                           
                                             <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
                                                 placeholder="Selection Param" value={this.parent.getState().selectionParam}
                                                 disabled={!this.parent.getState().selectionParamEnable}
                                                 onChange={() => { this.fireParamChanged(); return false }} />
                                             <div className="col-auto">
-                                                <div className="spinner-grow text-info" role="status" hidden />
+                                                <span className="ms-2" id="fetching-text" hidden>Fetching data...</span>
+                                                <div className="spinner-grow text-info" role="status" hidden/>
                                             </div>
                                         </div>
                                     </form>
                                 </div>
                             </div>
-                            <div className="col-1 menu-info d-flex flex-row-reverse" id="info">
 
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -147,6 +147,7 @@ export class MenuBar extends BaseFrame {
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         // this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
+        this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         this.climatologyDisplay = document.getElementById('climatologyDisplay') as HTMLDivElement;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
@@ -192,9 +193,6 @@ export class MenuBar extends BaseFrame {
             });
             this.climatologyDisplay.hidden = true;
         }
-
-        if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
-
         if (!hasSubTitle){ 
             this.menuCentral.hidden = true;
         //     this.titleDiv.classList.add('alone'); 
@@ -217,13 +215,21 @@ export class MenuBar extends BaseFrame {
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
-        this.loading.hidden = false;
-
+        if (this.loading) this.loading.hidden = false; 
+        if (this.loadingText) {
+            this.loadingText.hidden = false;          
+            this.loadingText.classList.add('blinking-text'); 
+        }
     }
+    
     public hideLoading(): void {
-        this.loading.hidden = true;
+        if (this.loading) this.loading.hidden = true; 
+        if (this.loadingText) {
+            this.loadingText.hidden = true;      
+            this.loadingText.classList.add('display:none')
+        }
     }
-
+    
     public hideSelection() {
         this.selectionHidden = true;
 
@@ -315,4 +321,5 @@ export class MenuBar extends BaseFrame {
             k++
         })
     }
+
 }

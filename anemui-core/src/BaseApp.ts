@@ -4,7 +4,7 @@ import { MenuBarListener } from "./ui/MenuBar";
 import { MenuBar } from './ui/MenuBar';
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
-// import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01 (BOTONES CAPAS) -- en desarrollo
+// import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
 import PaletteFrame from "./ui/PaletteFrame";
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
@@ -14,12 +14,10 @@ import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, getPortionForPoint } from "./data/ChunkDownloader";
-import { calcPixelIndex, downloadTCSVChunked } from "./data/ChunkDownloader";
+import { downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, DEF_STYLE_UNC, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
-import proj4 from 'proj4';
-import { downloadUrl } from "./data/UrlDownloader";
 import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
@@ -56,6 +54,7 @@ const INITIAL_STATE: CsViewerData = {
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
+const LEYEND_TITLE = "Leyenda"
 
 export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener, DateFrameListener {
 
@@ -245,6 +244,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     onClick(event: CsMapEvent): void {
+        //console.log("Map Clicked");
+
         this.menuBar.showLoading();
         loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
@@ -302,8 +303,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         }
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        let varId = this.state.varId.replace("_classes","");
-        downloadTCSVChunked(this.lastLlData.value, varId, portion, open, true);
+        downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
 
         //downloadCSV(this.lastLlData.value,this.state.varId,open)
     }
@@ -327,7 +327,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         if (_timesJs.legendTitle[varId] != undefined) {
             legendTitle = _timesJs.legendTitle[varId]
         } else {
-            legendTitle = "Leyenda"
+            legendTitle = LEYEND_TITLE
         }
         let varName: string
         if (_timesJs.varTitle[varId] != undefined) {
@@ -610,13 +610,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
     }
 
     public showClimatology(){
-        this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.showClimFrame();
         // this.dateSelectorFrame.showClimFrame();
     }
 
     public hideClimatology(){
-        this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.hideClimFrame();
         // this.dateSelectorFrame.hideClimFrame();
     }
