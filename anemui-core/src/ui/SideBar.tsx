@@ -26,6 +26,7 @@ export class SideBar extends BaseFrame {
     private selection: CsDropdown;
     private extraDropDowns: CsDropdown[];
     private dropDownOrder: string[]
+    // private containerHandler: HTMLElement;
 
     private popData: any;
     private extraBtns: BaseUiElement[];
@@ -74,14 +75,19 @@ export class SideBar extends BaseFrame {
         this.dropDownOrder = []
     }
 
-    public minimize(): void {
-        this.menuContainer.hidden = true;
+     public minimize(): void {
+    //     // this.menuContainer.hidden = true;
+    //     this.container.hidden = true;
+    //     // this.containerHandler.hidden = false;
       
-    }
-    public showFrame(): void {
-        if (!this.menuContainer.hidden) return;
-        this.menuContainer.hidden = false;
-    }
+     }
+     public showFrame(): void {
+    //     // if (!this.menuContainer.hidden) return;
+    //     // this.menuContainer.hidden = false;
+    //     if (!this.container.hidden) return;
+    //     this.container.hidden = false;
+    //     // this.containerHandler.hidden = true;
+     }
     public hideClimFrame(): void {
         this.climBtnArray.forEach((btn) =>{
             btn.hidden = true;
@@ -99,11 +105,16 @@ export class SideBar extends BaseFrame {
             <div id="SideBarInfo">
                 <div id="menuContainer" className='menu-container mx-auto d-grid gap-2 my-4'></div>
             </div>
+            {/* <div id='sidebar-handler'>
+                <i className="bi bi-menu-button-wide-fill"></i>
+            </div> */}
         </div>);
     }
     
     public build(): void {
-        this.container = document.getElementById("SideBar") as HTMLDivElement;
+        this.container = document.getElementById("SideBarInfo") as HTMLDivElement;
+        console.log(document.getElementById("sidebar-handler"))
+        // this.containerHandler = document.getElementById("sidebar-handler") as HTMLElement
         this.menuContainer = document.getElementById("menuContainer") as HTMLElement;
 
         if (hasButtons) {
@@ -156,6 +167,7 @@ export class SideBar extends BaseFrame {
             })
         }
        
+        // this.containerHandler.hidden = true;
     }
 
     public update(): void {

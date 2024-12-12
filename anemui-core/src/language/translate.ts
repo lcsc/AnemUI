@@ -13,7 +13,7 @@ export default class Translate {
 
     private locales: any = {
         en: {
-            "descargar_nc": "Download NC",
+            "descargar_nc": "Download File",
             "descargar_peninsula": "Download Peninsula",
             "descargar_baleares": "Download Baleares",
             "descargar_canarias": "Download Canarias",
@@ -62,7 +62,7 @@ export default class Translate {
             }
         },
         es: {
-            descargar_nc: "Descargar NC",
+            "descargar_nc": "Descargar Archivo",
             "descargar_peninsula": "Descargar Península",
             "descargar_baleares": "Descargar Baleares",
             "descargar_canarias": "Descargar Canarias",
