@@ -2,8 +2,6 @@ import { BaseApp } from "../BaseApp";
 import { BaseFrame, mouseOverFrame } from "./BaseFrame";
 import { createElement } from "tsx-create-element";
 import Keycloak, { KeycloakProfile } from 'keycloak-js'
-import { MouseEvent } from "react";
-import { event } from "jquery";
 
 export class LoginFrame extends BaseFrame {
     private keycloak:Keycloak;
