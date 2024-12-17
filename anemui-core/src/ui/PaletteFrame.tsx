@@ -1,13 +1,9 @@
 import { createElement, addChild } from 'tsx-create-element';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { GradientPainter, PaletteManager } from '../PaletteManager';
-import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
-import { mgrs } from 'proj4';
 import { LayerManager } from '../LayerManager';
 import { showLayers, initialZoom }  from "../Env";
-import { forEach } from 'cypress/types/lodash';
-
 export default class PaletteFrame  extends BaseFrame{
 
     protected slider: Slider
