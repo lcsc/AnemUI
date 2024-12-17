@@ -1,272 +1,273 @@
 import { createElement, addChild } from 'tsx-create-element';
-import "../../css/anemui-core.scss"
-import { CsDropdown, CsDropdownListener } from './CsDropdown';
-import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
-import { BaseApp } from '../BaseApp';
-import { hasButtons, hasSpSupport, hasVars, hasSubVars, hasTpSupport, varHasPopData, sbVarHasPopData, hasClimatology}  from "../Env";
+import { BaseFrame, mouseOverFrame } from './BaseFrame';
+import { PaletteManager } from '../PaletteManager';
+import { ChangeEvent } from 'react';
+import Slider from 'bootstrap-slider';
+import { mgrs } from 'proj4';
+import { LayerManager } from '../LayerManager';
+import { showLayers, initialZoom }  from "../Env";
+import { forEach } from 'cypress/types/lodash';
 
+export default class SideBar  extends BaseFrame{
 
-export interface SideBarListener {
-    spatialSelected(index: number, value?: string, values?: string[]): void;
-    temporalSelected(index: number, value?: string, values?: string[]): void;
-    varSelected(index: number, value?: string, values?: string[]): void;
-    subVarSelected(index: number, value?: string, values?: string[]): void;
-    selectionSelected(index: number, value?: string, values?: string[]): void;
-    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
-    selectionParamChanged(param: number): void;
-}
+    protected slider: Slider
+    private baseDiv: HTMLElement
+    private dataDiv: HTMLElement
+    private trpDiv: HTMLElement
+    private uncertaintyFrame: HTMLElement; 
 
-export class SideBar extends BaseFrame {
-    private menuContainer: HTMLElement
-    private climBtnArray: HTMLElement[]
-    private spatialSupport: CsDropdown;
-    private temporalSupport: CsDropdown;
-    private variable: CsDropdown;
-    private subVariable: CsDropdown;
-    private selection: CsDropdown;
-    private extraDropDowns: CsDropdown[];
-    private dropDownOrder: string[]
-    // private containerHandler: HTMLElement;
-
-    private popData: any;
-    private extraBtns: BaseUiElement[];
-
-    private listener: SideBarListener
-
-    constructor(_parent: BaseApp, _listener: SideBarListener) {
-        super(_parent)
-        this.listener = _listener;
-        let self = this
-        if (hasSpSupport) {
-            this.spatialSupport = new CsDropdown("SpatialSupportDD", "Soporte Espacial", {
-                valueSelected(origin, index, value, values) {
-                    self.listener.spatialSelected(index, value, values)
-                },
-            });
-        }
-        if (hasVars) {
-        this.variable = new CsDropdown("VariableDD", "Variable", {
-            valueSelected(origin, index, value, values) {
-                self.listener.varSelected(index, value, values)
-            },
-        });
-        }
-        if (hasSubVars) {
-            this.subVariable = new CsDropdown("SubVariableDD", "SubVariable", {
-                valueSelected(origin, index, value, values) {
-                    self.listener.subVarSelected(index, value, values)
-                },
-            });
-        }
-        if (hasTpSupport) {
-            this.temporalSupport = new CsDropdown("TemporalSupportDD", "Periodo", {
-                valueSelected(origin, index, value, values) {
-                    self.listener.temporalSelected(index, value, values)
-                },
-            });
-        }
-        this.selection = new CsDropdown("SelectionDD", "Selección", {
-            valueSelected(origin, index, value, values) {
-                self.listener.selectionSelected(index, value, values)
-            },
-        });
-        this.extraDropDowns = []
-        this.extraBtns = []
-        this.dropDownOrder = []
-    }
-
-     public minimize(): void {
-    //     // this.menuContainer.hidden = true;
-    //     this.container.hidden = true;
-    //     // this.containerHandler.hidden = false;
-      
-     }
-     public showFrame(): void {
-    //     // if (!this.menuContainer.hidden) return;
-    //     // this.menuContainer.hidden = false;
-    //     if (!this.container.hidden) return;
-    //     this.container.hidden = false;
-    //     // this.containerHandler.hidden = true;
-     }
-    public hideClimFrame(): void {
-        this.climBtnArray.forEach((btn) =>{
-            btn.hidden = true;
-        })
-    }
-    public showClimFrame(): void {
-        this.climBtnArray.forEach((btn) =>{
-            btn.hidden = false;
-        })
-    }
-   
-    public render(): JSX.Element {
-        let self = this
-        return (<div id="SideBar" className="active z-depth-1">
-            <div id="SideBarInfo">
-                <div id="menuContainer" className='menu-container mx-auto d-grid gap-2 my-4'></div>
-            </div>
-            {/* <div id='sidebar-handler'>
-                <i className="bi bi-menu-button-wide-fill"></i>
+    public render():JSX.Element{
+        let self=this;
+        let values= [...this.parent.getLegendValues()].reverse();
+        let texts=[...this.parent.getLegendText()].reverse();
+        let mgr=PaletteManager.getInstance();
+        let lmgr = LayerManager.getInstance();
+        let ptr=mgr.getPainter();
+        let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        let name = this.parent.getState().legendTitle;
+        let palettes=mgr.getPalettesNames();
+        let baseLayers=lmgr.getBaseLayerNames();
+        let topLayers=lmgr.getTopLayerNames();
+        let bgcolor;
+        let color = '#ffffff';
+        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
+        let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
+        let i: number = 0;
+        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
+        // mgr.setUncertaintyLayerChecked(false)
+        let element=
+        (<div id="SideBar" className="active z-depth-1">
+            {/* <div className='layerFrame btnSelect left'>
+                <div id="base-div">
+                    <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
+                        <span className="icon"><i className="bi bi-globe-europe-africa"></i></span>
+                        <span className="text" aria-label='base'>
+                            {this.parent.getTranslation('base_layer')}: {lmgr.getBaseSelected()}
+                        </span>
+                    </div>
+                    <div className='row selectDiv baseDiv hidden'>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('baseDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
+                        </div>
+                        <div className='col-9 ms-1 p-0 inputDiv'>
+                                { baseLayers.map((val,index)=>{
+                                    i++;
+                                    if(selected.includes(val)){
+                                        return (
+                                            <label className="radio">
+                                                <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)} checked></input>
+                                                <span className="radio-label"></span>
+                                                {val}
+                                            </label>
+                                        )
+                                    }
+                                return (
+                                    <label className="radio">
+                                        <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)}></input>
+                                        <span className="radio-label"></span>
+                                        {val}
+                                    </label>
+                                )
+                                })}
+                           
+                        </div>
+                    </div>
+                </div>
+                <div id="trp-div">
+                    <div className="buttonDiv trpDiv visible" onClick={()=>this.toggleSelect('trpDiv')}>
+                        <span className="icon"><i className="bi bi-transparency"></i></span>
+                        <span className="text"  aria-label='transparency'>
+                            {this.parent.getTranslation('transparency')}: {mgr.getTransparency()}
+                        </span>
+                    </div>
+                    <div className='row selectDiv trpDiv hidden'>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
+                        </div>
+                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
+                            <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
+                        </div>
+                    </div>
+                </div>
+                <div id="data-div">
+                    <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>
+                        <span className="icon"><i className="bi bi-map"></i></span>
+                        <span className="text" aria-label='top'>
+                            {this.parent.getTranslation('top_layer')}: Politico
+                        </span>
+                    </div>
+                    <div className='row selectDiv dataDiv hidden'>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('dataDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
+                        </div>
+                        <div className='col-9 p-0 inputDiv'>
+                            <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}>
+                                {topLayers.map((val,index)=>{
+                                    let trVal = this.parent.getTranslation(val)
+                                    if(lmgr.getTopSelected()==val){
+                                        return (<option value={val} selected>{this.parent.getTranslation(val)}</option>)
+                                    }
+                                    return (<option value={val}>{val}</option>)
+                                })}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="unc-div">
+                    {uncertaintyLayer &&
+                        <div>
+                            <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
+                                <span className="icon"><i className="bi bi-check-circle"></i></span>
+                                <span className="text"  id='uncertainty-text' aria-label='uncertainty'>
+                                    {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()}
+                                </span>
+                            </div>
+                            <div className='row selectDiv uncDiv hidden'>
+                                <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
+                                    <span className="icon"><i className="bi bi-x"></i></span>
+                                </div>
+                                <div className='col-9 p-0 inputDiv'>    
+                                    <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>self.toggleUncertaintyLayer(event.target.checked)} />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div> */}
         </div>);
-    }
-    
-    public build(): void {
-        this.container = document.getElementById("SideBarInfo") as HTMLDivElement;
-        console.log(document.getElementById("sidebar-handler"))
-        // this.containerHandler = document.getElementById("sidebar-handler") as HTMLElement
-        this.menuContainer = document.getElementById("menuContainer") as HTMLElement;
-
-        if (hasButtons) {
-            if (hasSpSupport) {
-                addChild(this.menuContainer, this.spatialSupport.render());
-                this.spatialSupport.build()
-            }
-
-            if (hasVars) {
-                addChild(this.menuContainer, this.variable.render(varHasPopData))
-                this.variable.build()
-                if (varHasPopData) this.variable.configPopOver(this.popData)
-            }
-
-            if (hasSubVars) {
-                addChild(this.menuContainer, this.subVariable.render(sbVarHasPopData));
-                this.subVariable.build()
-                if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
-            }
-
-            if (hasTpSupport) {
-                addChild(this.menuContainer, this.temporalSupport.render());
-                this.temporalSupport.build();
-            }
-
-            addChild(this.menuContainer, this.selection.render());
-            this.selection.build()
-
-            this.extraBtns.forEach((btn) => {
-                addChild(this.menuContainer, btn.render());
-                btn.build()
-            });
-
-            if (hasClimatology) {
-                this.extraDropDowns.forEach((dpn) => {
-                    addChild(this.menuContainer, dpn.render(false, 'climBtn'));
-                    dpn.build()
-                });
-            }
-
-            
-            if(this.dropDownOrder.length) {
-                this.changeDropDownOrder()
-            }
-
-            this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
-            
-            this.climBtnArray.forEach((btn) =>{
-                btn.hidden = true;
-            })
-        }
-       
-        // this.containerHandler.hidden = true;
+        return element;
     }
 
-    public update(): void {
-        if (!hasClimatology) return
-        let years = [3,6]
-        if (this.parent.getState().climatology == true) {
-            this.showClimFrame()
-            if(years.includes(this.parent.getDateSelectorFrame().getMode())) this.parent.hidePointButtons()
-            else this.parent.showPointButtons()
-        } else {
-            this.hideClimFrame()
-            this.parent.showPointButtons()
-        }
+    // public toggleSelect(select: string){
+    //     this.container.querySelector(".buttonDiv." + select).classList.toggle("hidden")
+    //     this.container.querySelector(".selectDiv." + select).classList.toggle("hidden")
+    //     this.container.querySelector(".buttonDiv." + select).classList.toggle("visible")
+    //     this.container.querySelector(".selectDiv." + select).classList.toggle("visible")
+    // }
+
+    // public changePalette(value: string): void {
+    //     let mgr=PaletteManager.getInstance();
+    //     mgr.setSelected(value);
+    //     this.parent.update();
+    //     this.container.querySelector("div.layerFrame").classList.remove("visible")
+    // }
+
+    // public changeBaseLayer(value:string):void{
+    //     let values: string[] = [];
+    //     let inputs = Array.from(document.getElementsByClassName("baseLayer"));
+    //     inputs.forEach((input: HTMLInputElement) => {
+    //         if (input.checked)  values.push(input.value)
+    //     }) 
+    //     let mgr=LayerManager.getInstance();
+    //     mgr.setBaseSelected(values);
+    //     this.parent.update();
+    // }
+
+    // public changeTopLayer(value:string):void{
+    //     let mgr=LayerManager.getInstance();
+    //     mgr.setTopSelected(value);
+    //     this.parent.update();
+    //     this.container.querySelector("div.layerFrame").classList.remove("visible")
+    // }
+
+    // public toggleUncertaintyLayer (checked: boolean) {
+    //     let ptMgr=PaletteManager.getInstance();
+    //     ptMgr.setUncertaintyLayerChecked(checked)
+    //     let uncertaintyText = document.querySelector("#uncertainty-text")
+    //     uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + ptMgr.getUncertaintyLayerChecked() 
+    //     let mgr=LayerManager.getInstance();
+    //     mgr.showUncertaintyLayer(checked)
+    // }
+
+    // public renderUncertaintyFrame():JSX.Element {
+    //     let mgr=PaletteManager.getInstance();
+    //     mgr.setUncertaintyLayerChecked(false)
+    //     return (
+    //         <div>
+    //             <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
+    //                 <span className="icon"><i className="bi bi-check-circle"></i></span>
+    //                 <span className="text"  id='uncertainty-text' aria-label='uncertainty'>
+    //                     {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()}
+    //                 </span>
+    //             </div>
+    //             <div className='row selectDiv uncDiv hidden'>
+    //                 <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
+    //                     <span className="icon"><i className="bi bi-x"></i></span>
+    //                 </div>
+    //                 <div className='col-9 p-0 inputDiv'>    
+    //                     <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} />
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     );
+    // }
+
+    public build(){
+        // this.container = document.getElementById("PaletteFrame") as HTMLDivElement
+        this.container = document.getElementById("SideBar") as HTMLDivElement
+        // this.baseDiv = document.getElementById('base-div') as HTMLElement;
+        // this.dataDiv = document.getElementById('data-div') as HTMLElement;
+        // this.trpDiv = document.getElementById('trp-div') as HTMLElement;
+        // this.slider=new Slider(document.getElementById("transparencySlider"),{
+        //     natural_arrow_keys: true,
+        //     //tooltip: "always",
+        //     min: 0,
+        //     max: 100,
+        //     value: 0,
+        // })
+        // this.slider.on('slideStop',(val:number)=>{
+        //     let mgr=PaletteManager.getInstance();
+        //     if(val==mgr.getTransparency())return;
+        //     mgr.setTransparency(val)
+        //     this.parent.update();
+        // })
+
+        // if (!showLayers){
+        //     this.baseDiv.hidden = true;
+        //     this.dataDiv.hidden = true;
+        //     this.trpDiv.hidden = true;
+        // } 
     }
 
-    public setSupportValues(_supportValues: string[]) {
-        this.spatialSupport.setValues(_supportValues)
+    public minimize():void{
+        this.container.classList.add("paletteSmall")
     }
 
-    public setTpSupportValues(_tpSupportValues: string[]) {
-        if (hasTpSupport) {
-            this.temporalSupport.setValues(_tpSupportValues)
-        }
+    public showFrame():void{
+        this.container.classList.remove("paletteSmall")
     }
 
-    public configTpSupport(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons || !hasTpSupport) return;
-        this.temporalSupport.config(visible, newText);
-    }
-
-    public setVariables(_variables: string[]) {
-        this.variable.setValues(_variables, varHasPopData);
-    }
-
-    public configVariables(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons || !hasVars) return;
-        this.variable.config(visible, newText);
-        if (varHasPopData) {
-            this.variable.configPopOver(this.popData);
-        }
-    }
-
-    public setSubVariables(_variables: string[]) {
-        this.subVariable.setValues(_variables, sbVarHasPopData);
-    }
-
-    public configSubVariables(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons || !hasSubVars) return;
-        this.subVariable.config(visible, newText);
-        if (sbVarHasPopData) {
-            this.subVariable.configPopOver(this.popData);
-        }
-    }
-
-    public setSelection(_selections: string[]) {
-        this.selection.setValues(_selections);
-    }
-
-    public configSelection(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons) return;
-        this.selection.config(visible, newText);
-    }
-
-    public setExtraDropdown(btnName: string, btnTitle: string, options: string[]) {
-        let listener = this.listener
-
-        this.extraDropDowns.push( new CsDropdown (btnName , btnTitle,  {
-            valueSelected(origin, index, value, values) {
-                listener.dropdownSelected(btnName, index, value, values)
-            },
-        }))
-
-        for (let i = 0; i < this.extraDropDowns.length; i++) {
-            if (this.extraDropDowns[i]['id'] == btnName) this.extraDropDowns[i].setValues(options);
-        }
-    }
-
-    public updateExtraDropdown(btnName: string, btnTitle: string, options: string[]) {
-        for (let i = 0; i < this.extraDropDowns.length; i++) {
-            if (this.extraDropDowns[i]['id'] == btnName) {
-                this.extraDropDowns[i].setTitle(btnTitle)
-                this.extraDropDowns[i].setValues(options);
-            }
-        }
-    }
-
-    public setPopIfo(popData: any) {
-        this.popData = popData
-    }
-
-    public setDropDownOrder(order:string[]) {
-        this.dropDownOrder = order
-    }
-
-    public changeDropDownOrder() {
-        let k: number = 0
-        document.querySelectorAll('.ordBtn').forEach((elem:HTMLButtonElement)=>{
-            elem.style.order = this.dropDownOrder[k]
-            k++
-        })
-    }
+    // public update(): void {
+    //     let mgr=PaletteManager.getInstance();
+    //     let lmgr=LayerManager.getInstance();
+    //     let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+    //     let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+    //     let name:string; 
+    //     if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
+    //         name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+    //     }else {
+    //         name = 'Unidades';
+    //     }
+        
+    //     this.container.querySelector(".layerFrame span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
+    //     this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
+    //     this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
+    //     let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
+        
+    //     this.uncertaintyFrame = this.container.querySelector("#unc-div")
+    //     if (uncertaintyLayer) {
+    //         this.uncertaintyFrame.hidden = false;
+    //         if (this.uncertaintyFrame.children.length == 0) {
+    //             addChild(this.uncertaintyFrame,this.renderUncertaintyFrame())
+    //         }
+    //     } else {
+    //         this.uncertaintyFrame.hidden = true;
+    //         if (this.uncertaintyFrame.children.length > 0) {
+    //             while (this.uncertaintyFrame.firstChild) {
+    //                 this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
+    //             }
+    //         }
+    //     }
+    // }
 }
