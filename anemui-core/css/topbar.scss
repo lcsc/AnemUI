@@ -1,0 +1,140 @@
+* {
+    box-sizing: border-box;
+}
+
+#inputs {
+    position: relative;
+    list-style: none;
+    // background: #2c6d9a;
+    font-weight: 400;
+    // font-size: 0;
+    // text-transform: uppercase;
+    display: inline-block;
+    padding: 0;
+    margin: 0px auto;
+    // right: 10%;
+    // border-radius: 5px;
+}
+
+#inputs li {
+    // font-size: 0.8rem;
+    // padding-left: 0px !important;
+    display: inline-block;
+    position: relative;
+    padding: 5px 10px;
+    cursor: pointer;
+    z-index: 1000;
+    min-width: 120px;
+    // max-width: 120px;
+    // border: 0.01em solid #b3b4b6;
+    // font-size: 10px !important;
+    font-size: 0.8rem;
+    // font-weight: 700;
+    color: #fff;
+}
+
+#inputs li:hover {
+    background-color: #bac3e4;
+    color: $color_8;
+    cursor: pointer;
+}
+
+#inputs li a {
+    padding-left: 0px !important;
+}
+
+li {
+    margin: 0;
+}
+
+.inputDiv {
+    white-space: normal;
+    font-size: 0.8em;
+    font-style: italic;
+    line-height: 1.2;
+    text-align:left
+}
+.inputDiv .sub-title{
+    display: block;
+    font-size: 1.2em;
+    font-style: normal;
+    font-weight: 500;
+}
+
+.drop {
+    overflow: hidden;
+    list-style: none;
+    position: absolute;
+    padding: 0;
+    width: 100%;
+    left: 0;
+    top: 43px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+// .drop div {
+.drop ul {
+    -webkit-transform: translate(0, -100%);
+    -moz-transform: translate(0, -100%);
+    -ms-transform: translate(0, -100%);
+    transform: translate(0, -100%);
+    -webkit-transition: all 0.2s 0.1s;
+    -moz-transition: all 0.2s 0.1s;
+    -ms-transition: all 0.2s 0.1s;
+    transition: all 0.2s 0.1s;
+    position: relative;
+    padding-left: 0px !important;
+}
+
+.drop li {
+    display: block;
+    padding: 0;
+    width: 100%;
+    // background: #3E8760 !important;
+    background-color: #f1f7f9;
+    color: #737374 !important;
+    display: block;
+    // white-space: normal;
+}
+
+.drop li:hover {
+    background: #999a9a  !important;
+    color: #f1f7f9 !important;
+}
+
+.dropdown-item {
+    box-sizing: border-box;
+    white-space: normal;
+}
+
+#marker {
+    height: 2px;
+    // background: #3E8760 !important;
+    background-color: #f1f7f9;
+    position: absolute;
+    bottom: 0;
+    width: 120px;
+    z-index: 999;
+    -webkit-transition: all 0.35s;
+    -moz-transition: all 0.35s;
+    -ms-transition: all 0.35s;
+    transition: all 0.35s;
+}
+
+$elements: 15;
+@for $i from 0 to $elements {
+    #inputs li:nth-child(#{$i}):hover div ul  {
+        -webkit-transform: translate(0, 0);
+        -moz-transform: translate(0, 0);
+        -ms-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+    
+    #inputs li:nth-child(#{$i}):hover~#marker {
+        -webkit-transform: translate(360px, 0);
+        -moz-transform: translate(360px, 0);
+        -ms-transform: translate(360px, 0);
+        transform: translate(360px, 0);
+    }
+}

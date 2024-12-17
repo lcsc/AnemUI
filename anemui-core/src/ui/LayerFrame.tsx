@@ -3,12 +3,10 @@ import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { PaletteManager } from '../PaletteManager';
 import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
-import { mgrs } from 'proj4';
 import { LayerManager } from '../LayerManager';
 import { showLayers, initialZoom }  from "../Env";
-import { forEach } from 'cypress/types/lodash';
 
-export default class SideBar  extends BaseFrame{
+export default class LayerFrame  extends BaseFrame {
 
     protected slider: Slider
     private baseDiv: HTMLElement
@@ -37,8 +35,8 @@ export default class SideBar  extends BaseFrame{
         // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
         // mgr.setUncertaintyLayerChecked(false)
         let element=
-        (<div id="SideBar" className="active z-depth-1">
-            {/* <div className='layerFrame btnSelect left'>
+        (
+            <div id="layer-frame" className='layerFrame btnSelect left'>
                 <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
                         <span className="icon"><i className="bi bi-globe-europe-africa"></i></span>
@@ -134,100 +132,92 @@ export default class SideBar  extends BaseFrame{
                         </div>
                     }
                 </div>
-            </div> */}
-        </div>);
+            </div>
+        );
         return element;
     }
 
-    // public toggleSelect(select: string){
-    //     this.container.querySelector(".buttonDiv." + select).classList.toggle("hidden")
-    //     this.container.querySelector(".selectDiv." + select).classList.toggle("hidden")
-    //     this.container.querySelector(".buttonDiv." + select).classList.toggle("visible")
-    //     this.container.querySelector(".selectDiv." + select).classList.toggle("visible")
-    // }
+    public toggleSelect(select: string){
+        this.container.querySelector(".buttonDiv." + select).classList.toggle("hidden")
+        this.container.querySelector(".selectDiv." + select).classList.toggle("hidden")
+        this.container.querySelector(".buttonDiv." + select).classList.toggle("visible")
+        this.container.querySelector(".selectDiv." + select).classList.toggle("visible")
+    }
 
-    // public changePalette(value: string): void {
-    //     let mgr=PaletteManager.getInstance();
-    //     mgr.setSelected(value);
-    //     this.parent.update();
-    //     this.container.querySelector("div.layerFrame").classList.remove("visible")
-    // }
+    public changeBaseLayer(value:string):void{
+        let values: string[] = [];
+        let inputs = Array.from(document.getElementsByClassName("baseLayer"));
+        inputs.forEach((input: HTMLInputElement) => {
+            if (input.checked)  values.push(input.value)
+        }) 
+        let mgr=LayerManager.getInstance();
+        mgr.setBaseSelected(values);
+        this.parent.update();
+    }
 
-    // public changeBaseLayer(value:string):void{
-    //     let values: string[] = [];
-    //     let inputs = Array.from(document.getElementsByClassName("baseLayer"));
-    //     inputs.forEach((input: HTMLInputElement) => {
-    //         if (input.checked)  values.push(input.value)
-    //     }) 
-    //     let mgr=LayerManager.getInstance();
-    //     mgr.setBaseSelected(values);
-    //     this.parent.update();
-    // }
+    public changeTopLayer(value:string):void{
+        let mgr=LayerManager.getInstance();
+        mgr.setTopSelected(value);
+        this.parent.update();
+        // this.container.querySelector("div.layerFrame").classList.remove("visible")
+    }
 
-    // public changeTopLayer(value:string):void{
-    //     let mgr=LayerManager.getInstance();
-    //     mgr.setTopSelected(value);
-    //     this.parent.update();
-    //     this.container.querySelector("div.layerFrame").classList.remove("visible")
-    // }
+    public toggleUncertaintyLayer (checked: boolean) {
+        let ptMgr=PaletteManager.getInstance();
+        ptMgr.setUncertaintyLayerChecked(checked)
+        let uncertaintyText = document.querySelector("#uncertainty-text")
+        uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + ptMgr.getUncertaintyLayerChecked() 
+        let mgr=LayerManager.getInstance();
+        mgr.showUncertaintyLayer(checked)
+    }
 
-    // public toggleUncertaintyLayer (checked: boolean) {
-    //     let ptMgr=PaletteManager.getInstance();
-    //     ptMgr.setUncertaintyLayerChecked(checked)
-    //     let uncertaintyText = document.querySelector("#uncertainty-text")
-    //     uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + ptMgr.getUncertaintyLayerChecked() 
-    //     let mgr=LayerManager.getInstance();
-    //     mgr.showUncertaintyLayer(checked)
-    // }
-
-    // public renderUncertaintyFrame():JSX.Element {
-    //     let mgr=PaletteManager.getInstance();
-    //     mgr.setUncertaintyLayerChecked(false)
-    //     return (
-    //         <div>
-    //             <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
-    //                 <span className="icon"><i className="bi bi-check-circle"></i></span>
-    //                 <span className="text"  id='uncertainty-text' aria-label='uncertainty'>
-    //                     {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()}
-    //                 </span>
-    //             </div>
-    //             <div className='row selectDiv uncDiv hidden'>
-    //                 <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
-    //                     <span className="icon"><i className="bi bi-x"></i></span>
-    //                 </div>
-    //                 <div className='col-9 p-0 inputDiv'>    
-    //                     <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} />
-    //                 </div>
-    //             </div>
-    //         </div>
-    //     );
-    // }
+    public renderUncertaintyFrame():JSX.Element {
+        let mgr=PaletteManager.getInstance();
+        mgr.setUncertaintyLayerChecked(false)
+        return (
+            <div>
+                <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
+                    <span className="icon"><i className="bi bi-check-circle"></i></span>
+                    <span className="text"  id='uncertainty-text' aria-label='uncertainty'>
+                        {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()}
+                    </span>
+                </div>
+                <div className='row selectDiv uncDiv hidden'>
+                    <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
+                        <span className="icon"><i className="bi bi-x"></i></span>
+                    </div>
+                    <div className='col-9 p-0 inputDiv'>    
+                        <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     public build(){
-        // this.container = document.getElementById("PaletteFrame") as HTMLDivElement
-        this.container = document.getElementById("SideBar") as HTMLDivElement
-        // this.baseDiv = document.getElementById('base-div') as HTMLElement;
-        // this.dataDiv = document.getElementById('data-div') as HTMLElement;
-        // this.trpDiv = document.getElementById('trp-div') as HTMLElement;
-        // this.slider=new Slider(document.getElementById("transparencySlider"),{
-        //     natural_arrow_keys: true,
-        //     //tooltip: "always",
-        //     min: 0,
-        //     max: 100,
-        //     value: 0,
-        // })
-        // this.slider.on('slideStop',(val:number)=>{
-        //     let mgr=PaletteManager.getInstance();
-        //     if(val==mgr.getTransparency())return;
-        //     mgr.setTransparency(val)
-        //     this.parent.update();
-        // })
+        this.container = document.getElementById("layer-frame") as HTMLDivElement
+        this.baseDiv = document.getElementById('base-div') as HTMLElement;
+        this.dataDiv = document.getElementById('data-div') as HTMLElement;
+        this.trpDiv = document.getElementById('trp-div') as HTMLElement;
+        this.slider=new Slider(document.getElementById("transparencySlider"),{
+            natural_arrow_keys: true,
+            //tooltip: "always",
+            min: 0,
+            max: 100,
+            value: 0,
+        })
+        this.slider.on('slideStop',(val:number)=>{
+            let mgr=PaletteManager.getInstance();
+            if(val==mgr.getTransparency())return;
+            mgr.setTransparency(val)
+            this.parent.update();
+        })
 
-        // if (!showLayers){
-        //     this.baseDiv.hidden = true;
-        //     this.dataDiv.hidden = true;
-        //     this.trpDiv.hidden = true;
-        // } 
+        if (!showLayers){
+            this.baseDiv.hidden = true;
+            this.dataDiv.hidden = true;
+            this.trpDiv.hidden = true;
+        } 
     }
 
     public minimize():void{
@@ -238,36 +228,35 @@ export default class SideBar  extends BaseFrame{
         this.container.classList.remove("paletteSmall")
     }
 
-    // public update(): void {
-    //     let mgr=PaletteManager.getInstance();
-    //     let lmgr=LayerManager.getInstance();
-    //     let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-    //     let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-    //     let name:string; 
-    //     if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
-    //         name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
-    //     }else {
-    //         name = 'Unidades';
-    //     }
+    public update(): void {
+        let mgr=PaletteManager.getInstance();
+        let lmgr=LayerManager.getInstance();
+        let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        let name:string; 
+        if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
+            name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+        }else {
+            name = 'Unidades';
+        }
+        this.container.querySelector(".layerFrame span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
+        this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
+        this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
+        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         
-    //     this.container.querySelector(".layerFrame span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
-    //     this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
-    //     this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
-    //     let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
-        
-    //     this.uncertaintyFrame = this.container.querySelector("#unc-div")
-    //     if (uncertaintyLayer) {
-    //         this.uncertaintyFrame.hidden = false;
-    //         if (this.uncertaintyFrame.children.length == 0) {
-    //             addChild(this.uncertaintyFrame,this.renderUncertaintyFrame())
-    //         }
-    //     } else {
-    //         this.uncertaintyFrame.hidden = true;
-    //         if (this.uncertaintyFrame.children.length > 0) {
-    //             while (this.uncertaintyFrame.firstChild) {
-    //                 this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
-    //             }
-    //         }
-    //     }
-    // }
+        this.uncertaintyFrame = this.container.querySelector("#unc-div")
+        if (uncertaintyLayer) {
+            this.uncertaintyFrame.hidden = false;
+            if (this.uncertaintyFrame.children.length == 0) {
+                addChild(this.uncertaintyFrame,this.renderUncertaintyFrame())
+            }
+        } else {
+            this.uncertaintyFrame.hidden = true;
+            if (this.uncertaintyFrame.children.length > 0) {
+                while (this.uncertaintyFrame.firstChild) {
+                    this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
+                }
+            }
+        }
+    }
 }
