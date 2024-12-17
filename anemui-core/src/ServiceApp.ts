@@ -76,6 +76,12 @@ export abstract class DataServiceApp extends BaseApp {
         // sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
         // - VERSIÓN SIDEBAR_00 (DROPDOWNS)
 
+        mb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
+        mb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
+        // mb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
+        mb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
+
+
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
     }

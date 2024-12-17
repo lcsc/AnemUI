@@ -1,12 +1,12 @@
 import { addChild, mount } from "tsx-create-element";
 import { MainFrame } from "./ui/MainFrame";
-import { MenuBarListener } from "./ui/MenuBar";
-import { MenuBar } from './ui/MenuBar';
+// import { MenuBarListener } from "./ui/MenuBar";
+// import { MenuBar } from './ui/MenuBar';
+import { MenuBar, MenuBarListener } from './ui/MenuBar'; 
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
 import LayerFrame from './ui/LayerFrame'
-import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01 (BOTONES CAPAS) -- en desarrollo
-// import PaletteFrame from "./ui/PaletteFrame";
+import PaletteFrame from "./ui/PaletteFrame";  
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
@@ -25,8 +25,7 @@ import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-// import { SideBar, SideBarListener } from "./ui/SideBar";
-import SideBar from "./ui/SideBar_01"; // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
+import SideBar from "./ui/SideBar"; 
 import Translate from "./language/translate";
 import CsCookies from "./cookies/CsCookies";
 

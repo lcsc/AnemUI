@@ -68,7 +68,7 @@ export class DownloadFrame extends BaseFrame {
                             </div>
                         }
                         { oneOption && 
-                            <fieldset id="btnNc" role="dropNc" className='pointBtn navbar-btn buttonDiv visible' disabled>
+                            <fieldset id="btnNc" role="dropNc" className='navbar-btn buttonDiv visible'>
                                 <span className="icon"><i className="bi bi-box-arrow-down"></i></span>
                                 <span className="text" aria-label='base' onClick={() => { this.parent.downloadNc() }}>
                                     {this.parent.getTranslation('descargar_nc')}
