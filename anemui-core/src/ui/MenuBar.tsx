@@ -64,6 +64,7 @@ export class MenuBar extends BaseFrame {
     private topBar: HTMLElement
     private menuCentral: HTMLElement
     private loading: HTMLDivElement
+    private loadingText: HTMLSpanElement
     private titleDiv: HTMLElement
 
     private displaySpSupport: HTMLDivElement
@@ -172,6 +173,7 @@ export class MenuBar extends BaseFrame {
                 <div id="TopBarFrame">
                     <div id="TopBar" className="row fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                         <div className={"navbar " + logoStyle}>
+                            {/* <img src="./images/logos.png"></img> */}
                             <img src={'./images/'+logo}></img>
                         </div>
                         <div id="menu-title" className="menu-info text-left row mx-0 px-4">
@@ -210,6 +212,8 @@ export class MenuBar extends BaseFrame {
         // this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
+        this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
+        this.climatologyDisplay = document.getElementById('climatologyDisplay') as HTMLDivElement;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
         height = height - 6;
@@ -307,13 +311,21 @@ export class MenuBar extends BaseFrame {
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
-        this.loading.hidden = false;
-
+        if (this.loading) this.loading.hidden = false; 
+        if (this.loadingText) {
+            this.loadingText.hidden = false;          
+            this.loadingText.classList.add('blinking-text'); 
+        }
     }
+    
     public hideLoading(): void {
-        this.loading.hidden = true;
+        if (this.loading) this.loading.hidden = true; 
+        if (this.loadingText) {
+            this.loadingText.hidden = true;      
+            this.loadingText.classList.add('display:none')
+        }
     }
-
+    
     public hideSelection() {
         this.selectionHidden = true;
 
@@ -489,5 +501,4 @@ export class MenuBar extends BaseFrame {
             k++
         })
     }
-
 }
