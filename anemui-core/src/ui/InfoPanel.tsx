@@ -46,12 +46,11 @@ export class InfoDiv extends BaseFrame {
                         <li>Adaptar: modificar, transformar y construir a partir de la base de datos.</li>
                     </ul>
                 </p>
-                <p>Bajo las condiciones siguientes:
+                <p>Bajo las condiciones siguientes:</p>
                     <ul>
                         <li>Atribución: Debe atribuir cualquier uso público de la base de datos, o trabajos producidos a partir de la base de datos, citando uno o más de los artículos a los que se hace referencia en la sección Referencias más abajo. Para cualquier uso o redistribución de la base de datos, o de los trabajos producidos a partir de ella, debe dejar claro a los demás la licencia de la base de datos original.</li>
                         <li>Compartir por igual: Si utiliza públicamente cualquier versión adaptada de esta base de datos, o trabajos producidos a partir de una base de datos adaptada, también debe ofrecer esa base de datos adaptada bajo la ODbL.</li>
                     </ul>
-                </p>
         </div>)
     }
 
@@ -117,7 +116,7 @@ export class InfoFrame extends BaseFrame {
 
         this.modal.setContent(this.parent.getInfoDiv().getDiv());
         let self=this
-        this.modal.addFooterBtn('Cerrar', 'tingle-btn tingle-btn--danger tingle-btn--pull-right', function() {
+        this.modal.addFooterBtn('Cerrar', 'tingle-btn tingle-btn--muted tingle-btn--pull-right', function() {
             self.modal.close();
           });
     }

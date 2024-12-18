@@ -25,7 +25,7 @@ export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhe
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
 export const dataFormat: string = ENV.dataFormat || 'nc';
 
-// Define the appearance of the display -- Default values
+// Defines the appearance of the display -- Default values
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
 export const hasSubTitle:boolean = typeof ENV.hasSubTitle !== 'undefined'? ENV.hasSubTitle:true;
 export const hasSpSupport:boolean = typeof ENV.hasSpSupport !== 'undefined'? ENV.hasSpSupport:true;

@@ -34,7 +34,8 @@ export class CsGraph extends BaseFrame {
     let graphWidth = screen.width > 1200 ? screen.width * 0.4 : screen.width * 0.55;
     let graphHeight = screen.height > 1200 ? screen.height * 0.4 : screen.height * 0.50;
     let element =
-      (<div id="GraphContainer" className='GraphContainer row' hidden >
+      (<div className="container">
+      <div id="GraphContainer" className='GraphContainer row' hidden >
         <div className="popup-content-wrapper col">
           <div className="popup-content" style={{ width: "auto" }}>
             <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
@@ -48,6 +49,7 @@ export class CsGraph extends BaseFrame {
             <i className="bi bi-x-circle-fill"></i>
           </a>
         </div>
+      </div>
       </div>);
     return element;
   }

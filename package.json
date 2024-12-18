@@ -28,7 +28,11 @@
     "anemui-test",
     "anemui-demo"
   ],
+  "dependencies": {
+    "javascript-color-gradient": "^2.5.0"
+  },
   "devDependencies": {
-    "@types/node": "^22.10.1"
+    "@types/gtag.js": "^0.0.20",
+    "@types/javascript-color-gradient": "^2.4.2"
   }
 }

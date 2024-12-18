@@ -1,11 +1,12 @@
 import { addChild, mount } from "tsx-create-element";
 import { MainFrame } from "./ui/MainFrame";
-import { MenuBarListener } from "./ui/MenuBar";
-import { MenuBar } from './ui/MenuBar';
+// import { MenuBarListener } from "./ui/MenuBar";
+// import { MenuBar } from './ui/MenuBar';
+import { MenuBar, MenuBarListener } from './ui/MenuBar'; 
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
-// import PaletteFrame from "./ui/PaletteFrame_01";  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
-import PaletteFrame from "./ui/PaletteFrame";
+import LayerFrame from './ui/LayerFrame'
+import PaletteFrame from "./ui/PaletteFrame";  
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
@@ -14,18 +15,15 @@ import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, getPortionForPoint } from "./data/ChunkDownloader";
-import { calcPixelIndex, downloadTCSVChunked } from "./data/ChunkDownloader";
+import { downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, DEF_STYLE_UNC, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
-import proj4 from 'proj4';
-import { downloadUrl } from "./data/UrlDownloader";
 import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-import { SideBar, SideBarListener } from "./ui/SideBar";
-// import SideBar from "./ui/SideBar_01"; // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS) -- en desarrollo
+import SideBar from "./ui/SideBar"; 
 import Translate from "./language/translate";
 import CsCookies from "./cookies/CsCookies";
 
@@ -56,14 +54,16 @@ const INITIAL_STATE: CsViewerData = {
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
+const LEYEND_TITLE = "Leyenda"
 
-export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBarListener, DateFrameListener {
+export abstract class BaseApp implements CsMapListener, MenuBarListener, /* SideBarListener,  */DateFrameListener {
 
     protected menuBar: MenuBar;
     protected sideBar: SideBar;
     protected csMap: CsMap;
     protected mainFrame: MainFrame;
     protected downloadFrame: DownloadFrame;
+    protected layerFrame: LayerFrame;
     protected paletteFrame: PaletteFrame;
     protected dateSelectorFrame: DateSelectorFrame;
     protected lastLlData: CsLatLongData;
@@ -83,13 +83,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
 
     protected constructor() {
         this.menuBar = new MenuBar(this, this);
-        this.sideBar = new SideBar(this, this) // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        // this.sideBar = new SideBar(this) // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        // this.sideBar = new SideBar(this, this) // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        this.sideBar = new SideBar(this) // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
 
         this.csMap = new CsMap(this, new OpenLayerMap(), this);
 
         this.mainFrame = new MainFrame(this);
         this.downloadFrame = new DownloadFrame(this);
+        this.layerFrame = new LayerFrame(this) 
         this.paletteFrame = new PaletteFrame(this);
         this.dateSelectorFrame = new DateSelectorFrame(this, this);
         this.graph = new CsGraph(this);
@@ -173,10 +174,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         this.menuBar.build();
         addChild(document.getElementById('MainFrame'), this.sideBar.render());
         this.sideBar.build();
-        addChild(document.getElementById('SideBarInfo'), this.downloadFrame.render());  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        this.downloadFrame.build();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        // addChild(document.getElementById('SideBar'), this.downloadFrame.render());  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
-        // this.downloadFrame.build();  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        // addChild(document.getElementById('SideBarInfo'), this.downloadFrame.render());  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.downloadFrame.build();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        addChild(document.getElementById('SideBar'), this.layerFrame.render());  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        this.layerFrame.build();  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        addChild(document.getElementById('SideBar'), this.downloadFrame.render());  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        this.downloadFrame.build();  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
         addChild(document.getElementById('MainFrame'), this.paletteFrame.render())
         this.paletteFrame.build();
         addChild(document.getElementById('MainFrame'), this.dateSelectorFrame.render())
@@ -328,7 +331,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, SideBar
         if (_timesJs.legendTitle[varId] != undefined) {
             legendTitle = _timesJs.legendTitle[varId]
         } else {
-            legendTitle = "Leyenda"
+            legendTitle = LEYEND_TITLE
         }
         let varName: string
         if (_timesJs.varTitle[varId] != undefined) {
