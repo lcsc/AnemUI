@@ -66,10 +66,12 @@ async function rangeRequest(url: string, startByte: bigint, endByte: bigint): Pr
     } else {
         const spinner = document.querySelector<HTMLDivElement>('.spinner-grow');
         const loadingText = document.querySelector<HTMLSpanElement>('.blinking-text');
+        const noData = document.querySelector<HTMLSpanElement>('.data-error-text');
         if (spinner) {
             spinner.hidden = true; 
             loadingText.hidden = true;
         }
+        noData.hidden = false;
         throw new Error('HTTP Range error');
     }
 }

@@ -33,6 +33,7 @@ export class MenuBar extends BaseFrame {
     private menuCentral: HTMLElement
     private loading: HTMLDivElement
     private loadingText: HTMLSpanElement
+    private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
 
     private displaySpSupport: HTMLDivElement
@@ -63,6 +64,9 @@ export class MenuBar extends BaseFrame {
     private paramHidden: boolean;
 
     private listener: MenuBarListener;
+
+    private fetchingText : string = "Fetching data..."
+    private errorText: string = "Could not retrieve data"
 
     constructor(_parent: BaseApp, _listener: MenuBarListener) {
         super(_parent)
@@ -157,6 +161,8 @@ export class MenuBar extends BaseFrame {
                                             disabled={!this.parent.getState().selectionParamEnable}
                                             onChange={() => { this.fireParamChanged(); return false }} />
                                         <div className="col-auto">
+                                        <span className="ms-2" id="fetching-text" hidden>{this.fetchingText}</span>
+                                        <span className="data-error-text" id="nodata-text" hidden>{this.errorText}  </span>
                                             <div className="spinner-grow text-info" role="status" hidden />
                                         </div>
                                 </form>
@@ -180,7 +186,7 @@ export class MenuBar extends BaseFrame {
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
-        
+        this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
         let height = this.loading.parentElement.getBoundingClientRect().height;
         height = height - 6;
 

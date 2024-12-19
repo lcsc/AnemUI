@@ -63,9 +63,28 @@ export class CsMap{
         this.listener.onMapLoaded();
     }
 
-    public onMapClick(event:CsMapEvent):void{
-        //this.controller.putMarker(event.latLong);
+    public onMapClick(event: CsMapEvent): void {
+        console.log("Evento recibido:", event);
+    
+        if (!event || !event.latLong) {
+            console.error("El objeto event o latLong no están definidos:", event);
+            return;
+        }
+    
         this.listener.onClick(event);
+
+        setTimeout(() => {
+            this.checkDataToShowGraph();
+        }, 500);
+    }
+
+    private checkDataToShowGraph(){
+        if (this.parent.getLastLlData() && this.parent.getLastLlData().latlng !== undefined) {
+            console.log(this.parent.getLastLlData().latlng);
+            this.parent.showGraph();
+        } else {
+            console.warn("lastLlData o latlng no están definidos:", this.parent.getLastLlData());
+        }
     }
 
     public onMouseMoveEnd(event:CsMapEvent):void{
