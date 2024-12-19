@@ -21,38 +21,6 @@ export type simpleDiv = {
     subTitle: string
 }
 
-// export class simpleDiv extends BaseUiElement {
-//     // protected container: HTMLDivElement;
-//     public id: string
-//     public role: string
-//     public title: string
-
-//     constructor( _id: string, _role: string, _title: string) {
-//        super();
-//         this.id = _id;
-//         this.role = _role;
-//         this.title = _title;
-//     }
-//     public build(): void {
-//         // this.container = document.getElementById(this.containerId) as HTMLDivElement
-//     }
-//     public minimize(): void {
-//         throw new Error("Method not implemented.");
-//     }
-//     public showFrame(): void {
-//         throw new Error("Method not implemented.");
-//     }
-    
-//     public render(): JSX.Element {
-//         // return (<div id={this.id} className="input-group-text">{this.title}</div>);
-//         return (<li id={this.id} role={this.role}>{this.title}</li>);
-//     }
-
-//     /* public getDiv(): HTMLDivElement {
-//         return this.container;
-//     } */
-// }
-
 export class MenuBar extends BaseFrame {
 
     private title: string
@@ -84,7 +52,7 @@ export class MenuBar extends BaseFrame {
     private variable: CsMenuItem;
     private subVariable: CsMenuItem;
     private selection: CsMenuItem;
-    private extraDropDowns: CsMenuItem[];
+    private extraMenuItems: CsMenuItem[];
     private dropDownOrder: string[]
     // private containerHandler: HTMLElement;
 
@@ -133,7 +101,7 @@ export class MenuBar extends BaseFrame {
                 },
             });
         }
-        this.extraDropDowns = []
+        this.extraMenuItems = []
         this.extraBtns = []
         this.dropDownOrder = []
     }
@@ -154,7 +122,6 @@ export class MenuBar extends BaseFrame {
             return Math.max(a, parseInt(b.id))
         }, Number.NEGATIVE_INFINITY);
         let nextId = (maxId + 1).toString()
-        let values = this.extraDropDowns
         let element = (
             <li id={nextId} role={display.role} className={'inputDiv ' + btnType}></li>
         );
@@ -213,8 +180,7 @@ export class MenuBar extends BaseFrame {
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
-        this.climatologyDisplay = document.getElementById('climatologyDisplay') as HTMLDivElement;
-
+        
         let height = this.loading.parentElement.getBoundingClientRect().height;
         height = height - 6;
 
@@ -225,14 +191,14 @@ export class MenuBar extends BaseFrame {
             let dsp: simpleDiv = {role:'spSupport', title:'', subTitle:''}
             addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
             this.displaySpSupport = this.container.querySelector("[role=spSupport]")
-            addChild(this.displaySpSupport, this.spatialSupport.render(this.spatialSupport.getText(),this.parent.getState().support));
+            addChild(this.displaySpSupport, this.spatialSupport.render(this.parent.getState().support));
             this.spatialSupport.build(this.displaySpSupport)
         }
         if (hasVars) {
             let dsp: simpleDiv = {role:'var', title:'', subTitle:''}
             addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
             this.displayVar = this.container.querySelector("[role=var]")
-            addChild(this.displayVar, this.variable.render(this.variable.getText(),this.parent.getState().varName,varHasPopData))
+            addChild(this.displayVar, this.variable.render(this.parent.getState().varName,varHasPopData))
             this.variable.build(this.displayVar)
             if (varHasPopData) this.variable.configPopOver(this.popData)
         }
@@ -241,7 +207,7 @@ export class MenuBar extends BaseFrame {
             addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
             this.displaySubVar = this.container.querySelector("[role=subVar]")
             this.displaySubVar.hidden = false;
-            addChild(this.displaySubVar, this.subVariable.render(this.subVariable.getText(),this.parent.getState().subVarName,sbVarHasPopData));
+            addChild(this.displaySubVar, this.subVariable.render(this.parent.getState().subVarName,sbVarHasPopData));
             this.subVariable.build(this.displaySubVar)
             if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
         }
@@ -250,7 +216,7 @@ export class MenuBar extends BaseFrame {
             addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
             this.displayTpSupport = this.container.querySelector("[role=tpSupport]")
             this.displayTpSupport.hidden = false;
-            addChild(this.displayTpSupport, this.temporalSupport.render(this.temporalSupport.getText(), this.parent.getState().tpSupport));
+            addChild(this.displayTpSupport, this.temporalSupport.render(this.parent.getState().tpSupport));
             this.temporalSupport.build(this.displayTpSupport);
         }
         
@@ -267,10 +233,10 @@ export class MenuBar extends BaseFrame {
         if (hasClimatology) {
             this.extraDisplays.forEach((dsp) => {
                 addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                this.extraDropDowns.forEach((dpn) => {
+                this.extraMenuItems.forEach((dpn) => {
                     if (dpn.id == dsp.role) {
                         let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                        addChild(container, dpn.render(dsp.title, dsp.subTitle,false));
+                        addChild(container, dpn.render(dsp.subTitle,false));
                         dpn.build(container)
                     }
                 });
@@ -278,7 +244,7 @@ export class MenuBar extends BaseFrame {
         }
 
         if(this.dropDownOrder.length) {
-            this.changeDropDownOrder()
+            this.changeMenuItemOrder()
         }
 
         this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
@@ -289,10 +255,6 @@ export class MenuBar extends BaseFrame {
 
         if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
 
-        // if (!hasSubTitle){ 
-        //     this.menuCentral.hidden = true;
-        //     this.titleDiv.classList.add('alone'); 
-        // }
         if(this.inputOrder.length) {
             this.changeInputOrder()
         }
@@ -300,13 +262,11 @@ export class MenuBar extends BaseFrame {
 
     public minimize(): void {
         this.menuInfo1.hidden = true;
-        // this.menuInfo2.hidden = true;
         this.menuCentral.classList.remove('col-md');
         this.topBar.classList.add('smallBar');
     }
     public showFrame(): void {
         this.menuInfo1.hidden = false;
-        // this.menuInfo2.hidden = false;
         this.menuCentral.classList.add('col-md');
         this.topBar.classList.remove('smallBar');
     }
@@ -344,15 +304,12 @@ export class MenuBar extends BaseFrame {
             // this.displaySpSupport.setSubTitle() ;
         }
         if (hasTpSupport) {
-            // this.displayTpSupport.textContent = this.parent.getState().tpSupport;
             this.displayTpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().tpSupport;
         }
         if (hasVars) {
-            // this.displayVar.textContent = this.parent.getState().varName;
             this.displayVar.querySelector('.sub-title').innerHTML = this.parent.getState().varName;
         }
         if (hasSubVars) {
-            // this.displaySubVar.textContent = this.parent.getState().subVarName;
             this.displaySubVar.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
         }   
         this.displaySelection.textContent = this.parent.getState().selection;
@@ -386,31 +343,29 @@ export class MenuBar extends BaseFrame {
         this.extraDisplays.push( { role: id, title: displayTitle, subTitle: options[0] })
         let listener = this.listener
 
-        this.extraDropDowns.push( new CsMenuItem (id , displayTitle,  {
+        this.extraMenuItems.push( new CsMenuItem (id , displayTitle,  {
             valueSelected(origin, index, value, values) {
                 listener.dropdownSelected(id, index, value, values)
             },
         }))
 
-        for (let i = 0; i < this.extraDropDowns.length; i++) {
-            if (this.extraDropDowns[i]['id'] == id) this.extraDropDowns[i].setValues(options);
+        for (let i = 0; i < this.extraMenuItems.length; i++) {
+            if (this.extraMenuItems[i]['id'] == id) this.extraMenuItems[i].setValues(options);
         }
     }
 
     public updateExtraDisplay(dspRole: string, displayTitle:string, options: string[]) {
-        let el = this.inputsFrame.querySelector('[role=' + dspRole + ']')
-        el.innerHTML = ''
-        this.extraDropDowns.forEach((dpn) => {
+        this.extraMenuItems.forEach((dpn) => {
             if (dpn.id == dspRole) {
+                dpn.setTitle(displayTitle)
+                dpn.setSubTitle(options[0])
                 dpn.setValues(options)
-                addChild(el, dpn.render(displayTitle, options[0], false));
             }
-            console.log(dpn)
         });
     }
 
     public updateExtraDrpodown(_dpn: string, title: string, sbTitle: string) {
-        this.extraDropDowns.forEach((dpn) => {
+        this.extraMenuItems.forEach((dpn) => {
             if (dpn.id == _dpn) {
                 dpn.setSubTitle(sbTitle)
             }
@@ -477,11 +432,10 @@ export class MenuBar extends BaseFrame {
         this.selection.config(visible, newText);
     }
 
-    public updateExtraDropdown(btnName: string, btnTitle: string, options: string[]) {
-        for (let i = 0; i < this.extraDropDowns.length; i++) {
-            if (this.extraDropDowns[i]['id'] == btnName) {
-                // this.extraDropDowns[i].setTitle(btnTitle, btnName)
-                
+    public updateMenuItem(btnName: string, btnTitle: string, options: string[]) {
+        for (let i = 0; i < this.extraMenuItems.length; i++) {
+            if (this.extraMenuItems[i]['id'] == btnName) {
+                 this.extraMenuItems[i].setTitle(btnTitle, btnName)
             }
         }
     }
@@ -490,11 +444,11 @@ export class MenuBar extends BaseFrame {
         this.popData = popData
     }
 
-    public setDropDownOrder(order:string[]) {
+    public setMenuItemOrder(order:string[]) {
         this.dropDownOrder = order
     }
 
-    public changeDropDownOrder() {
+    public changeMenuItemOrder() {
         let k: number = 0
         document.querySelectorAll('.ordBtn').forEach((elem:HTMLButtonElement)=>{
             elem.style.order = this.dropDownOrder[k]
