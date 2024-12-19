@@ -9,16 +9,14 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, toLonLat, transform } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, mapboxAccessToken, mapboxMapID, olProjection, initialZoom } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, pxTransparent } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-import BaseLayer from "ol/layer/Base";
-import ImageSource from "ol/source/Image";
 import { LayerManager } from "./LayerManager";
 import DataTileSource from "ol/source/DataTile";
 

@@ -1,20 +1,12 @@
 import { createElement, addChild } from 'tsx-create-element';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { GradientPainter, PaletteManager } from '../PaletteManager';
-import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
-import { mgrs } from 'proj4';
 import { LayerManager } from '../LayerManager';
 import { showLayers, initialZoom }  from "../Env";
-import { forEach } from 'cypress/types/lodash';
-
 export default class PaletteFrame  extends BaseFrame{
 
     protected slider: Slider
-    private baseDiv: HTMLElement
-    private dataDiv: HTMLElement
-    private trpDiv: HTMLElement
-    private uncertaintyFrame: HTMLElement; 
 
     public render():JSX.Element{
         let self=this;
@@ -27,13 +19,6 @@ export default class PaletteFrame  extends BaseFrame{
         let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let name = this.parent.getState().legendTitle;
         let palettes=mgr.getPalettesNames();
-        let baseLayers=lmgr.getBaseLayerNames();
-        let topLayers=lmgr.getTopLayerNames();
-        let bgcolor;
-        let color = '#ffffff';
-        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
-        let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
-        let i: number = 0;
         mgr.setUncertaintyLayerChecked(false)
         let element=
         (<div id="PaletteFrame" className='paletteFrame' onMouseOver={(event:React.MouseEvent)=>{mouseOverFrame(self,event)}}>
@@ -97,7 +82,6 @@ export default class PaletteFrame  extends BaseFrame{
 
     public build(){
         this.container = document.getElementById("PaletteFrame") as HTMLDivElement
-        // this.trpDiv = document.getElementById('trp-div') as HTMLElement;
     }
 
     public minimize():void{
