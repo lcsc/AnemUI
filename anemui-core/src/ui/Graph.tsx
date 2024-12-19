@@ -25,6 +25,8 @@ export class CsGraph extends BaseFrame {
   private graphType: GraphType;
   public byPoint: boolean;
 
+  private downloadButtonContainer: HTMLButtonElement;
+
   public constructor(_parent: BaseApp) {
     super(_parent)
   }
@@ -34,7 +36,8 @@ export class CsGraph extends BaseFrame {
     let graphWidth = screen.width > 1200 ? screen.width * 0.4 : screen.width * 0.55;
     let graphHeight = screen.height > 1200 ? screen.height * 0.4 : screen.height * 0.50;
     let element =
-      (<div id="GraphContainer" className='GraphContainer row' hidden >
+      (<div className="container">
+      <div id="GraphContainer" className='GraphContainer row' hidden >
         <div className="popup-content-wrapper col">
           <div className="popup-content" style={{ width: "auto" }}>
             <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
@@ -42,12 +45,16 @@ export class CsGraph extends BaseFrame {
           <div className="labels-content" style={{ width: "auto" }}>
             <div id="labels" style={{ width: graphWidth + "px" }}></div>
           </div>
+          <div id="graphDiv" className="droppDownButton">
+            <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
+          </div>
         </div>
         <div className="col">
           <a className="popup-close-button" onClick={() => { this.closeGraph() }}>
             <i className="bi bi-x-circle-fill"></i>
           </a>
         </div>
+      </div>
       </div>);
     return element;
   }
@@ -78,10 +85,17 @@ export class CsGraph extends BaseFrame {
     this.container.hidden = true
   }
 
+  private enableDownloadButton(){
+    this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
+    this.downloadButtonContainer.disabled = false
+  }
+
   public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station = '') {
     //let data:any;
     //console.log("opening Graph")
     this.container.hidden = false;
+    this.enableDownloadButton();
+
     let graph: Dygraph
     let url
 

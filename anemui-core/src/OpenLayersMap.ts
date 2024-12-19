@@ -9,16 +9,14 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, toLonLat, transform } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, mapboxAccessToken, mapboxMapID, olProjection, initialZoom } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, pxTransparent } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-import BaseLayer from "ol/layer/Base";
-import ImageSource from "ol/source/Image";
 import { LayerManager } from "./LayerManager";
 import DataTileSource from "ol/source/DataTile";
 
@@ -177,10 +175,21 @@ export class OpenLayerMap implements CsMapController{
       let lmgr = LayerManager.getInstance();
       let layers: (ImageLayer<Static> | TileLayer)[] = [];
 
-      let terrain = new TileLayer({
-        source: lmgr.getBaseLayerSource() as DataTileSource
-      });
-      this.terrainLayer=terrain;
+      let layersLength =  lmgr.initBaseSelected(initialZoom)
+
+      for (let i = 0; i <= layersLength; i++) {
+        let terrain = new TileLayer({
+          source: lmgr.getBaseLayerSource(i) as DataTileSource
+        });
+        this.terrainLayer=terrain;
+        layers.push(terrain);
+      }
+
+      //  --- original
+      // let terrain = new TileLayer({
+      //   source: lmgr.getBaseLayerSource() as DataTileSource
+      // });
+      // this.terrainLayer=terrain;
 
       let political = lmgr.getTopLayerOlLayer() as TileLayer;
       this.politicalLayer=political
@@ -188,7 +197,7 @@ export class OpenLayerMap implements CsMapController{
       this.dataTilesLayer = [];
       this.uncertaintyLayer = lmgr.getUncertaintyLayer();
      
-      layers.push(terrain);
+      // layers.push(terrain);
       layers.push(political);
 
       if (isTileDebugEnabled)
@@ -264,7 +273,7 @@ export class OpenLayerMap implements CsMapController{
       timesJs.portions[state.varId].forEach((portion: string, index, array) => {
         let imageLayer: ImageLayer<Static> = new ImageLayer({});
         this.dataTilesLayer.push(imageLayer);
-        this.map.getLayers().insertAt(1, imageLayer);
+        this.map.getLayers().insertAt(this.map.getLayers().getLength() - 1, imageLayer);
       });
 
       // Download and build new data layers
@@ -288,7 +297,7 @@ export class OpenLayerMap implements CsMapController{
         timesJs.portions[state.varId + '_uncertainty'].forEach((portion: string, index, array) => {
           let imageLayer: ImageLayer<Static> = new ImageLayer({});
           this.uncertaintyLayer.push(imageLayer);
-          this.map.getLayers().insertAt(2, imageLayer);
+          this.map.getLayers().insertAt(this.map.getLayers().getLength() - 1, imageLayer);
         });
 
         // Download and build new uncertainty layers
@@ -355,6 +364,7 @@ export class OpenLayerMap implements CsMapController{
         this.geoLayer=new CsOpenLayerGeoJsonLayer (data,this.map,this,onClick);
       return this.geoLayer
     }
+    
     public updateRender(support: string): void {
       if(support!=this.lastSupport){
   
@@ -377,9 +387,19 @@ export class OpenLayerMap implements CsMapController{
         this.geoLayer.refresh();
       }
       let lmgr = LayerManager.getInstance();
-      let tSource = lmgr.getBaseLayerSource();
+      /* let tSource = lmgr.getBaseLayerSource();
       if(this.terrainLayer.getSource()!=tSource){
         this.terrainLayer.setSource(tSource);
+      }
+ */
+      // let layersLength =  lmgr.initBaseSelected(this.getZoom())
+
+      let layersLength =  lmgr.getBaseSelected().length
+      for (let i = 0; i < layersLength; i++) {
+        let tSource = lmgr.getBaseLayerSource(i);
+        if(this.terrainLayer.getSource()!=tSource){
+          this.terrainLayer.setSource(tSource);
+        }
       }
 
       let pLayer=lmgr.getTopLayerOlLayer();

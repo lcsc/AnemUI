@@ -103,6 +103,12 @@ div.btnSelect.visible {
     max-width: 300px;
 }
 
+.buttonDiv.visible:disabled {
+    pointer-events: none;
+    background-color: $color_1;
+    color: $border-color !important;
+}
+
 select.selectDiv.visible{
     margin: 0px auto;
     display: block;
@@ -119,3 +125,4 @@ select.selectDiv.visible{
 .hidden {
     display: none;
 }
+
