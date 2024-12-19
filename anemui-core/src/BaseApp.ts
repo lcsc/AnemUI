@@ -132,6 +132,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
     public getTranslation(text:string): string {
         return this.translate.locale(text) ;
     } 
+
+    public getLastLlData(): CsLatLongData {
+        return this.lastLlData;
+    }
     
     public setLanguage(lang:string): void {
         this.translate.setDefault(lang) ;
