@@ -54,7 +54,7 @@ export class CsOptionsService {
         return false;
     }
     public getDateFrameMode(state:CsViewerData):DateFrameMode{
-        return DateFrameMode.DateFrameDate;
+        return DateFrameMode.AutoSelect;
     }
 }
 
@@ -83,7 +83,7 @@ export abstract class DataServiceApp extends BaseApp {
 
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
-        this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
+        
     }
 
     public render(): BaseApp {
@@ -95,6 +95,9 @@ export abstract class DataServiceApp extends BaseApp {
     }
 
     public update(dateChanged: boolean = false): void {
+        let svc = this.optionsService;
+        let state = this.state
+        this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
         super.update(dateChanged)
         if (this.optionsService != undefined) {
             this.updateOptions();

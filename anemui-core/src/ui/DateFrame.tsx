@@ -38,7 +38,8 @@ export enum DateFrameMode{
     ClimFrameSeason,
     ClimFrameMonth,
     ClimFrameYear,
-    DateFrameDisabled
+    DateFrameDisabled,
+    AutoSelect
 }
 
 export class DateSelectorFrame extends BaseFrame {
@@ -529,36 +530,113 @@ export class DateSelectorFrame extends BaseFrame {
         this.slider.setValue(this.parent.getState().selectedTimeIndex,false,false);
             }
 
+
+    /**
+     *
+     * 
+     */
+
+    protected detectMode():DateFrameMode{
+        
+        let time = this.getTime(this.parent.getState().times)
+        if (!this.parent.getState().climatology) {
+            switch (time) {
+                case 1: 
+                    return DateFrameMode.DateFrameYear;
+                case 4:
+                    return DateFrameMode.DateFrameSeason;
+                case 12:
+                    return DateFrameMode.DateFrameMonth;
+                default:
+                    return DateFrameMode.DateFrameDate;
+                }
+        } else {
+            this.timeSeriesFrame.hidden = true;
+            if(this.mode==DateFrameMode.AutoSelect){
+                switch (time) {
+                    case 1: 
+                        this.mode = DateFrameMode.ClimFrameYear;    
+                    case 4:
+                        return DateFrameMode.ClimFrameSeason
+                    default: DateFrameMode.ClimFrameMonth;
+                }
+            }
+        }
+        return DateFrameMode.DateFrameDisabled
+    }
+
+    protected updateMode2(){
+        if(this.mode==DateFrameMode.AutoSelect){
+            this.mode=this.detectMode();
+        }
+        switch(this.mode){
+            case DateFrameMode.DateFrameDate:
+            case DateFrameMode.DateFrameSeason:
+            case DateFrameMode.DateFrameMonth:
+            case DateFrameMode.DateFrameYear:
+                this.timeSeriesFrame.hidden = false;
+                this.climatologyFrame.hidden = true;
+                this.sliderFrame.hidden = false;
+                break;
+            case DateFrameMode.ClimFrameSeason:
+            case DateFrameMode.ClimFrameMonth:
+                let time = this.getTime(this.parent.getState().times)
+                let period = this.getPeriods(time)
+                this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex]
+                this.sliderFrame.hidden = false
+                this.climatologyFrame.hidden = false
+                break;
+            case DateFrameMode.ClimFrameYear:
+                this.sliderFrame.hidden = true
+                this.climatologyFrame.hidden = true
+                break;
+            case DateFrameMode.DateFrameDisabled:
+            case DateFrameMode.AutoSelect:
+        }
+    }
+
     protected updateMode(){
+        //
         let time = this.getTime(this.parent.getState().times)
         if (!this.parent.getState().climatology) {
             this.timeSeriesFrame.hidden = false;
             this.climatologyFrame.hidden = true;
             this.sliderFrame.hidden = false
-            switch (time) {
-            case 1: 
+            if(this.mode==DateFrameMode.AutoSelect){
+                switch (time) {
+                case 1: 
                     this.mode = DateFrameMode.DateFrameYear;
                     break;
                 case 4:
-                this.mode = DateFrameMode.DateFrameSeason;
-                break;
-            case 12:
+                    this.mode = DateFrameMode.DateFrameSeason;
+                    break;
+                case 12:
                     this.mode = DateFrameMode.DateFrameMonth;
                     break;
                 default:
                     this.mode = DateFrameMode.DateFrameDate;
                     break;
+                }
             }
         } else {
             this.timeSeriesFrame.hidden = true;
-            switch (time) {
-                case 1: 
-                    this.mode = DateFrameMode.ClimFrameYear;
+            if(this.mode==DateFrameMode.AutoSelect){
+                switch (time) {
+                    case 1: 
+                        this.mode = DateFrameMode.ClimFrameYear;    
+                    default:
+                        this.mode = time==4? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
+                }
+            }
+            
+            switch (this.mode) {
+                case DateFrameMode.ClimFrameYear: 
                     this.sliderFrame.hidden = true
                     this.climatologyFrame.hidden = true
                     break;
+                case DateFrameMode.ClimFrameSeason:
+                case DateFrameMode.ClimFrameMonth:
                 default:
-                    this.mode = time==4? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
                     let period = this.getPeriods(time)
                     this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex]
                     this.sliderFrame.hidden = false
