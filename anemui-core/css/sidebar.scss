@@ -149,6 +149,16 @@
     }
 }
 
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  .blinking-text {
+    animation: blink 2s infinite;
+}
+
 div.menu {
     min-width: 40%;
     max-width: fit-content;
@@ -156,7 +166,7 @@ div.menu {
     right:0;
     margin-left:auto;
     margin-right:auto;
-    margin-top: 0.5em;
+    margin-top: 0em;
     @include blurBgFrame(3em);
 
     div.menu-container{
@@ -164,11 +174,17 @@ div.menu {
         max-width: fit-content;
        // background-color: aquamarine;
     }
-    div.menu-title{
-        min-height: 1em;
-        max-width: fit-content;
+    div.menu-title {
+        min-height: 1em; // Reduce el valor si es mayor de lo necesario
+        padding: 0.5em 1em; // Ajusta para minimizar el espacio en blanco
         background-color: $color_1;
+    
+        // Opcional: Ajusta el espacio alrededor del texto si es necesario
+        display: flex;
+        align-items: center; // Centra verticalmente el texto
+        justify-content: center; // Centra horizontalmente el texto
     }
+    
     button {
         margin-left:10px
     }
@@ -437,7 +453,10 @@ a.article {
     #header-central {
         display: flex;
         justify-content: center;
-    }
+        align-items: center; 
+        padding: 0; 
+        margin: 0;
+    }    
     
     #info {
         display:flex;
@@ -564,6 +583,7 @@ a.article {
     }
 
     #title {
+        width: auto !important;
         text-decoration: none;
         color: $title_bgcolor;
         font-size: 1.5em;
@@ -580,7 +600,7 @@ a.article {
             // }
         }
     }
-
+   
     #TopRightBar {
         @include xl-desktop {
             padding-top: 0.2em;
