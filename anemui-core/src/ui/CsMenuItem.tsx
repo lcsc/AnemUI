@@ -24,34 +24,31 @@ export class CsMenuItem extends BaseUiElement {
     this.listenter = _listener
   }
 
-  // public setValues(_values: string[], hasPopData: boolean = false) {
-  //   this.values = _values;
-  //   if (this.container != undefined) {
-  //     //alert("needs Update")
-  //     let ul = this.container.getElementsByTagName("ul")[0]
-  //     ul.innerHTML = "";
-  //     this.values.map((val, index) => {
-  //       var popOverAttrs = {
-  //         id: val.startsWith("~") ? val.substring(1) : val,
-  //         'data-toggle': 'popover'
-  //       };
-  //       if (val.startsWith("~")) {
-  //         addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
-  //       } else {
-  //         addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>))
-  //       }
-  //     });
-  //     this.drop.update()
-  //   }
-  // }
-
   public setValues(_values: string[], hasPopData: boolean = false) {
     this.values = _values;
+    if (this.container != undefined) {
+      //alert("needs Update")
+      let ul = this.container.getElementsByTagName("ul")[0]
+      ul.innerHTML = "";
+      this.values.map((val, index) => {
+        var popOverAttrs = {
+          id: val.startsWith("~") ? val.substring(1) : val,
+          'data-toggle': 'popover'
+        };
+        if (val.startsWith("~")) {
+          addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
+        } else {
+          addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>))
+        }
+      });
+      this.drop.update()
+    }
   }
-
+  
   public setTitle(_title: string, _role?: string) {
     if (this.container != undefined) {
       this.title  = _title
+      this.container.querySelector(".title").innerHTML = this.title;
     }
   }
 
@@ -74,8 +71,7 @@ export class CsMenuItem extends BaseUiElement {
     this.listenter.valueSelected(this, index, this.values[index], this.values);
   }
 
-  public render(_title?: string, _subTitle?: string, hasPopData: boolean = false): JSX.Element {
-    this.title = _title
+  public render(_subTitle?: string, hasPopData: boolean = false): JSX.Element {
     this.subTitle = _subTitle
     return (
       <div>
