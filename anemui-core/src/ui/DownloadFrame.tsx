@@ -25,7 +25,6 @@ export class DownloadFrame extends BaseFrame {
     protected parent: BaseApp;
     protected dropPointContainter: HTMLDivElement;
     protected pointButtonsContainer: HTMLElement[];
-    // protected pointButtonsContainer: HTMLDivElement;
     protected dropPoint: Dropdown;
     protected dropNc: Dropdown
     protected dropNcDownButton: HTMLButtonElement
@@ -36,10 +35,10 @@ export class DownloadFrame extends BaseFrame {
         let oneOption = this.downloadNcOptions.length == 1? true:false;
         let self = this;
         let element =
-            (<div id="DownloadFrame" className='downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
+            (<div id="DownloadFrame" className='rightbar-item downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                 <div className='downlad-buttons'>
                     <div id="latlong" role="latLong" style={{ visibility: "hidden" }}><i className="bi bi-pin-map"></i> <span>latLng</span></div>
-                    <div className='btnSelect left d-grid mx-auto'>
+                    <div className='btnSelect right d-grid mx-auto'>
                         { !oneOption &&
                             <div id="dropNc" role="dropNc">
                                 <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>
@@ -75,29 +74,6 @@ export class DownloadFrame extends BaseFrame {
                                 </span>
                             </fieldset>
                         }
-                    
-                        {/* <div id="dropPoint" className="btn-group dropend download-btn" role="dropPoint">
-                            <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
-                            <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                <span className="visually-hidden"></span>
-                            </button>
-                            <ul className="dropdown-menu">
-                                <li><a className="dropdown-item" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</a></li>
-                                <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
-                            </ul>
-                        </div> */}
-                        <fieldset id="btnPoint" role="btnPoint" className='pointBtn navbar-btn buttonDiv visible' disabled>
-                            <span className="icon"><i className="bi bi-file-earmark-arrow-down"></i></span>
-                            <span className="text" aria-label='base' onClick={() => { this.parent.downloadPoint() }}>
-                                {this.parent.getTranslation('descargar_pixel')}
-                            </span>
-                        </fieldset>
-                        <fieldset id="btnGraph" role="btnGraph" className='pointBtn navbar-btn buttonDiv visible' disabled style={this.parent.getGraph().byPoint ? { visibility: "visible" } : { visibility: "hidden" }} onClick={() => { this.parent.showGraph() }}>
-                            <span className="icon"><i className="bi bi-graph-up"></i></span>
-                            <span className="text" aria-label='base'>
-                                {this.parent.getTranslation('grafico_pixel')}
-                            </span>
-                        </fieldset>
                     </div>        
                 </div>
                 <div className='download-handler'>
@@ -106,58 +82,6 @@ export class DownloadFrame extends BaseFrame {
             </div>);
         return element;
     }
-
-    // public render(): JSX.Element {
-
-    //     let self = this;
-    //     let element =
-    //         (<div id="DownloadFrame" className='downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
-    //             <div className='downlad-buttons'>
-    //                 <div id="latlong" role="latLong" style={{ visibility: "hidden" }}><i className="bi bi-pin-map"></i> <span>latLng</span></div>
-    //                 <div className='d-grid mx-auto gap-2'>
-    //                     <div id="dropNc" className="btn-group dropend droppDownButton" role="dropNc">
-    //                         <button type="button" role="nc" className="btn btn-md navbar-btn navbar-btn-title" onClick={() => { this.displayNcDownloads() }}>{this.parent.getTranslation('descargar_nc')}</button>
-    //                         <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-    //                             <span className="visually-hidden"></span>
-    //                         </button>
-    //                         <ul className="dropdown-menu">
-    //                             {
-    //                                 this.downloadNcOptions.map((value) => {
-    //                                     let option = value.value;
-    //                                     return (
-    //                                         <li><a className="dropdown-item" onClick={() => { this.parent.downloadNc(value.suffix) }}>{this.parent.getTranslation(option)}</a></li>
-    //                                     )
-    //                                 })
-    //                             }
-    //                         </ul>
-    //                     </div>
-    //                     <div id="point-buttons">
-    //                         {/* <div id="dropPoint" className="btn-group dropend droppDownButton" role="dropPoint">
-    //                             <button type="button" className="btn btn-md navbar-btn navbar-btn-title" disabled onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
-    //                             <button type="button" className="btn btn-md navbar-btn navbar-btn-split dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-    //                                 <span className="visually-hidden"></span>
-    //                             </button>
-    //                             <ul className="dropdown-menu">
-    //                                 <li><a className="dropdown-item" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</a></li>
-    //                                 <li><a className="dropdown-item" onClick={() => { this.parent.downloadPointOptions() }}>{this.parent.getTranslation('opciones_avanzadas')}</a></li>
-    //                             </ul>
-    //                         </div> */}
-    //                         <div id="dropPoint" className="droppDownButton"  role="dropPoint">
-    //                             <button type="button" role="dropPointBtn" className="btn navbar-btn download-btn" disabled  onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
-    //                         </div>
-    //                         <div id="graphDiv" className="droppDownButton">
-    //                             <button type="button" role="graph" className="btn navbar-btn download-btn" style={this.parent.getGraph().byPoint ? { visibility: "visible" } : { visibility: "hidden" }} disabled onClick={() => { this.parent.showGraph() }}>{this.parent.getTranslation('grafico_pixel')}</button>
-    //                         </div>
-    //                     </div>
-    //                 </div>
-    //             </div>
-    //             <div className='download-handler'>
-    //                 <i className="bi bi-menu-button-wide-fill"></i>
-    //             </div>
-
-    //         </div>);
-    //     return element;
-    // }
 
     private displayNcDownloads() {
         if (this.downloadNcOptions == undefined || this.downloadNcOptions.length == 0) return
@@ -176,16 +100,12 @@ export class DownloadFrame extends BaseFrame {
         this.container = document.getElementById("DownloadFrame") as HTMLDivElement
         this.containerButons = this.container.getElementsByClassName("downlad-buttons")[0] as HTMLElement
         this.containerHandler = this.container.getElementsByClassName("download-handler")[0] as HTMLElement
-        // this.pointButtonsContainer = this.container.querySelector("[id=point-buttons]") as HTMLDivElement
         this.pointButtonsContainer =  Array.from(document.getElementsByClassName("pointBtn") as HTMLCollectionOf<HTMLElement>);
         
         this.containerHandler.hidden = true;
 
-        this.btnGraph = this.container.querySelector("[role=btnGraph]");
-        this.btnPoint = this.container.querySelector("[role=btnPoint]");
         this.containerLatLong = this.container.querySelector("[role=latLong]") as HTMLDivElement
         this.dropPointContainter = this.container.querySelector("[role=dropPoint]")
-        // this.dropPoint = new Dropdown(this.dropPointContainter)
         if (this.downloadNcOptions.length > 1) {
             let ncContainer = this.container.querySelector("[role=dropNc]")
             this.dropNc = new Dropdown(ncContainer);
@@ -215,13 +135,6 @@ export class DownloadFrame extends BaseFrame {
     }
     public enableDataButtons(latlng: CsLatLong): void {
         this.pointCoords = latlng
-        this.btnPoint.disabled = false
-        this.btnGraph.disabled = false
-        /* let btns = this.dropPointContainter.getElementsByTagName("button")
-        for (let i = 0; i < btns.length; i++) {
-            let btn: HTMLButtonElement = btns[i] as HTMLButtonElement;
-            btn.disabled = false;
-        } */
         this.containerLatLong.style.visibility = "visible";
         this.containerLatLong.getElementsByTagName("span")[0].textContent = "Lat:" + latlng.lat.toFixed(2) + " Long:" + latlng.lng.toFixed(2)
     }

@@ -536,13 +536,13 @@ export class DateSelectorFrame extends BaseFrame {
             this.climatologyFrame.hidden = true;
             this.sliderFrame.hidden = false
             switch (time) {
-            case 1: 
+                case 1: 
                     this.mode = DateFrameMode.DateFrameYear;
                     break;
                 case 4:
-                this.mode = DateFrameMode.DateFrameSeason;
-                break;
-            case 12:
+                    this.mode = DateFrameMode.DateFrameSeason;
+                    break;
+                case 12:
                     this.mode = DateFrameMode.DateFrameMonth;
                     break;
                 default:

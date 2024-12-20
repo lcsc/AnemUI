@@ -8,7 +8,7 @@
     width: 160px;
 }
 
-#SideBar {
+.side-bar {
     a {
         color: $color_1;
         text-decoration: none;
@@ -146,6 +146,16 @@
 
     @include xl-desktop {
         top: 8em;
+    }
+}
+
+#RightBar {
+    right: 1%;    
+    text-align: right;
+
+    .rightbar-item {
+        display: block;
+        // margin: 10px;
     }
 }
 
@@ -308,7 +318,7 @@ div.menu {
 }
 
 
-#SideBar.active {
+.side-bar.active {
     min-width: 226px;
     max-width: 226px;
     text-align: center;
@@ -898,7 +908,7 @@ div.slider.visible {
 }
 
 @media (max-width: 768px) {
-    #SideBar {
+    .side-bar {
         min-width: 80px;
         max-width: 80px;
         text-align: center;
@@ -955,7 +965,7 @@ div.slider.visible {
         }
     }
 
-    #SideBar.active {
+    .side-bar.active {
         margin-left: 0 !important;
     }
 
