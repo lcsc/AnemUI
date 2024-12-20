@@ -1,7 +1,6 @@
 import { createElement, addChild } from 'tsx-create-element';
 import { CsLatLong } from '../CsMapTypes';
 import { BaseApp } from '../BaseApp';
-import { CsLatLongData } from '../data/CsDataTypes';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { Dropdown } from 'bootstrap';
 import { modal } from 'tingle.js';
@@ -28,7 +27,6 @@ export class DownloadFrame extends BaseFrame {
     protected dropPoint: Dropdown;
     protected dropNc: Dropdown
     protected dropNcDownButton: HTMLButtonElement
-    protected pointCoords: CsLatLong;
     protected downloadNcOptions: DownloadNcOption[] = [{ value: "descargar_peninsula", suffix: "pen" }, { value: "descargar_canarias", suffix: "can" }];
 
     public render(): JSX.Element {
@@ -37,7 +35,6 @@ export class DownloadFrame extends BaseFrame {
         let element =
             (<div id="DownloadFrame" className='rightbar-item downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                 <div className='downlad-buttons'>
-                    <div id="latlong" role="latLong" style={{ visibility: "hidden" }}><i className="bi bi-pin-map"></i> <span>latLng</span></div>
                     <div className='btnSelect right d-grid mx-auto'>
                         { !oneOption &&
                             <div id="dropNc" role="dropNc">
@@ -100,11 +97,9 @@ export class DownloadFrame extends BaseFrame {
         this.container = document.getElementById("DownloadFrame") as HTMLDivElement
         this.containerButons = this.container.getElementsByClassName("downlad-buttons")[0] as HTMLElement
         this.containerHandler = this.container.getElementsByClassName("download-handler")[0] as HTMLElement
-        this.pointButtonsContainer =  Array.from(document.getElementsByClassName("pointBtn") as HTMLCollectionOf<HTMLElement>);
         
         this.containerHandler.hidden = true;
 
-        this.containerLatLong = this.container.querySelector("[role=latLong]") as HTMLDivElement
         this.dropPointContainter = this.container.querySelector("[role=dropPoint]")
         if (this.downloadNcOptions.length > 1) {
             let ncContainer = this.container.querySelector("[role=dropNc]")
@@ -133,11 +128,6 @@ export class DownloadFrame extends BaseFrame {
         this.container.querySelector(".buttonDiv." + select).classList.toggle("visible")
         this.container.querySelector(".selectDiv." + select).classList.toggle("visible")
     }
-    public enableDataButtons(latlng: CsLatLong): void {
-        this.pointCoords = latlng
-        this.containerLatLong.style.visibility = "visible";
-        this.containerLatLong.getElementsByTagName("span")[0].textContent = "Lat:" + latlng.lat.toFixed(2) + " Long:" + latlng.lng.toFixed(2)
-    }
 
     public disableDwButtons(): void {
         let dropItems = this.container.getElementsByClassName("dropdown-item")
@@ -147,13 +137,6 @@ export class DownloadFrame extends BaseFrame {
         }
     }
     
-    // public hidePointButtons(): void {
-    //     this.pointButtonsContainer.hidden = true;
-    // }
-    // public showPointButtons(): void {
-    //     this.pointButtonsContainer.hidden = false;
-    // }
-
     public  hidePointButtons(): void {
         this.pointButtonsContainer.forEach((btn) =>{
             btn.hidden = true;
