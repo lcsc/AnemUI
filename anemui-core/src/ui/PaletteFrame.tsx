@@ -21,7 +21,7 @@ export default class PaletteFrame  extends BaseFrame{
         let palettes=mgr.getPalettesNames();
         mgr.setUncertaintyLayerChecked(false)
         let element=
-        (<div id="PaletteFrame" className='paletteFrame' onMouseOver={(event:React.MouseEvent)=>{mouseOverFrame(self,event)}}>
+        (<div id="PaletteFrame" className='rigthbar-item paletteFrame' onMouseOver={(event:React.MouseEvent)=>{mouseOverFrame(self,event)}}>
             <div className="info legend">
                 <div id="units"><span className='legendText'>{name}</span><br/></div>
                 { 

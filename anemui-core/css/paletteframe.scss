@@ -33,16 +33,14 @@ div.paletteFrame.paletteSmall {
 }
 
 div.paletteFrame {
-    @include blurBgFrame();
+    // @include blurBgFrame();
+    // position: static !important;
     background-color: transparent !important;
-    max-width: fit-content;
+    // max-width: fit-content;
     // bottom: 7.5em;
     padding-top: 0px !important;
     padding-right: 0px !important;
-    top: 7.6em;
-    right: 2%;
-    text-align: right;
-
+    
     img {
         width: 100px;
         height: 114px;
