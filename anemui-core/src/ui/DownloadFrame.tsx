@@ -35,7 +35,7 @@ export class DownloadFrame extends BaseFrame {
         let oneOption = this.downloadNcOptions.length == 1? true:false;
         let self = this;
         let element =
-            (<div id="DownloadFrame" className='rigthbar-item downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
+            (<div id="DownloadFrame" className='rightbar-item downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                 <div className='downlad-buttons'>
                     <div id="latlong" role="latLong" style={{ visibility: "hidden" }}><i className="bi bi-pin-map"></i> <span>latLng</span></div>
                     <div className='btnSelect right d-grid mx-auto'>

@@ -1,15 +1,9 @@
-import { createElement, addChild } from 'tsx-create-element';
+import { createElement } from 'tsx-create-element';
 import { CsLatLong } from '../CsMapTypes';
-import { BaseFrame, mouseOverFrame } from './BaseFrame';
-import { PaletteManager } from '../PaletteManager';
-import Slider from 'bootstrap-slider';
-import { LayerManager } from '../LayerManager';
-import { initialZoom }  from "../Env";
-
+import { BaseFrame } from './BaseFrame';
 
 export default class RightBar  extends BaseFrame{
 
-    // protected slider: Slider
     protected pointCoords: CsLatLong;
     protected containerLatLong: HTMLDivElement;
     
