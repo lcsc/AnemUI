@@ -157,6 +157,16 @@
         display: block;
         // margin: 10px;
     }
+    .coords {
+        visibility: hidden;
+        background-color: rgba(255, 255, 255, 0.8); 
+        color: $title_color;            
+        font-weight: bold;
+        padding: 8px 5px;
+        margin: 8px 0px;
+        border-radius: 8px;
+        border: 2px solid  $color_8;  
+    }
 }
 
 @keyframes blink {
