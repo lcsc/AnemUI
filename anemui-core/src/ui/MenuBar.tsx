@@ -35,6 +35,8 @@ export class MenuBar extends BaseFrame {
     private loadingText: HTMLSpanElement
     private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
+    private hamburger: HTMLElement
+    private navMenu: HTMLElement
 
     private displaySpSupport: HTMLDivElement
     private displayTpSupport: HTMLDivElement
@@ -148,14 +150,20 @@ export class MenuBar extends BaseFrame {
                             <img src={'./images/'+logo}></img>
                         </div>
                         <div id="menu-title" className="menu-info text-left row mx-0 px-4">
-                            <div className="col">
-                                <h3 id="title">{this.title}</h3>
+                            <div className="col-12 col-md-6">
+                                <h3 id="title">{this.title}</h3>{/* <span className="menu-info d-flex flex-row-reverse" id="info"></span> */}
                             </div>
-                            <div id="menu-central" className="col text-left">
-                                <form onSubmit={() => { this.fireParamChanged(); return false }}>
-                                        <ul id="inputs">
+                            <div id="menu-central" className="col-12 col-md-6">
+                                {/* <form onSubmit={() => { this.fireParamChanged(); return false }}> */}
+                                        <ul id="inputs" className="nav-menu">
                                             <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li>
                                         </ul>
+                                        <div className="hamburger" onClick={() => { self.mobileMenu() }}>
+                                            {/* <span className="bar"></span>
+                                            <span className="bar"></span>
+                                            <span className="bar"></span> */}
+                                            <span className="icon"><i className="bi bi-list"></i></span>
+                                        </div>
                                     <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
                                             placeholder="Selection Param" value={this.parent.getState().selectionParam}
                                             disabled={!this.parent.getState().selectionParamEnable}
@@ -165,10 +173,9 @@ export class MenuBar extends BaseFrame {
                                         <span className="data-error-text" id="nodata-text" hidden>{this.errorText}  </span>
                                             <div className="spinner-grow text-info" role="status" hidden />
                                         </div>
-                                </form>
+                               {/*  </form> */}
                             </div>
-                            <div className="col-1 menu-info d-flex flex-row-reverse" id="info">
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
@@ -187,7 +194,11 @@ export class MenuBar extends BaseFrame {
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
+        this.hamburger = document.querySelector(".hamburger");
+        this.navMenu = document.querySelector(".nav-menu");
+
         let height = this.loading.parentElement.getBoundingClientRect().height;
+
         height = height - 6;
 
         this.loading.style.height = height + "px";
@@ -264,16 +275,30 @@ export class MenuBar extends BaseFrame {
         if(this.inputOrder.length) {
             this.changeInputOrder()
         }
+
+        // this.hamburger.addEventListener("click", this.mobileMenu);
+        // const navLink = document.querySelectorAll(".inputDiv");
+        // navLink.forEach(n => n.addEventListener("click", this.closeMenu));
+    }
+
+    public mobileMenu() {
+        this.hamburger.classList.toggle("active");
+        this.navMenu.classList.toggle("active");
+    }
+
+    public closeMenu() {
+        this.hamburger.classList.remove("active");
+        this.navMenu.classList.remove("active");
     }
 
     public minimize(): void {
         this.menuInfo1.hidden = true;
-        this.menuCentral.classList.remove('col-md');
+        // this.menuCentral.classList.remove('col-md');
         this.topBar.classList.add('smallBar');
     }
     public showFrame(): void {
         this.menuInfo1.hidden = false;
-        this.menuCentral.classList.add('col-md');
+        // this.menuCentral.classList.add('col-md');
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {

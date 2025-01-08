@@ -194,7 +194,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         addChild(document.getElementById('MainFrame'), this.graph.render())
         this.graph.build();
         addChild(document.getElementById('MainFrame'), this.infoDiv.render())
-        let tl = document.createElement("div")
+        /* let tl = document.createElement("div")
         tl.className = "TopRightFrame"
         addChild(document.getElementById('info'), tl);
         this.infoDiv.build()
@@ -203,7 +203,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         if (isKeyCloakEnabled) {
             addChild(tl, this.loginFrame.render())
             this.loginFrame.build();
-        }
+        } */
 
         addChild(document.getElementById('MainFrame'), this.downloadOptionsDiv.render())
         this.downloadOptionsDiv.build()
