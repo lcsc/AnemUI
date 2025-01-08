@@ -1,12 +1,10 @@
 import { createElement, addChild } from 'tsx-create-element';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { PaletteManager } from '../PaletteManager';
-import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
-import { mgrs } from 'proj4';
 import { LayerManager } from '../LayerManager';
-import { showLayers, initialZoom }  from "../Env";
-import { forEach } from 'cypress/types/lodash';
+import { initialZoom }  from "../Env";
+
 
 export default class SideBar  extends BaseFrame{
 
@@ -37,7 +35,7 @@ export default class SideBar  extends BaseFrame{
         // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
         // mgr.setUncertaintyLayerChecked(false)
         let element=
-        (<div id="SideBar" className="active z-depth-1">
+        (<div id="SideBar" className="side-bar active z-depth-1">
             {/* <div className='layerFrame btnSelect left'>
                 <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>

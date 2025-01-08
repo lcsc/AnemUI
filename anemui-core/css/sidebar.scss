@@ -8,7 +8,7 @@
     width: 160px;
 }
 
-#SideBar {
+.side-bar {
     a {
         color: $color_1;
         text-decoration: none;
@@ -149,6 +149,26 @@
     }
 }
 
+#RightBar {
+    right: 1%;    
+    text-align: right;
+
+    .rightbar-item {
+        display: block;
+        // margin: 10px;
+    }
+    .coords {
+        visibility: hidden;
+        background-color: rgba(255, 255, 255, 0.8); 
+        color: $title_color;            
+        font-weight: bold;
+        padding: 8px 5px;
+        margin: 8px 0px;
+        border-radius: 8px;
+        border: 2px solid  $color_8;  
+    }
+}
+
 @keyframes blink {
     0% { opacity: 1; }
     50% { opacity: 0; }
@@ -157,6 +177,10 @@
 
   .blinking-text {
     animation: blink 2s infinite;
+}
+
+.data-error-text {
+    margin: 1rem 1rem;
 }
 
 div.menu {
@@ -304,7 +328,7 @@ div.menu {
 }
 
 
-#SideBar.active {
+.side-bar.active {
     min-width: 226px;
     max-width: 226px;
     text-align: center;
@@ -894,7 +918,7 @@ div.slider.visible {
 }
 
 @media (max-width: 768px) {
-    #SideBar {
+    .side-bar {
         min-width: 80px;
         max-width: 80px;
         text-align: center;
@@ -951,7 +975,7 @@ div.slider.visible {
         }
     }
 
-    #SideBar.active {
+    .side-bar.active {
         margin-left: 0 !important;
     }
 

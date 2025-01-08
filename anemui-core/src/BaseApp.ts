@@ -23,7 +23,8 @@ import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-import SideBar from "./ui/SideBar"; 
+import LeftBar from "./ui/LeftBar"; 
+import RightBar from "./ui/RightBar"; 
 import Translate from "./language/translate";
 import CsCookies from "./cookies/CsCookies";
 
@@ -59,7 +60,8 @@ const LEYEND_TITLE = "Leyenda"
 export abstract class BaseApp implements CsMapListener, MenuBarListener, /* SideBarListener,  */DateFrameListener {
 
     protected menuBar: MenuBar;
-    protected sideBar: SideBar;
+    protected leftBar: LeftBar;
+    protected rightBar: RightBar;
     protected csMap: CsMap;
     protected mainFrame: MainFrame;
     protected downloadFrame: DownloadFrame;
@@ -83,8 +85,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
 
     protected constructor() {
         this.menuBar = new MenuBar(this, this);
-        // this.sideBar = new SideBar(this, this) // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        this.sideBar = new SideBar(this) // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        // this.leftBar = new LeftBar(this, this) // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        this.leftBar = new LeftBar(this) // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
+        this.rightBar = new RightBar(this)
 
         this.csMap = new CsMap(this, new OpenLayerMap(), this);
 
@@ -109,8 +112,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         return this.menuBar;
     }
 
-    public getSideBar(): SideBar {
-        return this.sideBar;
+    public getSideBar(): LeftBar {
+        return this.leftBar;
     }
 
     public getMap(): CsMap {
@@ -132,6 +135,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
     public getTranslation(text:string): string {
         return this.translate.locale(text) ;
     } 
+
+    public getLastLlData(): CsLatLongData {
+        return this.lastLlData;
+    }
     
     public setLanguage(lang:string): void {
         this.translate.setDefault(lang) ;
@@ -172,16 +179,16 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         this.mainFrame.build();
         addChild(document.getElementById('MainFrame'), this.menuBar.render());
         this.menuBar.build();
-        addChild(document.getElementById('MainFrame'), this.sideBar.render());
-        this.sideBar.build();
-        // addChild(document.getElementById('SideBarInfo'), this.downloadFrame.render());  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        // this.downloadFrame.build();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        addChild(document.getElementById('SideBar'), this.layerFrame.render());  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
-        this.layerFrame.build();  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
-        addChild(document.getElementById('SideBar'), this.downloadFrame.render());  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
-        this.downloadFrame.build();  // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
-        addChild(document.getElementById('MainFrame'), this.paletteFrame.render())
+        addChild(document.getElementById('MainFrame'), this.leftBar.render());
+        this.leftBar.build();
+        addChild(document.getElementById('LeftBar'), this.layerFrame.render()); 
+        this.layerFrame.build(); 
+        addChild(document.getElementById('MainFrame'), this.rightBar.render());
+        this.rightBar.build();
+        addChild(document.getElementById('RightBar'), this.paletteFrame.render())
         this.paletteFrame.build();
+        addChild(document.getElementById('RightBar'), this.downloadFrame.render());
+        this.downloadFrame.build();
         addChild(document.getElementById('MainFrame'), this.dateSelectorFrame.render())
         this.dateSelectorFrame.build();
         addChild(document.getElementById('MainFrame'), this.graph.render())
@@ -213,7 +220,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
     onDragStart(event: CsMapEvent): void {
         if (avoidMin) return;
         this.menuBar.minimize();
-        this.sideBar.minimize();
+        this.leftBar.minimize();
         this.downloadFrame.minimize();
         this.paletteFrame.minimize();
         this.dateSelectorFrame.minimize();
@@ -234,9 +241,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         if (data.value == 0) return;
         this.lastLlData = data;
         this.csMap.showMarker(data.latlng);
-        this.downloadFrame.enableDataButtons(data.latlng)
-        this.downloadFrame.showFrame();
-        //console.log("Value at point: "+data.value)
+        this.rightBar.enableLatLng(data.latlng)
+        this.showGraph();
     }
 
     public hidePointButtons(): void {
@@ -254,7 +260,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
                 this.menuBar.hideLoading();
-                this.onLlDataLoaded(data)
+                this.onLlDataLoaded(data);
             })
             .catch((reason: any) => {
                 this.menuBar.hideLoading();
@@ -406,7 +412,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
 
         // this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
         this.menuBar.update();
-        this.sideBar.update();
+        this.leftBar.update();
         this.paletteFrame.update();
         this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
         this.csMap.updateRender(this.state.support)
@@ -614,13 +620,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
     }
 
     public showClimatology(){
-        // this.sideBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.leftBar.showClimFrame(); // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.showClimFrame();
         // this.dateSelectorFrame.showClimFrame();
     }
 
     public hideClimatology(){
-        // this.sideBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
+        // this.leftBar.hideClimFrame();  // -VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.menuBar.hideClimFrame();
         // this.dateSelectorFrame.hideClimFrame();
     }

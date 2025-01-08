@@ -25,6 +25,8 @@ export class CsGraph extends BaseFrame {
   private graphType: GraphType;
   public byPoint: boolean;
 
+  private downloadButtonContainer: HTMLButtonElement;
+
   public constructor(_parent: BaseApp) {
     super(_parent)
   }
@@ -42,6 +44,9 @@ export class CsGraph extends BaseFrame {
           </div>
           <div className="labels-content" style={{ width: "auto" }}>
             <div id="labels" style={{ width: graphWidth + "px" }}></div>
+          </div>
+          <div id="graphDiv" className="droppDownButton">
+            <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
           </div>
         </div>
         <div className="col">
@@ -80,10 +85,17 @@ export class CsGraph extends BaseFrame {
     this.container.hidden = true
   }
 
+  private enableDownloadButton(){
+    this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
+    this.downloadButtonContainer.disabled = false
+  }
+
   public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station = '') {
     //let data:any;
     //console.log("opening Graph")
     this.container.hidden = false;
+    this.enableDownloadButton();
+
     let graph: Dygraph
     let url
 
