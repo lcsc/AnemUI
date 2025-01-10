@@ -33,14 +33,15 @@ export class CsGraph extends BaseFrame {
 
   public render(): JSX.Element {
     let self = this;
-    let graphWidth = screen.width > 1200 ? screen.width * 0.4 : screen.width * 0.55;
-    let graphHeight = screen.height > 1200 ? screen.height * 0.4 : screen.height * 0.50;
+    console.log(screen.width + '/' + screen.height)
+    let graphWidth = screen.width * 0.4;
+    let graphHeight = screen.height * 0.3;
     let element =
       (<div className="container">
       <div id="GraphContainer" className='GraphContainer row' hidden >
         <div className="popup-content-wrapper col">
           <div className="popup-content" style={{ width: "auto" }}>
-            <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
+            <div id="popGraph" /* style={{ height: graphHeight + "px", width: graphWidth + "px" }} */></div>
           </div>
           <div className="labels-content" style={{ width: "auto" }}>
             <div id="labels" style={{ width: graphWidth + "px" }}></div>
