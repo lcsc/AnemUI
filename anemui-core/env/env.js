@@ -8,5 +8,5 @@ module.exports={
     logo:'logo_aemet.png',
     initialZoom:6,
     ncSignif:7,
-    dataSource: 'nc'  // 'nc' or zarr name
+    dataSource: 'nc'  // 'nc' or 'zarr'
 }

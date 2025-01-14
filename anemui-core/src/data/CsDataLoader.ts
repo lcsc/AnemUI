@@ -6,7 +6,7 @@ import { DownloadErrorCB, downloadUrl } from "./UrlDownloader";
 import { BaseApp } from "../BaseApp";
 import { extractValueChunkedFromT, extractDataChunkedFromT, extractValueChunkedFromXY } from "./ChunkDownloader";
 import { dataSource } from '../Env';
-import { openArray } from 'zarr';
+import { openArray, openGroup } from 'zarr';
 
 async function loadTimesJson(): Promise<CsTimesJsData> {
     // Carga desde archivo NC (implementación actual)
@@ -57,8 +57,12 @@ async function loadTimesJson(): Promise<CsTimesJsData> {
 async function loadZarrMetadata(zarrPath: string): Promise<CsTimesJsData> {
     let result: CsTimesJsData = {} as CsTimesJsData;
 
+    const zarrBasePath = window.location.origin + '/zarr';
+    const group = await openGroup(zarrBasePath);
+    const attrs = await group.attrs.asObject();
+
     // Geo Data
-    result.center = {"lat":40.0911,"lng":-2.6224};
+    result.center = {"lat":attrs.center_lat,"lng":attrs.center_lon};
 
     // Text data for variables
     result.varTitle = {"NDVI":"Normalized Difference Vegetation Index","KNDVI":"Kernel Normalized Difference Vegetation Index","SNDVI":"Standardized Normalized Difference Vegetation Index","SKNDVI":"Standardized Kernel Normalized Difference Vegetation Index"};
