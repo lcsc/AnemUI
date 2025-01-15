@@ -81,7 +81,7 @@ export class OpenLayerMap implements CsMapController{
     // Definimos un diccionario vacío
     protected ncExtents: Array4Portion = {};
     protected lastSupport:string;
-    protected geoLayer:CsOpenLayerGeoJsonLayer;
+    protected geoLayer: CsOpenLayerGeoJsonLayer;
     protected terrainLayer:Layer;
     protected politicalLayer:Layer;
     protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
@@ -318,7 +318,7 @@ export class OpenLayerMap implements CsMapController{
           this.dataWMSLayer.refresh();
         } else {
           this.buildDataTilesLayers(state, this.parent.getParent().getTimesJs());
-// Remove all uncertainty layers
+          // Remove all uncertainty layers
           this.uncertaintyLayer.forEach((layer: ImageLayer<Static>) => this.map.getLayers().remove(layer));
           this.uncertaintyLayer = [];
           if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, this.parent.getParent().getTimesJs());
@@ -361,7 +361,7 @@ export class OpenLayerMap implements CsMapController{
 
     public getGeoJsonLayer(data:GeoJSON.Feature[],onClick:CsGeoJsonClick):CsGeoJsonLayer{
       if (this.geoLayer==undefined)
-        this.geoLayer=new CsOpenLayerGeoJsonLayer (data,this.map,this,onClick);
+        this.geoLayer = new CsOpenLayerGeoJsonLayer (data,this.map,this,onClick);
       return this.geoLayer
     }
     
@@ -370,14 +370,23 @@ export class OpenLayerMap implements CsMapController{
   
         switch (support){
           case "Puntual (estaciones)":
+          case "Municipio":  
+          case "Provincia":
+          case "CCAA":
             this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
             break;
           case "Malla (raster)":
             //this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().insertAt(1, layer));  # No es necesario insertar de nuevo las capas ya que setDate/buildDataTilesLayers lo hace antes
             break;
-          case "Municipio":
-          case "Provincia":
-          case "CCAA":
+          // case "Municipio":
+          //   this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
+          //   break;
+          // case "Provincia":
+          //   this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
+          //   break;
+          // case "CCAA":
+          //   this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
+          //   break;
           default:
             throw new Error("Render "+support+" not supported")
         }
@@ -427,6 +436,7 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   private map:Map;
   private csMap:OpenLayerMap;
   private geoLayer:Layer;
+  // private geoLayers:Layer[];
   private onClick:CsGeoJsonClick;
 
   private popupOverlay:Overlay
@@ -454,21 +464,55 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
     })
   }
 
-  public show(): void {
+  public show(type:number): void {
     if(this.geoLayerShown)return;
     if(this.geoLayer==undefined){
-      let vectorSource:VectorSource = new VectorSource({
-        features: new GeoJSON().readFeatures({type: 'FeatureCollection',features:this.data}),
-      })
-      this.geoLayer= new VectorLayer({
-        source: vectorSource,
-        style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
-      });
+      switch (type) {
+        case 0:
+          let vectorSource:VectorSource = new VectorSource({
+            features: new GeoJSON().readFeatures({type: 'FeatureCollection',features:this.data}),
+          })
+          this.geoLayer = new VectorLayer({
+            source: vectorSource,
+            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
+          });
+          break;
+        case 1:
+          this.geoLayer = new VectorLayer({
+            source: new VectorSource({
+              url: './data/poly_pen_provinces.json',
+              format: new GeoJSON()
+            }),
+            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
+          });
+          this.geoLayer.setSource
+          break;
+        case 2:
+          this.geoLayer = new VectorLayer({
+            source: new VectorSource({
+              url: './data/poly_pen_autonomies.json',
+              format: new GeoJSON()
+            }),
+            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
+          });
+          break;    
+        case 3:
+          this.geoLayer = new VectorLayer({
+            source: new VectorSource({
+              url: './data/poly_pen_municipalities.json',
+              format: new GeoJSON()
+            }),
+            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
+          });
+          break;  
+      }
+      
       setTimeout(()=>this.geoLayer.changed());
     }
     this.map.addLayer(this.geoLayer)
     this.geoLayerShown=true;
   }
+
   public hide(): void {
     if(!this.geoLayerShown)return;
     this.map.removeLayer(this.geoLayer)

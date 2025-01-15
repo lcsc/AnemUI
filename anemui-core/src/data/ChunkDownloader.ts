@@ -461,3 +461,45 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
         }
     },undefined,'text');
 }
+
+export function downloadTimebyRegion(region: string, varName: string, doneCb: CsvDownloadDone): void {
+    downloadUrl("./" + region + "/" + varName + ".csv", (status: number, response) => {
+        if (status == 200) {
+            let stData;
+            try {
+                stData = response as Text;
+            } catch (e) {
+                stData = '';
+            }
+            doneCb(stData, 'data', 'text/plain') ;
+        }
+    },undefined,'text');
+}
+
+export function downloadXYbyRegion(time: string, region: string, varName: string, doneCb: CsvDownloadDone): void {
+    downloadUrl("./data/" + region + "/" + varName + ".csv", (status: number, response) => {
+        if (status == 200) {
+            let stData;
+            let stResult
+            try {
+                stData = response as String;
+                let headers = stData.split('\n')[0].split(',')
+                console.log(headers)
+                // parse(response, {
+                //     delimiter: ',',
+                //     columns: headers,
+                //   }, (error, result: Text) => {
+                //     if (error) {
+                //       console.error(error);
+                //     }
+                
+                //     console.log("Result", result);
+                //     stResult = result
+                //   });
+            } catch (e) {
+                stResult = '';
+            }
+            doneCb(stResult, 'data', 'text/plain') ;
+        }
+    },undefined,'text');
+}
