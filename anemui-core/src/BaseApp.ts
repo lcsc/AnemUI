@@ -14,7 +14,7 @@ import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
-import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, getPortionForPoint } from "./data/ChunkDownloader";
+import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, downloadXYbyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, DEF_STYLE_UNC, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
@@ -57,7 +57,7 @@ export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
 const LEYEND_TITLE = "Leyenda"
 
-export abstract class BaseApp implements CsMapListener, MenuBarListener, /* SideBarListener,  */DateFrameListener {
+export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFrameListener {
 
     protected menuBar: MenuBar;
     protected leftBar: LeftBar;
@@ -79,6 +79,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
     protected downloadOptionsDiv: DownloadOptionsDiv;
 
     protected stationsLayer: CsGeoJsonLayer
+    protected provincesLayer: CsGeoJsonLayer
+    protected autonomiesLayer: CsGeoJsonLayer
+    protected municipalitiesLayer: CsGeoJsonLayer
+    
 
     protected translate: Translate;
     protected cookies: CsCookies;
@@ -324,6 +328,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         downloadCSVbySt(stParams['id'], this.state.varId, open);
     }
 
+    public showGraphByRegion(stParams: any) {
+        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
+        }
+        downloadTimebyRegion(stParams['id'], this.state.varId, open);
+    }
+
     public getState(): CsViewerData {
         return this.state
     }
@@ -403,11 +414,36 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
     }
 
     public update(dateChanged: boolean = false): void {
-        if (this.state.support == "Puntual (estaciones)") {
-            this.stationsLayer.show()
-        } else if (this.stationsLayer != undefined) {
+        if (this.stationsLayer != undefined) {   /// ??????????
             this.stationsLayer.hide()
+        } 
+        if (this.provincesLayer != undefined) {   /// ??????????
+            this.provincesLayer.hide()
+        } 
+        if (this.autonomiesLayer != undefined) {   /// ??????????
+            this.autonomiesLayer.hide()
+        } 
+        if (this.municipalitiesLayer != undefined) {   /// ??????????
+            this.municipalitiesLayer.hide()
         }
+
+        if (this.state.support == "Puntual (estaciones)") {
+            this.stationsLayer.show(0)
+        } else if (this.state.support == "Provincia") {
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.provincesLayer.show(1)
+            }
+            downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 'provincia', this.state.varId, open);
+            
+        } else if (this.state.support == "CCAA") {
+            this.autonomiesLayer.show(2)
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.autonomiesLayer.show(2)
+            }
+            downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 'autonomia', this.state.varId, open);
+        } else if (this.state.support == "Municipio") {
+            this.municipalitiesLayer.show(3)
+        } 
 
         // this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
         this.menuBar.update();
@@ -487,6 +523,21 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         this.stationsLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onStationClick(feature, event) })
     }
 
+    public configureProvinces(data: GeoJSON.Feature[]): void {
+        this.provincesLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onRegionClick(feature, event) })
+        console.log('---')
+    }
+
+    public configureAutonomies(data: GeoJSON.Feature[]): void {
+        this.autonomiesLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onRegionClick(feature, event) })
+        console.log('+++')
+    }
+
+    public configureMunicipalities(data: GeoJSON.Feature[]): void {
+        this.municipalitiesLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onRegionClick(feature, event) })
+        console.log('***')
+    }
+
     async onStationClick(feature: GeoJSON.Feature, event: any) {
         let stationId = feature.properties['id'];
         let varId = this.state.varId + "_" + this.state.selectionParam + "y";
@@ -528,6 +579,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         this.stationsLayer.setPopupContent(event.popup, div, event);
     }
 
+    async onRegionClick(feature: GeoJSON.Feature, event: any) {
+        /* ---------- unificar con station -------------- */
+    }
+
     public async stHasData(station: string) {
         try {
             // const response = await fetch("./stations/"+this.state.varId+"/" + station + ".csv", {
@@ -541,6 +596,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
             return false;
         }
     }
+
     public notifyMaxMinChanged(): void {
         if (this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex] == this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex] ||
             isNaN(this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]) ||
@@ -553,6 +609,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, /* Side
         // this.paletteFrame.update();
         if (this.stationsLayer != undefined) {
             this.stationsLayer.refresh()
+        }
+        if (this.provincesLayer != undefined) {
+            this.provincesLayer.refresh()
         }
     }
 
