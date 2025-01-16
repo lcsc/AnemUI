@@ -50,7 +50,8 @@ const INITIAL_STATE: CsViewerData = {
     climatology: false,
     uncertaintyLayer: false,
     season: "",
-    month: ""
+    month: "",
+    actionData: undefined
 }
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
@@ -436,8 +437,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 'provincia', this.state.varId, open);
             
         } else if (this.state.support == "CCAA") {
-            this.autonomiesLayer.show(2)
+            // this.autonomiesLayer.show(2)
             let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.state.actionData = data
                 this.autonomiesLayer.show(2)
             }
             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 'autonomia', this.state.varId, open);

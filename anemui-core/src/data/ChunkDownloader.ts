@@ -484,7 +484,8 @@ export function downloadXYbyRegion(time: string, region: string, varName: string
             try {
                 stData = response as String;
                 let headers = stData.split('\n')[0].split(',')
-                console.log(headers)
+                let lines = stData.split('\n') 
+                console.log(lines)
                 // parse(response, {
                 //     delimiter: ',',
                 //     columns: headers,
