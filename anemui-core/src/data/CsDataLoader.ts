@@ -54,7 +54,7 @@ async function loadTimesJson(): Promise<CsTimesJsData> {
     };
 }
 
-async function loadZarrMetadata(zarrPath: string): Promise<CsTimesJsData> {
+async function loadTimesZarr(): Promise<CsTimesJsData> {
     let result: CsTimesJsData = {} as CsTimesJsData;
 
     const zarrBasePath = window.location.origin + '/zarr';
@@ -62,7 +62,7 @@ async function loadZarrMetadata(zarrPath: string): Promise<CsTimesJsData> {
     const attrs = await group.attrs.asObject();
 
     // Geo Data
-    result.center = {"lat":attrs.center_lat,"lng":attrs.center_lon};
+    result.center = {"lat":attrs.center_lat, "lng":attrs.center_lon};
 
     // Text data for variables
     result.varTitle = {"NDVI":"Normalized Difference Vegetation Index","KNDVI":"Kernel Normalized Difference Vegetation Index","SNDVI":"Standardized Normalized Difference Vegetation Index","SKNDVI":"Standardized Kernel Normalized Difference Vegetation Index"};
@@ -95,13 +95,7 @@ async function loadZarrMetadata(zarrPath: string): Promise<CsTimesJsData> {
 }
 
 export async function loadTimesJs(): Promise<CsTimesJsData> {
-    if (dataSource === 'nc') {
-        // Carga desde NetCDF
-        return await loadTimesJson();
-    } else {
-        // Carga desde Zarr
-        return await loadZarrMetadata(dataSource);
-    }
+    return dataSource === 'nc' ? loadTimesJson() : loadTimesZarr();
 }
 
 function degrees2meters(lon:number, lat:number):[number,number] {
