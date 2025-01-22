@@ -101,6 +101,7 @@ div.btnSelect.visible {
 .buttonDiv.visible:hover {
     cursor: pointer;
     max-width: 300px;
+    background-color: $color_11;
 }
 
 .buttonDiv.visible:disabled {

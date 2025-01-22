@@ -72,22 +72,6 @@ export default class LayerFrame  extends BaseFrame {
                         </div>
                     </div>
                 </div>
-                <div id="trp-div">
-                    <div className="buttonDiv trpDiv visible" onClick={()=>this.toggleSelect('trpDiv')}>
-                        <span className="icon"><i className="bi bi-transparency"></i></span>
-                        <span className="text"  aria-label='transparency'>
-                            {this.parent.getTranslation('transparency')}
-                        </span>
-                    </div>
-                    <div className='row selectDiv trpDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
-                            <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
-                        </div>
-                    </div>
-                </div>
                 <div id="data-div">
                     <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>
                         <span className="icon"><i className="bi bi-map"></i></span>
@@ -131,6 +115,22 @@ export default class LayerFrame  extends BaseFrame {
                             </div>
                         </div>
                     }
+                </div>
+                <div id="trp-div">
+                    <div className="buttonDiv trpDiv visible" onClick={()=>this.toggleSelect('trpDiv')}>
+                        <span className="icon"><i className="bi bi-transparency"></i></span>
+                        <span className="text"  aria-label='transparency'>
+                            {this.parent.getTranslation('transparency')}
+                        </span>
+                    </div>
+                    <div className='row selectDiv trpDiv hidden'>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
+                        </div>
+                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
+                            <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
