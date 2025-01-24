@@ -168,9 +168,9 @@ export default class LayerFrame  extends BaseFrame {
         this.isMenuFixed = !this.isMenuFixed;
         const content = this.container.querySelector('.menu-content');
         if (this.isMenuFixed) {
-            content.classList.add('visible');
+            content.classList.add('expanded');
         } else {
-            content.classList.remove('visible');
+            content.classList.remove('expanded');
         }
     }
 
