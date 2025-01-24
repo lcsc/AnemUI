@@ -58,15 +58,21 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     let result: CsTimesJsData = {} as CsTimesJsData;
 
     const zarrBasePath = window.location.origin + '/zarr';
-    const group = await openGroup(zarrBasePath);
-    const attrs = await group.attrs.asObject();
+    const root_group = await openGroup(zarrBasePath);
+    const root_group_attrs = await root_group.attrs.asObject();
+    const groups = root_group_attrs.variables;
 
     // Geo Data
-    result.center = {"lat":attrs.center_lat, "lng":attrs.center_lon};
+    result.center = {"lat":root_group_attrs.center_lat, "lng":root_group_attrs.center_lon};
 
-    // Text data for variables
-    result.varTitle = {"NDVI":"Normalized Difference Vegetation Index","KNDVI":"Kernel Normalized Difference Vegetation Index","SNDVI":"Standardized Normalized Difference Vegetation Index","SKNDVI":"Standardized Kernel Normalized Difference Vegetation Index"};
-    result.legendTitle = {"NDVI":"NDVI","KNDVI":"KNDVI","SNDVI":"SNDVI","SKNDVI":"SKNDVI"};
+    result.varTitle = {};
+    result.legendTitle = {};
+    for (const varName of groups) {
+        const var_group = await openGroup(zarrBasePath + "/" + varName);
+        const var_group_attrs = await var_group.attrs.asObject();
+        result.varTitle[varName] = var_group_attrs["varTitle"];
+        result.legendTitle[varName] = var_group_attrs["legendTitle"];
+    }
 
     // Data of variables
     result.times = {"KNDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"],"NDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"],"SKNDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"],"SNDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"]};
