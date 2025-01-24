@@ -6,7 +6,7 @@ import { abstract } from "ol/util";
 
 export abstract class CsGeoJsonLayer{
     protected data:GeoJSON.Feature[]
-    public abstract show():void;
+    public abstract show(type:number):void;
     public abstract hide():void;
     public abstract setPopupContent(popup:any,content:HTMLElement,event:any):void;
     

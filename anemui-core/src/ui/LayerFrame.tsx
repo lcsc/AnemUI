@@ -13,8 +13,26 @@ export default class LayerFrame  extends BaseFrame {
     private dataDiv: HTMLElement
     private trpDiv: HTMLElement
     private uncertaintyFrame: HTMLElement; 
+    private isMenuFixed: boolean = false;
 
     public render():JSX.Element{
+        let element=
+        (
+            <div id="layer-frame" className="layerFrame">
+                <div
+                    className={`thumbnail-container ${this.isMenuFixed ? 'fixed' : ''}`}
+                    onMouseOver={() => this.expandThumbnail()}
+                    onMouseLeave={() => this.shrinkThumbnail()}
+                    onClick={() => this.toggleFixed()}
+                >
+                    {this.renderContent()}
+                </div>
+            </div>
+        );
+        return element;
+    }
+
+    private renderContent(): JSX.Element {
         let self=this;
         let values= [...this.parent.getLegendValues()].reverse();
         let texts=[...this.parent.getLegendText()].reverse();
@@ -32,10 +50,8 @@ export default class LayerFrame  extends BaseFrame {
         let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
         let i: number = 0;
-        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
-        // mgr.setUncertaintyLayerChecked(false)
-        let element=
-        (
+
+        return (
             <div id="layer-frame" className='layerFrame btnSelect left'>
                 <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
@@ -134,7 +150,38 @@ export default class LayerFrame  extends BaseFrame {
                 </div>
             </div>
         );
-        return element;
+    }
+
+    private expandThumbnail(): void {
+        if (!this.isMenuFixed) {
+            this.container.querySelector('.thumbnail-container').classList.add('expanded');
+        }
+    }
+
+    private shrinkThumbnail(): void {
+        if (!this.isMenuFixed) {
+            this.container.querySelector('.thumbnail-container').classList.remove('expanded');
+        }
+    }
+
+    private toggleFixed(): void {
+        this.isMenuFixed = !this.isMenuFixed;
+        const container = this.container.querySelector('.thumbnail-container');
+        if (this.isMenuFixed) {
+            container.classList.add('expanded');
+        } else {
+            container.classList.remove('expanded');
+        }
+    }
+
+    private toggleFixed(): void {
+        this.isMenuFixed = !this.isMenuFixed;
+        const content = this.container.querySelector('.menu-content');
+        if (this.isMenuFixed) {
+            content.classList.add('visible');
+        } else {
+            content.classList.remove('visible');
+        }
     }
 
     public toggleSelect(select: string){
