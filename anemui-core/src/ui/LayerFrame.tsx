@@ -166,16 +166,6 @@ export default class LayerFrame  extends BaseFrame {
 
     private toggleFixed(): void {
         this.isMenuFixed = !this.isMenuFixed;
-        const container = this.container.querySelector('.thumbnail-container');
-        if (this.isMenuFixed) {
-            container.classList.add('expanded');
-        } else {
-            container.classList.remove('expanded');
-        }
-    }
-
-    private toggleFixed(): void {
-        this.isMenuFixed = !this.isMenuFixed;
         const content = this.container.querySelector('.menu-content');
         if (this.isMenuFixed) {
             content.classList.add('visible');

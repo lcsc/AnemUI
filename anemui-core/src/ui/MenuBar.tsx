@@ -162,7 +162,7 @@ export class MenuBar extends BaseFrame {
                             </div>
                             <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
                                 placeholder="Selection Param" value={this.parent.getState().selectionParam}
-                                disabled={!this.parent.getState().selectionParamEnable}
+                                hidden={!this.parent.getState().selectionParamEnable}
                                 onChange={() => { this.fireParamChanged(); return false }} />
                             <div className="col-auto">
                             <span className="ms-2" id="fetching-text" hidden>{this.fetchingText}</span>
