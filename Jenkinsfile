@@ -16,17 +16,18 @@ pipeline {
         In Jenkins upload your ~/.npmrc
     */
     stages {
+        stage('Prepare Build') { 
+            steps {
+                sh 'npm install' 
+            }
+        }
         stage('Configure Build') {
             steps {
 //                checkout scm
                 sh 'npm run setVersion'
             }
         }
-        stage('Build') { 
-            steps {
-                sh 'npm install' 
-            }
-        }
+
         stage('Publish') { 
             environment {
                 NEXUS_FILE = credentials('nexus_credential')
