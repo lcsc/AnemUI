@@ -8,6 +8,7 @@ pipeline {
     }
     environment{
         CI = 'true'
+        HOME = '/tmp/'
     }
     /*
         Require credentials named "nexus_credential"
