@@ -1,5 +1,11 @@
 pipeline {
-    agent { label 'nodejs' }
+//    agent { label 'nodejs' }
+    agent {
+        docker {
+            image 'node:lts-buster-slim'
+            args '-p 3000:3000'
+        }
+    }
     /*
         Require credentials named "nexus_credential"
         in a local machine execute
