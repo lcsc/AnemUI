@@ -6,6 +6,9 @@ pipeline {
             args '-p 3000:3000'
         }
     }
+    environment{
+        CI = 'true'
+    }
     /*
         Require credentials named "nexus_credential"
         in a local machine execute
