@@ -6,7 +6,8 @@ import { DownloadErrorCB, downloadUrl } from "./UrlDownloader";
 import { BaseApp } from "../BaseApp";
 import { extractValueChunkedFromT, extractDataChunkedFromT, extractValueChunkedFromXY } from "./ChunkDownloader";
 import { dataSource } from '../Env';
-import { openArray, openGroup } from 'zarr';
+import { NestedArray, openArray, openGroup, TypedArray } from 'zarr';
+import { timeDim, horDim, verDim } from "./CsPConstans";
 
 async function loadTimesJson(): Promise<CsTimesJsData> {
     // Carga desde archivo NC (implementación actual)
@@ -54,6 +55,10 @@ async function loadTimesJson(): Promise<CsTimesJsData> {
     };
 }
 
+function isNestedArray(value: number | NestedArray<TypedArray>): value is NestedArray<TypedArray> {
+    return typeof value !== 'number';
+}
+
 async function loadTimesZarr(): Promise<CsTimesJsData> {
     let result: CsTimesJsData = {} as CsTimesJsData;
 
@@ -72,10 +77,27 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         const var_group_attrs = await var_group.attrs.asObject();
         result.varTitle[varName] = var_group_attrs["varTitle"];
         result.legendTitle[varName] = var_group_attrs["legendTitle"];
+
+        const time_dim = await openArray({store: zarrBasePath, path: varName+"/"+timeDim, mode: "r"});
+        const time_dim_attrs = await time_dim.attrs.asObject();
+        const timeData = await time_dim.get();
+
+        if (isNestedArray(timeData)) {
+            const typedArray = timeData.data as TypedArray;
+            const timeArr = Array.from(typedArray);
+            if (time_dim_attrs.units === "days since 1970-01-01") {
+                const converted = timeArr.map(d => new Date(Date.UTC(1970, 0, 1) + d * 86400000).toISOString().split('T')[0]);
+                result.times[varName] = converted;
+            } else {
+                console.error("Unsupported time units: " + time_dim_attrs.units);
+                result.times[varName] = timeArr.map(String);
+            }
+        } else {
+            result.times[varName] = [timeData.toString()];
+        }
     }
 
     // Data of variables
-    result.times = {"KNDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"],"NDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"],"SKNDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"],"SNDVI":["1981-07-01","1981-07-15","1981-08-01","1981-08-15","1981-09-01","1981-09-15","1981-10-01","1981-10-15","1981-11-01","1981-11-15","1981-12-01","1981-12-15","1982-01-01","1982-01-15","1982-02-01","1982-02-15","1982-03-01","1982-03-15","1982-04-01","1982-04-15","1982-05-01","1982-05-15","1982-06-01","1982-06-15"]};
     result.varMin = {"KNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"NDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SKNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]};
     result.varMax = {"KNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"NDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SKNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]};
     result.minVal = {"KNDVI":-1,"NDVI":-1,"SKNDVI":-1,"SNDVI":-1};
