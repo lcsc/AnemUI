@@ -29,6 +29,7 @@
     "anemui-demo"
   ],
   "dependencies": {
+    "gtag": "^1.0.1",
     "javascript-color-gradient": "^2.5.0"
   },
   "devDependencies": {
