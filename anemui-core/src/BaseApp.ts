@@ -16,17 +16,21 @@ import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, downloadXYbyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked } from "./data/ChunkDownloader";
-import { DEF_STYLE_STATIONS, DEF_STYLE_UNC, OpenLayerMap } from "./OpenLayersMap";
+import { downloadUrl } from "./data/UrlDownloader";
+import { DEF_STYLE_STATIONS, /* DEF_STYLE_UNC, */ OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
 import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
+import GeoJSON from 'ol/format/GeoJSON';
 import { FeatureLike } from "ol/Feature";
 import LeftBar from "./ui/LeftBar"; 
 import RightBar from "./ui/RightBar"; 
 import Translate from "./language/translate";
+import { renderers, defaultRender } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
+
 
 export const zip = require("@zip.js/zip.js");
 
@@ -37,7 +41,7 @@ declare global {
 }
 
 const INITIAL_STATE: CsViewerData = {
-    support: "Raster",
+    support: defaultRender,
     tpSupport: undefined,
     varId: "",
     varName: "",
@@ -51,7 +55,8 @@ const INITIAL_STATE: CsViewerData = {
     uncertaintyLayer: false,
     season: "",
     month: "",
-    actionData: undefined
+    actionData: undefined,
+    timeSeriesData: undefined
 }
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
@@ -80,11 +85,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected downloadOptionsDiv: DownloadOptionsDiv;
 
     protected stationsLayer: CsGeoJsonLayer
-    protected provincesLayer: CsGeoJsonLayer
-    protected autonomiesLayer: CsGeoJsonLayer
-    protected municipalitiesLayer: CsGeoJsonLayer
     
-
     protected translate: Translate;
     protected cookies: CsCookies;
 
@@ -153,7 +154,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     private initMap(): void {
         let mapSize = document.getElementById("map").getClientRects()
-        //console.debug(mapSize)
         if (mapSize[0].height == 0) {
             console.warn("Bug Safari slow render");
             let self = this
@@ -272,18 +272,19 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public onMouseMoveEnd(event: CsMapEvent): void {
-
-        if (this.state.support == "Estaciones") return;
-
-        //console.log("Mouse Move End");
-        loadLatLogValue(event.latLong, this.state, this.timesJs, this.csMap.getZoom())
+            loadLatLogValue(event.latLong, this.state, this.timesJs, this.csMap.getZoom())
             .then(value => {
-                //console.log(value)
-                this.csMap.showValue(event.latLong, value);
+                if (this.state.support == defaultRender) {
+                    this.csMap.showValue(event.latLong, value);
+                } else {
+                    let evt = event.original
+                    this.csMap.showFeatureValue(this.state.actionData, evt.pixel, event.latLong, evt.originalEvent.target);
+                }
             })
             .catch(reason => {
                 console.log("error: " + reason)
             })
+        
     }
 
     protected getUrlForNC(suffix?: string): string {
@@ -292,7 +293,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         currUrl.pathname += "nc/data/" + this.state.varId;
         if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
         currUrl.pathname += ".nc";
-        console.log(currUrl)
         return currUrl.toString();
     }
 
@@ -306,20 +306,23 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
     }
 
+    public downloadFeature(featureProps:  any = []):void {
+        let filename = featureProps['id'] + '-' + featureProps['name'] +'.csv';
+        browserDownloadFile(this.state.timeSeriesData, filename, 'text/plain');
+    } 
+
     public downloadPointOptions(): void {
         this.downloadOptionsDiv.openModal();
     }
-
+    
+    // ------- UNIFICAR
     public showGraph() {
         let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            console.log("opening Graph")
             this.graph.showGraph(data, this.lastLlData.latlng)
         }
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
         downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
-
-        //downloadCSV(this.lastLlData.value,this.state.varId,open)
     }
 
     public showGraphBySt(stParams: any) {
@@ -329,12 +332,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         downloadCSVbySt(stParams['id'], this.state.varId, open);
     }
 
-    public showGraphByRegion(stParams: any) {
+    public showGraphByRegion(region:number, stParams: any) {
         let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            this.state.timeSeriesData = data
             this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
         }
-        downloadTimebyRegion(stParams['id'], this.state.varId, open);
+        downloadTimebyRegion(region, stParams['id'], this.state.varId, open);
     }
+    // ------- UNIFICAR
 
     public getState(): CsViewerData {
         return this.state
@@ -414,39 +419,52 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return ret
     }
 
-    public update(dateChanged: boolean = false): void {
-        if (this.stationsLayer != undefined) {   /// ??????????
+    public update(dateChanged: boolean = false):void {
+        /* if (this.stationsLayer != undefined) {   /// ??????????
             this.stationsLayer.hide()
         } 
-        if (this.provincesLayer != undefined) {   /// ??????????
-            this.provincesLayer.hide()
-        } 
-        if (this.autonomiesLayer != undefined) {   /// ??????????
-            this.autonomiesLayer.hide()
-        } 
-        if (this.municipalitiesLayer != undefined) {   /// ??????????
-            this.municipalitiesLayer.hide()
-        }
-
         if (this.state.support == "Puntual (estaciones)") {
             this.stationsLayer.show(0)
-        } else if (this.state.support == "Provincia") {
-            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-                this.provincesLayer.show(1)
-            }
-            downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 'provincia', this.state.varId, open);
-            
-        } else if (this.state.support == "CCAA") {
-            // this.autonomiesLayer.show(2)
-            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-                this.state.actionData = data
-                this.autonomiesLayer.show(2)
-            }
-            downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 'autonomia', this.state.varId, open);
-        } else if (this.state.support == "Municipio") {
-            this.municipalitiesLayer.show(3)
-        } 
-
+        } else { */
+            // switch(this.state.support) {
+            //     case "Puntual (estaciones)":
+            //         this.stationsLayer.show(0);
+            //         break;
+            //     case 'Municipio':
+            //     case 'Provincia':    
+            //     case 'CCAA':  
+            //         let region = this.state.support == 'Municipio'? 'pen_municipio': this.state.support == 'Provincia'? 'pen_provincia':'autonomia'
+            //         this.configureRegion(region);
+                    
+            //         /* if (this.state.support == "Municipio") {
+            //             let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            //                 this.state.actionData = data
+            //                 this.stationsLayer.show(2)
+            //             }
+            //             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 2, this.state.varId, open);
+            //         } else if (this.state.support == "Provincia") {
+            //             let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            //                 this.state.actionData = data
+            //                 this.stationsLayer.show(3)
+            //             }
+            //             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 3, this.state.varId, open);
+            //         } else if (this.state.support == "CCAA") {
+            //             let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            //                 this.state.actionData = data
+            //                 this.stationsLayer.show(4)
+            //             }
+            //             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 4, this.state.varId, open);
+            //         }  */
+            //         break;
+            //     default:
+            //         if (this.stationsLayer != undefined) {   /// ??????????
+            //             this.stationsLayer.hide()
+            //         } 
+            //         break;    
+            //  }
+        /*}
+         */
+        
         // this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
         this.menuBar.update();
         this.leftBar.update();
@@ -485,7 +503,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public abstract selectionSelected(index: number, value?: string, values?: string[]): void;
 
     public seasonSelected(index: number, value?: string, values?: string[]): void {
-        console.log('BaseApp' + index, value, values)
         this.state.season = value;
         this.update( true );
     }
@@ -521,30 +538,11 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return values;
     }
 
-    public configureStations(data: GeoJSON.Feature[]): void {
-        this.stationsLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onStationClick(feature, event) })
-    }
-
-    public configureProvinces(data: GeoJSON.Feature[]): void {
-        this.provincesLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onRegionClick(feature, event) })
-        console.log('---')
-    }
-
-    public configureAutonomies(data: GeoJSON.Feature[]): void {
-        this.autonomiesLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onRegionClick(feature, event) })
-        console.log('+++')
-    }
-
-    public configureMunicipalities(data: GeoJSON.Feature[]): void {
-        this.municipalitiesLayer = this.getMap().getGeoJsonLayer(data, (feature, event) => { this.onRegionClick(feature, event) })
-        console.log('***')
-    }
-
     async onStationClick(feature: GeoJSON.Feature, event: any) {
         let stationId = feature.properties['id'];
-        let varId = this.state.varId + "_" + this.state.selectionParam + "y";
+        let varId = this.state.support == renderers.name[0]? this.state.varId + "_" + this.state.selectionParam + "y": this.state.varId;
         let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-        let hasData = await this.stHasData(stationId);
+        let hasData = await this.stHasData(varId,stationId);
         let div = document.createElement("div");
         let header = document.createElement("h5");
         let hdText = document.createTextNode('Estación: ' + feature.properties['name']);
@@ -572,8 +570,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             let button = document.createElement("button");
             button.id = "st_" + stationId;
             button.className = "btn navbar-btn";
-            button.innerText = "Gráfico de estación";
-            button.addEventListener("click", () => { this.showGraphBySt(stParams) });
+            button.innerText = "Gráfico";
+            if (this.state.support== renderers.name[0]) button.addEventListener("click", () => {this.showGraphBySt(stParams)})
+            else button.addEventListener("click", () => {this.showGraphByRegion(renderers.name.indexOf(this.state.support), stParams)});
             btndiv.appendChild(button);
             div.appendChild(btndiv);
         }
@@ -581,14 +580,23 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.stationsLayer.setPopupContent(event.popup, div, event);
     }
 
-    async onRegionClick(feature: GeoJSON.Feature, event: any) {
-        /* ---------- unificar con station -------------- */
+    public async onFeatureClick(feature: GeoJSON.Feature, event: any) {
+        if (feature) {
+            if (!this.state.climatology) {
+                let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
+                if (this.state.support== renderers.name[0]) this.showGraphBySt(stParams)
+                else this.showGraphByRegion(renderers.name.indexOf(this.state.support), stParams)
+            }
+        }
     }
 
-    public async stHasData(station: string) {
+    public async stHasData(varId: string, station: string) {
+        let num:number = renderers.name.indexOf(this.state.support) 
+        // let num = this.state.support == renderers[0]? 0 : this.state.support == 'Municipio'? 2: this.state.support == 'Provincia'? 3:4;
+        let url = this.state.support == renderers.name[0]? renderers.folder[0] + station + ".csv": "./data/" + renderers.folder[num] + "/" + varId + ".csv";
         try {
             // const response = await fetch("./stations/"+this.state.varId+"/" + station + ".csv", {
-            const response = await fetch("./stations/" + station + ".csv", {
+            const response = await fetch(url, {
                 method: 'HEAD',
                 cache: 'no-cache'
             });
@@ -612,8 +620,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         if (this.stationsLayer != undefined) {
             this.stationsLayer.refresh()
         }
-        if (this.provincesLayer != undefined) {
-            this.provincesLayer.refresh()
+        if (this.stationsLayer != undefined) {
+            this.stationsLayer.refresh()
         }
     }
 
@@ -637,6 +645,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         let oneDay = 1000 * 60 * 60 * 24;
         return Math.floor(diff / oneDay);
     }
+
     public dateEventBack(): void {
         if (this.state.selectedTimeIndex == 0) return;
         let p = this.state.selectedTimeIndex - 1;
@@ -706,9 +715,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     }
 
-    public getuncertaintyStyle(feature: FeatureLike): Style {
+   /*  public getuncertaintyStyle(feature: FeatureLike): Style {
         return DEF_STYLE_UNC;
-    }
+    } */
 
     public getFeatureStyle(feature: FeatureLike): Style {
         return DEF_STYLE_STATIONS;

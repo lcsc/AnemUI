@@ -1,33 +1,38 @@
 import { createElement } from "tsx-create-element";
 import { CsGeoJsonClick, CsLatLong, CsMapController, CsMapEvent, CsMapListener } from "./CsMapTypes";
-import { CsViewerData } from "./data/CsDataTypes";
+import { CsViewerData, CsGeoJsonData } from "./data/CsDataTypes";
 import { BaseApp } from "./BaseApp";
+import { defaultRender } from "./tiles/Support"
 import { abstract } from "ol/util";
 
 export abstract class CsGeoJsonLayer{
-    protected data:GeoJSON.Feature[]
+    protected data: CsGeoJsonData
     public abstract show(type:number):void;
     public abstract hide():void;
     public abstract setPopupContent(popup:any,content:HTMLElement,event:any):void;
     
     public getFeature(id:string):GeoJSON.Feature{
         if(this.data==undefined) return undefined;
-        for(let i =0; i< this.data.length;i++){
-            if(this.data[i].properties["id"]==id)return this.data[i];
+        for(let i =0; i< this.data.features.length;i++){
+            // if(this.data[i].properties["id"]==id)return this.data[i];
+            if(this.data.features[i].properties["id"]==id)return this.data.features[i];
         }
 
         return undefined
     }
 
-    constructor(_data:GeoJSON.Feature[]){
+    constructor(_data:CsGeoJsonData){    
         this.data=_data
     }
 
     public refresh():void{
         
     }
-    public getData():GeoJSON.Feature[]{
+    public getData():CsGeoJsonData{
         return this.data;
+    }
+    public getFeatures():GeoJSON.Feature[]{
+        return this.data.features;
     }
 }
 
@@ -50,7 +55,7 @@ export class CsMap{
 
     render():JSX.Element{
         let ret:JSX.Element;
-        ret= (<div id="map" ></div>);
+        ret= (<div id="map" ><div id="popUp" className="ol-popup"></div></div>);
         
        return ret; 
     }
@@ -64,8 +69,7 @@ export class CsMap{
     }
 
     public onMapClick(event: CsMapEvent): void {
-        console.log("Evento recibido:", event);
-    
+        if (this.parent.getState().support!= defaultRender) return
         if (!event || !event.latLong) {
             console.error("El objeto event o latLong no están definidos:", event);
             return;
@@ -110,9 +114,9 @@ export class CsMap{
         this.controller.showValue(latLong,value)
     }
 
-    public getGeoJsonLayer(data:GeoJSON.Feature[],onClick:CsGeoJsonClick):CsGeoJsonLayer{
-       return this.controller.getGeoJsonLayer(data,onClick);
-    }
+    public showFeatureValue (data: any, pixel: any, pos: CsLatLong, target:any) {
+        this.controller.showFeatureValue (data, pixel, pos, target) 
+    };
 
     public updateRender(support: string) {
         this.controller.updateRender(support)

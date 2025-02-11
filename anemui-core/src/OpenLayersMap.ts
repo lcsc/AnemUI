@@ -2,23 +2,26 @@ import { Feature, Map, MapBrowserEvent, MapEvent, Overlay, TileQueue, View } fro
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { CsGeoJsonClick, CsLatLong, CsMapController, CsMapEvent } from "./CsMapTypes";
-import { CsTimesJsData, CsViewerData, Array4Portion } from "./data/CsDataTypes";
+import { CsTimesJsData, CsViewerData, CsGeoJsonData, Array4Portion } from "./data/CsDataTypes";
 import { MapOptions } from "ol/Map";
 import { TileWMS, XYZ, OSM, TileDebug, ImageStatic as Static } from "ol/source";
 import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
-import { fromLonLat, toLonLat, transform } from "ol/proj";
+import { fromLonLat, toLonLat, transform, Projection } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, downloadJSONXYbyRegion } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import { LayerManager } from "./LayerManager";
+import { loadRegionFeatures, loadGeoJsonData } from "./data/CsDataLoader";
 import DataTileSource from "ol/source/DataTile";
+import { Geometry } from 'ol/geom';
+import { renderers, defaultRender } from "./tiles/Support";
 
 // Define alternative projections
 proj4.defs([
@@ -31,17 +34,22 @@ proj4.defs([
 ]);
 register(proj4);
 
-const imgUncertainty = new CircleStyle({
-  radius: 1,
-  fill: new Fill({color:'#65656580'})
-});
 const imgStation = new CircleStyle({
   radius: 8,
   fill: new Fill({color:'#00f855CC'}),
   stroke: new Stroke({color: '#FFFFFF', width: 1}),
 });
-export const DEF_STYLE_UNC=new Style({image:imgUncertainty,})
 export const DEF_STYLE_STATIONS=new Style({image:imgStation,})
+
+const style = new Style({
+  fill: new Fill({
+    color: '#eeeeee',
+  }),
+  stroke: new Stroke({
+    color: 'rgba(255, 255, 255, 0.7)',
+    width: 2,
+  }),
+});
 
 //const SLD='<?xml version="1.0" encoding="ISO-8859-1"?>'+
 const SLD_HEADER='<StyledLayerDescriptor version="1.0.0"'+
@@ -73,6 +81,7 @@ export class OpenLayerMap implements CsMapController{
     protected map:Map;
     protected marker:Overlay;
     protected value:Overlay;
+    protected popup: HTMLElement;
     protected popupContent:HTMLDivElement;
 
     protected dataWMSLayer: TileWMS;
@@ -81,11 +90,14 @@ export class OpenLayerMap implements CsMapController{
     // Definimos un diccionario vacío
     protected ncExtents: Array4Portion = {};
     protected lastSupport:string;
-    protected geoLayer: CsOpenLayerGeoJsonLayer;
+    
     protected terrainLayer:Layer;
     protected politicalLayer:Layer;
     protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
-    
+    protected currentFeature: any;
+    protected glmgr: GeoLayerManager;
+    protected featureLayer: CsOpenLayerGeoJsonLayer;
+     
     protected setExtents(timesJs: CsTimesJsData, varId: string): void {
         timesJs.portions[varId].forEach((portion: string, index, array) => {
           let selector = varId + portion;
@@ -122,25 +134,28 @@ export class OpenLayerMap implements CsMapController{
           element: document.createElement('div'),
           stopEvent: false,
         })
+        this.popup = document.getElementById('popUp') as HTMLElement,
         this.value=new Overlay({
            positioning: 'center-center',
-          element: document.createElement('div'),
+          // element: document.createElement('div'),
+          element: this.popup,
           stopEvent: false,
         })
         this.map.addOverlay(this.marker);
         this.map.addOverlay(this.value);
         this.marker.getElement().classList.add("marker")
-        this.buildPopUp(this.value.getElement() as HTMLDivElement)
+        this.buildPopUp(/* this.value.getElement() as HTMLDivElement */)
         this.map.on('pointermove',(event)=>self.onMouseMove(event))
         /*
         this.initLayers();    
         this.marker=new Marker(center);*/
-        this.lastSupport="Raster"
+        this.lastSupport = defaultRender
         if (!isWmsEnabled) {
           this.buildDataTilesLayers(state, timesJs);
             if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
         }
-    }
+        this.buildFeatureLayers();
+      } 
 
     private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
       this.dataWMSLayer = new TileWMS({
@@ -171,6 +186,10 @@ export class OpenLayerMap implements CsMapController{
       ];
     }
 
+    public getParent():CsMap{
+        return this.parent;
+    }
+
     private buildChunkLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
       let lmgr = LayerManager.getInstance();
       let layers: (ImageLayer<Static> | TileLayer)[] = [];
@@ -185,19 +204,12 @@ export class OpenLayerMap implements CsMapController{
         layers.push(terrain);
       }
 
-      //  --- original
-      // let terrain = new TileLayer({
-      //   source: lmgr.getBaseLayerSource() as DataTileSource
-      // });
-      // this.terrainLayer=terrain;
-
       let political = lmgr.getTopLayerOlLayer() as TileLayer;
       this.politicalLayer=political
 
       this.dataTilesLayer = [];
       this.uncertaintyLayer = lmgr.getUncertaintyLayer();
      
-      // layers.push(terrain);
       layers.push(political);
 
       if (isTileDebugEnabled)
@@ -206,20 +218,19 @@ export class OpenLayerMap implements CsMapController{
         }));
 
       return layers;
+     
     }
 
-    private buildPopUp(div:HTMLDivElement):void{
-      div.classList.add("ol-popup");
-      div.setAttribute("role","popup")
+    private buildPopUp():void{
+      this.popup.setAttribute("role","popup")
       this.popupContent=document.createElement("div");
       this.popupContent.setAttribute("role","popup-content")
-      div.appendChild(this.popupContent);
-
+      this.popup.appendChild(this.popupContent);
     }
 
     private mouseMoveTo:NodeJS.Timeout;
     public onMouseMove(event:MapBrowserEvent<any>){
-        if(this.mouseMoveTo){clearTimeout(this.mouseMoveTo)}
+       if(this.mouseMoveTo){clearTimeout(this.mouseMoveTo)}
         this.mouseMoveTo=setTimeout(()=>{
             this.parent.onMouseMoveEnd(this.toCsMapEvent(event));
         },100)
@@ -254,7 +265,6 @@ export class OpenLayerMap implements CsMapController{
     }
 
     public onClick(event:MapEvent){
-        console.log("Map on Click")
         this.parent.onMapClick(this.toCsMapEvent(event))
     }
 
@@ -336,7 +346,110 @@ export class OpenLayerMap implements CsMapController{
         }
         this.popupContent.textContent=this.parent.getParent().formatPopupValue(value);
         this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+        this.popup.hidden = false
+    }
 
+    public getFeatureStyle(feature: Feature): Style {
+      // const ftStyle = feature.getStyle()
+      // console.log(ftStyle);
+      const showColor = feature.get('showcolor');
+      console.log(showColor);
+      const color = feature.get('COLOR');
+      style.getFill().setColor(color);
+        return style; 
+    }
+
+    public showFeatureValue (data: any, pixel: any, pos: CsLatLong, target:any):void {
+      let value: string;
+      const feature = target.closest('.ol-control')
+        ? undefined
+        : this.map.forEachFeatureAtPixel(pixel, function (feature: Feature) {
+            return feature;
+          });
+      if (feature) {
+        // feature.setStyle(this.getFeatureStyle(feature))
+        this.popupContent.style.left = pixel[0] + 'px';
+        this.popupContent.style.top = pixel[1] + 'px';
+        this.popup.hidden = false
+        if (feature !== this.currentFeature) {
+
+          let id = 'X'+feature.getProperties()['id']
+          Object.keys(data).forEach(key => {
+              if (key == id) {
+                  value = data[key]
+              } 
+          });
+          this.popupContent.style.visibility = 'visible';
+          this.popupContent.innerText = feature.get('name') +': ' + value ;
+          this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+        }
+      } else {
+        this.popupContent.style.visibility = 'hidden';
+        this.popup.hidden = true
+      }
+      this.currentFeature = feature;
+    };
+
+    async configureFeature (region:string): Promise<void> {
+      // await loadRegionFeatures(region)
+      //     .then((features: GeoJSON.Feature[]) => {
+      //         this.featureLayer = new CsOpenLayerGeoJsonLayer (features,this.map,this,(feature, event) => { this.onFeatureClick(feature, event) });
+      //     })
+      //     .catch((error: any) => {
+      //         console.error('Error: ', error);
+      //     });
+      loadGeoJsonData(region).then(data => { 
+        if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
+          return; // Salir de la función si los datos son inválidos
+      }
+        this.featureLayer = new CsOpenLayerGeoJsonLayer (data,this.map,this,(feature, event) => { this.onFeatureClick(feature, event) });
+       })
+       .catch((error: any) => {
+            console.error('Error al cargar GeoJSON: ', error);
+        })
+    }
+
+    public buildFeatureLayers () {
+      this.glmgr = GeoLayerManager.getInstance();
+      renderers.name.forEach( renderer => {
+          if(!renderer.startsWith("~") && renderer != defaultRender){
+            loadGeoJsonData(renderers.folder[renderers.name.indexOf(renderer)])
+              .then(data => { 
+                  this.glmgr.addGeoLayer(renderer, data, this.map, this, (feature, event) => { this.onFeatureClick(feature, event) })
+              })
+              .catch(error => {
+                  console.error('Error: ', error);
+              });
+          }
+      } )
+    }
+
+    public onFeatureClick(feature: GeoJSON.Feature, event: any) {
+        if (feature) {
+          let state = this.parent.getParent().getState()
+            if (!state.climatology) {
+                let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
+                if (state.support== renderers.name[0]) this.parent.getParent().showGraphBySt(stParams)
+                else this.parent.getParent().showGraphByRegion(renderers.name.indexOf(state.support), stParams)
+            }
+        }
+    }
+
+    public setFeatureStyle(feature: Feature, state: CsViewerData, timesJs: CsTimesJsData): Style {
+      let min = timesJs.varMin[state.varId][state.selectedTimeIndex];
+      let max = timesJs.varMax[state.varId][state.selectedTimeIndex];
+      let color: string = '#fff';
+      let id = 'X'+feature.getProperties()['id']
+      let ptr = PaletteManager.getInstance().getPainter();
+      Object.keys(state.actionData).forEach(key => {
+          if (key == id) {
+              color = ptr.getColorString(state.actionData[key],min,max)
+          } 
+      });
+      return new Style({
+          fill: new Fill({ color: color }),
+          stroke: new Stroke({ color: '#000000', width: 1 }),
+      });
     }
 
     private getSld():string{
@@ -359,50 +472,38 @@ export class OpenLayerMap implements CsMapController{
       return ret;
     }
 
-    public getGeoJsonLayer(data:GeoJSON.Feature[],onClick:CsGeoJsonClick):CsGeoJsonLayer{
-      if (this.geoLayer==undefined)
-        this.geoLayer = new CsOpenLayerGeoJsonLayer (data,this.map,this,onClick);
-      return this.geoLayer
-    }
-    
     public updateRender(support: string): void {
-      if(support!=this.lastSupport){
-  
+        let state= this.parent.getParent().getState();
+        let timesJs= this.parent.getParent().getTimesJs();
+        if (this.featureLayer != undefined) {   /// ??????????
+          this.featureLayer.hide()
+        } 
         switch (support){
-          case "Puntual (estaciones)":
-          case "Municipio":  
-          case "Provincia":
-          case "CCAA":
+          case defaultRender:
+            break;      
+          case renderers.name[0]:
             this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
+            this.featureLayer.show(0);
             break;
-          case "Malla (raster)":
-            //this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().insertAt(1, layer));  # No es necesario insertar de nuevo las capas ya que setDate/buildDataTilesLayers lo hace antes
-            break;
-          // case "Municipio":
-          //   this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
-          //   break;
-          // case "Provincia":
-          //   this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
-          //   break;
-          // case "CCAA":
-          //   this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
-          //   break;
+          case renderers.name[2]: 
+          case renderers.name[3]: 
+          case renderers.name[4]:
+            this.featureLayer = this.glmgr.getGeoLayer(support)
+            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                state.actionData = data
+                this.featureLayer.show(renderers.name.indexOf(support));
+            }
+            downloadJSONXYbyRegion(state.times[state.selectedTimeIndex], renderers.name.indexOf(support), state.varId, open);
+            break;         
           default:
             throw new Error("Render "+support+" not supported")
         }
-        this.lastSupport=support;
-      }
-      if(this.geoLayer!=undefined){
-        this.geoLayer.refresh();
+      this.lastSupport=support;
+      if(this.featureLayer!=undefined){
+        this.featureLayer.refresh();
       }
       let lmgr = LayerManager.getInstance();
-      /* let tSource = lmgr.getBaseLayerSource();
-      if(this.terrainLayer.getSource()!=tSource){
-        this.terrainLayer.setSource(tSource);
-      }
- */
-      // let layersLength =  lmgr.initBaseSelected(this.getZoom())
-
       let layersLength =  lmgr.getBaseSelected().length
       for (let i = 0; i < layersLength; i++) {
         let tSource = lmgr.getBaseLayerSource(i);
@@ -410,7 +511,6 @@ export class OpenLayerMap implements CsMapController{
           this.terrainLayer.setSource(tSource);
         }
       }
-
       let pLayer=lmgr.getTopLayerOlLayer();
       if(pLayer!=this.politicalLayer){
         this.map.removeLayer(this.politicalLayer)
@@ -422,14 +522,39 @@ export class OpenLayerMap implements CsMapController{
         this.politicalLayer.setSource(lmgr.getTopLayerSource());
       }
     }
+}
 
-    public getFeatureStyle(feature: Feature):Style {
-      return this.parent.getParent().getFeatureStyle(feature);
-    }
+export class GeoLayerManager {
+  private static instance: GeoLayerManager;
+  protected geoLayers: { [key: string]: CsOpenLayerGeoJsonLayer } = {}
+  private layerSelected:string[];
+  private map:Map;
+  private csMap:OpenLayerMap;
 
-    public getuncertaintyStyle(feature: Feature):Style {
-      return this.parent.getParent().getuncertaintyStyle(feature);
-    }
+  public static getInstance(): GeoLayerManager {
+      if (!GeoLayerManager.instance) {
+          GeoLayerManager.instance = new GeoLayerManager();
+      }
+      return GeoLayerManager.instance;
+  }
+
+  public addGeoLayer(region:string, data:CsGeoJsonData, _map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick){
+    this.map=_map;
+    this.csMap=_csMap;
+    this.geoLayers[region]= new CsOpenLayerGeoJsonLayer (data, _map, _csMap, _onClick)
+  }
+
+  public getGeoLayer(region: string):CsOpenLayerGeoJsonLayer{
+    return this.geoLayers[region];
+  }
+
+  public getGeoLayerNames():string[]{
+      return Object.keys(this.geoLayers);
+  }
+  
+  public getGeoLayerSelected():string[]{
+      return this.layerSelected;
+  }
 }
 
 class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
@@ -441,14 +566,21 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
 
   private popupOverlay:Overlay
   private popupContent:HTMLDivElement;
-  private geoLayerShown:boolean
+  public geoLayerShown:boolean;
+  public name:string;
+  public url:string; 
+  public source?: VectorSource;
+  // public type: string;
+  // public crs: any;
+  public geoJsonData: any;
 
-  constructor(_data:GeoJSON.Feature[],_map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick){
+  constructor(_data:CsGeoJsonData,_map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick){
     super(_data)
     this.map=_map;
     this.csMap=_csMap;
     this.onClick=_onClick;
     this.geoLayerShown=false;
+    this.geoJsonData = _data
 
     this.map.on("click",(evt:MapBrowserEvent<any>)=>{
       if(this.geoLayer==undefined)return;
@@ -457,69 +589,48 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
         //Emtpy Array if no Feature
         if(this.popupOverlay!=undefined)this.popupOverlay.setPosition(undefined)
         if(features.length>=0 && features[0]!=undefined){
-          console.log(features[0]);
           this.onClick(this.getFeature(features[0].get('id')),evt)
         }
       })
     })
   }
 
-  public show(type:number): void {
-    if(this.geoLayerShown)return;
-    if(this.geoLayer==undefined){
-      switch (type) {
-        case 0:
-          let vectorSource:VectorSource = new VectorSource({
-            features: new GeoJSON().readFeatures({type: 'FeatureCollection',features:this.data}),
-          })
-          this.geoLayer = new VectorLayer({
-            source: vectorSource,
-            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
-          });
-          break;
-        case 1:
-          this.geoLayer = new VectorLayer({
-            source: new VectorSource({
-              url: './data/poly_pen_provinces.json',
-              format: new GeoJSON()
-            }),
-            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
-          });
-          this.geoLayer.setSource
-          break;
-        case 2:
-          this.geoLayer = new VectorLayer({
-            source: new VectorSource({
-              url: './data/poly_pen_autonomies.json',
-              format: new GeoJSON()
-            }),
-            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
-          });
-          break;    
-        case 3:
-          this.geoLayer = new VectorLayer({
-            source: new VectorSource({
-              url: './data/poly_pen_municipalities.json',
-              format: new GeoJSON()
-            }),
-            style: (feature:Feature,n:number)=>{return this.csMap.getFeatureStyle(feature)}
-          });
-          break;  
-      }
-      
-      setTimeout(()=>this.geoLayer.changed());
+  public show(renderer: number): void {
+    if (this.geoLayerShown) return;
+
+    let state: CsViewerData = this.csMap.getParent().getParent().getState();
+    let timesJs = this.csMap.getParent().getParent().getTimesJs();
+    
+    console.log("Datos capa:", this.data);
+
+    const geojsonFormat = new GeoJSON();
+    if (this.geoJsonData.type !== 'FeatureCollection' || !Array.isArray(this.geoJsonData.features)) {
+      return; 
     }
-    this.map.addLayer(this.geoLayer)
-    this.geoLayerShown=true;
+
+    const vectorSource = new VectorSource({
+        features: geojsonFormat.readFeatures(this.data,{featureProjection: olProjection})
+        // .filter(function(feature) {
+        //   return bounds.intersects(feature.getGeometry().getExtent()) // ---- definir bounds = límites bbox
+    });
+
+    this.geoLayer = new VectorLayer({
+        source: vectorSource,
+        style: (feature:Feature)=>{return this.csMap.setFeatureStyle(feature, state, timesJs)},
+    });
+
+    this.map.addLayer(this.geoLayer);
+    this.geoLayerShown = true;
   }
 
   public hide(): void {
-    if(!this.geoLayerShown)return;
+    // if(!this.geoLayerShown)return;
     this.map.removeLayer(this.geoLayer)
+    this.geoLayer = undefined;
     this.geoLayerShown=false;
     if(this.popupOverlay!=undefined)this.popupOverlay.setPosition(undefined)
-
   }
+
   public setPopupContent(popup: any, content: HTMLElement, event:any): void {
     if(this.popupOverlay==undefined){
       this.popupOverlay= new Overlay({
@@ -544,6 +655,7 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
     this.popupOverlay.setPosition(evt.coordinate)
     //throw new Error("Method not implemented.");
   }
+  
   public refresh():void{
     if(this.geoLayerShown) this.geoLayer.changed()
   }

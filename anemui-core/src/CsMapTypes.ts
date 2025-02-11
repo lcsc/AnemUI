@@ -23,7 +23,8 @@ export interface CsMapController{
     setDate(dateIndex:number, state:CsViewerData):void;
     getZoom():number;
     showValue(latLong:CsLatLong,value:number):void;
-    getGeoJsonLayer(data:GeoJSON.Feature[],onClick:CsGeoJsonClick):CsGeoJsonLayer;
+    // getGeoJsonLayer(data:GeoJSON.Feature[],onClick:CsGeoJsonClick):CsGeoJsonLayer;
+    showFeatureValue (data: any, pixel: any, pos: CsLatLong, target:any):void; 
 }
 
 export type CsGeoJsonClick=(feature:GeoJSON.Feature,event:any)=>void

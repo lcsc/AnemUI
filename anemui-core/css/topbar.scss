@@ -89,7 +89,7 @@
         }
 
         @include md-desktop {
-            width: 50%;
+            width: 40%;
             #title {
                 font-size: 1.5em;
                 font-weight: 600;
@@ -253,7 +253,7 @@
             position: relative;
             list-style: none;
             font-weight: 400;
-            display: inline-block;
+            display: flex;
             padding: 0;
             margin: 0px auto;
         }
@@ -289,7 +289,7 @@
 }
 
 #inputs>li {
-    display: inline-block;
+    display: grid;
     position: relative;
     padding: 5px 10px;
     cursor: pointer;
@@ -320,6 +320,7 @@ li {
     line-height: 1.2;
     text-align:left
 }
+
 .inputDiv .sub-title{
     display: block;
     font-size: 1em;
@@ -371,6 +372,9 @@ li {
 .dropdown-item {
     box-sizing: border-box;
     white-space: normal;
+    font-size: 0.7em !important;
+    font-style: italic;
+    line-height: 1.2;
 }
 
 #marker {

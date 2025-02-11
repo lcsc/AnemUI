@@ -22,10 +22,13 @@ export enum GraphMode {
 
 export class CsGraph extends BaseFrame {
   private graphTitle: string;
+  private graphSubTitle: string;
   private graphType: GraphType;
   public byPoint: boolean;
+  public stationProps: any = []
 
   private downloadButtonContainer: HTMLButtonElement;
+  private featureButtonContainer: HTMLButtonElement;
 
   public constructor(_parent: BaseApp) {
     super(_parent)
@@ -34,20 +37,23 @@ export class CsGraph extends BaseFrame {
   public render(): JSX.Element {
     let self = this;
     console.log(screen.width + '/' + screen.height)
-    let graphWidth = screen.width * 0.4;
-    let graphHeight = screen.height * 0.3;
+    // let graphWidth = screen.width * 0.4;
+    // let graphHeight = screen.height * 0.3;
+    let graphWidth = screen.width > 1200 ? screen.width * 0.4 : screen.width * 0.55;
+    let graphHeight = screen.height > 1200 ? screen.height * 0.4 : screen.height * 0.50;
     let element =
       (<div className="container">
       <div id="GraphContainer" className='GraphContainer row' hidden >
         <div className="popup-content-wrapper col">
           <div className="popup-content" style={{ width: "auto" }}>
-            <div id="popGraph" /* style={{ height: graphHeight + "px", width: graphWidth + "px" }} */></div>
+            <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
           </div>
           <div className="labels-content" style={{ width: "auto" }}>
             <div id="labels" style={{ width: graphWidth + "px" }}></div>
           </div>
           <div id="graphDiv" className="droppDownButton">
             <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
+            <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
           </div>
         </div>
         <div className="col">
@@ -62,6 +68,9 @@ export class CsGraph extends BaseFrame {
 
   public build(): void {
     this.container = document.getElementById("GraphContainer") as HTMLDivElement
+    this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
+    this.featureButtonContainer = this.container.querySelector("[role=dropFeatureBtn]");
+    // this.downloadButtonContainer.hidden = true
     switch (this.graphType) {
       case "Serial":
       case "Area":
@@ -87,24 +96,40 @@ export class CsGraph extends BaseFrame {
   }
 
   private enableDownloadButton(){
-    this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
-    this.downloadButtonContainer.disabled = false
+    // this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
+    // this.downloadButtonContainer.disabled = false
+    this.downloadButtonContainer.hidden = false
   }
 
-  public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station = '') {
+  private disableDownloadButton(){
+    this.downloadButtonContainer.hidden = true
+  }
+
+  private enableStationDwButton(station: any = []) {
+    this.stationProps = station
+    this.downloadButtonContainer.hidden = true
+    this.featureButtonContainer.hidden = false
+
+  }
+
+  public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station: any = []) {
     //let data:any;
     //console.log("opening Graph")
+    this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' +  this.parent.getTranslation('en_la_coordenada') + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']', 
     this.container.hidden = false;
-    this.enableDownloadButton();
+    // if (Object.keys(station).length === 0) this.enableDownloadButton(); 
+    // else this.disableDownloadButton(); 
+    if (Object.keys(station).length != 0) this.enableStationDwButton(station)
 
     let graph: Dygraph
     let url
 
     switch (this.graphType) {
       case "Serial":
-        var file = new Blob([data], { type: 'text/plain' });
+        /* var file = new Blob([data], { type: 'text/plain' });
         url = URL.createObjectURL(file);
-        graph = this.drawSerialGraph(url, latlng);
+        graph = this.drawSerialGraph(url, latlng); */
+        graph = this.drawSerialGraph(data, latlng);
         break;
       case "Area":
         var file = new Blob([data], { type: 'text/plain' });
@@ -136,7 +161,8 @@ export class CsGraph extends BaseFrame {
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 3,
         delimiter: ";",
-        title: this.graphTitle + ' ' + this.parent.getTranslation('en_la_coordenada') + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
+        title: this.graphTitle + this.graphSubTitle,
+        // title: this.graphTitle + ' ' + this.parent.getTranslation('en_la_coordenada') + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
         ylabel: this.parent.getState().legendTitle,
         xlabel: dateText,
         showRangeSelector: true,

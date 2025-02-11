@@ -1,15 +1,18 @@
 import { CsLatLong } from "../CsMapTypes";
 import { CsTimesJsData, CsViewerData, Array4Portion } from "./CsDataTypes";
 import { DownloadDoneCB, DownloadErrorCB, downloadUrl } from "./UrlDownloader";
+import { renderers } from "./../tiles/Support";
 import struct from './struct.mjs';
 import { inflate } from 'pako';
+import { parse } from 'csv-parse/sync';
 import proj4 from 'proj4';
 import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
 import { ncSignif, hasInf, maxWhenInf, minWhenInf} from "../Env";
-
+import * as fs from 'fs';
+import * as path from 'path';
 
 export type ArrayDownloadDone = (data: number[]) => void;
 export type DateDownloadDone = (dataUrl: string) => void;
@@ -451,54 +454,80 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
     // downloadUrl("./stations/" + varName + "/" + station + ".csv", (status: number, response) => {
     downloadUrl("./stations/" + station + ".csv", (status: number, response) => {
         if (status == 200) {
-            let stData;
+            let rgResult;
             try {
-                stData = response as Text;
+                rgResult = response as Text;
             } catch (e) {
-                stData = '';
+                rgResult = '';
             }
-            doneCb(stData, 'data', 'text/plain') ;
+            doneCb(rgResult, 'data', 'text/plain') ;
         }
     },undefined,'text');
 }
 
-export function downloadTimebyRegion(region: string, varName: string, doneCb: CsvDownloadDone): void {
-    downloadUrl("./" + region + "/" + varName + ".csv", (status: number, response) => {
+export function downloadTimebyRegion(region: number, id: string, varName: string, doneCb: CsvDownloadDone): void {
+    downloadUrl("./data/" + renderers.folder[region] + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let stData;
+            let rgResult: string[] = []
+            let rgCSV = 'date;' + varName +'\r\n';
             try {
-                stData = response as Text;
+                let result = parse(response as Buffer, {
+                    columns: true,
+                    skip_empty_lines: true
+                });
+                result.forEach( (dataRow: any) => {
+                    rgResult[dataRow['times_mean']] = dataRow['X'+id]
+                    rgCSV += dataRow['times_mean'] + ';' + dataRow['X'+id] +'\r\n';
+                })
             } catch (e) {
-                stData = '';
+                rgCSV = '';
             }
-            doneCb(stData, 'data', 'text/plain') ;
+            doneCb(rgCSV, 'data', 'text/plain') ;
         }
     },undefined,'text');
 }
 
-export function downloadXYbyRegion(time: string, region: string, varName: string, doneCb: CsvDownloadDone): void {
-    downloadUrl("./data/" + region + "/" + varName + ".csv", (status: number, response) => {
+export function downloadXYbyRegion(time: string, region: number, varName: string, doneCb: CsvDownloadDone): void {
+    let folder = region == 2? 'municipio': (region == 3?'provincia':'autonomia')
+    downloadUrl("./data/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let stData;
-            let stResult
+            let stResult: []
             try {
-                stData = response as String;
-                let headers = stData.split('\n')[0].split(',')
-                let lines = stData.split('\n') 
-                console.log(lines)
-                // parse(response, {
-                //     delimiter: ',',
-                //     columns: headers,
-                //   }, (error, result: Text) => {
-                //     if (error) {
-                //       console.error(error);
-                //     }
-                
-                //     console.log("Result", result);
-                //     stResult = result
-                //   });
+                const records = parse(response as Buffer, {
+                    columns: true,
+                    skip_empty_lines: true
+                });
+
+                if (records.length == 1) stResult = records[0]
+                else  {
+                    records.forEach((record :any) => {
+                    if (record['times_mean'] == time)
+                    stResult = record
+                })}
             } catch (e) {
-                stResult = '';
+                stResult = [];
+            }
+            doneCb(stResult, 'data', 'text/plain') ;
+        }
+    },undefined,'text');
+}
+
+export function downloadJSONXYbyRegion(time: string, region: number, varName: string, doneCb: CsvDownloadDone): void {
+    let folder = region == 2? 'municipio': (region == 3?'provincia':'autonomia')
+    downloadUrl("./data/" + folder + "/" + varName + ".json", (status: number, response) => {
+        if (status == 200) {
+            let stResult: string[]
+            try {
+                const records = JSON.parse(response);
+
+                if (records.length == 1) stResult = records[0]
+                else  {
+                    for (const key in records) { 
+                        if (key == time) stResult = records[key]; 
+                    }
+                }
+            } catch (e) {
+                stResult = [];
             }
             doneCb(stResult, 'data', 'text/plain') ;
         }

@@ -15,6 +15,11 @@
   "bugs": {
     "url": "https://github.com/lcsc/AnemUI/issues"
   },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false
+  },
   "homepage": "https://github.com/lcsc/AnemUI#readme",
   "dependencies": {
     "@types/bootstrap": "^5.2.6",
