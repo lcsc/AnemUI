@@ -72,6 +72,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
 
     result.varTitle = {};
     result.legendTitle = {};
+    result.times = {};
     for (const varName of groups) {
         const var_group = await openGroup(zarrBasePath + "/" + varName);
         const var_group_attrs = await var_group.attrs.asObject();
@@ -85,13 +86,39 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         if (isNestedArray(timeData)) {
             const typedArray = timeData.data as TypedArray;
             const timeArr = Array.from(typedArray);
+            let converted: string[];
             if (time_dim_attrs.units === "days since 1970-01-01") {
-                const converted = timeArr.map(d => new Date(Date.UTC(1970, 0, 1) + d * 86400000).toISOString().split('T')[0]);
-                result.times[varName] = converted;
+                const base = new Date(Date.UTC(1970, 0, 1));
+                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
+            } else if (time_dim_attrs.units === "days since 1961-01-01") {
+                const base = new Date(Date.UTC(1961, 0, 1));
+                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
+            } else if (time_dim_attrs.units === "years since 1961-01-01") {
+                const base = new Date(Date.UTC(1961, 0, 1));
+                converted = timeArr.map(d => {
+                    const date = new Date(base);
+                    date.setUTCFullYear(date.getUTCFullYear() + d);
+                    return date.toISOString().split('T')[0];
+                });
+            } else if (time_dim_attrs.units === "days since 1961-01-01 12:00:00 GMT") {
+                const base = new Date(Date.UTC(1961, 0, 1, 12, 0, 0));
+                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
+            } else if (time_dim_attrs.units === "days since 1970-01-01 00:00:00 CET") {
+                // CET is UTC+1 so "1970-01-01 00:00:00 CET" corresponds to 1969-12-31 23:00:00 UTC.
+                const base = new Date(Date.UTC(1969, 11, 31, 23, 0, 0));
+                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
+            } else if (time_dim_attrs.units === "months since 1979-12") {
+                const base = new Date(Date.UTC(1979, 11, 1));
+                converted = timeArr.map(d => {
+                    const date = new Date(base);
+                    date.setUTCMonth(date.getUTCMonth() + d);
+                    return date.toISOString().split('T')[0];
+                });
             } else {
                 console.error("Unsupported time units: " + time_dim_attrs.units);
-                result.times[varName] = timeArr.map(String);
+                converted = timeArr.map(String);
             }
+            result.times[varName] = converted;
         } else {
             result.times[varName] = [timeData.toString()];
         }
