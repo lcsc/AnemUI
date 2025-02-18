@@ -66,6 +66,26 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     const root_group = await openGroup(zarrBasePath);
     const root_group_attrs = await root_group.attrs.asObject();
     const groups = root_group_attrs.variables;
+    const converters: { [unit: string]: (d: number) => string } = {
+        "days since 1970-01-01": (d) =>
+            new Date(Date.UTC(1970, 0, 1) + d * 86400000).toISOString().split("T")[0],
+        "days since 1961-01-01": (d) =>
+            new Date(Date.UTC(1961, 0, 1) + d * 86400000).toISOString().split("T")[0],
+        "years since 1961-01-01": (d) => {
+            const date = new Date(Date.UTC(1961, 0, 1));
+            date.setUTCFullYear(date.getUTCFullYear() + d);
+            return date.toISOString().split("T")[0];
+        },
+        "days since 1961-01-01 12:00:00 GMT": (d) =>
+            new Date(Date.UTC(1961, 0, 1, 12) + d * 86400000).toISOString().split("T")[0],
+        "days since 1970-01-01 00:00:00 CET": (d) =>
+            new Date(Date.UTC(1969, 11, 31, 23) + d * 86400000).toISOString().split("T")[0],
+        "months since 1979-12": (d) => {
+            const date = new Date(Date.UTC(1979, 11, 1));
+            date.setUTCMonth(date.getUTCMonth() + d);
+            return date.toISOString().split("T")[0];
+        },
+    };
 
     // Geo Data
     result.center = {"lat":root_group_attrs.center_lat, "lng":root_group_attrs.center_lon};
@@ -87,33 +107,9 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
             const typedArray = timeData.data as TypedArray;
             const timeArr = Array.from(typedArray);
             let converted: string[];
-            if (time_dim_attrs.units === "days since 1970-01-01") {
-                const base = new Date(Date.UTC(1970, 0, 1));
-                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
-            } else if (time_dim_attrs.units === "days since 1961-01-01") {
-                const base = new Date(Date.UTC(1961, 0, 1));
-                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
-            } else if (time_dim_attrs.units === "years since 1961-01-01") {
-                const base = new Date(Date.UTC(1961, 0, 1));
-                converted = timeArr.map(d => {
-                    const date = new Date(base);
-                    date.setUTCFullYear(date.getUTCFullYear() + d);
-                    return date.toISOString().split('T')[0];
-                });
-            } else if (time_dim_attrs.units === "days since 1961-01-01 12:00:00 GMT") {
-                const base = new Date(Date.UTC(1961, 0, 1, 12, 0, 0));
-                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
-            } else if (time_dim_attrs.units === "days since 1970-01-01 00:00:00 CET") {
-                // CET is UTC+1 so "1970-01-01 00:00:00 CET" corresponds to 1969-12-31 23:00:00 UTC.
-                const base = new Date(Date.UTC(1969, 11, 31, 23, 0, 0));
-                converted = timeArr.map(d => new Date(base.getTime() + d * 86400000).toISOString().split('T')[0]);
-            } else if (time_dim_attrs.units === "months since 1979-12") {
-                const base = new Date(Date.UTC(1979, 11, 1));
-                converted = timeArr.map(d => {
-                    const date = new Date(base);
-                    date.setUTCMonth(date.getUTCMonth() + d);
-                    return date.toISOString().split('T')[0];
-                });
+
+            if (converters[time_dim_attrs.units]) {
+                converted = timeArr.map(converters[time_dim_attrs.units]);
             } else {
                 console.error("Unsupported time units: " + time_dim_attrs.units);
                 converted = timeArr.map(String);
