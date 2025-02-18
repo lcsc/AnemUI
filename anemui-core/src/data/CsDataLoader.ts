@@ -97,6 +97,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     result.varMax = {};
     result.minVal = {};
     result.maxVal = {};
+    result.portions = {};
     for (const varName of groups) {
         const var_group = await openGroup(zarrBasePath + "/" + varName);
         const var_group_attrs = await var_group.attrs.asObject();
@@ -149,10 +150,12 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         // minVal and maxVal
         result.minVal[varName] = var_group_attrs["minVal"];
         result.maxVal[varName] = var_group_attrs["maxVal"];
+
+        // portions
+        result.portions[varName] = ["_all"];    // No se usa con Zarr => Se le da un valor único fijo
     }
 
     // Data of chunks
-    result.portions = {"KNDVI":["_all"],"NDVI":["_all"],"SKNDVI":["_all"],"SNDVI":["_all"]};  // No se usa con Zarr
     result.lonMin = {"KNDVI_all":-80400,"NDVI_all":-80400,"SKNDVI_all":-80400,"SNDVI_all":-80400};
     result.lonMax = {"KNDVI_all":1145000,"NDVI_all":1145000,"SKNDVI_all":1145000,"SNDVI_all":1145000};
     result.lonNum = {"KNDVI_all":1115,"NDVI_all":1115,"SKNDVI_all":1115,"SNDVI_all":1115};
