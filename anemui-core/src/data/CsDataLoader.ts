@@ -93,12 +93,17 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     result.varTitle = {};
     result.legendTitle = {};
     result.times = {};
+    result.varMin = {};
+    result.varMax = {};
     for (const varName of groups) {
         const var_group = await openGroup(zarrBasePath + "/" + varName);
         const var_group_attrs = await var_group.attrs.asObject();
+
+        // varTitle and legendTitle
         result.varTitle[varName] = var_group_attrs["varTitle"];
         result.legendTitle[varName] = var_group_attrs["legendTitle"];
 
+        // times
         const time_dim = await openArray({store: zarrBasePath, path: varName+"/"+timeDim, mode: "r"});
         const time_dim_attrs = await time_dim.attrs.asObject();
         const timeData = await time_dim.get();
@@ -118,11 +123,29 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         } else {
             result.times[varName] = [timeData.toString()];
         }
+
+        // varMin
+        const varMin = await openArray({store: zarrBasePath, path: varName+"/"+varName+"_min", mode: "r"});
+        const minData = await varMin.get();
+        if (isNestedArray(minData)) {
+            const minTypedArray = minData.data as TypedArray;
+            result.varMin[varName] = Array.from(minTypedArray);
+        } else {
+            result.varMin[varName] = [Number(minData)];
+        }
+        
+        // varMax
+        const varMax = await openArray({store: zarrBasePath, path: varName+"/"+varName+"_max", mode: "r"});
+        const maxData = await varMax.get();
+        if (isNestedArray(maxData)) {
+            const maxTypedArray = maxData.data as TypedArray;
+            result.varMax[varName] = Array.from(maxTypedArray);
+        } else {
+            result.varMax[varName] = [Number(maxData)];
+        }
     }
 
     // Data of variables
-    result.varMin = {"KNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"NDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SKNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]};
-    result.varMax = {"KNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"NDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SKNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"SNDVI":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]};
     result.minVal = {"KNDVI":-1,"NDVI":-1,"SKNDVI":-1,"SNDVI":-1};
     result.maxVal = {"KNDVI":-1,"NDVI":-1,"SKNDVI":-1,"SNDVI":-1};
 
