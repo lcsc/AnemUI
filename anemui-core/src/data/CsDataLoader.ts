@@ -95,6 +95,8 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     result.times = {};
     result.varMin = {};
     result.varMax = {};
+    result.minVal = {};
+    result.maxVal = {};
     for (const varName of groups) {
         const var_group = await openGroup(zarrBasePath + "/" + varName);
         const var_group_attrs = await var_group.attrs.asObject();
@@ -143,11 +145,11 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         } else {
             result.varMax[varName] = [Number(maxData)];
         }
-    }
 
-    // Data of variables
-    result.minVal = {"KNDVI":-1,"NDVI":-1,"SKNDVI":-1,"SNDVI":-1};
-    result.maxVal = {"KNDVI":-1,"NDVI":-1,"SKNDVI":-1,"SNDVI":-1};
+        // minVal and maxVal
+        result.minVal[varName] = var_group_attrs["minVal"];
+        result.maxVal[varName] = var_group_attrs["maxVal"];
+    }
 
     // Data of chunks
     result.portions = {"KNDVI":["_all"],"NDVI":["_all"],"SKNDVI":["_all"],"SNDVI":["_all"]};  // No se usa con Zarr
