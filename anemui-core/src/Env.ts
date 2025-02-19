@@ -16,7 +16,9 @@ export const mapboxAccessToken:string=ENV.mapboxAccessToken;
 // General params
 export const olProjection:string=ENV.olProjection;
 export const logo:string=ENV.logo;
+export const bottomLogo:string=ENV.bottomLogo !== 'undefined'? ENV.bottomLogo:'';
 export const initialZoom:number=ENV.initialZoom;
+export const minZoom:number= ENV.minZoom !== 'undefined'? ENV.minZoom:2;
 export const ncSignif:number=ENV.ncSignif;
 export const locale:string = typeof ENV.locale !== 'undefined'? ENV.locale:'es';
 export const hasCookies:boolean = typeof ENV.hasCookies !== 'undefined'? ENV.hasCookies:false;
