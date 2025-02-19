@@ -35,7 +35,7 @@ export class DownloadFrame extends BaseFrame {
         let element =
             (<div id="DownloadFrame" className='rightbar-item downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                 <div className='downlad-buttons'>
-                    <div className='btnSelect right d-grid mx-auto'>
+                    <div className='btnSelect right mx-auto'>
                         { !oneOption &&
                             <div id="dropNc" role="dropNc">
                                 <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>

@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuItemListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasSpSupport, hasSubTitle, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasButtons, varHasPopData, sbVarHasPopData}  from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, varHasPopData, sbVarHasPopData}  from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -35,6 +35,8 @@ export class MenuBar extends BaseFrame {
     private loadingText: HTMLSpanElement
     private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
+    private collapseMenu: HTMLElement
+    private navMenu: HTMLElement
 
     private displaySpSupport: HTMLDivElement
     private displayTpSupport: HTMLDivElement
@@ -141,34 +143,37 @@ export class MenuBar extends BaseFrame {
         let self = this;
         let element =
             (
-                <div id="TopBarFrame">
-                    <div id="TopBar" className="row fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
-                        <div className={"navbar " + logoStyle}>
-                            {/* <img src="./images/logos.png"></img> */}
-                            <img src={'./images/'+logo}></img>
+                <div id="TopBar" className="fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
+                    <div className={"navbar " + logoStyle}>
+                        <img src={'./images/'+logo}></img>
+                    </div>
+                    <div id="menu-title" className="menu-info text-left row mx-0 px-4">
+                        <div className="col-title">
+                            <h3 id="title">{this.title}</h3>
                         </div>
-                        <div id="menu-title" className="menu-info text-left row mx-0 px-4">
-                            <div className="col">
-                                <h3 id="title">{this.title}</h3>
+                        <div id="menu-central" className="col-info">
+                            <ul id="inputs" className="nav-menu">
+                                <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li>
+                            </ul>
+                            <div className="collapseMenu" onClick={() => { self.mobileMenu() }}>
+                                <span></span>
+                                <span></span>
+                                <span></span>
                             </div>
-                            <div id="menu-central" className="col text-left">
-                                <form onSubmit={() => { this.fireParamChanged(); return false }}>
-                                        <ul id="inputs">
-                                            <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li>
-                                        </ul>
-                                    <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
-                                            placeholder="Selection Param" value={this.parent.getState().selectionParam}
-                                            disabled={!this.parent.getState().selectionParamEnable}
-                                            onChange={() => { this.fireParamChanged(); return false }} />
-                                        <div className="col-auto">
-                                        <span className="ms-2" id="fetching-text" hidden>{this.fetchingText}</span>
-                                        <span className="data-error-text" id="nodata-text" hidden>{this.errorText}  </span>
-                                            <div className="spinner-grow text-info" role="status" hidden />
-                                        </div>
-                                </form>
+                            {/* <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
+                                placeholder="Selection Param" value={this.parent.getState().selectionParam}
+                                disabled={!this.parent.getState().selectionParamEnable}
+                                onChange={() => { this.fireParamChanged(); return false }} /> */}
+                            <div className="col-auto">
+                                <span className="ms-2" id="fetching-text" hidden>{this.fetchingText}</span>
+                                <span className="data-error-text" id="nodata-text" hidden>{this.errorText}  </span>
+                                <div className="spinner-grow text-info" role="status" hidden />
                             </div>
-                            <div className="col-1 menu-info d-flex flex-row-reverse" id="info">
-                            </div>
+
+                        </div>
+                        {/* <span className="menu-info d-flex flex-row-reverse" id="info"></span> */}
+                        <div className="col menu-info  d-flex flex-row-reverse" id="info">
+
                         </div>
                     </div>
                 </div>
@@ -177,8 +182,8 @@ export class MenuBar extends BaseFrame {
     }
 
     public build() {
-        this.container = document.getElementById("TopBarFrame") as HTMLDivElement;
-        this.topBar = document.getElementById('TopBar') as HTMLElement;
+        this.container = document.getElementById("TopBar") as HTMLDivElement;
+        this.topBar = document.getElementById('TopBar') as HTMLDivElement;
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
@@ -187,93 +192,113 @@ export class MenuBar extends BaseFrame {
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
+        this.collapseMenu = document.querySelector(".collapseMenu");
+        this.navMenu = document.querySelector(".nav-menu");
+
         let height = this.loading.parentElement.getBoundingClientRect().height;
+
         height = height - 6;
 
         this.loading.style.height = height + "px";
         this.loading.style.width = height + "px";
 
-        if (hasSpSupport) {
-            let dsp: simpleDiv = {role:'spSupport', title:'', subTitle:''}
-            addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-            this.displaySpSupport = this.container.querySelector("[role=spSupport]")
-            addChild(this.displaySpSupport, this.spatialSupport.render(this.parent.getState().support));
-            this.spatialSupport.build(this.displaySpSupport)
-        }
-        if (hasVars) {
-            let dsp: simpleDiv = {role:'var', title:'', subTitle:''}
-            addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-            this.displayVar = this.container.querySelector("[role=var]")
-            addChild(this.displayVar, this.variable.render(this.parent.getState().varName,varHasPopData))
-            this.variable.build(this.displayVar)
-            if (varHasPopData) this.variable.configPopOver(this.popData)
-        }
-        if (hasSubVars) {
-            let dsp: simpleDiv = {role:'subVar', title:'', subTitle:''}
-            addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-            this.displaySubVar = this.container.querySelector("[role=subVar]")
-            this.displaySubVar.hidden = false;
-            addChild(this.displaySubVar, this.subVariable.render(this.parent.getState().subVarName,sbVarHasPopData));
-            this.subVariable.build(this.displaySubVar)
-            if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
-        }
-        if (hasTpSupport) {
-            let dsp: simpleDiv = {role:'tpSupport', title:'', subTitle:''}
-            addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-            this.displayTpSupport = this.container.querySelector("[role=tpSupport]")
-            this.displayTpSupport.hidden = false;
-            addChild(this.displayTpSupport, this.temporalSupport.render(this.parent.getState().tpSupport));
-            this.temporalSupport.build(this.displayTpSupport);
-        }
-        
-        this.displaySelection = this.container.querySelector("[role=selection]")
-        this.displayParam = this.container.querySelector("[role=selection-param]")
-        if (this.selectionHidden) {
-            this.displaySelection.hidden = true;
-            document.getElementById("inputs").classList.add('no-wrap');
-        }
-        if (this.paramHidden) {
-            this.displayParam.hidden = true;
-            document.getElementById("inputs").classList.add('no-wrap');
-        }
-        if (hasClimatology) {
-            this.extraDisplays.forEach((dsp) => {
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                this.extraMenuItems.forEach((dpn) => {
-                    if (dpn.id == dsp.role) {
-                        let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                        addChild(container, dpn.render(dsp.subTitle,false));
-                        dpn.build(container)
-                    }
+        if (hasButtons) {
+            if (hasSpSupport) {
+                let dsp: simpleDiv = {role:'spSupport', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displaySpSupport = this.container.querySelector("[role=spSupport]")
+                addChild(this.displaySpSupport, this.spatialSupport.render(this.parent.getState().support));
+                this.spatialSupport.build(this.displaySpSupport)
+            }
+            if (hasVars) {
+                let dsp: simpleDiv = {role:'var', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displayVar = this.container.querySelector("[role=var]")
+                addChild(this.displayVar, this.variable.render(this.parent.getState().varName,varHasPopData))
+                this.variable.build(this.displayVar)
+                if (varHasPopData) this.variable.configPopOver(this.popData)
+            }
+            if (hasSubVars) {
+                let dsp: simpleDiv = {role:'subVar', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displaySubVar = this.container.querySelector("[role=subVar]")
+                this.displaySubVar.hidden = false;
+                addChild(this.displaySubVar, this.subVariable.render(this.parent.getState().subVarName,sbVarHasPopData));
+                this.subVariable.build(this.displaySubVar)
+                if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
+            }
+            if (hasTpSupport) {
+                let dsp: simpleDiv = {role:'tpSupport', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displayTpSupport = this.container.querySelector("[role=tpSupport]")
+                this.displayTpSupport.hidden = false;
+                addChild(this.displayTpSupport, this.temporalSupport.render(this.parent.getState().tpSupport));
+                this.temporalSupport.build(this.displayTpSupport);
+            }
+            
+            this.displaySelection = this.container.querySelector("[role=selection]")
+            this.displayParam = this.container.querySelector("[role=selection-param]")
+            if (this.selectionHidden) {
+                this.displaySelection.hidden = true;
+                document.getElementById("inputs").classList.add('no-wrap');
+            }
+            /* if (this.paramHidden) {
+                this.displayParam.hidden = true;
+                document.getElementById("inputs").classList.add('no-wrap');
+            } */
+            if (hasClimatology) {
+                this.extraDisplays.forEach((dsp) => {
+                    addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
+                    this.extraMenuItems.forEach((dpn) => {
+                        if (dpn.id == dsp.role) {
+                            let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
+                            addChild(container, dpn.render(dsp.subTitle,false));
+                            dpn.build(container)
+                        }
+                    });
                 });
-            });
+            }
+
+            if(this.dropDownOrder.length) {
+                this.changeMenuItemOrder()
+            }
+
+            this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
+            
+            this.climBtnArray.forEach((btn) =>{
+                btn.hidden = true;
+            })
+
+            if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
+
+            if(this.inputOrder.length) {
+                this.changeInputOrder()
+            }
         }
 
-        if(this.dropDownOrder.length) {
-            this.changeMenuItemOrder()
-        }
-
-        this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
-        
-        this.climBtnArray.forEach((btn) =>{
-            btn.hidden = true;
-        })
-
-        if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
-
-        if(this.inputOrder.length) {
-            this.changeInputOrder()
-        }
+        // this.collapseMenu.addEventListener("click", this.mobileMenu);
+        // const navLink = document.querySelectorAll(".inputDiv");
+        // navLink.forEach(n => n.addEventListener("click", this.closeMenu));
     }
+
+    public mobileMenu() {
+        this.collapseMenu.classList.toggle("active");
+        this.navMenu.classList.toggle("active");
+    }
+
+    // public closeMenu() {
+    //     this.collapseMenu.classList.remove("active");
+    //     this.navMenu.classList.remove("active");
+    // }
 
     public minimize(): void {
         this.menuInfo1.hidden = true;
-        this.menuCentral.classList.remove('col-md');
+        // this.menuCentral.classList.remove('col-md');
         this.topBar.classList.add('smallBar');
     }
     public showFrame(): void {
         this.menuInfo1.hidden = false;
-        this.menuCentral.classList.add('col-md');
+        // this.menuCentral.classList.add('col-md');
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
@@ -305,6 +330,8 @@ export class MenuBar extends BaseFrame {
     }
 
     public update(): void {
+        if (!hasButtons) return
+
         if (hasSpSupport) {
             this.displaySpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().support;
             // this.displaySpSupport.setSubTitle() ;
@@ -319,8 +346,8 @@ export class MenuBar extends BaseFrame {
             this.displaySubVar.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
         }   
         this.displaySelection.textContent = this.parent.getState().selection;
-        this.displayParam.value = this.parent.getState().selectionParam + "";
-        this.displayParam.disabled = !this.parent.getState().selectionParamEnable;
+        // this.displayParam.value = this.parent.getState().selectionParam + "";
+        // this.displayParam.disabled = !this.parent.getState().selectionParamEnable;
         if (this.parent.getState().climatology == true) {
             this.showClimFrame()
         } else {

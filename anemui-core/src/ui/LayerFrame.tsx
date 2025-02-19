@@ -76,7 +76,7 @@ export default class LayerFrame  extends BaseFrame {
                     <div className="buttonDiv trpDiv visible" onClick={()=>this.toggleSelect('trpDiv')}>
                         <span className="icon"><i className="bi bi-transparency"></i></span>
                         <span className="text"  aria-label='transparency'>
-                            {this.parent.getTranslation('transparency')}
+                            {this.parent.getTranslation('transparency')}: {mgr.getTransparency()}
                         </span>
                     </div>
                     <div className='row selectDiv trpDiv hidden'>

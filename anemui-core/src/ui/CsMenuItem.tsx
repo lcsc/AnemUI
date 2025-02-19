@@ -75,7 +75,7 @@ export class CsMenuItem extends BaseUiElement {
     this.subTitle = _subTitle
     return (
       <div>
-        <span className={"title"}>{this.title}</span>:<span className={"sub-title"}>{this.subTitle}</span>
+        <span className={"title"}>{this.title}:</span><span className={"sub-title"}>{this.subTitle}</span>
         <div className={"drop"}>
           <ul id={this.id}>
             {this.values.map((val, index) => {
@@ -103,7 +103,7 @@ export class CsMenuItem extends BaseUiElement {
   public config(visible: boolean, newText?: string) {
     this.container.hidden = !visible;
     if (newText != undefined) {
-      this.container.querySelector(".title").innerHTML = newText;
+      this.container.querySelector(".title").innerHTML = newText +':';
     }
   }
 
