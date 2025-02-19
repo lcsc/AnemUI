@@ -4,7 +4,7 @@
 
 #TopBar {
         padding: 0px !important;
-        z-index: 10;
+        z-index: 1000;
    
     #header-central {
         display: flex;
@@ -115,30 +115,25 @@
     }
 
     .shortLogo {
-        position:  absolute;
-        top: 10px;
-        left: 90px;
-        z-index: 999;
-
+        padding-left: 2.0em;
         img {
-            width: 80px;
+            width: 50px;
         }
     }
 
     .longLogo {
-        width: 100%;
-        background-color: $color_4;
-        border-bottom: 1px solid $border-color;
-        justify-content: left;
-    
+        padding-left: 0.5em;
         img {
             height: auto;
             max-width: 100%;
         }
     }
 
-    .navbar.longLogo {
-       padding-left: 0.5em;
+    .navbar {
+        width: 100%;
+        background-color: $color_4;
+        border-bottom: 1px solid $border-color;
+        justify-content: left;
     }
 
     .col.shortLogo {
@@ -226,9 +221,10 @@
     }
 
     @include desktop {
-
-        .navbar.longLogo {
-            padding-left: 2.2rem;
+        .navbar {
+            .longLogo, .shortLogo {
+                padding-left: 2.2rem;
+            }
         }
 
         .longLogo img {

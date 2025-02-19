@@ -21,7 +21,7 @@ import { LayerManager } from "./LayerManager";
 import { loadRegionFeatures, loadGeoJsonData } from "./data/CsDataLoader";
 import DataTileSource from "ol/source/DataTile";
 import { Geometry } from 'ol/geom';
-import { renderers, defaultRender } from "./tiles/Support";
+import { renderers, defaultRenderer } from "./tiles/Support";
 
 // Define alternative projections
 proj4.defs([
@@ -149,7 +149,7 @@ export class OpenLayerMap implements CsMapController{
         /*
         this.initLayers();    
         this.marker=new Marker(center);*/
-        this.lastSupport = defaultRender
+        this.lastSupport = defaultRenderer
         if (!isWmsEnabled) {
           this.buildDataTilesLayers(state, timesJs);
             if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
@@ -344,14 +344,17 @@ export class OpenLayerMap implements CsMapController{
           this.value.setPosition(undefined)
           return;
         }
-        this.popupContent.textContent=this.parent.getParent().formatPopupValue(value);
+        this.popupContent.textContent=this.formatPopupValue(pos,value);
         this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+        this.popupContent.style.visibility = 'visible';
         this.popup.hidden = false
     }
 
+    public formatPopupValue(pos: CsLatLong, value: number): string {
+      return 'Valor en [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: '  + value
+    }
+
     public getFeatureStyle(feature: Feature): Style {
-      // const ftStyle = feature.getStyle()
-      // console.log(ftStyle);
       const showColor = feature.get('showcolor');
       console.log(showColor);
       const color = feature.get('COLOR');
@@ -367,7 +370,6 @@ export class OpenLayerMap implements CsMapController{
             return feature;
           });
       if (feature) {
-        // feature.setStyle(this.getFeatureStyle(feature))
         this.popupContent.style.left = pixel[0] + 'px';
         this.popupContent.style.top = pixel[1] + 'px';
         this.popup.hidden = false
@@ -391,13 +393,6 @@ export class OpenLayerMap implements CsMapController{
     };
 
     async configureFeature (region:string): Promise<void> {
-      // await loadRegionFeatures(region)
-      //     .then((features: GeoJSON.Feature[]) => {
-      //         this.featureLayer = new CsOpenLayerGeoJsonLayer (features,this.map,this,(feature, event) => { this.onFeatureClick(feature, event) });
-      //     })
-      //     .catch((error: any) => {
-      //         console.error('Error: ', error);
-      //     });
       loadGeoJsonData(region).then(data => { 
         if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
           return; // Salir de la función si los datos son inválidos
@@ -412,7 +407,7 @@ export class OpenLayerMap implements CsMapController{
     public buildFeatureLayers () {
       this.glmgr = GeoLayerManager.getInstance();
       renderers.name.forEach( renderer => {
-          if(!renderer.startsWith("~") && renderer != defaultRender){
+          if(!renderer.startsWith("~") && renderer != defaultRenderer){
             loadGeoJsonData(renderers.folder[renderers.name.indexOf(renderer)])
               .then(data => { 
                   this.glmgr.addGeoLayer(renderer, data, this.map, this, (feature, event) => { this.onFeatureClick(feature, event) })
@@ -425,14 +420,13 @@ export class OpenLayerMap implements CsMapController{
     }
 
     public onFeatureClick(feature: GeoJSON.Feature, event: any) {
-        if (feature) {
-          let state = this.parent.getParent().getState()
-            if (!state.climatology) {
-                let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-                if (state.support== renderers.name[0]) this.parent.getParent().showGraphBySt(stParams)
-                else this.parent.getParent().showGraphByRegion(renderers.name.indexOf(state.support), stParams)
-            }
-        }
+      let state = this.parent.getParent().getState()
+      if(typeof state.times === 'string') return 1
+      if (feature) {
+          let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
+          if (state.support== renderers.name[0]) this.parent.getParent().showGraphBySt(stParams)
+          else this.parent.getParent().showGraphByRegion(renderers.name.indexOf(state.support), stParams)
+      }
     }
 
     public setFeatureStyle(feature: Feature, state: CsViewerData, timesJs: CsTimesJsData): Style {
@@ -479,7 +473,7 @@ export class OpenLayerMap implements CsMapController{
           this.featureLayer.hide()
         } 
         switch (support){
-          case defaultRender:
+          case defaultRenderer:
             break;      
           case renderers.name[0]:
             this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
@@ -494,7 +488,7 @@ export class OpenLayerMap implements CsMapController{
                 state.actionData = data
                 this.featureLayer.show(renderers.name.indexOf(support));
             }
-            downloadJSONXYbyRegion(state.times[state.selectedTimeIndex], renderers.name.indexOf(support), state.varId, open);
+            downloadXYbyRegion(state.times[state.selectedTimeIndex], renderers.name.indexOf(support), state.varId, open);
             break;         
           default:
             throw new Error("Render "+support+" not supported")
@@ -570,8 +564,6 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   public name:string;
   public url:string; 
   public source?: VectorSource;
-  // public type: string;
-  // public crs: any;
   public geoJsonData: any;
 
   constructor(_data:CsGeoJsonData,_map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick){

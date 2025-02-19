@@ -2,7 +2,7 @@ import { createElement } from "tsx-create-element";
 import { CsGeoJsonClick, CsLatLong, CsMapController, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { CsViewerData, CsGeoJsonData } from "./data/CsDataTypes";
 import { BaseApp } from "./BaseApp";
-import { defaultRender } from "./tiles/Support"
+import { defaultRenderer } from "./tiles/Support"
 import { abstract } from "ol/util";
 
 export abstract class CsGeoJsonLayer{
@@ -69,7 +69,7 @@ export class CsMap{
     }
 
     public onMapClick(event: CsMapEvent): void {
-        if (this.parent.getState().support!= defaultRender) return
+        if (this.parent.getState().support!= defaultRenderer) return
         if (!event || !event.latLong) {
             console.error("El objeto event o latLong no están definidos:", event);
             return;

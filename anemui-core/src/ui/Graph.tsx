@@ -36,32 +36,31 @@ export class CsGraph extends BaseFrame {
 
   public render(): JSX.Element {
     let self = this;
-    console.log(screen.width + '/' + screen.height)
     // let graphWidth = screen.width * 0.4;
     // let graphHeight = screen.height * 0.3;
     let graphWidth = screen.width > 1200 ? screen.width * 0.4 : screen.width * 0.55;
     let graphHeight = screen.height > 1200 ? screen.height * 0.4 : screen.height * 0.50;
     let element =
       (<div className="container">
-      <div id="GraphContainer" className='GraphContainer row' hidden >
-        <div className="popup-content-wrapper col">
-          <div className="popup-content" style={{ width: "auto" }}>
-            <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
+        <div id="GraphContainer" className='GraphContainer row' hidden >
+          <div className="popup-content-wrapper col">
+            <div className="popup-content" style={{ width: "auto" }}>
+              <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
+            </div>
+            <div className="labels-content" style={{ width: "auto" }}>
+              <div id="labels" style={{ width: graphWidth + "px" }}></div>
+            </div>
+            <div id="graphDiv" className="droppDownButton">
+              <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
+              <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
+            </div>
           </div>
-          <div className="labels-content" style={{ width: "auto" }}>
-            <div id="labels" style={{ width: graphWidth + "px" }}></div>
-          </div>
-          <div id="graphDiv" className="droppDownButton">
-            <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
-            <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
+          <div className="col">
+            <a className="popup-close-button" onClick={() => { this.closeGraph() }}>
+              <i className="bi bi-x-circle-fill"></i>
+            </a>
           </div>
         </div>
-        <div className="col">
-          <a className="popup-close-button" onClick={() => { this.closeGraph() }}>
-            <i className="bi bi-x-circle-fill"></i>
-          </a>
-        </div>
-      </div>
       </div>);
     return element;
   }
@@ -96,30 +95,28 @@ export class CsGraph extends BaseFrame {
   }
 
   private enableDownloadButton(){
-    // this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
-    // this.downloadButtonContainer.disabled = false
     this.downloadButtonContainer.hidden = false
   }
 
-  private disableDownloadButton(){
-    this.downloadButtonContainer.hidden = true
+  private disableStationDwButton(){
+    this.downloadButtonContainer.hidden = false
+    this.featureButtonContainer.hidden = true
   }
 
   private enableStationDwButton(station: any = []) {
     this.stationProps = station
     this.downloadButtonContainer.hidden = true
     this.featureButtonContainer.hidden = false
-
   }
 
   public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station: any = []) {
-    //let data:any;
-    //console.log("opening Graph")
     this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' +  this.parent.getTranslation('en_la_coordenada') + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']', 
     this.container.hidden = false;
     // if (Object.keys(station).length === 0) this.enableDownloadButton(); 
     // else this.disableDownloadButton(); 
-    if (Object.keys(station).length != 0) this.enableStationDwButton(station)
+    if (Object.keys(station).length != 0)  this.enableStationDwButton(station)
+    else this.disableStationDwButton()
+    
 
     let graph: Dygraph
     let url
@@ -162,14 +159,9 @@ export class CsGraph extends BaseFrame {
         digitsAfterDecimal: 3,
         delimiter: ";",
         title: this.graphTitle + this.graphSubTitle,
-        // title: this.graphTitle + ' ' + this.parent.getTranslation('en_la_coordenada') + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
         ylabel: this.parent.getState().legendTitle,
         xlabel: dateText,
         showRangeSelector: true,
-        /* plotter: function (e: any) {
-          let points = e.points
-
-        }, */
         xValueParser: function (str: any): number {
 
           let readTime: string
@@ -182,7 +174,6 @@ export class CsGraph extends BaseFrame {
         },
         axes: {
           x: {
-            // pixelsPerLabel: 10,
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
               let fecha = new Date(millis);
               let value = self.formatDate(fecha)
@@ -193,12 +184,10 @@ export class CsGraph extends BaseFrame {
               var fecha = new Date(number);
               let value = self.formatDate(fecha)
               return value;
-              // return (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
             }
           },
           y: {
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
-              // return " " + millis.toFixed(2);
               return " " + (millis < 0.01? millis.toFixed(3) : millis.toFixed(2));
             }
           }
@@ -238,10 +227,6 @@ export class CsGraph extends BaseFrame {
           }
           yPos = e.plotArea.y + canvasy0 - 29;  // --- Hay 29 pixels de desplazamiento (dygraph-title)
 
-          // let title = document.querySelector<HTMLElement>('.dygraph-title');
-          // console.log(title.offsetHeight)
-          // console.log(document.getElementsByClassName('dygraph-title')[0].style.height)
-
           // ---- PRIMER PUNTO DEL POLÍGONO A PINTAR - (0,0) DE LA GRÁFICA: e.plotArea.x, e.plotArea.y + canvasy 
           region.moveTo(e.plotArea.x, yPos);
           
@@ -279,7 +264,6 @@ export class CsGraph extends BaseFrame {
         },
         axes: {
           x: {
-            // pixelsPerLabel: 10,
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
               var fecha = new Date(millis);
               return fecha.getDate() + "/" + (fecha.getMonth() + 1) + "/" + fecha.getFullYear() + " ";
@@ -325,12 +309,10 @@ export class CsGraph extends BaseFrame {
           },
           'lwr': {
             color: "#454545",
-            /* fillGraph: true, */
             strokePattern: Dygraph.DASHED_LINE
           },
           'upr': {
             color: "#454545",
-            /* fillGraph: true, */
             strokePattern: Dygraph.DASHED_LINE
           }
         },

@@ -465,6 +465,24 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
     },undefined,'text');
 }
 
+export function downloadCSVbyRegion(region: number, varName: string, doneCb: CsvDownloadDone): void {
+    downloadUrl("./data/" + renderers.folder[region] + "/" + varName + ".csv", (status: number, response) => {
+        if (status == 200) {
+            let result: string
+            try {
+                result = parse(response as Buffer, {
+                    columns: true,
+                    skip_empty_lines: true
+                });
+                
+            } catch (e) {
+                result = '';
+            }
+            doneCb(result, 'data', 'text/plain') ;
+        }
+    },undefined,'text');
+}
+
 export function downloadTimebyRegion(region: number, id: string, varName: string, doneCb: CsvDownloadDone): void {
     downloadUrl("./data/" + renderers.folder[region] + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {

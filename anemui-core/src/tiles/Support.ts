@@ -3,7 +3,7 @@ export const renderers = {
     folder: ["estacion","raster","municipio","provincia","autonomia"],
 }
 
-export const defaultRender= renderers.name[1]
+export const defaultRenderer= renderers.name[1]
 
 export function enableRenderer(rd:number[]){
     rd.forEach( i => {
@@ -20,7 +20,7 @@ export function disableRenderer(i:number){
 }
 
 
-//  ----------- convertir en calse??
+//  ----------- convertir en clase??
 export default class Renderers {
 
     private renderers = renderers

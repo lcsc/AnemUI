@@ -57,6 +57,12 @@ div.GraphContainer {
         color: gray -2px 2px 2px;
     }
 
+    .dygraph-ylabel, .dygraph-axis-label-y {
+        width: 100px !important; /* Adjust this value as needed */
+        overflow: visible;
+        padding-right: 10px;
+      }
+
     .dygraph-legend {
         text-align: center;
         width: 1024px;

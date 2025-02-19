@@ -15,7 +15,7 @@ import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, downloadXYbyRegion, getPortionForPoint } from "./data/ChunkDownloader";
-import { downloadTCSVChunked } from "./data/ChunkDownloader";
+import { downloadTCSVChunked, downloadCSVbyRegion } from "./data/ChunkDownloader";
 import { downloadUrl } from "./data/UrlDownloader";
 import { DEF_STYLE_STATIONS, /* DEF_STYLE_UNC, */ OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
@@ -28,7 +28,7 @@ import { FeatureLike } from "ol/Feature";
 import LeftBar from "./ui/LeftBar"; 
 import RightBar from "./ui/RightBar"; 
 import Translate from "./language/translate";
-import { renderers, defaultRender } from "./tiles/Support";
+import { renderers, defaultRenderer } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
 
 
@@ -41,7 +41,7 @@ declare global {
 }
 
 const INITIAL_STATE: CsViewerData = {
-    support: defaultRender,
+    support: defaultRenderer,
     tpSupport: undefined,
     varId: "",
     varName: "",
@@ -199,7 +199,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         addChild(document.getElementById('MainFrame'), this.graph.render())
         this.graph.build();
         addChild(document.getElementById('MainFrame'), this.infoDiv.render())
-        /* let tl = document.createElement("div")
+        let tl = document.createElement("div")
         tl.className = "TopRightFrame"
         addChild(document.getElementById('info'), tl);
         this.infoDiv.build()
@@ -208,7 +208,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         if (isKeyCloakEnabled) {
             addChild(tl, this.loginFrame.render())
             this.loginFrame.build();
-        } */
+        }
 
         addChild(document.getElementById('MainFrame'), this.downloadOptionsDiv.render())
         this.downloadOptionsDiv.build()
@@ -274,7 +274,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public onMouseMoveEnd(event: CsMapEvent): void {
             loadLatLogValue(event.latLong, this.state, this.timesJs, this.csMap.getZoom())
             .then(value => {
-                if (this.state.support == defaultRender) {
+                if (this.state.support == defaultRenderer) {
                     this.csMap.showValue(event.latLong, value);
                 } else {
                     let evt = event.original
@@ -290,9 +290,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected getUrlForNC(suffix?: string): string {
         let currUrl = new URL(document.location.toString())
         currUrl.search = "";
-        currUrl.pathname += "nc/data/" + this.state.varId;
-        if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
-        currUrl.pathname += ".nc";
+        if (this.state.support == defaultRenderer) {
+            currUrl.pathname += "nc/data/" + this.state.varId;
+            if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
+            currUrl.pathname += ".nc";
+        } else {
+            currUrl.pathname += "data/" + renderers.folder[renderers.name.indexOf(this.state.support)] + "/" + this.state.varId +  ".csv";
+        }
+        
         return currUrl.toString();
     }
 
@@ -420,52 +425,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public update(dateChanged: boolean = false):void {
-        /* if (this.stationsLayer != undefined) {   /// ??????????
-            this.stationsLayer.hide()
-        } 
-        if (this.state.support == "Puntual (estaciones)") {
-            this.stationsLayer.show(0)
-        } else { */
-            // switch(this.state.support) {
-            //     case "Puntual (estaciones)":
-            //         this.stationsLayer.show(0);
-            //         break;
-            //     case 'Municipio':
-            //     case 'Provincia':    
-            //     case 'CCAA':  
-            //         let region = this.state.support == 'Municipio'? 'pen_municipio': this.state.support == 'Provincia'? 'pen_provincia':'autonomia'
-            //         this.configureRegion(region);
-                    
-            //         /* if (this.state.support == "Municipio") {
-            //             let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            //                 this.state.actionData = data
-            //                 this.stationsLayer.show(2)
-            //             }
-            //             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 2, this.state.varId, open);
-            //         } else if (this.state.support == "Provincia") {
-            //             let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            //                 this.state.actionData = data
-            //                 this.stationsLayer.show(3)
-            //             }
-            //             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 3, this.state.varId, open);
-            //         } else if (this.state.support == "CCAA") {
-            //             let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            //                 this.state.actionData = data
-            //                 this.stationsLayer.show(4)
-            //             }
-            //             downloadXYbyRegion(this.state.times[this.state.selectedTimeIndex], 4, this.state.varId, open);
-            //         }  */
-            //         break;
-            //     default:
-            //         if (this.stationsLayer != undefined) {   /// ??????????
-            //             this.stationsLayer.hide()
-            //         } 
-            //         break;    
-            //  }
-        /*}
-         */
-        
-        // this.state.climatology = this.state.tpSupport==TP_SUPPORT_CLIMATOLOGY? true:false;
         this.menuBar.update();
         this.leftBar.update();
         this.paletteFrame.update();
@@ -672,7 +631,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.update()
     }
 
-
     protected daysIntoYear(dateIndex: number): number {
         let date = new Date(this.state.times[dateIndex])
         let now = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -723,7 +681,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return DEF_STYLE_STATIONS;
     }
 
-    public formatPopupValue(value: number): string {
-        return "Valor: " + value
-    }
+    // public formatPopupValue(pos: CsLatLong, value: number): string {
+
+    //     ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']'
+    //     return "Valor: " + value
+    // }
 }
