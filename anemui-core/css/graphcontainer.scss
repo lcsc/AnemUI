@@ -1,5 +1,7 @@
 div.GraphContainer {
     @include bgFrame(12px);
+    
+    position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -30%);
@@ -54,6 +56,12 @@ div.GraphContainer {
         font-size: 18px;
         color: gray -2px 2px 2px;
     }
+
+    .dygraph-ylabel, .dygraph-axis-label-y {
+        width: 100px !important; /* Adjust this value as needed */
+        overflow: visible;
+        padding-right: 10px;
+      }
 
     .dygraph-legend {
         text-align: center;
