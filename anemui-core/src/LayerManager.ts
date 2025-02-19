@@ -1,6 +1,6 @@
 import { Source } from "ol/source";
 import { OSM, Vector, ImageStatic, ImageWMS} from "ol/source";
-import {TopoJSON, } from "ol/format"
+import { TopoJSON } from "ol/format"
 import { mapboxAccessToken, mapboxMapID } from "./Env";
 import {Image, Layer, WebGLTile} from "ol/layer";
 import TileWMS from 'ol/source/TileWMS';
@@ -14,13 +14,14 @@ import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
 
-export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"|"ImageLayer"|"WMS"|"WMTS"
 export const AL_TYPE_OSM="OSM"
 export const AL_TYPE_TOPO_JSON="TopoJson"
 export const AL_TYPE_GEO_JSON="GeoJson"
 export const AL_TYPE_IMG_LAYER="Image"
 export const AL_TYPE_WMS="WMS"
 export const AL_TYPE_WMTS="WMTS"
+
+export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"|"ImageLayer"|"WMS"|"WMTS"
 
 export type AnemuiLayer={
     name:string,
@@ -80,8 +81,7 @@ export class LayerManager {
         this.addBaseLayer({name:"IGN-BASE",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false})
         this.addBaseLayer({name:"PNOA",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false})
         this.addBaseLayer({name:"LIDAR",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false})
-        // this.topSelected="mapbox";
-
+  
         // CAPAS SUPERPUESTAS
         // ------ Global ()
         this.addTopLayer({name:"mapbox",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM, global:true})   
@@ -97,8 +97,6 @@ export class LayerManager {
         this.addTopLayer({name:"zonas_inundables-T100",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
         this.addTopLayer({name:"zonas_inundables-T500",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
         
-        // this.baseSelected = "ARCGIS";
-
         this.topSelected="mapbox";
         this.uncertaintyLayer = [];
     }
@@ -129,9 +127,6 @@ export class LayerManager {
                 i++;
             }
         })
-        // if(this.baseLayers[_selected]!=undefined){
-        //     this.baseSelected[0]=_selected;
-        // }
     }
     
     public getBaseLayerSource(layer: number):Source {
@@ -169,12 +164,6 @@ export class LayerManager {
                 break;
             }
         }
-        // ------------ original
-       /*  if(this.baseLayers[this.baseSelected].source==undefined){
-            this.baseLayers[this.baseSelected].source = new OSM({
-                url: this.baseLayers[this.baseSelected].url
-              })
-        } */
         return this.baseLayers[this.baseSelected[layer]].source
     }
     //TopLayer
@@ -261,13 +250,5 @@ export class LayerManager {
 
     public showUncertaintyLayer(show: boolean) {
         this.uncertaintyLayer[0].setVisible(show);
-        // this.uncertaintyVectorLayer.setVisible(show);
     }
-
-    public getuncertaintyVectorLayer():Layer {
-        this.uncertaintyVectorLayer = new VectorLayer;
-        return this.uncertaintyVectorLayer;
-    }
-
-    
 }

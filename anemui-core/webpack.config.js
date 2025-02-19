@@ -214,7 +214,7 @@ const development={
         "secure": false,
         "logger": console,
         changeOrigin:true,
-        "target": "https://lisuarte.eead.csic.es/"
+        "target": "https://yesa.eead.csic.es/"
       }
 
     },
@@ -243,4 +243,5 @@ module.exports = (env,argv) => {
        console.log("Running base")
        return base
    }
-}
+
+  }
