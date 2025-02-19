@@ -76,19 +76,6 @@ export class CsMap{
         }
     
         this.listener.onClick(event);
-
-        setTimeout(() => {
-            this.checkDataToShowGraph();
-        }, 500);
-    }
-
-    private checkDataToShowGraph(){
-        if (this.parent.getLastLlData() && this.parent.getLastLlData().latlng !== undefined) {
-            console.log(this.parent.getLastLlData().latlng);
-            this.parent.showGraph();
-        } else {
-            console.warn("lastLlData o latlng no están definidos:", this.parent.getLastLlData());
-        }
     }
 
     public onMouseMoveEnd(event:CsMapEvent):void{

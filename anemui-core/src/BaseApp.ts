@@ -247,6 +247,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.lastLlData = data;
         this.csMap.showMarker(data.latlng);
         this.rightBar.enableLatLng(data.latlng)
+        this.showGraph();
     }
 
     public hidePointButtons(): void {
@@ -264,7 +265,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
                 this.menuBar.hideLoading();
-                this.onLlDataLoaded(data)
+                this.onLlDataLoaded(data);
             })
             .catch((reason: any) => {
                 this.menuBar.hideLoading();
