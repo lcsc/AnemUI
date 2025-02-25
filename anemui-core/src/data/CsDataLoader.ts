@@ -7,7 +7,7 @@ import { BaseApp } from "../BaseApp";
 import { extractValueChunkedFromT, extractDataChunkedFromT, extractValueChunkedFromXY } from "./ChunkDownloader";
 import { dataSource } from '../Env';
 import { NestedArray, openArray, openGroup, TypedArray } from 'zarr';
-import { timeDim, horDim, verDim } from "./CsPConstans";
+import { timeDim, horDim, verDim, singlePortion } from "./CsPConstans";
 
 async function loadTimesJson(): Promise<CsTimesJsData> {
     // Carga desde archivo NC (implementación actual)
@@ -98,7 +98,15 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     result.minVal = {};
     result.maxVal = {};
     result.portions = {};
+    result.lonMin = {};
+    result.lonMax = {};
+    result.lonNum = {};
+    result.latMin = {};
+    result.latMax = {};
+    result.latNum = {};
+
     for (const varName of groups) {
+        const varNamePortion = varName + singlePortion;
         const var_group = await openGroup(zarrBasePath + "/" + varName);
         const var_group_attrs = await var_group.attrs.asObject();
 
@@ -152,16 +160,39 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         result.maxVal[varName] = var_group_attrs["maxVal"];
 
         // portions
-        result.portions[varName] = ["_all"];    // No se usa con Zarr => Se le da un valor único fijo
+        result.portions[varName] = [singlePortion];    // No se usa con Zarr => Se le da un valor único fijo
+
+        // lonMin, lonMax and lonNum
+        const lons = await openArray({store: zarrBasePath, path: varName+"/"+horDim, mode: "r"});
+        const lonsData = await lons.get();
+        if (isNestedArray(lonsData)) {
+            const lonsTypedArray = lonsData.data as TypedArray;
+            result.lonMin[varNamePortion] = lonsTypedArray[0];
+            result.lonMax[varNamePortion] = lonsTypedArray[lonsTypedArray.length - 1];
+            result.lonNum[varNamePortion] = lonsTypedArray.length;
+        } else {
+            result.lonMin[varNamePortion] = lonsData;
+            result.lonMax[varNamePortion] = lonsData;
+            result.lonNum[varNamePortion] = 1;
+        }
+
+        // latMin, latMax and latNum
+        const lats = await openArray({store: zarrBasePath, path: varName+"/"+verDim, mode: "r"});
+        const latsData = await lats.get();
+        if (isNestedArray(latsData)) {
+            const latsTypedArray = latsData.data as TypedArray;
+            console.log(latsTypedArray);
+            result.latMin[varNamePortion] = latsTypedArray[0];
+            result.latMax[varNamePortion] = latsTypedArray[latsTypedArray.length - 1];
+            result.latNum[varNamePortion] = latsTypedArray.length;
+        } else {
+            result.latMin[varNamePortion] = latsData;
+            result.latMax[varNamePortion] = latsData;
+            result.latNum[varNamePortion] = 1;
+        }
     }
 
     // Data of chunks
-    result.lonMin = {"KNDVI_all":-80400,"NDVI_all":-80400,"SKNDVI_all":-80400,"SNDVI_all":-80400};
-    result.lonMax = {"KNDVI_all":1145000,"NDVI_all":1145000,"SKNDVI_all":1145000,"SNDVI_all":1145000};
-    result.lonNum = {"KNDVI_all":1115,"NDVI_all":1115,"SKNDVI_all":1115,"SNDVI_all":1115};
-    result.latMin = {"KNDVI_all":3980000,"NDVI_all":3980000,"SKNDVI_all":3980000,"SNDVI_all":3980000};
-    result.latMax = {"KNDVI_all":4896300,"NDVI_all":4896300,"SKNDVI_all":4896300,"SNDVI_all":4896300};
-    result.latNum = {"KNDVI_all":834,"NDVI_all":834,"SKNDVI_all":834,"SNDVI_all":834};
     result.timeMin = undefined;  // No se usa
     result.timeMax = undefined;  // No se usa
     result.timeNum = undefined;  // No se usa
