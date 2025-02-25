@@ -162,7 +162,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         result.maxVal[varName] = var_group_attrs["maxVal"];
 
         // portions
-        result.portions[varName] = [singlePortion];    // No se usa con Zarr => Se le da un valor único fijo
+        result.portions[varName] = [singlePortion];    // Not used with Zarr => A fixed unique value is given
 
         // lonMin, lonMax and lonNum
         const lons = await openArray({store: zarrBasePath, path: varName+"/"+horDim, mode: "r"});
@@ -196,12 +196,12 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     }
 
     // Data of chunks
-    result.timeMin = undefined; // No se usa
-    result.timeMax = undefined; // No se usa
-    result.timeNum = undefined; // No se usa
-    result.varType = 'f';       // No se usa con Zarr
-    result.offsetType = 'Q';    // No se usa con Zarr => Se le da un valor único fijo
-    result.sizeType = 'I';      // No se usa con Zarr => Se le da un valor único fijo
+    result.timeMin = undefined; // Not used
+    result.timeMax = undefined; // Not used
+    result.timeNum = undefined; // Not used
+    result.varType = 'f';       // Not used with Zarr
+    result.offsetType = 'Q';    // Not used with Zarr => A fixed unique value is given
+    result.sizeType = 'I';      // Not used with Zarr => A fixed unique value is given
     result.projection = lastProjection;
 
     return result;
