@@ -93,7 +93,18 @@ export type CsViewerData={
     climatology:boolean,
     uncertaintyLayer:boolean,
     season:string,
-    month:string
+    month:string,
+    actionData: ArrayData,
+    timeSeriesData: ArrayData
 }
 
 export type Array4Portion={ [portion: string]: number[] }
+
+export type ArrayData =  { [key: string]: number } 
+
+export type CsGeoJsonData={ 
+    type: string,
+    features: GeoJSON.Feature[],
+    crs: any
+
+}

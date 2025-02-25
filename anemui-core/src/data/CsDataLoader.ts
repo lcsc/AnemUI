@@ -267,8 +267,29 @@ export async function loadLatLogValue(latLng:CsLatLong,appStatus:CsViewerData,ti
     });
     return ret
 }
-/*
-function extractValueChunkedFromTXY(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false){
-    extractValueChunkedFromXY(latlng,(value:number,values:number[])=>{console.log("XY: => "+value);functionValue(value,values)},errorCb,status,times,int);
-    extractValueChunkedFromT(latlng,(value:number,values:number[])=>{console.log(" T: => "+value);},errorCb,status,times,int);
-}*/
+
+export async function loadRegionFeatures( region: string): Promise<GeoJSON.Feature[]> {
+    let ret = new Promise<GeoJSON.Feature[]>((resolve, reject) => {
+        downloadUrl("./data/poly_" + region + ".json", (status: number, response) => {
+            if (status == 200) {
+                let parsedJson: any;
+                try {
+                    let data = []  
+                    parsedJson = JSON.parse(new TextDecoder().decode(response as ArrayBuffer));
+                    if (Object.keys(parsedJson).length > 0) {
+                        data = parsedJson.features
+                    }
+                    resolve(data);
+                } catch (e) {
+                    reject(e);
+                }
+            }
+        })
+    })
+    return ret;
+}
+
+export async function loadGeoJsonData( region: string): Promise<any> {
+    return fetch('./data/poly_' + region + '.json') 
+    .then(response => response.json());
+}

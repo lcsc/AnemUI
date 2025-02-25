@@ -10,7 +10,9 @@ export default class RightBar  extends BaseFrame{
     public render():JSX.Element{
         let element=
         (<div id="RightBar" className="side-bar active z-depth-1">
-            <div id="latlong" role="latLong" className="coords"><i className="bi bi-pin-map"></i><span>latLng</span></div>
+            <div id="latlong" role="latLong" style={{ visibility: "hidden" }}><i className="bi bi-pin-map"></i> <span>latLng</span></div>
+            
+
         </div> )
         return element;
         
