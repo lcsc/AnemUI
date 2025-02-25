@@ -105,6 +105,8 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
     result.latMax = {};
     result.latNum = {};
 
+    let lastProjection: string = "";
+
     for (const varName of groups) {
         const varNamePortion = varName + singlePortion;
         const var_group = await openGroup(zarrBasePath + "/" + varName);
@@ -181,7 +183,6 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         const latsData = await lats.get();
         if (isNestedArray(latsData)) {
             const latsTypedArray = latsData.data as TypedArray;
-            console.log(latsTypedArray);
             result.latMin[varNamePortion] = latsTypedArray[0];
             result.latMax[varNamePortion] = latsTypedArray[latsTypedArray.length - 1];
             result.latNum[varNamePortion] = latsTypedArray.length;
@@ -190,16 +191,18 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
             result.latMax[varNamePortion] = latsData;
             result.latNum[varNamePortion] = 1;
         }
+
+        lastProjection = var_group_attrs["projection"];
     }
 
     // Data of chunks
-    result.timeMin = undefined;  // No se usa
-    result.timeMax = undefined;  // No se usa
-    result.timeNum = undefined;  // No se usa
-    result.varType = 'f';  // asumimos float por defecto
-    result.offsetType = 'Q';
-    result.sizeType = 'I';
-    result.projection = "EPSG:23030";
+    result.timeMin = undefined; // No se usa
+    result.timeMax = undefined; // No se usa
+    result.timeNum = undefined; // No se usa
+    result.varType = 'f';       // No se usa con Zarr
+    result.offsetType = 'Q';    // No se usa con Zarr => Se le da un valor único fijo
+    result.sizeType = 'I';      // No se usa con Zarr => Se le da un valor único fijo
+    result.projection = lastProjection;
 
     return result;
 }
