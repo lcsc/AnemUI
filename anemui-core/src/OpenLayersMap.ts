@@ -17,6 +17,9 @@ import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
+import { bbox as bboxStrategy } from 'ol/loadingstrategy';
+import { Select } from 'ol/interaction';
+import { pointerMove } from 'ol/events/condition';
 import { LayerManager } from "./LayerManager";
 import { loadRegionFeatures, loadGeoJsonData } from "./data/CsDataLoader";
 import DataTileSource from "ol/source/DataTile";
@@ -50,6 +53,7 @@ const style = new Style({
     width: 2,
   }),
 });
+
 
 //const SLD='<?xml version="1.0" encoding="ISO-8859-1"?>'+
 const SLD_HEADER='<StyledLayerDescriptor version="1.0.0"'+
@@ -94,7 +98,7 @@ export class OpenLayerMap implements CsMapController{
     protected terrainLayer:Layer;
     protected politicalLayer:Layer;
     protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
-    protected currentFeature: any;
+    protected currentFeature: Feature;
     protected glmgr: GeoLayerManager;
     protected featureLayer: CsOpenLayerGeoJsonLayer;
      
@@ -345,19 +349,30 @@ export class OpenLayerMap implements CsMapController{
           return;
         }
         this.popupContent.textContent=this.formatPopupValue(pos,value);
+        // this.popupContent.textContent=this.parent.getParent().formatPopupValue(value);
         this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
         this.popupContent.style.visibility = 'visible';
         this.popup.hidden = false
     }
 
     public formatPopupValue(pos: CsLatLong, value: number): string {
-      return 'Valor en [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: '  + value
+      // return 'Valor en [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: '  + value
+      return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', value);
     }
 
     public getFeatureStyle(feature: Feature): Style {
-      const showColor = feature.get('showcolor');
-      console.log(showColor);
-      const color = feature.get('COLOR');
+      console.log('All feature properties:', feature.getProperties());
+    
+    // Check if properties exist with different cases
+    const showColor = feature.get('showcolor') || feature.get('showColor') || feature.get('SHOWCOLOR');
+    const color = feature.get('color') || feature.get('Color') || feature.get('COLOR');
+    
+    console.log('showColor value:', showColor);
+    console.log('color value:', color);
+      
+      // const showColor = feature.get('showcolor');
+      // console.log(showColor);
+      // const color = feature.get('COLOR');
       style.getFill().setColor(color);
         return style; 
     }
@@ -370,11 +385,11 @@ export class OpenLayerMap implements CsMapController{
             return feature;
           });
       if (feature) {
+        feature.setStyle(this.setFeatureStyle(feature));
         this.popupContent.style.left = pixel[0] + 'px';
         this.popupContent.style.top = pixel[1] + 'px';
         this.popup.hidden = false
         if (feature !== this.currentFeature) {
-
           let id = 'X'+feature.getProperties()['id']
           Object.keys(data).forEach(key => {
               if (key == id) {
@@ -389,20 +404,11 @@ export class OpenLayerMap implements CsMapController{
         this.popupContent.style.visibility = 'hidden';
         this.popup.hidden = true
       }
+      if (this.currentFeature instanceof  Feature) {
+        this.currentFeature.setStyle(this.setFeatureStyle(this.currentFeature))
+      }
       this.currentFeature = feature;
     };
-
-    async configureFeature (region:string): Promise<void> {
-      loadGeoJsonData(region).then(data => { 
-        if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
-          return; // Salir de la función si los datos son inválidos
-      }
-        this.featureLayer = new CsOpenLayerGeoJsonLayer (data,this.map,this,(feature, event) => { this.onFeatureClick(feature, event) });
-       })
-       .catch((error: any) => {
-            console.error('Error al cargar GeoJSON: ', error);
-        })
-    }
 
     public buildFeatureLayers () {
       this.glmgr = GeoLayerManager.getInstance();
@@ -429,21 +435,45 @@ export class OpenLayerMap implements CsMapController{
       }
     }
 
-    public setFeatureStyle(feature: Feature, state: CsViewerData, timesJs: CsTimesJsData): Style {
+    public setFeatureStyle(feature: Feature): Style {
+      const state= this.parent.getParent().getState();
+      const timesJs= this.parent.getParent().getTimesJs();
       let min = timesJs.varMin[state.varId][state.selectedTimeIndex];
       let max = timesJs.varMax[state.varId][state.selectedTimeIndex];
       let color: string = '#fff';
-      let id = 'X'+feature.getProperties()['id']
+      let id = 'X'+feature.getProperties()['id'];
       let ptr = PaletteManager.getInstance().getPainter();
+      
       Object.keys(state.actionData).forEach(key => {
           if (key == id) {
-              color = ptr.getColorString(state.actionData[key],min,max)
+              color = ptr.getColorString(state.actionData[key],min,max);
           } 
       });
+
+      const isHovered = feature.get('hover');
+      
       return new Style({
-          fill: new Fill({ color: color }),
-          stroke: new Stroke({ color: '#000000', width: 1 }),
+          fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+          stroke: new Stroke({ 
+              // color: isHovered ? '#ffffff' : '#000000', 
+              color: '#999', 
+          }),
       });
+    }
+
+    public highLightColor(hex: string, lum: number): string {
+      hex = String(hex).replace(/[^0-9a-f]/gi, '');
+      if (hex.length < 6) {
+          hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+      }
+      lum = lum || 0;
+      var rgb = "#", c, i;
+      for (i = 0; i < 3; i++) {
+          c = parseInt(hex.slice(i*2, i*2+2), 16);
+          c = Math.round(Math.min(Math.max(0, c + (c * lum)), 255)).toString(16);
+          rgb += ("00"+c).slice(c.length);
+      }
+      return rgb;
     }
 
     private getSld():string{
@@ -541,14 +571,6 @@ export class GeoLayerManager {
   public getGeoLayer(region: string):CsOpenLayerGeoJsonLayer{
     return this.geoLayers[region];
   }
-
-  public getGeoLayerNames():string[]{
-      return Object.keys(this.geoLayers);
-  }
-  
-  public getGeoLayerSelected():string[]{
-      return this.layerSelected;
-  }
 }
 
 class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
@@ -565,6 +587,7 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   public url:string; 
   public source?: VectorSource;
   public geoJsonData: any;
+  private lastZoom: number;
 
   constructor(_data:CsGeoJsonData,_map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick){
     super(_data)
@@ -573,7 +596,13 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
     this.onClick=_onClick;
     this.geoLayerShown=false;
     this.geoJsonData = _data
+    this.lastZoom = _map.getView().getZoom() || 0;
 
+    this.setupEventListeners();
+  }
+
+
+  private setupEventListeners(): void { 
     this.map.on("click",(evt:MapBrowserEvent<any>)=>{
       if(this.geoLayer==undefined)return;
       if(!this.geoLayerShown)return;
@@ -585,32 +614,59 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
         }
       })
     })
+
+    this.map.on('moveend', () => {
+      if(this.geoLayer==undefined)return;
+      if(!this.geoLayerShown) return;
+      const currentZoom = this.map.getView().getZoom() || 0;
+      if (currentZoom != this.lastZoom) {
+        this.show(0) 
+      }
+      this.lastZoom = currentZoom;
+    });
+
+    const pointerInteraction = new Select({
+      condition: pointerMove,
+      style: null  // Let the layer's style function handle it
+    });
+    
+    this.map.addInteraction(pointerInteraction);
+    
+    // Handle hover state
+    pointerInteraction.on('select', function(e) {
+        // Remove hover state from previously hovered features
+        e.deselected.forEach(function(feature:Feature) {
+            feature.set('hover', false);
+        });
+        
+        // Add hover state to newly hovered features
+        e.selected.forEach(function(feature:Feature) {
+            feature.set('hover', true);
+        });
+    });
   }
 
   public show(renderer: number): void {
     if (this.geoLayerShown) return;
 
-    let state: CsViewerData = this.csMap.getParent().getParent().getState();
-    let timesJs = this.csMap.getParent().getParent().getTimesJs();
-    
-    console.log("Datos capa:", this.data);
-
     const geojsonFormat = new GeoJSON();
     if (this.geoJsonData.type !== 'FeatureCollection' || !Array.isArray(this.geoJsonData.features)) {
       return; 
     }
-
+    const bounds = this.map.getView().calculateExtent(this.map.getSize());
     const vectorSource = new VectorSource({
+        strategy: bboxStrategy,
         features: geojsonFormat.readFeatures(this.data,{featureProjection: olProjection})
-        // .filter(function(feature) {
-        //   return bounds.intersects(feature.getGeometry().getExtent()) // ---- definir bounds = límites bbox
-    });
-
+        .filter( function(feature) {
+          if (!feature.getGeometry()) {
+              return false;
+          }
+          return feature.getGeometry().intersectsExtent(bounds)})
+        })
     this.geoLayer = new VectorLayer({
         source: vectorSource,
-        style: (feature:Feature)=>{return this.csMap.setFeatureStyle(feature, state, timesJs)},
+        style: (feature:Feature)=>{return this.csMap.setFeatureStyle(feature)},
     });
-
     this.map.addLayer(this.geoLayer);
     this.geoLayerShown = true;
   }
@@ -650,5 +706,135 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   
   public refresh():void{
     if(this.geoLayerShown) this.geoLayer.changed()
+  }
+}
+
+interface FeatureManagerOptions {
+  map: Map;
+  maxFeatures?: number;
+  loadThreshold?: number;
+  source: VectorSource;
+  geoJSONData: any; // Your GeoJSON data
+}
+
+class DynamicFeatureManager {
+  private map: Map;
+  private source: VectorSource;
+  private maxFeatures: number;
+  private loadThreshold: number;
+  private loadedFeatures: Set<string> = new Set();
+  private geoJSONFormat: GeoJSON;
+  private allFeatures: Feature<Geometry>[];
+
+  constructor(options: FeatureManagerOptions) {
+    this.map = options.map;
+    this.source = options.source;
+    this.maxFeatures = options.maxFeatures || 1000;
+    this.loadThreshold = options.loadThreshold || 0.8;
+    this.geoJSONFormat = new GeoJSON();
+    
+    // Parse all features from GeoJSON
+    this.allFeatures = this.geoJSONFormat.readFeatures(options.geoJSONData, {
+      featureProjection: 'EPSG:3857',    // Web Mercator (what OpenLayers uses)
+      dataProjection: 'EPSG:4326'        // WGS 84 (standard for GeoJSON)
+    });
+
+    // Assign IDs to features if they don't have them
+    this.allFeatures.forEach((feature, index) => {
+      if (!feature.getId()) {
+        feature.setId(`feature-${index}`);
+      }
+    });
+
+    // Bind event listeners
+    this.map.on('moveend', this.handleMapMove.bind(this));
+    
+    // Initial load
+    this.handleMapMove();
+  }
+
+  private handleMapMove() {
+    const view = this.map.getView();
+    const extent = view.calculateExtent(this.map.getSize());
+    const zoom = view.getZoom() || 0;
+
+    // Clean up features outside view bounds
+    this.cleanupFeatures(extent);
+
+    // Load new features within bounds
+    this.loadFeaturesInView(extent, zoom);
+  }
+
+  private cleanupFeatures(currentExtent: number[]) {
+    const features = this.source.getFeatures();
+    
+    features.forEach(feature => {
+      const featureExtent = feature.getGeometry()?.getExtent();
+      const featureId = feature.getId()?.toString();
+      
+      if (featureExtent && featureId) {
+        // Check if feature is outside current view extent
+        if (!this.intersectsExtent(featureExtent, currentExtent)) {
+          this.source.removeFeature(feature);
+          this.loadedFeatures.delete(featureId);
+        }
+      }
+    });
+  }
+
+  private loadFeaturesInView(extent: number[], zoom: number) {
+    // Filter features that intersect with current view extent
+    const featuresInView = this.allFeatures.filter(feature => {
+      const featureExtent = feature.getGeometry()?.getExtent();
+      return featureExtent && this.intersectsExtent(featureExtent, extent);
+    });
+
+    // Apply zoom-based filtering if needed
+    const filteredFeatures = this.filterFeaturesByZoom(featuresInView, zoom);
+
+    // Add features not already loaded
+    filteredFeatures.forEach(feature => {
+      const featureId = feature.getId()?.toString();
+      if (featureId && !this.loadedFeatures.has(featureId)) {
+        if (this.source.getFeatures().length < this.maxFeatures) {
+          this.source.addFeature(feature);
+          this.loadedFeatures.add(featureId);
+        }
+      }
+    });
+  }
+
+  private filterFeaturesByZoom(features: Feature<Geometry>[], zoom: number): Feature<Geometry>[] {
+    // Example zoom-based filtering logic
+    // Adjust these thresholds based on your needs
+    if (zoom < 10) {
+      // At lower zoom levels, maybe only show larger or more important features
+      return features.filter(feature => {
+        // Add your filtering logic here
+        // Example: only show features with certain properties
+        const properties = feature.getProperties();
+        return properties.importance === 'high';
+      });
+    }
+    return features;
+  }
+
+  private intersectsExtent(featureExtent: number[], viewExtent: number[]): boolean {
+    return !(
+      featureExtent[2] < viewExtent[0] || // right < left
+      featureExtent[0] > viewExtent[2] || // left > right
+      featureExtent[3] < viewExtent[1] || // top < bottom
+      featureExtent[1] > viewExtent[3]    // bottom > top
+    );
+  }
+
+  // Public methods for manual control
+  public refresh() {
+    this.handleMapMove();
+  }
+
+  public clear() {
+    this.source.clear();
+    this.loadedFeatures.clear();
   }
 }

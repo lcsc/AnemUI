@@ -673,17 +673,11 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     }
 
-   /*  public getuncertaintyStyle(feature: FeatureLike): Style {
-        return DEF_STYLE_UNC;
-    } */
-
     public getFeatureStyle(feature: FeatureLike): Style {
         return DEF_STYLE_STATIONS;
     }
 
-    // public formatPopupValue(pos: CsLatLong, value: number): string {
-
-    //     ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']'
-    //     return "Valor: " + value
-    // }
+    public formatPopupValue(text: string, value: number): string {
+        return this.getTranslation('valor_en') + text + value
+    }
 }
