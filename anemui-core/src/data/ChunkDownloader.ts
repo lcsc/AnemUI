@@ -506,8 +506,7 @@ export function downloadTimebyRegion(region: number, id: string, varName: string
 }
 
 export function downloadXYbyRegion(time: string, region: number, varName: string, doneCb: CsvDownloadDone): void {
-    let folder = region == 2? 'municipio': (region == 3?'provincia':'autonomia')
-    downloadUrl("./data/" + folder + "/" + varName + ".csv", (status: number, response) => {
+    downloadUrl("./data/" + renderers.folder[region] +  "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let stResult: []
             try {
@@ -515,34 +514,12 @@ export function downloadXYbyRegion(time: string, region: number, varName: string
                     columns: true,
                     skip_empty_lines: true
                 });
-
                 if (records.length == 1) stResult = records[0]
                 else  {
-                    records.forEach((record :any) => {
-                    if (record['times_mean'] == time)
-                    stResult = record
-                })}
-            } catch (e) {
-                stResult = [];
-            }
-            doneCb(stResult, 'data', 'text/plain') ;
-        }
-    },undefined,'text');
-}
-
-export function downloadJSONXYbyRegion(time: string, region: number, varName: string, doneCb: CsvDownloadDone): void {
-    let folder = region == 2? 'municipio': (region == 3?'provincia':'autonomia')
-    downloadUrl("./data/" + folder + "/" + varName + ".json", (status: number, response) => {
-        if (status == 200) {
-            let stResult: string[]
-            try {
-                const records = JSON.parse(response);
-
-                if (records.length == 1) stResult = records[0]
-                else  {
-                    for (const key in records) { 
-                        if (key == time) stResult = records[key]; 
-                    }
+                    records.forEach((record:any) => {
+                        if (record['times_mean'] == time)
+                        stResult = record
+                    })
                 }
             } catch (e) {
                 stResult = [];

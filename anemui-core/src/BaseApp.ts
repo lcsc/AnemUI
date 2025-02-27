@@ -17,7 +17,7 @@ import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, downloadXYbyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked, downloadCSVbyRegion } from "./data/ChunkDownloader";
 import { downloadUrl } from "./data/UrlDownloader";
-import { DEF_STYLE_STATIONS, /* DEF_STYLE_UNC, */ OpenLayerMap } from "./OpenLayersMap";
+import { DEF_STYLE_STATIONS, CsOpenLayerGeoJsonLayer, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
 import { fromLonLat } from "ol/proj";
@@ -84,7 +84,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected infoDiv: InfoDiv;
     protected downloadOptionsDiv: DownloadOptionsDiv;
 
-    protected stationsLayer: CsGeoJsonLayer
+    protected stationsLayer: CsOpenLayerGeoJsonLayer
     
     protected translate: Translate;
     protected cookies: CsCookies;
@@ -469,7 +469,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     }
 
-
     // Generic dropdown handling
     public abstract dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     
@@ -539,6 +538,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.stationsLayer.setPopupContent(event.popup, div, event);
     }
 
+    public initStationsLayer(layer: CsOpenLayerGeoJsonLayer) {
+        this.stationsLayer = layer; 
+    }
+
     public async onFeatureClick(feature: GeoJSON.Feature, event: any) {
         if (feature) {
             if (!this.state.climatology) {
@@ -551,10 +554,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     public async stHasData(varId: string, station: string) {
         let num:number = renderers.name.indexOf(this.state.support) 
-        // let num = this.state.support == renderers[0]? 0 : this.state.support == 'Municipio'? 2: this.state.support == 'Provincia'? 3:4;
         let url = this.state.support == renderers.name[0]? renderers.folder[0] + station + ".csv": "./data/" + renderers.folder[num] + "/" + varId + ".csv";
         try {
-            // const response = await fetch("./stations/"+this.state.varId+"/" + station + ".csv", {
             const response = await fetch(url, {
                 method: 'HEAD',
                 cache: 'no-cache'

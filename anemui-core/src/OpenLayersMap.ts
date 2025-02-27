@@ -12,7 +12,7 @@ import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, downloadJSONXYbyRegion } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
@@ -417,6 +417,7 @@ export class OpenLayerMap implements CsMapController{
             loadGeoJsonData(renderers.folder[renderers.name.indexOf(renderer)])
               .then(data => { 
                   this.glmgr.addGeoLayer(renderer, data, this.map, this, (feature, event) => { this.onFeatureClick(feature, event) })
+                  if (renderer == renderers.name[0]) this.parent.getParent().initStationsLayer(this.glmgr.getGeoLayer(renderer))
               })
               .catch(error => {
                   console.error('Error: ', error);
@@ -506,9 +507,10 @@ export class OpenLayerMap implements CsMapController{
           case defaultRenderer:
             break;      
           case renderers.name[0]:
-            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
-            this.featureLayer.show(0);
-            break;
+            // this.featureLayer = this.glmgr.getGeoLayer(support)
+            // this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
+            // this.featureLayer.show(0);
+            // break;
           case renderers.name[2]: 
           case renderers.name[3]: 
           case renderers.name[4]:
@@ -573,7 +575,7 @@ export class GeoLayerManager {
   }
 }
 
-class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
+export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   private map:Map;
   private csMap:OpenLayerMap;
   private geoLayer:Layer;
@@ -649,6 +651,7 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   public show(renderer: number): void {
     if (this.geoLayerShown) return;
 
+<<<<<<< HEAD
     const geojsonFormat = new GeoJSON();
     if (this.geoJsonData.type !== 'FeatureCollection' || !Array.isArray(this.geoJsonData.features)) {
       return; 
@@ -667,6 +670,45 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
         source: vectorSource,
         style: (feature:Feature)=>{return this.csMap.setFeatureStyle(feature)},
     });
+=======
+    let vectorSource:VectorSource;
+    let state: CsViewerData = this.csMap.getParent().getParent().getState();
+    let timesJs = this.csMap.getParent().getParent().getTimesJs();
+
+    if (renderer == 0) {  ///---- PROVISIONAL, UNIFICAR CON EL RESTO
+      vectorSource = new VectorSource({
+        features: new GeoJSON().readFeatures({type: 'FeatureCollection',features:this.data}),
+      })
+      this.geoLayer= new VectorLayer({
+        source: vectorSource,
+        style: (feature:Feature,n:number)=>{return this.setStationStyle(feature, state, timesJs)},
+      });
+
+    } else {
+      console.log("Datos capa:", this.data);
+
+      const geojsonFormat = new GeoJSON();
+      if (this.geoJsonData.type !== 'FeatureCollection' || !Array.isArray(this.geoJsonData.features)) {
+        return; 
+      }
+
+      vectorSource = new VectorSource({
+          features: geojsonFormat.readFeatures(this.data,{featureProjection: olProjection})
+          // .filter(function(feature) {
+          //   return bounds.intersects(feature.getGeometry().getExtent()) // ---- definir bounds = límites bbox
+      });
+
+      this.geoLayer = new VectorLayer({
+          source: vectorSource,
+          style: (feature:Feature)=>{return this.setFeatureStyle(feature, state, timesJs)},
+      });
+
+    } 
+    
+
+    
+
+>>>>>>> 9b143ed (Adaptación visores AEMET a GUI nueva)
     this.map.addLayer(this.geoLayer);
     this.geoLayerShown = true;
   }
@@ -707,6 +749,7 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   public refresh():void{
     if(this.geoLayerShown) this.geoLayer.changed()
   }
+<<<<<<< HEAD
 }
 
 interface FeatureManagerOptions {
@@ -838,3 +881,39 @@ class DynamicFeatureManager {
     this.loadedFeatures.clear();
   }
 }
+=======
+
+  public setStationStyle(feature: FeatureLike, state: CsViewerData, timesJs: CsTimesJsData): Style {
+    let varId = state.varId + "_" + state.selectionParam +"y";
+    let val = feature.getProperties()[varId];
+    let ptr = PaletteManager.getInstance().getPainter();
+    let min = timesJs.varMin[state.varId][state.selectedTimeIndex];
+    let max = timesJs.varMax[state.varId][state.selectedTimeIndex];
+    let imgStation: CircleStyle = new CircleStyle({
+        radius: Math.abs( (val - min) / (max - min) * 10),
+        fill: new Fill({ color: ptr.getColorString(val,min,max) }),
+        stroke: new Stroke({ color: '#000000', width: 1 }),
+    });
+
+    return new Style({ image: imgStation, })
+}
+
+  public setFeatureStyle(feature: Feature, state: CsViewerData, timesJs: CsTimesJsData): Style {
+    let min = timesJs.varMin[state.varId][state.selectedTimeIndex];
+    let max = timesJs.varMax[state.varId][state.selectedTimeIndex];
+    let color: string = '#fff';
+    let id = 'X'+feature.getProperties()['id']
+    let ptr = PaletteManager.getInstance().getPainter();
+    Object.keys(state.actionData).forEach(key => {
+        if (key == id) {
+            color = ptr.getColorString(state.actionData[key],min,max)
+        } 
+    });
+    return new Style({
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ color: '#000000', width: 1 }),
+    });
+  }
+
+}
+>>>>>>> 9b143ed (Adaptación visores AEMET a GUI nueva)

@@ -17,7 +17,6 @@ export abstract class CsGeoJsonLayer{
             // if(this.data[i].properties["id"]==id)return this.data[i];
             if(this.data.features[i].properties["id"]==id)return this.data.features[i];
         }
-
         return undefined
     }
 

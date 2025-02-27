@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuItemListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, varHasPopData, sbVarHasPopData}  from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, varHasPopData, sbVarHasPopData}  from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -107,6 +107,13 @@ export class MenuBar extends BaseFrame {
                 },
             });
         }
+        if (hasSelection) {
+            this.selection = new CsMenuItem("SelectionDD", "Selección", {
+                valueSelected(origin, index, value, values) {
+                    self.listener.selectionSelected(index, value, values)
+                },
+            });
+        }
         this.extraMenuItems = []
         this.extraBtns = []
         this.dropDownOrder = []
@@ -126,7 +133,7 @@ export class MenuBar extends BaseFrame {
         let divs = Array.from(document.getElementsByClassName("inputDiv") as HTMLCollectionOf<HTMLElement>)
         let maxId = divs.reduce(function(a, b){
             return Math.max(a, parseInt(b.id))
-        }, Number.NEGATIVE_INFINITY);
+        }, 0);
         let nextId = (maxId + 1).toString()
         let element = (
             <li id={nextId} role={display.role} className={'inputDiv ' + btnType}></li>
@@ -135,7 +142,6 @@ export class MenuBar extends BaseFrame {
     }
 
     public updateDisplay(_title: string, _id: string): void {
-    //     // querySelector(".navbar-btn-title span").textContent  = _title
         this.inputsFrame.querySelector('[role=' + _id + ']').innerHTML = _title
     }
 
@@ -153,7 +159,7 @@ export class MenuBar extends BaseFrame {
                         </div>
                         <div id="menu-central" className="col-info">
                             <ul id="inputs" className="nav-menu">
-                                <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li>
+                                {/* <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li> */}
                             </ul>
                             <div className="collapseMenu" onClick={() => { self.mobileMenu() }}>
                                 <span></span>
@@ -235,17 +241,21 @@ export class MenuBar extends BaseFrame {
                 addChild(this.displayTpSupport, this.temporalSupport.render(this.parent.getState().tpSupport));
                 this.temporalSupport.build(this.displayTpSupport);
             }
-            
-            this.displaySelection = this.container.querySelector("[role=selection]")
-            this.displayParam = this.container.querySelector("[role=selection-param]")
-            if (this.selectionHidden) {
-                this.displaySelection.hidden = true;
-                document.getElementById("inputs").classList.add('no-wrap');
+            if (hasSelection) {
+                let dsp: simpleDiv = {role:'selection', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displaySelection = this.container.querySelector("[role=selection]")
+                this.displaySelection.hidden = false;
+                addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
+                this.selection.build(this.displaySelection);
+                
+                // this.displayParam = this.container.querySelector("[role=selection-param]")
+                // if (this.selectionHidden) {
+                //     this.displaySelection.hidden = true;
+                //     document.getElementById("inputs").classList.add('no-wrap');
+                // }
             }
-            /* if (this.paramHidden) {
-                this.displayParam.hidden = true;
-                document.getElementById("inputs").classList.add('no-wrap');
-            } */
+            
             if (hasClimatology) {
                 this.extraDisplays.forEach((dsp) => {
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
@@ -276,20 +286,13 @@ export class MenuBar extends BaseFrame {
             }
         }
 
-        // this.collapseMenu.addEventListener("click", this.mobileMenu);
-        // const navLink = document.querySelectorAll(".inputDiv");
-        // navLink.forEach(n => n.addEventListener("click", this.closeMenu));
+        
     }
 
     public mobileMenu() {
         this.collapseMenu.classList.toggle("active");
         this.navMenu.classList.toggle("active");
     }
-
-    // public closeMenu() {
-    //     this.collapseMenu.classList.remove("active");
-    //     this.navMenu.classList.remove("active");
-    // }
 
     public minimize(): void {
         this.menuInfo1.hidden = true;
@@ -344,16 +347,16 @@ export class MenuBar extends BaseFrame {
         }
         if (hasSubVars) {
             this.displaySubVar.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
+        } 
+        if (hasSelection) {
+            this.displaySelection.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
         }   
-        this.displaySelection.textContent = this.parent.getState().selection;
-        // this.displayParam.value = this.parent.getState().selectionParam + "";
-        // this.displayParam.disabled = !this.parent.getState().selectionParamEnable;
+        
         if (this.parent.getState().climatology == true) {
             this.showClimFrame()
         } else {
             this.hideClimFrame()
         }
-        
     }
 
     //Llamar en el configure antes del build
@@ -366,6 +369,7 @@ export class MenuBar extends BaseFrame {
             btn.hidden = true;
         })
     }
+    
     public showClimFrame(): void {
         this.climBtnArray.forEach((btn) =>{
             btn.hidden = false;
@@ -457,11 +461,13 @@ export class MenuBar extends BaseFrame {
     }
 
     public setSelection(_selections: string[]) {
-        this.selection.setValues(_selections);
+        if (hasSelection) {
+            this.selection.setValues(_selections);
+        }
     }
 
     public configSelection(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons) return;
+        if (!hasButtons || !hasSelection) return;
         this.selection.config(visible, newText);
     }
 
