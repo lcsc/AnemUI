@@ -347,7 +347,7 @@ export async function downloadXYChunk(t: number, varName: string, portion: strin
 }
 
 
-// Calcula el índice correlativo del pixel dentro del nc chunkeado para descargar las series temporales de cada pixel.
+// Calcula el índice correlativo del pixel dentro del nc chunkeado para descargar las series temporales de cada pixel (-t).
 // El índice empieza a contar en 1 siendo éste el pixel superior izquierdo y termina en lonNum*latNum siendo éste el pixel inferior derecho.
 // El argumento ncCoords es un array de dos elementos con las coordenadas del pixel en el sistema de referencia del nc.
 export function calcPixelIndex(ncCoords: number[], portion: string): number {
