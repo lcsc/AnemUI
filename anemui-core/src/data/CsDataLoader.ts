@@ -55,7 +55,7 @@ async function loadTimesJson(): Promise<CsTimesJsData> {
     };
 }
 
-function isNestedArray(value: number | NestedArray<TypedArray>): value is NestedArray<TypedArray> {
+export function isNestedArray(value: number | NestedArray<TypedArray>): value is NestedArray<TypedArray> {
     return typeof value !== 'number';
 }
 

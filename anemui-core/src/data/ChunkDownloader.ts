@@ -10,9 +10,11 @@ import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, hasInf, maxWhenInf, minWhenInf} from "../Env";
+import { ncSignif, hasInf, maxWhenInf, minWhenInf, dataSource} from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
+import { NestedArray, openArray, TypedArray } from 'zarr';
+import { isNestedArray } from "./CsDataLoader";
 
 export type ArrayDownloadDone = (data: number[]) => void;
 export type DateDownloadDone = (dataUrl: string) => void;
@@ -130,6 +132,31 @@ function getMinMax(arr: number[]): [number, number] {
     return [min, max];
 }
 
+/**
+ * Downloads a chunk of data based on the specified parameters.
+ *
+ * @param x - The index or position of the chunk to download.
+ * @param varName - The name of the variable to download.
+ * @param portion - The portion or segment of the data to download.
+ * @param timesJs - An object containing metadata for the download.
+ * @returns A promise that resolves to an array of numbers representing the downloaded chunk.
+ */
+async function downloadTChunk(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    return dataSource === 'nc' ? downloadTChunkNC(x, varName, portion, timesJs) : downloadTChunkZarr(x, varName, portion, timesJs);
+}
+
+/**
+ * Downloads a chunk of data based on the specified parameters.
+ *
+ * @param x - The index or position of the chunk to download.
+ * @param varName - The name of the variable to download.
+ * @param portion - The portion or segment of the data to download.
+ * @param timesJs - An object containing metadata for the download.
+ * @returns A promise that resolves to an array of numbers representing the downloaded chunk.
+ */
+export async function downloadXYChunk(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    return dataSource === 'nc' ? downloadXYChunkNC(x, varName, portion, timesJs) : downloadXYChunkZarr(x, varName, portion, timesJs);
+}
 
 // Obtener el chunk correspondiente y terminar llamando doneCb(data, filename, 'text/plain')
 // x    Índice CSV contando desde 1
@@ -188,7 +215,7 @@ export function downloadTArrayChunked(x: number, varName: string, portion: strin
         });
 }
 
-async function downloadTChunk(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+async function downloadTChunkNC(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
     let app = window.CsViewerApp;
     let promise: Promise<number[]> = new Promise((resolve, reject) => {
         let chunkDataStruct = struct('<' + timesJs.offsetType + timesJs.sizeType);
@@ -226,6 +253,16 @@ async function downloadTChunk(x: number, varName: string, portion: string, times
     return promise;
 }
 
+// Versión Zarr de downloadTChunkNC
+// TODO recordar que hay que llamar a app.transformDataT para transformar los datos
+async function downloadTChunkZarr(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    let app = window.CsViewerApp;
+    let promise: Promise<number[]> = new Promise((resolve, reject) => {
+
+    });
+
+    return promise;
+}
 
 export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
     // We can only determine the maximums and minimums and draw the data layers when all the promises are resolved.
@@ -290,7 +327,7 @@ let xyCache: {
     data: number[]
 } = undefined
 
-export async function downloadXYChunk(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
     let app = window.CsViewerApp
     //Como es Async podemos hacer un return del dato
     if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == t) {
@@ -340,6 +377,40 @@ export async function downloadXYChunk(t: number, varName: string, portion: strin
             })
             .catch(error => {
                 console.error('Error: ', error);
+            });
+    });
+
+    return promise;
+}
+
+// Versión Zarr de downloadXYChunkNC
+async function downloadXYChunkZarr(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    const zarrBasePath = window.location.origin + '/zarr';
+    let app = window.CsViewerApp;
+    let promise: Promise<number[]> = new Promise((resolve, reject) => {
+        openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" })
+            .then(varArray => {
+                // Process the varArray and extract data for the specified time index
+                // This should eventually call resolve() with the float array data
+                varArray.get([t])
+                    .then(data => {
+                        let floatArray: number[];
+                        if (isNestedArray(data)) {
+                            floatArray = Array.from(data.flatten(), value => Number(value));
+                        } else {
+                            floatArray = [Number(data)];
+                        }
+                        app.transformDataXY(floatArray, t, varName, portion);
+                        resolve(floatArray);
+                    })
+                    .catch(error => {
+                        console.error('Error getting zarr data:', error);
+                        reject(error);
+                    });
+            })
+            .catch(error => {
+                console.error('Error opening zarr array:', error);
+                reject(error);
             });
     });
 
