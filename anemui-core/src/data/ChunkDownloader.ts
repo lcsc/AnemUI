@@ -383,15 +383,29 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
     return promise;
 }
 
-// Versión Zarr de downloadXYChunkNC
+/**
+ * Downloads and processes a chunk of XY data from a Zarr array for a specific time step. Zarr version of downloadXYChunkNC
+ *
+ * @param t - The time index/step to retrieve data for
+ * @param varName - The name of the variable to retrieve from the Zarr store
+ * @param portion - The specific portion of the data to download. In zarr store only one portion is available ("_all"). The argument is maintained for compatibility with the NetCDF version of the function.
+ * @param timesJs - Data structure containing time-related information
+ *
+ * @returns A promise that resolves to an array of numbers representing the retrieved data
+ *
+ * @throws Will throw an error if opening the Zarr array or getting the data fails
+ *
+ * @remarks
+ * This function connects to a Zarr data store at the current origin, retrieves data
+ * for the specified variable and time index, flattens it if necessary, and then
+ * passes it to the application's transformDataXY method before returning.
+ */
 async function downloadXYChunkZarr(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
     const zarrBasePath = window.location.origin + '/zarr';
     let app = window.CsViewerApp;
     let promise: Promise<number[]> = new Promise((resolve, reject) => {
         openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" })
             .then(varArray => {
-                // Process the varArray and extract data for the specified time index
-                // This should eventually call resolve() with the float array data
                 varArray.get([t])
                     .then(data => {
                         let floatArray: number[];
