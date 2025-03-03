@@ -253,12 +253,55 @@ async function downloadTChunkNC(x: number, varName: string, portion: string, tim
     return promise;
 }
 
-// Versión Zarr de downloadTChunkNC
-// TODO recordar que hay que llamar a app.transformDataT para transformar los datos
+/**
+ * Downloads and processes a chunk of T data from a Zarr array for a specific spatial location. Zarr version of downloadTChunkNC
+ * @param x - Linear index for spatial location (1-based index)
+ * @param varName - The name of the variable to retrieve from the Zarr store
+ * @param portion - The specific portion of the data to download. In zarr store only one portion is available ("_all"). The argument is maintained for compatibility with the NetCDF version of the function.
+ * @param timesJs - Object containing time series metadata, including dimension sizes
+ * @returns A promise that resolves to an array of numbers representing the retrieved data
+ * @remarks
+ * This function connects to a Zarr data store at the current origin, retrieves data
+ * for the specified variable and location index, flattens it if necessary, and then
+ * passes it to the application's transformDataXY method before returning.
+ */
 async function downloadTChunkZarr(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    const zarrBasePath = window.location.origin + '/zarr';
     let app = window.CsViewerApp;
     let promise: Promise<number[]> = new Promise((resolve, reject) => {
+        // Calculate the 2D index from the linear index x
+        // x starts from 1 (first pixel), so we subtract 1 to get 0-based index
+        const xIndex = (x - 1) % timesJs.lonNum[varName + portion];
+        const yIndex = Math.floor((x - 1) / timesJs.lonNum[varName + portion]);
 
+        // Open the Zarr array for reading
+        openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" })
+            .then(varArray => {
+                // Get the time series data for the specific location (xIndex, yIndex)
+                // In Zarr, we're getting all times for a specific location
+                varArray.get([null, yIndex, xIndex])
+                    .then(data => {
+                        let floatArray: number[];
+                        // Convert data to number array
+                        if (isNestedArray(data)) {
+                            floatArray = Array.from(data.flatten(), value => Number(value));
+                        } else {
+                            floatArray = [Number(data)];
+                        }
+
+                        // Apply any necessary transformations to the data
+                        app.transformDataT(floatArray, x, varName, portion);
+                        resolve(floatArray);
+                    })
+                    .catch(error => {
+                        console.error('Error getting zarr time series data:', error);
+                        reject(error);
+                    });
+            })
+            .catch(error => {
+                console.error('Error opening zarr array for time series:', error);
+                reject(error);
+            });
     });
 
     return promise;
@@ -385,16 +428,12 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
 
 /**
  * Downloads and processes a chunk of XY data from a Zarr array for a specific time step. Zarr version of downloadXYChunkNC
- *
  * @param t - The time index/step to retrieve data for
  * @param varName - The name of the variable to retrieve from the Zarr store
  * @param portion - The specific portion of the data to download. In zarr store only one portion is available ("_all"). The argument is maintained for compatibility with the NetCDF version of the function.
- * @param timesJs - Data structure containing time-related information
- *
+ * @param timesJs - Object containing time series metadata, including dimension sizes
  * @returns A promise that resolves to an array of numbers representing the retrieved data
- *
  * @throws Will throw an error if opening the Zarr array or getting the data fails
- *
  * @remarks
  * This function connects to a Zarr data store at the current origin, retrieves data
  * for the specified variable and time index, flattens it if necessary, and then
