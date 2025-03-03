@@ -442,6 +442,14 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
 async function downloadXYChunkZarr(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
     const zarrBasePath = window.location.origin + '/zarr';
     let app = window.CsViewerApp;
+
+    // Check cache - similar to downloadXYChunkNC
+    if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == t) {
+        let ret = [...xyCache.data]; // Make a copy without reference
+        app.transformDataXY(ret, t, varName, portion);
+        return ret;
+    }
+
     let promise: Promise<number[]> = new Promise((resolve, reject) => {
         openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" })
             .then(varArray => {
@@ -453,8 +461,20 @@ async function downloadXYChunkZarr(t: number, varName: string, portion: string, 
                         } else {
                             floatArray = [Number(data)];
                         }
-                        app.transformDataXY(floatArray, t, varName, portion);
-                        resolve(floatArray);
+
+                        // Cache management
+                        if (xyCache == undefined) {
+                            xyCache = { t: t, varName, portion, data: floatArray };
+                        } else {
+                            xyCache.t = t;
+                            xyCache.varName = varName;
+                            xyCache.portion = portion;
+                            xyCache.data = floatArray;
+                        }
+
+                        let ret = [...floatArray]; // Make a copy
+                        app.transformDataXY(ret, t, varName, portion);
+                        resolve(ret);
                     })
                     .catch(error => {
                         console.error('Error getting zarr data:', error);
