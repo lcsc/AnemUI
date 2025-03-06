@@ -129,7 +129,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
             if (converters[time_dim_attrs.units]) {
                 converted = timeArr.map(converters[time_dim_attrs.units]);
             } else {
-                console.error("Unsupported time units: " + time_dim_attrs.units);
+                console.warn("Unsupported time units: " + time_dim_attrs.units);
                 converted = timeArr.map(String);
             }
             result.times[varName] = converted;
