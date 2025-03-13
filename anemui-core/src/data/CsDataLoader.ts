@@ -137,29 +137,40 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
             result.times[varName] = [timeData.toString()];
         }
 
+        const timeLength = isNestedArray(timeData) ? (timeData.data as TypedArray).length : 1;
         // varMin
-        const varMin = await openArray({store: zarrBasePath, path: varName+"/"+varName+"_min", mode: "r"});
-        const minData = await varMin.get();
-        if (isNestedArray(minData)) {
-            const minTypedArray = minData.data as TypedArray;
-            result.varMin[varName] = Array.from(minTypedArray);
-        } else {
-            result.varMin[varName] = [Number(minData)];
+        try {
+            const varMin = await openArray({store: zarrBasePath, path: varName + "/" + varName + "_min", mode: "r"});
+            const minData = await varMin.get();
+            if (isNestedArray(minData)) {
+                const minTypedArray = minData.data as TypedArray;
+                result.varMin[varName] = Array.from(minTypedArray);
+            } else {
+                result.varMin[varName] = [Number(minData)];
+            }
+        } catch (error) {
+            // If path doesn't exist, create an array with -1 values
+            result.varMin[varName] = Array(timeLength).fill(-1);
         }
         
         // varMax
-        const varMax = await openArray({store: zarrBasePath, path: varName+"/"+varName+"_max", mode: "r"});
-        const maxData = await varMax.get();
-        if (isNestedArray(maxData)) {
-            const maxTypedArray = maxData.data as TypedArray;
-            result.varMax[varName] = Array.from(maxTypedArray);
-        } else {
-            result.varMax[varName] = [Number(maxData)];
+        try {
+            const varMax = await openArray({store: zarrBasePath, path: varName+"/"+varName+"_max", mode: "r"});
+            const maxData = await varMax.get();
+            if (isNestedArray(maxData)) {
+                const maxTypedArray = maxData.data as TypedArray;
+                result.varMax[varName] = Array.from(maxTypedArray);
+            } else {
+                result.varMax[varName] = [Number(maxData)];
+            }
+        } catch (error) {
+            // If path doesn't exist, create an array with -1 values
+            result.varMax[varName] = Array(timeLength).fill(-1);
         }
 
         // minVal and maxVal
-        result.minVal[varName] = var_group_attrs["minVal"];
-        result.maxVal[varName] = var_group_attrs["maxVal"];
+        result.minVal[varName] = var_group_attrs["minVal"] ?? -1;
+        result.maxVal[varName] = var_group_attrs["maxVal"] ?? -1;
 
         // portions
         result.portions[varName] = [singlePortion];    // Not used with Zarr => A fixed unique value is given
