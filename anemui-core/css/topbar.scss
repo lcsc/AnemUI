@@ -121,11 +121,18 @@
         }
     }
 
-    .longLogo {
+    .allScrLogo {
         padding-left: 0.5em;
         img {
             height: auto;
             max-width: 100%;
+        }
+    }
+
+    .longLogo { 
+        padding-left: 0.5em;
+        img {
+            height: 50px;
         }
     }
 
@@ -140,7 +147,7 @@
         padding-left: 200px;
     }
 
-    .col.longLogo {
+    .col.longLogo, .col.allScrLogo {
         background-color: transparent !important;
     }
 
@@ -222,12 +229,12 @@
 
     @include desktop {
         .navbar {
-            .longLogo, .shortLogo {
+            .longLogo, .shortLogo, .allScrLogo {
                 padding-left: 2.2rem;
             }
         }
 
-        .longLogo img {
+        .allScrLogo img {
             height: 50px;
         }
 

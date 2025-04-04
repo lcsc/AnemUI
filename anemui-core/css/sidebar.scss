@@ -696,6 +696,7 @@ div.slider.visible {
     border-color: $color_4;
     font-size: 12px;
     margin-left: 20px !important;
+    z-index: 1500;
 }
 
 .popover-header {

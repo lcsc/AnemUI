@@ -193,7 +193,6 @@ export class MenuBar extends BaseFrame {
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
-        // this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
@@ -248,14 +247,7 @@ export class MenuBar extends BaseFrame {
                 this.displaySelection.hidden = false;
                 addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
                 this.selection.build(this.displaySelection);
-                
-                // this.displayParam = this.container.querySelector("[role=selection-param]")
-                // if (this.selectionHidden) {
-                //     this.displaySelection.hidden = true;
-                //     document.getElementById("inputs").classList.add('no-wrap');
-                // }
             }
-            
             if (hasClimatology) {
                 this.extraDisplays.forEach((dsp) => {
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));

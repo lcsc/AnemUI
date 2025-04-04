@@ -10,16 +10,6 @@ require("dygraphs/dist/dygraph.css")
 
 export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose"
 
-// ---- PENDIENTE DE HACER: SUSTITUIR GRAPHTYPE POR GRAPHMODE -> UNIFICAR LA LÓGICA CON DATEFRAMEMODE 
-export enum GraphMode {
-  Serial,
-  Area,
-  Linear,
-  Cummulative,
-  MgFr,
-  WindRose
-}
-
 export class CsGraph extends BaseFrame {
   private graphTitle: string;
   private graphSubTitle: string;

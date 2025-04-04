@@ -1,0 +1,4500 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0002I",
+        "name": "VANDELLÒS",
+        "utm_x": "825831",
+        "utm_y": "4541326",
+        "prov": "TARRAGONA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.55",
+        "lambda_2": "0.875457875457875",
+        "beta_b0": "30.1641390632138",
+        "beta_b1": "2.68869395700464",
+        "alpha": "2.32048154983554",
+        "kappa": "-0.253605789477053",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.870021626642938",
+          "40.9562651156764"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0016B",
+        "name": "REUS (CENTRE LECTURA)",
+        "utm_x": "844798",
+        "utm_y": "4564018",
+        "prov": "TARRAGONA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.35",
+        "lambda_2": "0.862068965517241",
+        "beta_b0": "31.3114148565113",
+        "beta_b1": "1.87790676400875",
+        "alpha": "1.71907093568352",
+        "kappa": "-0.160339519870032",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "1.10751917485082",
+          "41.152373710652"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0040F",
+        "name": "LA POBLA DE MAFUMET (REFINERIA)",
+        "utm_x": "853836",
+        "utm_y": "4568393",
+        "prov": "TARRAGONA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.41666666666667",
+        "lambda_2": "0.879245283018868",
+        "beta_b0": "30.5688366644667",
+        "beta_b1": "2.18058395497398",
+        "alpha": "1.8974283049348",
+        "kappa": "-0.257292967520069",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "1.21746810093881",
+          "41.1877887232816"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0224",
+        "name": "SANT LLORENÇ DE MUNT",
+        "utm_x": "917896",
+        "utm_y": "4622247",
+        "prov": "BARCELONA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.76666666666667",
+        "lambda_2": "0.929203539823009",
+        "beta_b0": "26.0311422924337",
+        "beta_b1": "1.671396346907",
+        "alpha": "1.7399591570846",
+        "kappa": "-0.167917010044527",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "2.01580156452369",
+          "41.640576632432"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0229I",
+        "name": "SABADELL/AERÓDROMO",
+        "utm_x": "925830",
+        "utm_y": "4609480",
+        "prov": "BARCELONA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "3.95",
+        "lambda_2": "0.864978902953586",
+        "beta_b0": "32.5174661794935",
+        "beta_b1": "1.15583062718267",
+        "alpha": "2.00353967873734",
+        "kappa": "-0.0698360401275717",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "2.10164524523191",
+          "41.5218479733417"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0312X",
+        "name": "SANT PAU DE SEGURIES",
+        "utm_x": "942532",
+        "utm_y": "4692418",
+        "prov": "GIRONA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.5",
+        "lambda_2": "0.852380952380952",
+        "beta_b0": "28.887439182783",
+        "beta_b1": "2.42443669073299",
+        "alpha": "1.96617940910489",
+        "kappa": "-0.23210225513053",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "2.36300505799346",
+          "42.2565708263032"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0413A",
+        "name": "MAÇANET DE CABRENYS",
+        "utm_x": "973837",
+        "utm_y": "4708818",
+        "prov": "GIRONA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.35",
+        "lambda_2": "0.830845771144279",
+        "beta_b0": "32.5879809459434",
+        "beta_b1": "1.83885246113875",
+        "alpha": "2.18676401932159",
+        "kappa": "-0.26638525290035",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "2.75410535166966",
+          "42.3851870125519"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1037Y",
+        "name": "ZUMARRAGA URZABALETA",
+        "utm_x": "555557",
+        "utm_y": "4769925",
+        "prov": "GIPUZKOA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.11666666666667",
+        "lambda_2": "0.921824104234528",
+        "beta_b0": "30.0289013483384",
+        "beta_b1": "1.86653004105004",
+        "alpha": "3.40646928210207",
+        "kappa": "-0.378825033648203",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.31878938332821",
+          "43.0781221407259"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1038X",
+        "name": "AZPEITIA-IBAIEDER",
+        "utm_x": "559560",
+        "utm_y": "4780232",
+        "prov": "GIPUZKOA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "7.98333333333333",
+        "lambda_2": "0.931106471816284",
+        "beta_b0": "29.1626880052097",
+        "beta_b1": "2.71646650213971",
+        "alpha": "5.32735244572911",
+        "kappa": "-0.477213079938618",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.26851491778696",
+          "43.1706237855987"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1059",
+        "name": "PUNTA GALEA (GOLF)",
+        "utm_x": "498323",
+        "utm_y": "4802337",
+        "prov": "BIZKAIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "9.38333333333333",
+        "lambda_2": "0.946714031971581",
+        "beta_b0": "25.965769432006",
+        "beta_b1": "1.47837402452016",
+        "alpha": "4.1887785332791",
+        "kappa": "-0.225047832688469",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.02196336333657",
+          "43.3720060331123"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1144X",
+        "name": "MOLLEDO DE PORTOLIN (AUTOMATICA)",
+        "utm_x": "415810",
+        "utm_y": "4777462",
+        "prov": "CANTABRIA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "8.08333333333333",
+        "lambda_2": "0.907216494845361",
+        "beta_b0": "31.2430280567104",
+        "beta_b1": "2.27908522285934",
+        "alpha": "4.49895839244428",
+        "kappa": "-0.59620005354595",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.03655440191777",
+          "43.1433235699591"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1208H",
+        "name": "GIJÓN MUSEL",
+        "utm_x": "281865",
+        "utm_y": "4826551",
+        "prov": "ASTURIAS",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "7.61666666666667",
+        "lambda_2": "0.87746170678337",
+        "beta_b0": "23.9765077028668",
+        "beta_b1": "1.7311900316154",
+        "alpha": "1.8010325527441",
+        "kappa": "-0.0833505357174762",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.70198945857651",
+          "43.5580956057991"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1347T",
+        "name": "BURELA",
+        "utm_x": "148606",
+        "utm_y": "4842360",
+        "prov": "LUGO",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.71666666666667",
+        "lambda_2": "0.877551020408163",
+        "beta_b0": "23.6526027054555",
+        "beta_b1": "1.58504778920979",
+        "alpha": "1.95614666072223",
+        "kappa": "-0.0598026717638006",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-7.35831928690307",
+          "43.64921164105"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1437O",
+        "name": "PORTO DO SON (MONTE IROITE)",
+        "utm_x": "14946",
+        "utm_y": "4746832",
+        "prov": "A CORUÑA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "6.03333333333333",
+        "lambda_2": "0.839779005524862",
+        "beta_b0": "24.7538152430545",
+        "beta_b1": "3.16966584103572",
+        "alpha": "3.2804143973121",
+        "kappa": "-0.333470433097454",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-8.92436224587262",
+          "42.718672894603"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1446X",
+        "name": "MONTERROSO",
+        "utm_x": "110109",
+        "utm_y": "4750728",
+        "prov": "LUGO",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5",
+        "lambda_2": "0.976666666666667",
+        "beta_b0": "29.5494341942613",
+        "beta_b1": "0.678408888069855",
+        "alpha": "3.0450448327071",
+        "kappa": "-0.3627307802366",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-7.76939062561266",
+          "42.8078290735851"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1475X",
+        "name": "SANTIAGO DE COMPOSTELA",
+        "utm_x": "46190",
+        "utm_y": "4762059",
+        "prov": "A CORUÑA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.88333333333333",
+        "lambda_2": "0.949008498583569",
+        "beta_b0": "30.10664033604",
+        "beta_b1": "1.12850916979524",
+        "alpha": "3.12526119904858",
+        "kappa": "-0.317376695032704",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-8.55687587402138",
+          "42.8742288245539"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1477U",
+        "name": "VILAGARCIA DE AROUSA",
+        "utm_x": "26477",
+        "utm_y": "4730591",
+        "prov": "PONTEVEDRA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "5.55",
+        "lambda_2": "0.948948948948949",
+        "beta_b0": "32.0000778151538",
+        "beta_b1": "1.09444660766543",
+        "alpha": "2.60898677664668",
+        "kappa": "-0.241224936298387",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-8.77074709100209",
+          "42.5803444459529"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1484",
+        "name": "PONTEVEDRA (INSTITUTO)",
+        "utm_x": "35408",
+        "utm_y": "4713062",
+        "prov": "PONTEVEDRA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.21666666666667",
+        "lambda_2": "0.932907348242812",
+        "beta_b0": "30.975127539073",
+        "beta_b1": "1.58759037755122",
+        "alpha": "2.88235758061044",
+        "kappa": "-0.300964659373241",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-8.64824515117258",
+          "42.428673306634"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1486E",
+        "name": "ESCUELA NAVAL DE MARÍN",
+        "utm_x": "30235",
+        "utm_y": "4709566",
+        "prov": "PONTEVEDRA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.28333333333333",
+        "lambda_2": "0.946372239747634",
+        "beta_b0": "28.2821433619293",
+        "beta_b1": "1.31502133780543",
+        "alpha": "2.98722055775465",
+        "kappa": "-0.33815128913405",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-8.70796931127893",
+          "42.3942345069598"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1496X",
+        "name": "VIGO-O CASTRO",
+        "utm_x": "27576",
+        "utm_y": "4691271",
+        "prov": "PONTEVEDRA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.2",
+        "lambda_2": "0.94551282051282",
+        "beta_b0": "30.4539155965327",
+        "beta_b1": "2.26766652610314",
+        "alpha": "2.98012653183896",
+        "kappa": "-0.379525411081905",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-8.72518735079765",
+          "42.2286835638076"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1518A",
+        "name": "LUGO-COL.FINGOI",
+        "utm_x": "128895",
+        "utm_y": "4770699",
+        "prov": "LUGO",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "5.95",
+        "lambda_2": "0.96078431372549",
+        "beta_b0": "31.037463022558",
+        "beta_b1": "1.32283749966514",
+        "alpha": "3.32542174814819",
+        "kappa": "-0.299311667418193",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-7.5535748313301",
+          "42.9964342290297"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1583X",
+        "name": "O BARCO DE VALDEORRAS",
+        "utm_x": "171440",
+        "utm_y": "4703649",
+        "prov": "OURENSE",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.71666666666667",
+        "lambda_2": "0.825112107623318",
+        "beta_b0": "34.8935646208522",
+        "beta_b1": "2.48846705060839",
+        "alpha": "2.06336430488119",
+        "kappa": "-0.302713208531135",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.99414515528934",
+          "42.4136660622415"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1690A",
+        "name": "OURENSE",
+        "utm_x": "99540",
+        "utm_y": "4697347",
+        "prov": "OURENSE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.08333333333333",
+        "lambda_2": "0.889795918367347",
+        "beta_b0": "35.2612479598418",
+        "beta_b1": "2.40001985941013",
+        "alpha": "2.51887043131498",
+        "kappa": "-0.345545469140755",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-7.86077157063301",
+          "42.323392345335"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2044B",
+        "name": "LUBIA-CEDER",
+        "utm_x": "541042",
+        "utm_y": "4605545",
+        "prov": "SORIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.8",
+        "lambda_2": "0.916666666666667",
+        "beta_b0": "32.9047200435281",
+        "beta_b1": "1.33312432136522",
+        "alpha": "1.99295881718784",
+        "kappa": "-0.501657678731028",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.50874594674862",
+          "41.5986879947316"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2048A",
+        "name": "MORÓN DE ALMAZÁN ",
+        "utm_x": "548445",
+        "utm_y": "4585483",
+        "prov": "SORIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.76666666666667",
+        "lambda_2": "0.938053097345133",
+        "beta_b0": "34.3246343528555",
+        "beta_b1": "1.03830039016086",
+        "alpha": "1.8914740160676",
+        "kappa": "-0.412382023226922",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.42152861368056",
+          "41.4175780405067"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2100X",
+        "name": "ARANDA DE DUERO (AZUCARERA - AUTOMATICA)",
+        "utm_x": "442704",
+        "utm_y": "4611382",
+        "prov": "BURGOS",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.65",
+        "lambda_2": "0.821917808219178",
+        "beta_b0": "32.4573882710347",
+        "beta_b1": "2.99107109397724",
+        "alpha": "2.09547126519935",
+        "kappa": "-0.456972951430899",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.68929845718256",
+          "41.6502454940547"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2135A",
+        "name": "FRESNO DE CANTESPINO",
+        "utm_x": "457583",
+        "utm_y": "4580265",
+        "prov": "SEGOVIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.95",
+        "lambda_2": "0.890295358649789",
+        "beta_b0": "33.5320131894122",
+        "beta_b1": "1.72690657620615",
+        "alpha": "1.74949498762474",
+        "kappa": "-0.405772299200421",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.50842645949186",
+          "41.3709078904502"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2150H",
+        "name": "LA PINILLA ESTACIÓN DE ESQUÍ",
+        "utm_x": "460145",
+        "utm_y": "4560174",
+        "prov": "SEGOVIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "3.43333333333333",
+        "lambda_2": "0.87378640776699",
+        "beta_b0": "25.4994876957211",
+        "beta_b1": "1.94873828416446",
+        "alpha": "2.10490971913425",
+        "kappa": "-0.153204445816171",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.4764742547036",
+          "41.1900717529667"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2290Y",
+        "name": "PEDROSA DEL PRÍNCIPE",
+        "utm_x": "401101",
+        "utm_y": "4678354",
+        "prov": "BURGOS",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4",
+        "lambda_2": "0.870833333333333",
+        "beta_b0": "33.3550417188494",
+        "beta_b1": "1.71846640458221",
+        "alpha": "2.03638938321927",
+        "kappa": "-0.318216601316816",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.20008738333869",
+          "42.2492263402568"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2302N",
+        "name": "MONTERRUBIO DE LA DEMANDA",
+        "utm_x": "490842",
+        "utm_y": "4666036",
+        "prov": "BURGOS",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.88333333333333",
+        "lambda_2": "0.957081545064378",
+        "beta_b0": "30.718994404008",
+        "beta_b1": "0.826447540207223",
+        "alpha": "1.88005080949547",
+        "kappa": "-0.36013977126418",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.11206924066311",
+          "42.1445114554097"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2374X",
+        "name": "CARRIÓN DE LOS CONDES",
+        "utm_x": "366802",
+        "utm_y": "4689997",
+        "prov": "PALENCIA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.06666666666667",
+        "lambda_2": "0.811475409836066",
+        "beta_b0": "31.7861320862345",
+        "beta_b1": "2.29155721271194",
+        "alpha": "1.85274074499459",
+        "kappa": "-0.350115276155858",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.6184000287371",
+          "42.3489396565337"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2401X",
+        "name": "PALENCIA  GRANJA VIÑALTA  ",
+        "utm_x": "370776",
+        "utm_y": "4652003",
+        "prov": "PALENCIA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.15",
+        "lambda_2": "0.899598393574297",
+        "beta_b0": "33.9038960101569",
+        "beta_b1": "2.00774467168281",
+        "alpha": "2.22167199424093",
+        "kappa": "-0.503246021236803",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.56172789609035",
+          "42.0075535193702"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2422C",
+        "name": "VALLADOLID-UNIVERSIDAD",
+        "utm_x": "355195",
+        "utm_y": "4613694",
+        "prov": "VALLADOLID",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.91666666666667",
+        "lambda_2": "0.957446808510638",
+        "beta_b0": "32.9651910346222",
+        "beta_b1": "0.965104066682563",
+        "alpha": "1.4569797253453",
+        "kappa": "-0.307687008356018",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.74043084742039",
+          "41.6599574913766"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2444",
+        "name": "ÁVILA",
+        "utm_x": "357981",
+        "utm_y": "4502280",
+        "prov": "AVILA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "3.85",
+        "lambda_2": "0.891774891774892",
+        "beta_b0": "32.152389579499",
+        "beta_b1": "1.49041920906555",
+        "alpha": "1.88336322782586",
+        "kappa": "-0.317061079007363",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.68114514973836",
+          "40.6572937228951"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2456B",
+        "name": "AREVALO",
+        "utm_x": "354658",
+        "utm_y": "4548124",
+        "prov": "AVILA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.68333333333333",
+        "lambda_2": "0.918552036199095",
+        "beta_b0": "34.3814107726566",
+        "beta_b1": "1.52473353681375",
+        "alpha": "1.41936420296916",
+        "kappa": "-0.0443813881865471",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.73115463360502",
+          "41.0695060339603"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2503B",
+        "name": "OLMEDO DEPÓSITO AGUA",
+        "utm_x": "358306",
+        "utm_y": "4571222",
+        "prov": "VALLADOLID",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.8",
+        "lambda_2": "0.885964912280702",
+        "beta_b0": "34.3734771367174",
+        "beta_b1": "1.79629325106124",
+        "alpha": "2.13670957141932",
+        "kappa": "-0.41941878508206",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.69310046634262",
+          "41.278123035475"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2536D",
+        "name": "MORALES DEL TORO-DEPOSITO",
+        "utm_x": "310536",
+        "utm_y": "4602154",
+        "prov": "ZAMORA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.68333333333333",
+        "lambda_2": "0.846153846153846",
+        "beta_b0": "34.862234060662",
+        "beta_b1": "2.32962925200388",
+        "alpha": "2.12071416749064",
+        "kappa": "-0.371434465516248",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.27280573307154",
+          "41.5467263045765"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2661B",
+        "name": "LEÓN/AEROPUERTO",
+        "utm_x": "283123",
+        "utm_y": "4719725",
+        "prov": "LEON",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.61666666666667",
+        "lambda_2": "1",
+        "beta_b0": "33.4002805437684",
+        "beta_b1": "0.146043250876662",
+        "alpha": "1.87045949216969",
+        "kappa": "-0.672144092674772",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.64474692552502",
+          "42.5975505984411"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2775X",
+        "name": "VILLARDECIERVOS",
+        "utm_x": "228116",
+        "utm_y": "4648475",
+        "prov": "ZAMORA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.35",
+        "lambda_2": "0.860696517412935",
+        "beta_b0": "32.0217492987071",
+        "beta_b1": "2.44480725384091",
+        "alpha": "2.66779179586897",
+        "kappa": "-0.402711383618966",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.28082543755919",
+          "41.9395004198734"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2777K",
+        "name": "SANTIBAÑEZ DE VIDRIALES",
+        "utm_x": "251242",
+        "utm_y": "4662821",
+        "prov": "ZAMORA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.86666666666667",
+        "lambda_2": "0.90948275862069",
+        "beta_b0": "32.9323178548206",
+        "beta_b1": "1.81510174604671",
+        "alpha": "1.86377439849165",
+        "kappa": "-0.126264725341326",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.00833547193702",
+          "42.0761601324237"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2804F",
+        "name": "VILLADEPERA",
+        "utm_x": "237885",
+        "utm_y": "4602796",
+        "prov": "ZAMORA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.43333333333333",
+        "lambda_2": "0.893203883495146",
+        "beta_b0": "33.4865377982248",
+        "beta_b1": "2.42903572139936",
+        "alpha": "1.99941027772809",
+        "kappa": "-0.347105120939355",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.14304929552949",
+          "41.5319998962515"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2873X",
+        "name": "BARBADILLO",
+        "utm_x": "265868",
+        "utm_y": "4531779",
+        "prov": "SALAMANCA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.5",
+        "lambda_2": "0.914285714285714",
+        "beta_b0": "33.5232730616653",
+        "beta_b1": "1.52823327619589",
+        "alpha": "1.82473973616264",
+        "kappa": "-0.281363147591822",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.78082328046358",
+          "40.901731900082"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2883R",
+        "name": "LEDESMA-ESTACAS",
+        "utm_x": "240037",
+        "utm_y": "4565658",
+        "prov": "SALAMANCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.53333333333333",
+        "lambda_2": "0.966981132075472",
+        "beta_b0": "34.2839707343937",
+        "beta_b1": "0.621561598929884",
+        "alpha": "1.64694483265741",
+        "kappa": "-0.294096747824676",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.10137363526865",
+          "41.1986722203321"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2916A",
+        "name": "VITIGUDINO",
+        "utm_x": "210903",
+        "utm_y": "4545719",
+        "prov": "SALAMANCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.5",
+        "lambda_2": "0.90952380952381",
+        "beta_b0": "35.1542283951862",
+        "beta_b1": "1.7748705756309",
+        "alpha": "2.19443902373663",
+        "kappa": "-0.460503070355292",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.43885977602729",
+          "41.0095131862164"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2945A",
+        "name": "EL BODÓN-BASE AÉREA",
+        "utm_x": "196813",
+        "utm_y": "4487741",
+        "prov": "SALAMANCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.06666666666667",
+        "lambda_2": "0.853260869565217",
+        "beta_b0": "32.7619168956116",
+        "beta_b1": "2.39933587247587",
+        "alpha": "2.08657987449026",
+        "kappa": "-0.342436266299129",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.57801180137926",
+          "40.4831274357539"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2966D",
+        "name": "ALCAÑICES-VIVINERA",
+        "utm_x": "225218",
+        "utm_y": "4619888",
+        "prov": "ZAMORA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.48333333333333",
+        "lambda_2": "0.894736842105263",
+        "beta_b0": "32.8188575177809",
+        "beta_b1": "1.92358239993897",
+        "alpha": "2.2789095253394",
+        "kappa": "-0.41211038374782",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.30248227204365",
+          "41.6814475618195"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3044X",
+        "name": "CAÑIZARES",
+        "utm_x": "571992",
+        "utm_y": "4486963",
+        "prov": "CUENCA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "2.48333333333333",
+        "lambda_2": "0.818791946308725",
+        "beta_b0": "34.759634630044",
+        "beta_b1": "2.51787754917281",
+        "alpha": "1.77355879620843",
+        "kappa": "-0.316646340700197",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.15123928360171",
+          "40.5284292338003"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3094B",
+        "name": "TARANCÓN",
+        "utm_x": "498175",
+        "utm_y": "4429022",
+        "prov": "CUENCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.21666666666667",
+        "lambda_2": "0.906735751295337",
+        "beta_b0": "37.111003269345",
+        "beta_b1": "1.6740397729677",
+        "alpha": "1.62406571215787",
+        "kappa": "-0.354900374547111",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.02258236829151",
+          "40.009537850804"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3111D",
+        "name": "SOMOSIERRA",
+        "utm_x": "451298",
+        "utm_y": "4553968",
+        "prov": "MADRID",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.15",
+        "lambda_2": "0.994708994708995",
+        "beta_b0": "29.9230644884182",
+        "beta_b1": "-0.0337788932641729",
+        "alpha": "1.76407826448889",
+        "kappa": "-0.416998467418598",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.58147180234525",
+          "41.133686939056"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3129A",
+        "name": "MADRID",
+        "utm_x": "BARAJAS RS",
+        "utm_y": "450852",
+        "prov": "40.4634118413987",
+        "source": "MADRID",
+        "is_auto": "aemet",
+        "cand": "PENINSULA",
+        "island": "FALSE",
+        "lambda_1": "3.48333333333333",
+        "lambda_2": "0.856459330143541",
+        "beta_b0": "36.7345653344157",
+        "beta_b1": "2.12241108388269",
+        "alpha": "2.42548648218121",
+        "kappa": "-0.461797106309066",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "4479562",
+          "-3.58091250579957"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3330Y",
+        "name": "ROZAS DE PUERTO REAL",
+        "utm_x": "373630",
+        "utm_y": "4463566",
+        "prov": "MADRID",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.06666666666667",
+        "lambda_2": "0.820652173913043",
+        "beta_b0": "33.4287996063284",
+        "beta_b1": "1.99399977552011",
+        "alpha": "2.06978181977914",
+        "kappa": "-0.424370248974735",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.48837445321522",
+          "40.3111865761835"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3407Y",
+        "name": "GUISANDO (EL RISQUILLO)",
+        "utm_x": "317479",
+        "utm_y": "4454552",
+        "prov": "AVILA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "2.91666666666667",
+        "lambda_2": "0.897142857142857",
+        "beta_b0": "18.9084038166049",
+        "beta_b1": "1.64768791220728",
+        "alpha": "1.40697007268331",
+        "kappa": "-0.74639708930825",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.14624085731651",
+          "40.2196487260914"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3436D",
+        "name": "GARGANTA LA OLLA",
+        "utm_x": "262667",
+        "utm_y": "4443809",
+        "prov": "CACERES",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.1",
+        "lambda_2": "0.827956989247312",
+        "beta_b0": "34.0711376194149",
+        "beta_b1": "1.85346383009085",
+        "alpha": "1.78407684449375",
+        "kappa": "-0.334493555504712",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.7858109620768",
+          "40.1092453967702"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3455X",
+        "name": "JARAICEJO",
+        "utm_x": "259113",
+        "utm_y": "4394903",
+        "prov": "CACERES",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.21666666666667",
+        "lambda_2": "0.979274611398964",
+        "beta_b0": "37.1728600050348",
+        "beta_b1": "0.384973059114189",
+        "alpha": "1.60344202329859",
+        "kappa": "-0.156410182127949",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.80942456567964",
+          "39.6681326562287"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3512X",
+        "name": "MONTEHERMOSO",
+        "utm_x": "215302",
+        "utm_y": "4442076",
+        "prov": "CACERES",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.43333333333333",
+        "lambda_2": "0.868932038834951",
+        "beta_b0": "37.415809086483",
+        "beta_b1": "1.80386861270427",
+        "alpha": "1.97113000219629",
+        "kappa": "-0.350011039785664",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.33995972784007",
+          "40.0789685749871"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3536X",
+        "name": "HOYOS ",
+        "utm_x": "182856",
+        "utm_y": "4453808",
+        "prov": "CACERES",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.16666666666667",
+        "lambda_2": "0.852631578947368",
+        "beta_b0": "35.7699482574853",
+        "beta_b1": "2.02126900531574",
+        "alpha": "2.13848329686773",
+        "kappa": "-0.329799936912569",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.72550783431492",
+          "40.1728577549248"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3562X",
+        "name": "ALISEDA LA UMBRÍA",
+        "utm_x": "178371",
+        "utm_y": "4370887",
+        "prov": "CACERES",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.21666666666667",
+        "lambda_2": "0.906735751295337",
+        "beta_b0": "38.0447329077729",
+        "beta_b1": "1.85395573550796",
+        "alpha": "2.34620146952533",
+        "kappa": "-0.479493670114289",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.73743508229985",
+          "39.4256427376046"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4091Y",
+        "name": "VILLARROBLEDO",
+        "utm_x": "535156",
+        "utm_y": "4345925",
+        "prov": "ALBACETE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.2",
+        "lambda_2": "0.953125",
+        "beta_b0": "38.6739647604319",
+        "beta_b1": "1.77615334998013",
+        "alpha": "2.33918795966586",
+        "kappa": "-0.414574749804814",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.59369885191308",
+          "39.2601051687839"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4121",
+        "name": "CIUDAD REAL",
+        "utm_x": "420299",
+        "utm_y": "4315977",
+        "prov": "CIUDAD REAL",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "3.25",
+        "lambda_2": "0.964102564102564",
+        "beta_b0": "38.4985768804759",
+        "beta_b1": "0.188918030544688",
+        "alpha": "1.51693395662843",
+        "kappa": "-0.197650468437968",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.92142106670358",
+          "38.9873125391414"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4138Y",
+        "name": "VILLANUEVA DE LOS INFANTES",
+        "utm_x": "499614",
+        "utm_y": "4287647",
+        "prov": "CIUDAD REAL",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "2.96666666666667",
+        "lambda_2": "0.943820224719101",
+        "beta_b0": "37.6718358270399",
+        "beta_b1": "1.7976978681101",
+        "alpha": "1.94022072493128",
+        "kappa": "-0.317428405994277",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.00561909027513",
+          "38.7356559826781"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4147X",
+        "name": "VALDEPEÑAS",
+        "utm_x": "465990",
+        "utm_y": "4289169",
+        "prov": "CIUDAD REAL",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "2.81666666666667",
+        "lambda_2": "0.982248520710059",
+        "beta_b0": "37.658035759694",
+        "beta_b1": "0.429845888290286",
+        "alpha": "1.88766192459349",
+        "kappa": "-0.304583819699331",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.39255480225421",
+          "38.7487126915321"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4210Y",
+        "name": "ABENOJAR ",
+        "utm_x": "387966",
+        "utm_y": "4306257",
+        "prov": "CIUDAD REAL",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.31666666666667",
+        "lambda_2": "0.994974874371859",
+        "beta_b0": "37.9104292256775",
+        "beta_b1": "-0.130660711436091",
+        "alpha": "1.7627522399521",
+        "kappa": "-0.280804287471829",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.29307467849214",
+          "38.8961998954524"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4220X",
+        "name": "PUEBLA DE DON RODRIGO",
+        "utm_x": "359715",
+        "utm_y": "4327308",
+        "prov": "CIUDAD REAL",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.25",
+        "lambda_2": "0.958974358974359",
+        "beta_b0": "38.554031969423",
+        "beta_b1": "1.2285431525782",
+        "alpha": "1.94922250036699",
+        "kappa": "-0.231471399268245",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.62306127742869",
+          "39.08175860561"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4236Y",
+        "name": "PUERTO REY",
+        "utm_x": "326108",
+        "utm_y": "4368172",
+        "prov": "CACERES",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.03333333333333",
+        "lambda_2": "0.884615384615385",
+        "beta_b0": "36.923035542637",
+        "beta_b1": "1.24743225131816",
+        "alpha": "2.47283511930174",
+        "kappa": "-0.484293582343648",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.0219484831756",
+          "39.4436952916979"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4300",
+        "name": "ALMADEN (MINAS)",
+        "utm_x": "339739",
+        "utm_y": "4293198",
+        "prov": "CIUDAD REAL",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "2.16666666666667",
+        "lambda_2": "0.961538461538462",
+        "beta_b0": "39.0001593628713",
+        "beta_b1": "2.24139059458713",
+        "alpha": "2.43861139283808",
+        "kappa": "-0.369513707874076",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.84592282094146",
+          "38.7710987589273"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4339X",
+        "name": "CAÑAMERO EL PINAR",
+        "utm_x": "295772",
+        "utm_y": "4354318",
+        "prov": "CACERES",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.31666666666667",
+        "lambda_2": "0.824120603015075",
+        "beta_b0": "35.8343509616795",
+        "beta_b1": "2.23668950710937",
+        "alpha": "2.39929420699803",
+        "kappa": "-0.52936128873919",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.36999017341383",
+          "39.3123082973074"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4436Y",
+        "name": "ALMENDRALEJO",
+        "utm_x": "207648",
+        "utm_y": "4287619",
+        "prov": "BADAJOZ",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.55",
+        "lambda_2": "0.868544600938967",
+        "beta_b0": "36.8316165437268",
+        "beta_b1": "2.73632452632444",
+        "alpha": "2.26146015406611",
+        "kappa": "-0.331065505905428",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.3621642700508",
+          "38.6870370339865"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4492F",
+        "name": "EVC_BARCARROTA",
+        "utm_x": "157681",
+        "utm_y": "4265605",
+        "prov": "BADAJOZ",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.61666666666667",
+        "lambda_2": "0.875576036866359",
+        "beta_b0": "38.6307103592684",
+        "beta_b1": "2.39412334825848",
+        "alpha": "3.02575709875212",
+        "kappa": "-0.59287995363145",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.92463792549878",
+          "38.4712069193821"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4501X",
+        "name": "FUENTE DE CANTOS",
+        "utm_x": "210057",
+        "utm_y": "4234180",
+        "prov": "BADAJOZ",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.6",
+        "lambda_2": "0.884259259259259",
+        "beta_b0": "36.3772521920619",
+        "beta_b1": "1.42939301878003",
+        "alpha": "1.57286473309299",
+        "kappa": "-0.14351568087477",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.31243715741334",
+          "38.2070438701927"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4554X",
+        "name": "CARTAYA  PEMARES",
+        "utm_x": "137615",
+        "utm_y": "4126915",
+        "prov": "HUELVA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.56666666666667",
+        "lambda_2": "0.861313868613139",
+        "beta_b0": "33.1622650468851",
+        "beta_b1": "3.16592367569019",
+        "alpha": "2.74171737335896",
+        "kappa": "-0.232067001718634",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-7.08461364965641",
+          "37.2165020156192"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5000A",
+        "name": "CEUTA (MONTE HACHO)",
+        "utm_x": "293118",
+        "utm_y": "3974792",
+        "prov": "CEUTA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.9",
+        "lambda_2": "0.884353741496599",
+        "beta_b0": "28.544956776955",
+        "beta_b1": "1.14528471014368",
+        "alpha": "2.00146983316807",
+        "kappa": "-0.0632744363320405",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.29327421581394",
+          "35.8937353910471"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5270B",
+        "name": "JAÉN",
+        "utm_x": "428767",
+        "utm_y": "4181437",
+        "prov": "JAEN",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "3.06666666666667",
+        "lambda_2": "0.820652173913043",
+        "beta_b0": "36.4247908045505",
+        "beta_b1": "2.61619187878225",
+        "alpha": "2.24067556273679",
+        "kappa": "-0.313512037243459",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.81002248611462",
+          "37.7756653607454"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5406X",
+        "name": "ALCALÁ LA REAL CHARILLA ",
+        "utm_x": "419733",
+        "utm_y": "4150451",
+        "prov": "JAEN",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.1",
+        "lambda_2": "0.870967741935484",
+        "beta_b0": "34.9468902699488",
+        "beta_b1": "2.71552209007903",
+        "alpha": "2.25276115100468",
+        "kappa": "-0.408537251208883",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.90918419130775",
+          "37.495663339424"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5412X",
+        "name": "PRIEGO DE CÓRDOBA SAN FELIX",
+        "utm_x": "393221",
+        "utm_y": "4149332",
+        "prov": "CORDOBA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.1",
+        "lambda_2": "0.827956989247312",
+        "beta_b0": "38.0308225933979",
+        "beta_b1": "2.46828210419036",
+        "alpha": "2.07700048083976",
+        "kappa": "-0.329793312781094",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.20888695362115",
+          "37.4828907190544"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5514Z",
+        "name": "GRANADA/BASE AÉREA",
+        "utm_x": "443749",
+        "utm_y": "4110160",
+        "prov": "GRANADA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.25",
+        "lambda_2": "0.917948717948718",
+        "beta_b0": "39.5573685534771",
+        "beta_b1": "1.75684159380474",
+        "alpha": "2.65674104778656",
+        "kappa": "-0.526557701522634",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.6344604086428",
+          "37.1342878538119"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5612B",
+        "name": "RODA DE ANDALUCÍA",
+        "utm_x": "342908",
+        "utm_y": "4117911",
+        "prov": "SEVILLA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.43333333333333",
+        "lambda_2": "0.854368932038835",
+        "beta_b0": "37.653921832281",
+        "beta_b1": "2.5274014872096",
+        "alpha": "2.97016340166648",
+        "kappa": "-0.425742176460584",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.77108303548052",
+          "37.1926125933993"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5624X",
+        "name": "AGUILAR LAGUNA ZOÑAR",
+        "utm_x": "350948",
+        "utm_y": "4149673",
+        "prov": "CORDOBA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.23333333333333",
+        "lambda_2": "0.907216494845361",
+        "beta_b0": "38.588090389629",
+        "beta_b1": "1.62328816769207",
+        "alpha": "2.03430196030426",
+        "kappa": "-0.235153031249706",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.68692403579767",
+          "37.4801045319462"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5769X",
+        "name": "CALA",
+        "utm_x": "208173",
+        "utm_y": "4208098",
+        "prov": "HUELVA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.18333333333333",
+        "lambda_2": "0.93717277486911",
+        "beta_b0": "36.6259895062611",
+        "beta_b1": "1.35002126041342",
+        "alpha": "2.0305762406021",
+        "kappa": "-0.487591543429511",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.32326615330797",
+          "37.9717646425244"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5835X",
+        "name": "CARRIÓN DE LOS CÉSPEDES",
+        "utm_x": "204699",
+        "utm_y": "4140029",
+        "prov": "SEVILLA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.21666666666667",
+        "lambda_2": "0.906735751295337",
+        "beta_b0": "38.7596291062621",
+        "beta_b1": "2.03665712596117",
+        "alpha": "2.12262897267545",
+        "kappa": "-0.290666729388086",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.33520110319241",
+          "37.3581651474706"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5972",
+        "name": "SAN FERNANDO",
+        "utm_x": "212741",
+        "utm_y": "4040432",
+        "prov": "CADIZ",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.35",
+        "lambda_2": "0.931034482758621",
+        "beta_b0": "32.6892087857188",
+        "beta_b1": "1.75573479263511",
+        "alpha": "2.34245156446426",
+        "kappa": "-0.194235207989147",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-6.20675239969353",
+          "36.4643037129875"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5996B",
+        "name": "BARBATE DEPURADORA",
+        "utm_x": "238333",
+        "utm_y": "4008394",
+        "prov": "CADIZ",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.88333333333333",
+        "lambda_2": "0.897610921501707",
+        "beta_b0": "32.8200178593152",
+        "beta_b1": "1.64280807042753",
+        "alpha": "2.02957721897971",
+        "kappa": "-0.286243549151146",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.91075749659836",
+          "36.1831759133627"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6032B",
+        "name": "RONDA",
+        "utm_x": "306426",
+        "utm_y": "4069302",
+        "prov": "MALAGA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.5",
+        "lambda_2": "0.89047619047619",
+        "beta_b0": "34.3734261130832",
+        "beta_b1": "2.33872311564691",
+        "alpha": "2.30226764236057",
+        "kappa": "-0.367739591069134",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.16940668471916",
+          "36.7478942161942"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6032X",
+        "name": "RONDA IES",
+        "utm_x": "306402",
+        "utm_y": "4069333",
+        "prov": "MALAGA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.28333333333333",
+        "lambda_2": "0.908629441624365",
+        "beta_b0": "35.487602341028",
+        "beta_b1": "1.26578454395991",
+        "alpha": "1.88264445081614",
+        "kappa": "-0.196465508434061",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.16968320456468",
+          "36.7481685705426"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6050X",
+        "name": "GAUCÍN",
+        "utm_x": "292389",
+        "utm_y": "4043974",
+        "prov": "MALAGA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.71666666666667",
+        "lambda_2": "0.789237668161435",
+        "beta_b0": "32.554024230841",
+        "beta_b1": "2.93492326174832",
+        "alpha": "3.00705289036174",
+        "kappa": "-0.374846823808424",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.31967247690275",
+          "36.5167840310007"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6058I",
+        "name": "ESTEPONA",
+        "utm_x": "306789",
+        "utm_y": "4032354",
+        "prov": "MALAGA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.08333333333333",
+        "lambda_2": "0.944262295081967",
+        "beta_b0": "34.4457523016467",
+        "beta_b1": "1.58736193399654",
+        "alpha": "3.48132157809194",
+        "kappa": "-0.370289318045942",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-5.15606311200223",
+          "36.4151213431875"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6268Y",
+        "name": "MOTRIL PUERTO NAÚTICO",
+        "utm_x": "452747",
+        "utm_y": "4064374",
+        "prov": "GRANADA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.33333333333333",
+        "lambda_2": "0.896153846153846",
+        "beta_b0": "31.0435098018148",
+        "beta_b1": "1.74735542061792",
+        "alpha": "2.25780340724274",
+        "kappa": "-0.501675433576182",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-3.53029328461529",
+          "36.722070134285"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6277X",
+        "name": "ADRA",
+        "utm_x": "C.NAUTICO",
+        "utm_y": "498165",
+        "prov": "36.7454076316574",
+        "source": "ALMERIA",
+        "is_auto": "aemet",
+        "cand": "PENINSULA",
+        "island": "TRUE",
+        "lambda_1": "4.31666666666667",
+        "lambda_2": "0.814671814671815",
+        "beta_b0": "29.8503961421297",
+        "beta_b1": "1.39809870630121",
+        "alpha": "1.4551380606723",
+        "kappa": "-0.163867436655394",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "4066832",
+          "-3.02170173245738"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6332X",
+        "name": "CARBONERAS",
+        "utm_x": "C.TÉRM.",
+        "utm_y": "597579",
+        "prov": "36.978467203645",
+        "source": "ALMERIA",
+        "is_auto": "aemet",
+        "cand": "PENINSULA",
+        "island": "TRUE",
+        "lambda_1": "5.6",
+        "lambda_2": "0.895833333333333",
+        "beta_b0": "32.0473464664209",
+        "beta_b1": "1.7290884735892",
+        "alpha": "3.1236893656787",
+        "kappa": "-0.405187366706278",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "4093246",
+          "-1.90480353459371"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6375X",
+        "name": "FUENTE DE PIEDRA",
+        "utm_x": "345271",
+        "utm_y": "4110992",
+        "prov": "MALAGA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.3",
+        "lambda_2": "0.813131313131313",
+        "beta_b0": "36.2328278016706",
+        "beta_b1": "2.6935781079456",
+        "alpha": "2.43275825965626",
+        "kappa": "-0.243078352482907",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-4.74303838695112",
+          "37.1306681697924"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7002X",
+        "name": "AGUILAS (P. BOMBEROS AUT.)",
+        "utm_x": "625244",
+        "utm_y": "4142104",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.2",
+        "lambda_2": "0.952380952380952",
+        "beta_b0": "31.0964702508187",
+        "beta_b1": "0.977218278378172",
+        "alpha": "1.73145094717835",
+        "kappa": "-0.0737603827301416",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.58585993826335",
+          "37.4154665817944"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7007Y",
+        "name": "MAZARRÓN/LAS TORRES",
+        "utm_x": "656224",
+        "utm_y": "4161583",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.78333333333333",
+        "lambda_2": "0.832752613240418",
+        "beta_b0": "33.4221493254927",
+        "beta_b1": "2.89183959243575",
+        "alpha": "1.99725679485859",
+        "kappa": "-0.324014515363733",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.23177822353308",
+          "37.5862530135563"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7012C",
+        "name": "CARTAGENA",
+        "utm_x": "677630",
+        "utm_y": "4163463",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.56666666666667",
+        "lambda_2": "0.927007299270073",
+        "beta_b0": "31.7266242002504",
+        "beta_b1": "0.575699262570536",
+        "alpha": "1.1021199463307",
+        "kappa": "0.0843226057572276",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.989008218536295",
+          "37.5993077455437"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7031X",
+        "name": "MURCIA/SAN JAVIER II",
+        "utm_x": "693232",
+        "utm_y": "4183489",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.88333333333333",
+        "lambda_2": "0.900849858356941",
+        "beta_b0": "32.3486646432006",
+        "beta_b1": "1.65615178339378",
+        "alpha": "2.2385543507126",
+        "kappa": "-0.199367433115787",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.807078898814257",
+          "37.7765322538751"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7105",
+        "name": "HELLIN (NAVA DE CAMPANA)",
+        "utm_x": "617208",
+        "utm_y": "4261142",
+        "prov": "ALBACETE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.95",
+        "lambda_2": "1",
+        "beta_b0": "37.4133156763486",
+        "beta_b1": "-0.01783563697867",
+        "alpha": "2.34913165171309",
+        "kappa": "-0.43212678406064",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.65725925399287",
+          "38.4890998606743"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7178I",
+        "name": "MURCIA",
+        "utm_x": "660598",
+        "utm_y": "4207610",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.76666666666667",
+        "lambda_2": "0.916083916083916",
+        "beta_b0": "37.0098252132086",
+        "beta_b1": "1.45015175838151",
+        "alpha": "2.33042258372049",
+        "kappa": "-0.232395165330113",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.17207058771635",
+          "38.0001364237566"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7182",
+        "name": "MURCIA ALFONSO X",
+        "utm_x": "664258",
+        "utm_y": "4206348",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.4",
+        "lambda_2": "0.954545454545455",
+        "beta_b0": "37.2705064342106",
+        "beta_b1": "1.6168728224429",
+        "alpha": "2.54580653084331",
+        "kappa": "-0.193421252925155",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.13069467189442",
+          "37.9881131372685"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7203A",
+        "name": "ZARZILLA DE RAMOS",
+        "utm_x": "599446",
+        "utm_y": "4189189",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.58333333333333",
+        "lambda_2": "1",
+        "beta_b0": "37.7200521783679",
+        "beta_b1": "-0.63246506421116",
+        "alpha": "1.74999142239058",
+        "kappa": "-0.0509340436306138",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.87092561355885",
+          "37.8429059917384"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7209",
+        "name": "LORCA",
+        "utm_x": "615799",
+        "utm_y": "4168318",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.25",
+        "lambda_2": "0.901960784313726",
+        "beta_b0": "36.7820337793342",
+        "beta_b1": "1.27212094647491",
+        "alpha": "2.41661030945552",
+        "kappa": "-0.214790360020935",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.68843379699051",
+          "37.6529131096046"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7218Y",
+        "name": "TOTANA",
+        "utm_x": "631005",
+        "utm_y": "4180075",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.13333333333333",
+        "lambda_2": "0.935483870967742",
+        "beta_b0": "37.9319382745069",
+        "beta_b1": "0.993222909017508",
+        "alpha": "2.27855798931325",
+        "kappa": "-0.396415043234713",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.5139908013362",
+          "37.756803861965"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7237E",
+        "name": "MOLINA DE SEGURA (LOS VALIENTES)",
+        "utm_x": "661370",
+        "utm_y": "4222828",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.01666666666667",
+        "lambda_2": "0.920265780730897",
+        "beta_b0": "37.0151385137484",
+        "beta_b1": "1.52561092077703",
+        "alpha": "2.3888619550572",
+        "kappa": "-0.264473143257012",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.15985023263476",
+          "38.1370837115244"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7250C",
+        "name": "ABANILLA",
+        "utm_x": "672171",
+        "utm_y": "4229217",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.08333333333333",
+        "lambda_2": "0.960655737704918",
+        "beta_b0": "36.1241139018708",
+        "beta_b1": "0.559821673094789",
+        "alpha": "2.27426132721748",
+        "kappa": "-0.195080609611633",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.03512513015469",
+          "38.192635949912"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7251",
+        "name": "SANTOMERA (LA MATANZA)",
+        "utm_x": "671980",
+        "utm_y": "4219105",
+        "prov": "MURCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.7",
+        "lambda_2": "0.929078014184397",
+        "beta_b0": "35.3856567833385",
+        "beta_b1": "1.76759454774856",
+        "alpha": "2.29905485798386",
+        "kappa": "-0.20264125640705",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.03974491299463",
+          "38.1015909077482"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8050X",
+        "name": "JÁVEA AYUNTAMIENTO",
+        "utm_x": "775167",
+        "utm_y": "4297534",
+        "prov": "ALICANTE",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.6",
+        "lambda_2": "0.876811594202899",
+        "beta_b0": "32.6355381833284",
+        "beta_b1": "2.08311395701636",
+        "alpha": "1.83577199716149",
+        "kappa": "-0.174149691569114",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.166477792695523",
+          "38.7818259666897"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8051",
+        "name": "JAVEA-CABO SAN ANTONIO",
+        "utm_x": "777649",
+        "utm_y": "4299812",
+        "prov": "ALICANTE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.25",
+        "lambda_2": "0.86031746031746",
+        "beta_b0": "30.068146776957",
+        "beta_b1": "1.28792280728364",
+        "alpha": "1.73519196398805",
+        "kappa": "-0.42739710127231",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.195924890439918",
+          "38.8015449821303"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8057C",
+        "name": "PEGO",
+        "utm_x": "750089",
+        "utm_y": "4303709",
+        "prov": "ALICANTE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.2",
+        "lambda_2": "0.894230769230769",
+        "beta_b0": "36.417744710145",
+        "beta_b1": "0.913844506132724",
+        "alpha": "2.53369676775081",
+        "kappa": "-0.346028660727545",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.119618775861988",
+          "38.8448658937431"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8058Y",
+        "name": "MIRAMAR  SEMIAUTOMÁTICA ",
+        "utm_x": "748040",
+        "utm_y": "4315157",
+        "prov": "VALENCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.7",
+        "lambda_2": "0.953216374269006",
+        "beta_b0": "34.3121970171413",
+        "beta_b1": "1.86785561903",
+        "alpha": "2.80972454269047",
+        "kappa": "-0.309547696920954",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.139065668730989",
+          "38.9484794103679"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8084Y",
+        "name": "PANTANO DE LA TOBA (AUTOMATICA)",
+        "utm_x": "591295",
+        "utm_y": "4452816",
+        "prov": "CUENCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.08333333333333",
+        "lambda_2": "0.92972972972973",
+        "beta_b0": "31.7243747891246",
+        "beta_b1": "1.21164969200973",
+        "alpha": "1.84913979036929",
+        "kappa": "-0.397588018513505",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.92825825583783",
+          "40.2189504072078"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8096",
+        "name": "CUENCA",
+        "utm_x": "574025",
+        "utm_y": "4435579",
+        "prov": "CUENCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "3.25",
+        "lambda_2": "0.861538461538462",
+        "beta_b0": "34.8845623651855",
+        "beta_b1": "1.7288911681695",
+        "alpha": "1.73852843824661",
+        "kappa": "-0.285211123859131",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.13317526459102",
+          "40.0653732498398"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8210Y",
+        "name": "SALVACAÑETE",
+        "utm_x": "627542",
+        "utm_y": "4440269",
+        "prov": "CUENCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.23333333333333",
+        "lambda_2": "0.809278350515464",
+        "beta_b0": "32.2753069198361",
+        "beta_b1": "2.50024510787827",
+        "alpha": "1.82700884735029",
+        "kappa": "-0.310545966713765",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.50486446088267",
+          "40.101219931624"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8270X",
+        "name": "BICORP",
+        "utm_x": "691017",
+        "utm_y": "4333930",
+        "prov": "VALENCIA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.56666666666667",
+        "lambda_2": "0.892215568862275",
+        "beta_b0": "35.2523920401208",
+        "beta_b1": "3.04887437082666",
+        "alpha": "2.90290931182685",
+        "kappa": "-0.349143226550205",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.791267953461486",
+          "39.1317945489425"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8354X",
+        "name": "ALBARRACÍN",
+        "utm_x": "632227",
+        "utm_y": "4475511",
+        "prov": "TERUEL",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.28333333333333",
+        "lambda_2": "0.928934010152284",
+        "beta_b0": "32.862859289728",
+        "beta_b1": "1.34695050644302",
+        "alpha": "1.63447006072311",
+        "kappa": "-0.197650895249525",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.44265617978239",
+          "40.4178860814769"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8414",
+        "name": "MANISES BASE AEREA",
+        "utm_x": "716720",
+        "utm_y": "4373046",
+        "prov": "VALENCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.81666666666667",
+        "lambda_2": "0.936962750716332",
+        "beta_b0": "32.6001373856155",
+        "beta_b1": "1.93228713786866",
+        "alpha": "3.04777272415432",
+        "kappa": "-0.311762039191407",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.48155904664084",
+          "39.4779088744592"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8414A",
+        "name": "VALENCIA/AEROPUERTO",
+        "utm_x": "717181",
+        "utm_y": "4373646",
+        "prov": "VALENCIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "5.66666666666667",
+        "lambda_2": "0.941176470588235",
+        "beta_b0": "32.6143325656731",
+        "beta_b1": "2.11541417694165",
+        "alpha": "2.99931230445052",
+        "kappa": "-0.226311193688557",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.476008900214899",
+          "39.4831937500974"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8486X",
+        "name": "MOSQUERUELA DEPÓSITO",
+        "utm_x": "716146",
+        "utm_y": "4471104",
+        "prov": "TERUEL",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.23333333333333",
+        "lambda_2": "0.969072164948454",
+        "beta_b0": "29.1610835457159",
+        "beta_b1": "0.989739108335825",
+        "alpha": "2.51053159389505",
+        "kappa": "-0.430193198570685",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.455748474205561",
+          "40.3606768133796"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8489X",
+        "name": "VILLAFRANCA",
+        "utm_x": "732768",
+        "utm_y": "4479473",
+        "prov": "CASTELLON",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.68333333333333",
+        "lambda_2": "0.97737556561086",
+        "beta_b0": "30.1075095160695",
+        "beta_b1": "0.659664688211005",
+        "alpha": "2.79872579856885",
+        "kappa": "-0.504701568011906",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.257146543079092",
+          "40.4315172108592"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8500A",
+        "name": "CASTELLÓN-ALMASSORA",
+        "utm_x": "750113",
+        "utm_y": "4427117",
+        "prov": "CASTELLON",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "5.11666666666667",
+        "lambda_2": "0.866449511400652",
+        "beta_b0": "31.5003715753306",
+        "beta_b1": "1.98438093763984",
+        "alpha": "2.04801153330504",
+        "kappa": "-0.182210528581815",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.073254812478496",
+          "39.9554120585006"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8523X",
+        "name": "VINAROZ",
+        "utm_x": "790407",
+        "utm_y": "4494924",
+        "prov": "CASTELLON",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.73333333333333",
+        "lambda_2": "0.827464788732394",
+        "beta_b0": "31.8502096834533",
+        "beta_b1": "2.12801963138373",
+        "alpha": "2.04885676682432",
+        "kappa": "-0.359684973222682",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.428384752686014",
+          "40.5523610938243"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9122I",
+        "name": "LABASTIDA- REMELLURI",
+        "utm_x": "518320",
+        "utm_y": "4716853",
+        "prov": "ARABA/ALAVA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.15",
+        "lambda_2": "0.807228915662651",
+        "beta_b0": "31.961625322209",
+        "beta_b1": "2.53758312278454",
+        "alpha": "2.78249675113419",
+        "kappa": "-0.363315620681559",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.77792412500554",
+          "42.6020080365461"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9136X",
+        "name": "ANGUIANO VALVANERA",
+        "utm_x": "510636",
+        "utm_y": "4675414",
+        "prov": "LA RIOJA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.1",
+        "lambda_2": "0.955284552845528",
+        "beta_b0": "30.673200477012",
+        "beta_b1": "1.03927935587263",
+        "alpha": "2.64599656523092",
+        "kappa": "-0.368256577090122",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.87235217088745",
+          "42.2289560291267"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9171K",
+        "name": "LOS ARCOS",
+        "utm_x": "566982",
+        "utm_y": "4713420",
+        "prov": "NAVARRA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.13333333333333",
+        "lambda_2": "0.919354838709677",
+        "beta_b0": "35.0916338011471",
+        "beta_b1": "1.06858150978505",
+        "alpha": "2.2234084719147",
+        "kappa": "-0.300802162372605",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.1851660540672",
+          "42.568409529228"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9198X",
+        "name": "CANFRANC",
+        "utm_x": "703283",
+        "utm_y": "4735985",
+        "prov": "HUESCA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "2.88333333333333",
+        "lambda_2": "0.959537572254335",
+        "beta_b0": "30.9405816912413",
+        "beta_b1": "2.17800570193644",
+        "alpha": "2.56478428798939",
+        "kappa": "-0.502489626020247",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.517467424738816",
+          "42.7476008848455"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9228T",
+        "name": "RONCESVALLES/ORREAGA",
+        "utm_x": "636465",
+        "utm_y": "4763039",
+        "prov": "NAVARRA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.83333333333333",
+        "lambda_2": "0.817241379310345",
+        "beta_b0": "26.6784820491608",
+        "beta_b1": "3.87120508238892",
+        "alpha": "2.73228281263833",
+        "kappa": "-0.407736102523269",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.32688434187514",
+          "43.0059110268189"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9262",
+        "name": "PAMPLONA OBSERVATORIO",
+        "utm_x": "611315",
+        "utm_y": "4741479",
+        "prov": "NAVARRA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4.01666666666667",
+        "lambda_2": "0.91701244813278",
+        "beta_b0": "33.626542873082",
+        "beta_b1": "2.04347284122416",
+        "alpha": "2.399027607987",
+        "kappa": "-0.300926553649927",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.63964611566486",
+          "42.8159100837863"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9299X",
+        "name": "TARAZONA",
+        "utm_x": "605873",
+        "utm_y": "4641096",
+        "prov": "ZARAGOZA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.35",
+        "lambda_2": "0.896551724137931",
+        "beta_b0": "34.0524295048928",
+        "beta_b1": "1.46784488552164",
+        "alpha": "2.38549390504403",
+        "kappa": "-0.359226766531574",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.72461266375634",
+          "41.9128601350767"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9301X",
+        "name": "MONTEAGUDO",
+        "utm_x": "608516",
+        "utm_y": "4646041",
+        "prov": "NAVARRA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.26666666666667",
+        "lambda_2": "0.90625",
+        "beta_b0": "34.2394724484678",
+        "beta_b1": "1.33301002077328",
+        "alpha": "2.43023455497471",
+        "kappa": "-0.361058436298197",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.69184141504622",
+          "41.9570281492985"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9302X",
+        "name": "TUDELA I",
+        "utm_x": "615063",
+        "utm_y": "4656880",
+        "prov": "NAVARRA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.15",
+        "lambda_2": "0.995983935742972",
+        "beta_b0": "35.9142026054164",
+        "beta_b1": "0.218567864666325",
+        "alpha": "2.24409721306762",
+        "kappa": "-0.363239601670495",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.6107426487278",
+          "42.0536943767649"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9336D",
+        "name": "CASTEJÓN DE VALDEJASA DEPÓSITO",
+        "utm_x": "666025",
+        "utm_y": "4649962",
+        "prov": "ZARAGOZA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.66666666666667",
+        "lambda_2": "1",
+        "beta_b0": "35.0544672743096",
+        "beta_b1": "0.318877106974579",
+        "alpha": "2.04086325616519",
+        "kappa": "-0.358881937330826",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.997149391245718",
+          "41.9823209954603"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9344C",
+        "name": "ARCOS DE JALÓN-COEX",
+        "utm_x": "559260",
+        "utm_y": "4563020",
+        "prov": "SORIA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.58333333333333",
+        "lambda_2": "0.930232558139535",
+        "beta_b0": "35.0581733580976",
+        "beta_b1": "1.36979944143332",
+        "alpha": "2.06729622728523",
+        "kappa": "-0.474303332076629",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-2.29430981650594",
+          "41.2145313234918"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9377Y",
+        "name": "EL PEDREGAL",
+        "utm_x": "620809",
+        "utm_y": "4515168",
+        "prov": "GUADALAJARA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.25",
+        "lambda_2": "0.882051282051282",
+        "beta_b0": "33.341805174287",
+        "beta_b1": "1.58153926275103",
+        "alpha": "1.8394250732123",
+        "kappa": "-0.356308693359776",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.56960444909255",
+          "40.7767701314625"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9381",
+        "name": "CALAMOCHA-VOR",
+        "utm_x": "642846",
+        "utm_y": "4525154",
+        "prov": "TERUEL",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.9",
+        "lambda_2": "0.893162393162393",
+        "beta_b0": "34.0640429589579",
+        "beta_b1": "1.79762644998796",
+        "alpha": "2.05077460565875",
+        "kappa": "-0.282122365594398",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.30627576012954",
+          "40.8631571420673"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9390X",
+        "name": "DAROCA II",
+        "utm_x": "633492",
+        "utm_y": "4552680",
+        "prov": "ZARAGOZA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.91666666666667",
+        "lambda_2": "0.859574468085106",
+        "beta_b0": "35.570920975569",
+        "beta_b1": "2.18206430740703",
+        "alpha": "2.14796612767513",
+        "kappa": "-0.486549958731478",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.41128405211346",
+          "41.1125966777925"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9434",
+        "name": "ZARAGOZA AEROPUERTO",
+        "utm_x": "666170",
+        "utm_y": "4614014",
+        "prov": "ZARAGOZA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "PENINSULA",
+        "lambda_1": "4",
+        "lambda_2": "0.920833333333333",
+        "beta_b0": "36.4411827965309",
+        "beta_b1": "1.84358964239725",
+        "alpha": "1.85185796149869",
+        "kappa": "-0.189894923073178",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.00547087846169",
+          "41.6587096647039"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9436X",
+        "name": "FONFRÍA",
+        "utm_x": "660860",
+        "utm_y": "4539995",
+        "prov": "TERUEL",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.9",
+        "lambda_2": "0.871794871794872",
+        "beta_b0": "30.8753028686095",
+        "beta_b1": "2.14653255264669",
+        "alpha": "2.16508432009501",
+        "kappa": "-0.322623350119545",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.08878998472911",
+          "40.9934383884149"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9443U",
+        "name": "ZARAGOZA",
+        "utm_x": "675237",
+        "utm_y": "4611329",
+        "prov": "ZARAGOZA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.73333333333333",
+        "lambda_2": "0.924107142857143",
+        "beta_b0": "35.662410900574",
+        "beta_b1": "1.62671826183202",
+        "alpha": "2.08672162241724",
+        "kappa": "-0.278039740002367",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.897428114739368",
+          "41.632601020491"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9451F",
+        "name": "PANTICOSA PETROSOS",
+        "utm_x": "723156",
+        "utm_y": "4731596",
+        "prov": "HUESCA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "5.16666666666667",
+        "lambda_2": "0.993548387096774",
+        "beta_b0": "25.3896619301303",
+        "beta_b1": "0.835625685013139",
+        "alpha": "2.09923249039876",
+        "kappa": "-0.242696796691505",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.276636571356725",
+          "42.7026023705592"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9550C",
+        "name": "ANDORRA HORCALLANA",
+        "utm_x": "718105",
+        "utm_y": "4539158",
+        "prov": "TERUEL",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.88333333333333",
+        "lambda_2": "0.905579399141631",
+        "beta_b0": "32.5315996858406",
+        "beta_b1": "1.70579240713973",
+        "alpha": "2.50807525049557",
+        "kappa": "-0.390985358951634",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.409089818148824",
+          "40.9726201516923"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9561X",
+        "name": "CASTELLOTE DEPÓSITO",
+        "utm_x": "726488",
+        "utm_y": "4519841",
+        "prov": "TERUEL",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.45",
+        "lambda_2": "0.975845410628019",
+        "beta_b0": "35.0442732572925",
+        "beta_b1": "0.311003852064587",
+        "alpha": "2.45763463447879",
+        "kappa": "-0.40339378717175",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.316597944731775",
+          "40.7965168477259"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9574B",
+        "name": "CASPE PLANA DEL PILÓN",
+        "utm_x": "745643",
+        "utm_y": "4569824",
+        "prov": "ZARAGOZA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.8",
+        "lambda_2": "0.87280701754386",
+        "beta_b0": "36.5043069956216",
+        "beta_b1": "1.88129246091978",
+        "alpha": "2.42243148047652",
+        "kappa": "-0.447522456935485",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-0.0699425885433257",
+          "41.2406824398453"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9677",
+        "name": "PORT AINÉ L ORRI",
+        "utm_x": "846833",
+        "utm_y": "4703915",
+        "prov": "LLEIDA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.28333333333333",
+        "lambda_2": "1",
+        "beta_b0": "21.9972802659976",
+        "beta_b1": "0.00522360061978949",
+        "alpha": "2.92780468839035",
+        "kappa": "-1.17012765001384",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "1.21332226769137",
+          "42.408201552191"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9689X",
+        "name": "CABDELLA-CENTRAL",
+        "utm_x": "828111",
+        "utm_y": "4709286",
+        "prov": "LLEIDA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "2.95",
+        "lambda_2": "0.892655367231638",
+        "beta_b0": "28.4890835245728",
+        "beta_b1": "1.91989117203461",
+        "alpha": "2.5342314001511",
+        "kappa": "-0.507975980997214",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.989435432310471",
+          "42.4645853878677"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9935X",
+        "name": "VALDERROBRES",
+        "utm_x": "765118",
+        "utm_y": "4529464",
+        "prov": "TERUEL",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.73333333333333",
+        "lambda_2": "0.901785714285714",
+        "beta_b0": "34.118233458129",
+        "beta_b1": "2.04534245058077",
+        "alpha": "2.415555632322",
+        "kappa": "-0.38323792066314",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.144775591724971",
+          "40.8715239107663"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9987P",
+        "name": "SANT JAUME",
+        "utm_x": "821915",
+        "utm_y": "4512350",
+        "prov": "TARRAGONA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.55",
+        "lambda_2": "0.863849765258216",
+        "beta_b0": "29.2137991734204",
+        "beta_b1": "1.72279728223554",
+        "alpha": "1.75935848127727",
+        "kappa": "-0.358794485755088",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.808641667007667",
+          "40.6973688530128"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9990X",
+        "name": "ARTIES",
+        "utm_x": "817555",
+        "utm_y": "4734827",
+        "prov": "LLEIDA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.11666666666667",
+        "lambda_2": "0.923076923076923",
+        "beta_b0": "31.0730940826732",
+        "beta_b1": "2.58098751679578",
+        "alpha": "2.87496383597208",
+        "kappa": "-0.431922981830139",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.87554502531946",
+          "42.6984676977791"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9994X",
+        "name": "BOSSÒST-CENTRAL",
+        "utm_x": "801849",
+        "utm_y": "4742561",
+        "prov": "LLEIDA",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "4.68333333333333",
+        "lambda_2": "0.928825622775801",
+        "beta_b0": "30.4475007941391",
+        "beta_b1": "2.90489339377971",
+        "alpha": "4.07214206754461",
+        "kappa": "-0.5350531931006",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "0.688321274062999",
+          "42.7742947916687"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9995Y",
+        "name": "VALCARLOS/LUZAIDE",
+        "utm_x": "638293",
+        "utm_y": "4772334",
+        "prov": "NAVARRA",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "6.23333333333333",
+        "lambda_2": "0.96524064171123",
+        "beta_b0": "30.0141917861257",
+        "beta_b1": "1.5125957837389",
+        "alpha": "4.31609805171277",
+        "kappa": "-0.484172177408085",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-1.30215845178691",
+          "43.0892449917288"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "B603X",
+        "name": "COLÒNIA SANT PERE-CAN MENGOL",
+        "utm_x": "1038299",
+        "utm_y": "4415918",
+        "prov": "BALEARES",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.83333333333333",
+        "lambda_2": "0.865217391304348",
+        "beta_b0": "33.3677262562345",
+        "beta_b1": "2.29822984366449",
+        "alpha": "2.52619451693647",
+        "kappa": "-0.315028929582824",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "3.27720909750712",
+          "39.7213442935279"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "B870C",
+        "name": "CIUTADELLA-CALA GALDANA",
+        "utm_x": "1094557",
+        "utm_y": "4444868",
+        "prov": "BALEARES",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.63333333333333",
+        "lambda_2": "0.844036697247706",
+        "beta_b0": "31.916511350227",
+        "beta_b1": "1.94475471498346",
+        "alpha": "2.57617426806813",
+        "kappa": "-0.442809097606403",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "3.95524735929202",
+          "39.943029898197"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "B908X",
+        "name": "SANT JOAN DE LABRITJA",
+        "utm_x": "888789",
+        "utm_y": "4332622",
+        "prov": "BALEARES",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "PENINSULA",
+        "lambda_1": "3.63333333333333",
+        "lambda_2": "0.931192660550459",
+        "beta_b0": "32.6276061545425",
+        "beta_b1": "1.59938729928679",
+        "alpha": "1.97278799263597",
+        "kappa": "-0.0982079382428965",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "1.49115616660298",
+          "39.0543511951539"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "C018J",
+        "name": "TÍAS (LAS VEGAS)",
+        "utm_x": "-544895",
+        "utm_y": "3252048",
+        "prov": "LAS PALMAS",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "TRUE",
+        "island": "LANZAROTE",
+        "lambda_1": "5.53333333333333",
+        "lambda_2": "0.936746987951807",
+        "beta_b0": "29.2191940507247",
+        "beta_b1": "0.874509146530175",
+        "alpha": "3.90864916783111",
+        "kappa": "-0.163635105251042",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-13.6921569439634",
+          "28.9665637937386"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "C259X",
+        "name": "LA OLIVA-PUERTO DE CORRALEJO",
+        "utm_x": "-564161",
+        "utm_y": "3228142",
+        "prov": "LAS PALMAS",
+        "source": "aemet",
+        "is_auto": "TRUE",
+        "cand": "FALSE",
+        "island": "FUERTEVENTURA",
+        "lambda_1": "7.41666666666667",
+        "lambda_2": "0.910112359550562",
+        "beta_b0": "26.3948528483424",
+        "beta_b1": "0.947156950582183",
+        "alpha": "2.27443896247535",
+        "kappa": "-0.0975985129843948",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-13.8640595201765",
+          "28.7389151588517"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "C412N",
+        "name": "CITFAGRO_89_CHAVAO",
+        "utm_x": "-851936",
+        "utm_y": "3198966",
+        "prov": "SANTA CRUZ DE TENERIFE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "TENERIFE",
+        "lambda_1": "3.38333333333333",
+        "lambda_2": "0.891625615763547",
+        "beta_b0": "28.2355850791124",
+        "beta_b1": "1.33420294830037",
+        "alpha": "1.93390043333473",
+        "kappa": "-0.706276619699799",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-16.7059174150147",
+          "28.2180448831722"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "C423R",
+        "name": "CITFAGRO_90_PICACHO",
+        "utm_x": "-833524",
+        "utm_y": "3197365",
+        "prov": "SANTA CRUZ DE TENERIFE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "TENERIFE",
+        "lambda_1": "2.96666666666667",
+        "lambda_2": "0.932584269662921",
+        "beta_b0": "29.312829246618",
+        "beta_b1": "0.810495603521495",
+        "alpha": "1.53057881078939",
+        "kappa": "-0.365889528821296",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-16.5217533307122",
+          "28.222502070571"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "C426R",
+        "name": "CITFAGRO_09_HELECHO",
+        "utm_x": "-830572",
+        "utm_y": "3196206",
+        "prov": "SANTA CRUZ DE TENERIFE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "TENERIFE",
+        "lambda_1": "3.01666666666667",
+        "lambda_2": "1",
+        "beta_b0": "35.8",
+        "beta_b1": "0",
+        "alpha": "3.2142276908577",
+        "kappa": "-0.551938631107895",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-16.4911999632078",
+          "28.2152737110264"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "C447B",
+        "name": "LAGUNA (INSTITUTO)",
+        "utm_x": "-809864",
+        "utm_y": "3225118",
+        "prov": "SANTA CRUZ DE TENERIFE",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "TENERIFE",
+        "lambda_1": "4.51666666666667",
+        "lambda_2": "0.944649446494465",
+        "beta_b0": "28.7766128544049",
+        "beta_b1": "1.36621506980811",
+        "alpha": "4.38751651866552",
+        "kappa": "-0.308447404866456",
+        "dtest": "1",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-16.3181623560513",
+          "28.4896967738437"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "C659T",
+        "name": "LAS PALMAS DE G.C. (MUELLE DEPORTIVO)",
+        "utm_x": "-724722",
+        "utm_y": "3175231",
+        "prov": "LAS PALMAS",
+        "source": "aemet",
+        "is_auto": "FALSE",
+        "cand": "FALSE",
+        "island": "GRAN CANARIA",
+        "lambda_1": "10.15",
+        "lambda_2": "0.870279146141215",
+        "beta_b0": "23.7118354233161",
+        "beta_b1": "1.6192109626235",
+        "alpha": "1.98687382569004",
+        "kappa": "-0.0542103789327258",
+        "dtest": "0",
+        "resol": "0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          "-15.4178693980847",
+          "28.1319290241338"
+        ]
+      }
+    }
+  ]
+}

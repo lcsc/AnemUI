@@ -22,9 +22,6 @@ export interface CsMapController{
     putMarker(pos:CsLatLong):void;
     setDate(dateIndex:number, state:CsViewerData):void;
     getZoom():number;
-    showValue(latLong:CsLatLong,value:number):void;
-    // getGeoJsonLayer(data:GeoJSON.Feature[],onClick:CsGeoJsonClick):CsGeoJsonLayer;
-    showFeatureValue (data: any, pixel: any, pos: CsLatLong, target:any):void; 
 }
 
 export type CsGeoJsonClick=(feature:GeoJSON.Feature,event:any)=>void
@@ -34,7 +31,7 @@ export interface CsMapListener{
     onMapLoaded():void;
     onDragStart(event:CsMapEvent):void;
     onClick(event:CsMapEvent):void;
-    onMouseMoveEnd(event:CsMapEvent):void;
+    // onMouseMoveEnd(event:CsMapEvent):void;
 }
 
 function isCsPoint(p:any):p is CsPoint{

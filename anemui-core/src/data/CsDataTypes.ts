@@ -94,7 +94,6 @@ export type CsViewerData={
     uncertaintyLayer:boolean,
     season:string,
     month:string,
-    actionData: ArrayData,
     timeSeriesData: ArrayData
 }
 
@@ -106,5 +105,4 @@ export type CsGeoJsonData={
     type: string,
     features: GeoJSON.Feature[],
     crs: any
-
 }

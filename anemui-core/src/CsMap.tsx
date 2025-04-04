@@ -6,32 +6,32 @@ import { defaultRenderer } from "./tiles/Support"
 import { abstract } from "ol/util";
 
 export abstract class CsGeoJsonLayer{
-    protected data: CsGeoJsonData
+    protected geoData: CsGeoJsonData
     public abstract show(type:number):void;
     public abstract hide():void;
     public abstract setPopupContent(popup:any,content:HTMLElement,event:any):void;
     
     public getFeature(id:string):GeoJSON.Feature{
-        if(this.data==undefined) return undefined;
-        for(let i =0; i< this.data.features.length;i++){
-            // if(this.data[i].properties["id"]==id)return this.data[i];
-            if(this.data.features[i].properties["id"]==id)return this.data.features[i];
+        if(this.geoData==undefined) return undefined;
+        for(let i =0; i< this.geoData.features.length;i++){
+            // if(this.geoData[i].properties["id"]==id)return this.geoData[i];
+            if(this.geoData.features[i].properties["id"]==id)return this.geoData.features[i];
         }
         return undefined
     }
 
-    constructor(_data:CsGeoJsonData){    
-        this.data=_data
+    constructor(_geoData:CsGeoJsonData){    
+        this.geoData=_geoData
     }
 
     public refresh():void{
         
     }
     public getData():CsGeoJsonData{
-        return this.data;
+        return this.geoData;
     }
     public getFeatures():GeoJSON.Feature[]{
-        return this.data.features;
+        return this.geoData.features;
     }
 }
 
@@ -90,10 +90,6 @@ export class CsMap{
         }
     }
 
-    public onMouseMoveEnd(event:CsMapEvent):void{
-        this.listener.onMouseMoveEnd(event)
-    }
-
     public showMarker(latLong:CsLatLong){
         this.controller.putMarker(latLong);
     }
@@ -108,14 +104,6 @@ export class CsMap{
     public getZoom():number{
         return this.controller.getZoom();
     }
-
-    public showValue(latLong:CsLatLong,value:number){
-        this.controller.showValue(latLong,value)
-    }
-
-    public showFeatureValue (data: any, pixel: any, pos: CsLatLong, target:any) {
-        this.controller.showFeatureValue (data, pixel, pos, target) 
-    };
 
     public updateRender(support: string) {
         this.controller.updateRender(support)

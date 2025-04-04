@@ -12,9 +12,9 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
+import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasCookies} from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
-import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, downloadXYbyRegion, getPortionForPoint } from "./data/ChunkDownloader";
+import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked, downloadCSVbyRegion } from "./data/ChunkDownloader";
 import { downloadUrl } from "./data/UrlDownloader";
 import { DEF_STYLE_STATIONS, CsOpenLayerGeoJsonLayer, OpenLayerMap } from "./OpenLayersMap";
@@ -28,7 +28,7 @@ import { FeatureLike } from "ol/Feature";
 import LeftBar from "./ui/LeftBar"; 
 import RightBar from "./ui/RightBar"; 
 import Translate from "./language/translate";
-import { renderers, defaultRenderer } from "./tiles/Support";
+import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
 
 
@@ -55,7 +55,6 @@ const INITIAL_STATE: CsViewerData = {
     uncertaintyLayer: false,
     season: "",
     month: "",
-    actionData: undefined,
     timeSeriesData: undefined
 }
 
@@ -223,7 +222,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     onDragStart(event: CsMapEvent): void {
-        if (avoidMin) return;
+        if (avoidMinimize) return;
         this.menuBar.minimize();
         this.leftBar.minimize();
         this.downloadFrame.minimize();
@@ -271,22 +270,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             });
     }
 
-    public onMouseMoveEnd(event: CsMapEvent): void {
-            loadLatLogValue(event.latLong, this.state, this.timesJs, this.csMap.getZoom())
-            .then(value => {
-                if (this.state.support == defaultRenderer) {
-                    this.csMap.showValue(event.latLong, value);
-                } else {
-                    let evt = event.original
-                    this.csMap.showFeatureValue(this.state.actionData, evt.pixel, event.latLong, evt.originalEvent.target);
-                }
-            })
-            .catch(reason => {
-                console.log("error: " + reason)
-            })
-        
-    }
-
     protected getUrlForNC(suffix?: string): string {
         let currUrl = new URL(document.location.toString())
         currUrl.search = "";
@@ -295,7 +278,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
             currUrl.pathname += ".nc";
         } else {
-            currUrl.pathname += "data/" + renderers.folder[renderers.name.indexOf(this.state.support)] + "/" + this.state.varId +  ".csv";
+            currUrl.pathname += "data/" + getFolders(this.state.support) + "/" + this.state.varId +  ".csv";
         }
         
         return currUrl.toString();
@@ -337,12 +320,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         downloadCSVbySt(stParams['id'], this.state.varId, open);
     }
 
-    public showGraphByRegion(region:number, stParams: any) {
+    public showGraphByRegion(folder: string, stParams: any) {
+        // let folder = getFolders(this.state.support)
         let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
             this.state.timeSeriesData = data
             this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
         }
-        downloadTimebyRegion(region, stParams['id'], this.state.varId, open);
+        downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
     }
     // ------- UNIFICAR
 
@@ -496,76 +480,76 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return values;
     }
 
-    async onStationClick(feature: GeoJSON.Feature, event: any) {
-        let stationId = feature.properties['id'];
-        let varId = this.state.support == renderers.name[0]? this.state.varId + "_" + this.state.selectionParam + "y": this.state.varId;
-        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-        let hasData = await this.stHasData(varId,stationId);
-        let div = document.createElement("div");
-        let header = document.createElement("h5");
-        let hdText = document.createTextNode('Estación: ' + feature.properties['name']);
-        header.appendChild(hdText);
-        div.appendChild(header);
-        let list = document.createElement('ul');
-        div.appendChild(list);
+    // async onStationClick(feature: GeoJSON.Feature, event: any) {
+    //     let stationId = feature.properties['id'];
+    //     let varId = this.state.support == renderers[0]? this.state.varId + "_" + this.state.selectionParam + "y": this.state.varId;
+    //     let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
+    //     let hasData = await this.stHasData(varId,stationId);
+    //     let div = document.createElement("div");
+    //     let header = document.createElement("h5");
+    //     let hdText = document.createTextNode('Estación: ' + feature.properties['name']);
+    //     header.appendChild(hdText);
+    //     div.appendChild(header);
+    //     let list = document.createElement('ul');
+    //     div.appendChild(list);
 
-        Object.keys(feature.properties).forEach((value) => {
-            if (value == varId) {
-                const stProp = document.createElement("li");
-                const textBold = document.createElement("B");
-                const propKey = document.createTextNode(value + ": ");
-                textBold.appendChild(propKey);
-                stProp.appendChild(textBold);
-                const propValue = document.createTextNode(feature.properties[value]);
-                stProp.appendChild(propValue);
-                list.appendChild(stProp);
-            }
-        });
+    //     Object.keys(feature.properties).forEach((value) => {
+    //         if (value == varId) {
+    //             const stProp = document.createElement("li");
+    //             const textBold = document.createElement("B");
+    //             const propKey = document.createTextNode(value + ": ");
+    //             textBold.appendChild(propKey);
+    //             stProp.appendChild(textBold);
+    //             const propValue = document.createTextNode(feature.properties[value]);
+    //             stProp.appendChild(propValue);
+    //             list.appendChild(stProp);
+    //         }
+    //     });
 
-        if (hasData == true) {
-            let btndiv = document.createElement("div");
-            btndiv.className = "d-flex justify-content-center";
-            let button = document.createElement("button");
-            button.id = "st_" + stationId;
-            button.className = "btn navbar-btn";
-            button.innerText = "Gráfico";
-            if (this.state.support== renderers.name[0]) button.addEventListener("click", () => {this.showGraphBySt(stParams)})
-            else button.addEventListener("click", () => {this.showGraphByRegion(renderers.name.indexOf(this.state.support), stParams)});
-            btndiv.appendChild(button);
-            div.appendChild(btndiv);
-        }
+    //     if (hasData == true) {
+    //         let btndiv = document.createElement("div");
+    //         btndiv.className = "d-flex justify-content-center";
+    //         let button = document.createElement("button");
+    //         button.id = "st_" + stationId;
+    //         button.className = "btn navbar-btn";
+    //         button.innerText = "Gráfico";
+    //         if (this.state.support== renderers[0]) button.addEventListener("click", () => {this.showGraphBySt(stParams)})
+    //         else button.addEventListener("click", () => {this.showGraphByRegion(renderers.indexOf(this.state.support), stParams)});
+    //         btndiv.appendChild(button);
+    //         div.appendChild(btndiv);
+    //     }
 
-        this.stationsLayer.setPopupContent(event.popup, div, event);
-    }
+    //     this.stationsLayer.setPopupContent(event.popup, div, event);
+    // }
 
-    public initStationsLayer(layer: CsOpenLayerGeoJsonLayer) {
-        this.stationsLayer = layer; 
-    }
+    // public initStationsLayer(layer: CsOpenLayerGeoJsonLayer) {
+    //     this.stationsLayer = layer; 
+    // }
 
-    public async onFeatureClick(feature: GeoJSON.Feature, event: any) {
-        if (feature) {
-            if (!this.state.climatology) {
-                let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-                if (this.state.support== renderers.name[0]) this.showGraphBySt(stParams)
-                else this.showGraphByRegion(renderers.name.indexOf(this.state.support), stParams)
-            }
-        }
-    }
+    // public async onFeatureClick(feature: GeoJSON.Feature, event: any) {
+    //     if (feature) {
+    //         if (!this.state.climatology) {
+    //             let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
+    //             if (this.state.support== renderers[0]) this.showGraphBySt(stParams)
+    //             else this.showGraphByRegion(renderers.indexOf(this.state.support), stParams)
+    //         }
+    //     }
+    // }
 
-    public async stHasData(varId: string, station: string) {
-        let num:number = renderers.name.indexOf(this.state.support) 
-        let url = this.state.support == renderers.name[0]? renderers.folder[0] + station + ".csv": "./data/" + renderers.folder[num] + "/" + varId + ".csv";
-        try {
-            const response = await fetch(url, {
-                method: 'HEAD',
-                cache: 'no-cache'
-            });
-            return response.status === 200;
+    // public async stHasData(varId: string, station: string) {
+    //     let num:number = renderers.indexOf(this.state.support) 
+    //     let url = this.state.support == renderers[0]? getFolders(this.state.support) + station + ".csv": "./data/" + getFolders(this.state.support) + "/" + varId + ".csv";
+    //     try {
+    //         const response = await fetch(url, {
+    //             method: 'HEAD',
+    //             cache: 'no-cache'
+    //         });
+    //         return response.status === 200;
 
-        } catch (error) {
-            return false;
-        }
-    }
+    //     } catch (error) {
+    //         return false;
+    //     }
+    // }
 
     public notifyMaxMinChanged(): void {
         if (this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex] == this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex] ||
