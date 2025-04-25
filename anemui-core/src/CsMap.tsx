@@ -84,7 +84,6 @@ export class CsMap{
 
     private checkDataToShowGraph(){
         if (this.parent.getLastLlData() && this.parent.getLastLlData().latlng !== undefined) {
-            console.log(this.parent.getLastLlData().latlng);
             this.parent.showGraph();
         } else {
             console.warn("lastLlData o latlng no están definidos:", this.parent.getLastLlData());
