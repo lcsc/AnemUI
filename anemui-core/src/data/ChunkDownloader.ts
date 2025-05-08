@@ -307,13 +307,16 @@ async function downloadTChunkZarr(x: number, varName: string, portion: string, t
     return promise;
 }
 
-export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
-    // We can only determine the maximums and minimums and draw the data layers when all the promises are resolved.
-    Promise.all(promises).then((floatArrays) => {
+export async function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
+    try {
+        // We can only determine the maximums and minimums and draw the data layers when all the promises are resolved.
+        const floatArrays = await Promise.all(promises);
+
         // We determine the minimum and maximum of the data layer values excluding the NaNs
         let minArray: number = Number.MAX_VALUE;
         let maxArray: number = Number.MIN_VALUE;
         let painter = PaletteManager.getInstance().getPainter();
+
         floatArrays.forEach((floatArray, index) => {
             floatArray.forEach((value) => {
                 if (!isNaN(value)) {
@@ -322,6 +325,7 @@ export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, 
                 }
             });
         });
+
         timesJs.varMin[status.varId][status.selectedTimeIndex] = minArray;
         timesJs.varMax[status.varId][status.selectedTimeIndex] = maxArray;
         app.notifyMaxMinChanged();
@@ -329,25 +333,28 @@ export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, 
         maxArray = timesJs.varMax[status.varId][status.selectedTimeIndex];
 
         // Now that we have the absolute maximums and minimums, we paint the data layers.
-        floatArrays.forEach((floatArray, index) => {
-            const width: number = timesJs.lonNum[status.varId + timesJs.portions[status.varId][index]];
-            const height: number = timesJs.latNum[status.varId + timesJs.portions[status.varId][index]];
+        for (let i = 0; i < floatArrays.length; i++) {
+            const floatArray = floatArrays[i];
+            const width: number = timesJs.lonNum[status.varId + timesJs.portions[status.varId][i]];
+            const height: number = timesJs.latNum[status.varId + timesJs.portions[status.varId][i]];
+
             // We call filterValues to apply the selection filter and the comparison filter if necessary and when it is resolved we paint the data layer.
-            app.filterValues(floatArray, status.selectedTimeIndex, status.varId, timesJs.portions[status.varId][index])
-                .then((floatArray) => {
-                    painter.paintValues(floatArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer)
-                        .then((canvas) => {
-                            dataTilesLayer[index].setSource(new Static({
-                                url: canvas.toDataURL('image/png'),
-                                crossOrigin: '',
-                                projection: timesJs.projection,
-                                imageExtent: ncExtents[timesJs.portions[status.varId][index]],
-                                interpolate: false
-                            }));
-                        });
-                });
-        });
-    });
+            const filteredArray = await app.filterValues(floatArray, status.selectedTimeIndex, status.varId, timesJs.portions[status.varId][i]);
+
+            // Rendering the data layer
+            const canvas = await painter.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
+
+            dataTilesLayer[i].setSource(new Static({
+                url: canvas.toDataURL('image/png'),
+                crossOrigin: '',
+                projection: timesJs.projection,
+                imageExtent: ncExtents[timesJs.portions[status.varId][i]],
+                interpolate: false
+            }));
+        }
+    } catch (error) {
+        console.error('Error in buildImages:', error);
+    }
 }
 
 export function downloadXYArrayChunked(x: number, varName: string, portion: string, doneCb: ArrayDownloadDone): void {
@@ -371,17 +378,16 @@ let xyCache: {
 } = undefined
 
 async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-    let app = window.CsViewerApp
-    //Como es Async podemos hacer un return del dato
+    let app = window.CsViewerApp;
+
+    // Como es Async podemos hacer un return del dato
     if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == t) {
-        let ret = [...xyCache.data]; //Una copia sin referencia
+        let ret = [...xyCache.data]; // Una copia sin referencia
         app.transformDataXY(ret, t, varName, portion);
-        return ret
+        return ret;
     }
 
-    let promise: Promise<number[]> = new Promise((resolve, reject) => {
-        let app = window.CsViewerApp;
-        let timesJs: CsTimesJsData = app.getTimesJs();
+    try {
         let chunkDataStruct = struct('<' + timesJs.offsetType + timesJs.sizeType);
         let chunkStruct = struct('<' + timesJs.varType);
 
@@ -391,39 +397,36 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         let chunkDataDir: bigint = BigInt(t * chunkDataSize);
 
         // Petición range request de la información del chunk (offset y size)
-        rangeRequest('./nc/' + varName + portion + '-xy.bin', chunkDataDir, chunkDataDir + BigInt(chunkDataSize - 1))
-            .then((chunkData: Uint8Array) => {
-                let [chunkOffset, chunkSize] = chunkDataStruct.unpack(chunkData.buffer);
-                // Petición range request del chunk
-                rangeRequest('./nc/' + varName + portion + '-xy.nc', BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1))
-                    .then((chunk: Uint8Array) => {
-                        // Decompress the received data
-                        const uncompressedArray = inflate(chunk);
-                        // Create an array of values from the bytes
-                        const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
-                        /* Gestion de Cache */
-                        if (xyCache == undefined) {
-                            xyCache = { t: t, varName, portion, data: floatArray }
-                        } else {
-                            xyCache.t = t;
-                            xyCache.varName = varName;
-                            xyCache.portion = portion;
-                            xyCache.data = floatArray;
-                        }
-                        let ret = [...floatArray];
-                        app.transformDataXY(ret, t, varName, portion);
-                        resolve(ret);
-                    })
-                    .catch(error => {
-                        console.error('Error: ', error);
-                    });
-            })
-            .catch(error => {
-                console.error('Error: ', error);
-            });
-    });
+        const chunkData = await rangeRequest('./nc/' + varName + portion + '-xy.bin', chunkDataDir, chunkDataDir + BigInt(chunkDataSize - 1));
 
-    return promise;
+        let [chunkOffset, chunkSize] = chunkDataStruct.unpack(chunkData.buffer);
+
+        // Petición range request del chunk
+        const chunk = await rangeRequest('./nc/' + varName + portion + '-xy.nc', BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
+
+        // Decompress the received data
+        const uncompressedArray = inflate(chunk);
+
+        // Create an array of values from the bytes
+        const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
+
+        /* Gestion de Cache */
+        if (xyCache == undefined) {
+            xyCache = { t: t, varName, portion, data: floatArray };
+        } else {
+            xyCache.t = t;
+            xyCache.varName = varName;
+            xyCache.portion = portion;
+            xyCache.data = floatArray;
+        }
+
+        let ret = [...floatArray];
+        app.transformDataXY(ret, t, varName, portion);
+        return ret;
+    } catch (error) {
+        console.error('Error: ', error);
+        throw error;
+    }
 }
 
 /**
@@ -450,44 +453,38 @@ async function downloadXYChunkZarr(t: number, varName: string, portion: string, 
         return ret;
     }
 
-    let promise: Promise<number[]> = new Promise((resolve, reject) => {
-        openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" })
-            .then(varArray => {
-                varArray.get([t])
-                    .then(data => {
-                        let floatArray: number[];
-                        if (isNestedArray(data)) {
-                            floatArray = Array.from(data.flatten(), value => Number(value));
-                        } else {
-                            floatArray = [Number(data)];
-                        }
+    try {
+        // Abrir el array Zarr para lectura
+        const varArray = await openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" });
 
-                        // Cache management
-                        if (xyCache == undefined) {
-                            xyCache = { t: t, varName, portion, data: floatArray };
-                        } else {
-                            xyCache.t = t;
-                            xyCache.varName = varName;
-                            xyCache.portion = portion;
-                            xyCache.data = floatArray;
-                        }
+        // Obtener los datos para el tiempo seleccionado
+        const data = await varArray.get([t]);
 
-                        let ret = [...floatArray]; // Make a copy
-                        app.transformDataXY(ret, t, varName, portion);
-                        resolve(ret);
-                    })
-                    .catch(error => {
-                        console.error('Error getting zarr data:', error);
-                        reject(error);
-                    });
-            })
-            .catch(error => {
-                console.error('Error opening zarr array:', error);
-                reject(error);
-            });
-    });
+        // Convertir a array de números
+        let floatArray: number[];
+        if (isNestedArray(data)) {
+            floatArray = Array.from(data.flatten(), value => Number(value));
+        } else {
+            floatArray = [Number(data)];
+        }
 
-    return promise;
+        // Gestión de caché
+        if (xyCache == undefined) {
+            xyCache = { t: t, varName, portion, data: floatArray };
+        } else {
+            xyCache.t = t;
+            xyCache.varName = varName;
+            xyCache.portion = portion;
+            xyCache.data = floatArray;
+        }
+
+        let ret = [...floatArray]; // Hacer una copia
+        app.transformDataXY(ret, t, varName, portion);
+        return ret;
+    } catch (error) {
+        console.error('Error en downloadXYChunkZarr:', error);
+        throw error;
+    }
 }
 
 
