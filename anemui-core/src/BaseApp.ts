@@ -12,11 +12,7 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-<<<<<<< Updated upstream
-import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasCookies} from "./Env";
-=======
 import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer } from "./Env";
->>>>>>> Stashed changes
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked, downloadCSVbyRegion } from "./data/ChunkDownloader";
@@ -32,11 +28,7 @@ import { FeatureLike } from "ol/Feature";
 import LeftBar from "./ui/LeftBar"; 
 import RightBar from "./ui/RightBar"; 
 import Translate from "./language/translate";
-<<<<<<< Updated upstream
-import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
-=======
 import { renderers, defaultRenderer, folders } from "./tiles/Support";
->>>>>>> Stashed changes
 import CsCookies from "./cookies/CsCookies";
 
 
@@ -63,12 +55,8 @@ const INITIAL_STATE: CsViewerData = {
     uncertaintyLayer: false,
     season: "",
     month: "",
-<<<<<<< Updated upstream
-    timeSeriesData: undefined
-=======
     timeSeriesData: undefined,
     computedData: {}
->>>>>>> Stashed changes
 }
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
@@ -423,11 +411,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
             currUrl.pathname += ".nc";
         } else {
-<<<<<<< Updated upstream
-            currUrl.pathname += "data/" + getFolders(this.state.support) + "/" + this.state.varId +  ".csv";
-=======
             currUrl.pathname += "data/" + this.getFolders(this.state.support) + "/" + this.state.varId +  ".csv";
->>>>>>> Stashed changes
         }
         
         return currUrl.toString();
@@ -473,20 +457,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public showGraphByRegion(folder: string, stParams: any) {
-<<<<<<< Updated upstream
-        // let folder = getFolders(this.state.support)
-=======
->>>>>>> Stashed changes
         let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
             this.state.timeSeriesData = data
             this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
         }
-<<<<<<< Updated upstream
-        downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
-=======
         if (computedDataTilesLayer) this.computeTimeData(-1, '_all', stParams, open);
         else downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
->>>>>>> Stashed changes
     }
     // ------- UNIFICAR
 
@@ -641,80 +617,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return values;
     }
 
-<<<<<<< Updated upstream
-    // async onStationClick(feature: GeoJSON.Feature, event: any) {
-    //     let stationId = feature.properties['id'];
-    //     let varId = this.state.support == renderers[0]? this.state.varId + "_" + this.state.selectionParam + "y": this.state.varId;
-    //     let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-    //     let hasData = await this.stHasData(varId,stationId);
-    //     let div = document.createElement("div");
-    //     let header = document.createElement("h5");
-    //     let hdText = document.createTextNode('Estación: ' + feature.properties['name']);
-    //     header.appendChild(hdText);
-    //     div.appendChild(header);
-    //     let list = document.createElement('ul');
-    //     div.appendChild(list);
-
-    //     Object.keys(feature.properties).forEach((value) => {
-    //         if (value == varId) {
-    //             const stProp = document.createElement("li");
-    //             const textBold = document.createElement("B");
-    //             const propKey = document.createTextNode(value + ": ");
-    //             textBold.appendChild(propKey);
-    //             stProp.appendChild(textBold);
-    //             const propValue = document.createTextNode(feature.properties[value]);
-    //             stProp.appendChild(propValue);
-    //             list.appendChild(stProp);
-    //         }
-    //     });
-
-    //     if (hasData == true) {
-    //         let btndiv = document.createElement("div");
-    //         btndiv.className = "d-flex justify-content-center";
-    //         let button = document.createElement("button");
-    //         button.id = "st_" + stationId;
-    //         button.className = "btn navbar-btn";
-    //         button.innerText = "Gráfico";
-    //         if (this.state.support== renderers[0]) button.addEventListener("click", () => {this.showGraphBySt(stParams)})
-    //         else button.addEventListener("click", () => {this.showGraphByRegion(renderers.indexOf(this.state.support), stParams)});
-    //         btndiv.appendChild(button);
-    //         div.appendChild(btndiv);
-    //     }
-
-    //     this.stationsLayer.setPopupContent(event.popup, div, event);
-    // }
-
-    // public initStationsLayer(layer: CsOpenLayerGeoJsonLayer) {
-    //     this.stationsLayer = layer; 
-    // }
-
-    // public async onFeatureClick(feature: GeoJSON.Feature, event: any) {
-    //     if (feature) {
-    //         if (!this.state.climatology) {
-    //             let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-    //             if (this.state.support== renderers[0]) this.showGraphBySt(stParams)
-    //             else this.showGraphByRegion(renderers.indexOf(this.state.support), stParams)
-    //         }
-    //     }
-    // }
-
-    // public async stHasData(varId: string, station: string) {
-    //     let num:number = renderers.indexOf(this.state.support) 
-    //     let url = this.state.support == renderers[0]? getFolders(this.state.support) + station + ".csv": "./data/" + getFolders(this.state.support) + "/" + varId + ".csv";
-    //     try {
-    //         const response = await fetch(url, {
-    //             method: 'HEAD',
-    //             cache: 'no-cache'
-    //         });
-    //         return response.status === 200;
-
-    //     } catch (error) {
-    //         return false;
-    //     }
-    // }
-
-=======
->>>>>>> Stashed changes
     public notifyMaxMinChanged(): void {
         if (this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex] == this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex] ||
             isNaN(this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex]) ||
@@ -821,8 +723,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         //Do nothing
     }
 
-<<<<<<< Updated upstream
-=======
     // Customizable data layer in each viewer    
     public computeLayerData(t: number, varName: string, portion: string): any  {
         //Do nothing
@@ -837,15 +737,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         //Do nothing
     }
 
->>>>>>> Stashed changes
     public getFeatureStyle(feature: FeatureLike): Style {
         return DEF_STYLE_STATIONS;
     }
 
-<<<<<<< Updated upstream
-    public formatPopupValue(text: string, value: number): string {
-        return this.getTranslation('valor_en') + text + value
-=======
     // public formatPopupValue(text: string, value: number): string {
     //     return this.getTranslation('valor_en') + text + value.toFixed(2)
     // }
@@ -916,6 +811,5 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             }
         }
         return folderIds;
->>>>>>> Stashed changes
     }
 }

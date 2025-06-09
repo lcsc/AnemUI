@@ -25,10 +25,7 @@ export const hasCookies:boolean = typeof ENV.hasCookies !== 'undefined'? ENV.has
 export const hasInf:boolean = typeof ENV.hasInf !== 'undefined'? ENV.hasInf:false;
 export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
-<<<<<<< Updated upstream
-=======
 export const computedDataTilesLayer:boolean = typeof ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer:false;
->>>>>>> Stashed changes
 
 // Defines the appearance of the display -- Default values
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
@@ -38,10 +35,7 @@ export const hasVars:boolean = typeof ENV.hasVars !== 'undefined'? ENV.hasVars:t
 export const hasSubVars:boolean = typeof ENV.hasSubVars !== 'undefined'? ENV.hasSubVars:false;
 export const hasTpSupport:boolean = typeof ENV.hasTpSupport !== 'undefined'? ENV.hasTpSupport:false;
 export const hasSelection:boolean = typeof ENV.hasSelection !== 'undefined'? ENV.hasSelection:false;
-<<<<<<< Updated upstream
-=======
 export const hasSelectionParam:boolean = typeof ENV.hasSelectionParam !== 'undefined'? ENV.hasSelectionParam:false;
->>>>>>> Stashed changes
 export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? ENV.varHasPopData:false;
 export const sbVarHasPopData:boolean = typeof ENV.sbVarHasPopData !== 'undefined'? ENV.sbVarHasPopData:false;
 export const hasDownload:boolean = typeof ENV.hasDownload !== 'undefined'? ENV.hasDownload:true;

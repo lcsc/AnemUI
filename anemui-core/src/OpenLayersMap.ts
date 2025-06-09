@@ -23,11 +23,7 @@ import { LayerManager } from "./LayerManager";
 import { loadLatLogValue, loadGeoJsonData } from "./data/CsDataLoader";
 import DataTileSource from "ol/source/DataTile";
 import { Geometry } from 'ol/geom';
-<<<<<<< Updated upstream
-import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
-=======
 // import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
->>>>>>> Stashed changes
 
 // Define alternative projections
 proj4.defs([
@@ -54,11 +50,6 @@ let contourStyle = new Style({
 
 const contours = ["provincia","autonomia"]
 
-<<<<<<< Updated upstream
-type ArrayData =  { [key: string]: number } 
-
-=======
->>>>>>> Stashed changes
 interface FeatureManagerOptions {
   folder: string;
   map: Map;
@@ -102,11 +93,8 @@ export class OpenLayerMap implements CsMapController{
     public value:Overlay;
     public popup: HTMLElement;
     public popupContent:HTMLDivElement;
-<<<<<<< Updated upstream
-=======
     public defaultRenderer:string;
     public renderers: string[];
->>>>>>> Stashed changes
 
     protected dataWMSLayer: TileWMS;
     protected dataTilesLayer: (ImageLayer<Static> | TileLayer)[];
@@ -176,11 +164,7 @@ export class OpenLayerMap implements CsMapController{
         this.marker.getElement().classList.add("marker")
         this.buildPopUp()
         this.map.on('pointermove',(event)=>self.onMouseMove(event))
-<<<<<<< Updated upstream
-        this.lastSupport = defaultRenderer
-=======
         this.lastSupport = this.parent.getParent().getDefaultRenderer()
->>>>>>> Stashed changes
         this.buildFeatureLayers();
         if (!isWmsEnabled) {
           this.buildDataTilesLayers(state, timesJs);
@@ -289,11 +273,7 @@ export class OpenLayerMap implements CsMapController{
       const timesJs= this.parent.getParent().getTimesJs();
       loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
       .then(value => {
-<<<<<<< Updated upstream
-          if (state.support == defaultRenderer) {
-=======
           if (state.support == this.defaultRenderer) {
->>>>>>> Stashed changes
               self.showValue(event.latLong, value);
           } else {
              let evt = event.original
@@ -339,13 +319,8 @@ export class OpenLayerMap implements CsMapController{
 
     public handleMapMove(){
       let state= this.parent.getParent().getState();
-<<<<<<< Updated upstream
-      if (state.support == renderers[2]) {
-          // this.updateRender(state.support)
-=======
       //  if (state.support == renderers[2]) {
       if (state.support != this.defaultRenderer) {
->>>>>>> Stashed changes
           this.parent.getParent().update();
       }
     }
@@ -498,245 +473,6 @@ export class OpenLayerMap implements CsMapController{
         this.popup.hidden = false
     }
 
-<<<<<<< Updated upstream
-    public formatPopupValue(pos: CsLatLong, value: number): string {
-      return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', value);
-    }
-
-    public buildFeatureLayers () {
-      this.glmgr = GeoLayerManager.getInstance();
-      let self = this
-      Object.entries(renderers).forEach(([key, renderer]) => {
-          if(!renderer.startsWith("~") && renderer != defaultRenderer){
-            const folders = getFolders(renderer)
-            folders.forEach( folder =>{
-              loadGeoJsonData(folder)
-              .then(GeoJsonData => { 
-                  self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
-              })
-              .catch(error => {
-                  console.error('Error: ', error);
-              });
-            })
-          }
-      } )
-    }
-
-    public isFeatureSelectable(
-      feature: Feature,
-      layer: CsOpenLayerGeoJsonLayer,
-      selectInteraction: Select,
-      selectableLayers: CsOpenLayerGeoJsonLayer[]
-    ): boolean { 
-      if (selectInteraction.get('filter')) {
-          if (!(selectInteraction.get('filter') as (feature: Feature, layer: CsOpenLayerGeoJsonLayer) => boolean)(feature, layer)) {
-              return false;
-          }
-      }
-  
-      if (selectableLayers && selectableLayers.length > 0) {
-          let isLayerInSelectable = false;
-          for (let selectableLayerCheck of selectableLayers) {
-              if (selectableLayerCheck === layer) {
-                  isLayerInSelectable = true;
-              }
-          }
-          if (!isLayerInSelectable) {
-              return false;
-          }
-      }
-      return true;
-  }
-
-  public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
-    let state = this.parent.getParent().getState()
-    if(typeof state.times === 'string') return 1
-    if (feature) {
-        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-        if (state.support== renderers[0]) this.parent.getParent().showGraphBySt(stParams)
-        this.parent.getParent().showGraphByRegion(folder, stParams)
-    }
-  }
-
-  private getSld():string{
-    let ret = SLD_HEADER;
-    let values= this.parent.getParent().getLegendValues();
-    let mgr=PaletteManager.getInstance().getPainter();
-    let min = this.parent.getParent().getTimesJs().varMin[this.parent.getParent().getState().varId][this.parent.getParent().getState().selectedTimeIndex];
-    let max = this.parent.getParent().getTimesJs().varMax[this.parent.getParent().getState().varId][this.parent.getParent().getState().selectedTimeIndex];
-    let limit= this.parent.getParent().getState().selectionParam;
-    values=values.sort((a,b)=>a - b);
-    values.map((val, index) =>{ 
-      let alpha=0
-      if(val>limit)
-        alpha=1;
-      ret+='<ColorMapEntry color="'+mgr.getColorString(val,min,max)+'" quantity="'+val+'" label="'+val+'" opacity="'+alpha+'"/>'
-      });
-
-    ret+=SLD_END;
-    return ret;
-  }
-
-  async initializeLayer(time: string, folder: string, varName: string): Promise<void> {
-    console.log("initializeLayer called");
-    return new Promise((resolve, reject) => {
-        let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            if (this.featureLayer) {
-                this.featureLayer.indexData = data;
-                console.log("featureLayer indexData set:", this.featureLayer.indexData);
-                if (this.featureLayer.show) {
-                    this.featureLayer.show(renderers.indexOf(this.lastSupport));
-                    console.log("featureLayer show called");
-                }
-                resolve();
-            } else {
-                console.error("featureLayer is undefined in initializeLayer callback");
-                reject("featureLayer is undefined");
-            }
-        };
-        downloadXYbyRegion(time, folder, varName, openSt);
-    });
-}
-
-  private setupInteractions(): void {
-    console.log('remove Interactions if any')
-    if (this.selectInteraction) {
-        this.map.removeInteraction(this.selectInteraction);
-        this.selectInteraction = null;
-    }
-    
-    if (this.hoverInteraction) {
-        this.map.removeInteraction(this.hoverInteraction);
-        this.hoverInteraction = null;
-    }
-    
-    const self = this;
-    
-    console.log('initilalize hoverInteraction')
-    this.hoverInteraction = new Select({
-        condition: pointerMove,
-        style: null,
-        filter: function(feature, layer) {
-        const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
-        if (!contourGeoLayer) {
-          return true; 
-        }
-        return layer !== contourGeoLayer;
-      }
-    });
-    
-    this.map.addInteraction(this.hoverInteraction);
-    
-    this.hoverInteraction.on('select', function(e) {
-        e.deselected.forEach(function(feature) {
-            feature.set('hover', false);
-        });
-        
-        e.selected.forEach(function(feature) {
-            feature.set('hover', true);
-        });
-    });
-    
-    const layerFilter = function(feature:any, layer: any) {
-      const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
-      return !contourGeoLayer || layer !== contourGeoLayer;
-    };
-
-    console.log('initilalize selectInteraction')
-    this.selectInteraction = new Select({
-        filter: layerFilter
-    });
-    
-    this.map.addInteraction(this.selectInteraction);
-    
-    this.selectableLayers = this.featureLayer ? [this.featureLayer] : [];
-    
-    this.selectInteraction.on('select', (e) => {
-        console.log('Selected features:', e.target.getFeatures().getArray());
-    });
-  }
-
-  async updateRender(support: string): Promise<void> {
-    let state = this.parent.getParent().getState();
-    
-    if (this.featureLayer && this.featureLayer.hide) {
-        this.featureLayer.hide();
-        this.featureLayer = null;
-    }
-    
-    if (this.contourLayer && this.contourLayer.hide) {
-        this.contourLayer.hide();
-        this.contourLayer = null;
-    }
-    
-    switch (support) {
-        case defaultRenderer:
-            break;
-            
-        case renderers[0]:
-            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer))
-            this.featureLayer = this.glmgr.getGeoLayer(getFolders(support)[0]);
-            this.featureLayer.indexData = null;
-            
-            if (!this.featureLayer) {
-                console.error('Failed to get geo layer for', support);
-                break;
-            }
-            
-            let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
-                if (this.featureLayer && this.featureLayer.show) {
-                  this.featureLayer.indexData = data;
-                  this.featureLayer.show(renderers.indexOf(support));
-                }
-            };
-            downloadXYbyRegion(state.times[state.selectedTimeIndex], getFolders(support)[0], state.varId, openSt);
-            break;
-            
-        case renderers[2]:
-            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer))
-            let folders = getFolders(support);
-            let zoom = this.getZoom();
-            let dataFolder: string;
-            let contourFolder: string = undefined;
-            
-            if (zoom <= 7) {
-                dataFolder = folders[2];
-            } else if (zoom > 7 && zoom <= 10) {
-                dataFolder = folders[1];
-                // contourFolder = folders[2];
-            } else {
-                dataFolder = folders[0];
-                // contourFolder = folders[1];
-            }
-            
-            // --------- CAPA DE CONTORNO
-            /* if (contourFolder) {
-                this.contourLayer = this.glmgr.getGeoLayer(contourFolder+'_contour');
-                if (this.contourLayer && this.contourLayer.show) {
-                    this.contourLayer.show(renderers.indexOf(support));
-                }
-            } */
-            
-            this.featureLayer = this.glmgr.getGeoLayer(dataFolder);
-            
-            if (this.featureLayer) {
-              this.featureLayer.indexData = null;
-              console.log("featureLayer before initializeLayer:", this.featureLayer);
-              await this.initializeLayer(state.times[state.selectedTimeIndex], dataFolder, state.varId);
-              console.log("featureLayer after initializeLayer:", this.featureLayer);
-            } else {
-                console.log("featureLayer is undefined before initializeLayer");
-            }
-            this.setupInteractions();
-            
-            break;
-            
-        default:
-            console.error("Render " + support + " not supported");
-            return;
-    }
-    
-=======
     public formatPopupValue(pos: CsLatLong, value: number, int:boolean = false): string {
       value = int? Math.round(value):value
       return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', value);
@@ -948,7 +684,6 @@ export class OpenLayerMap implements CsMapController{
             return;
     }
     
->>>>>>> Stashed changes
     this.lastSupport = support;
     
     if (this.featureLayer && this.featureLayer.refresh) {
@@ -1005,11 +740,7 @@ export class GeoLayerManager {
       geoJSONData: _data
     }
     this.geoLayers[_folder]= new CsOpenLayerGeoJsonLayer (_folder,_data, _map, _csMap, false, _onClick)
-<<<<<<< Updated upstream
-    if (contours.includes(_folder)) this.geoLayers[_folder+'_contour']= new CsOpenLayerGeoJsonLayer (_folder+'_contour',_data, _map, _csMap, true)
-=======
     // if (contours.includes(_folder)) this.geoLayers[_folder+'_contour']= new CsOpenLayerGeoJsonLayer (_folder+'_contour',_data, _map, _csMap, true)
->>>>>>> Stashed changes
   }
 
   public getGeoLayer(folder: string):CsOpenLayerGeoJsonLayer{
@@ -1033,15 +764,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   protected currentFeature: Feature;
   public indexData: ArrayData;
 
-<<<<<<< Updated upstream
-// --------- Posibilidad de usar métodos de DynamicFeatureManager
-  private lastZoom: number;
-  private loadedFeatures: Set<string> = new Set();
-  private allFeatures: Feature<Geometry>[];
-  private maxFeatures: number;
-  
-=======
->>>>>>> Stashed changes
   constructor(_name:string,_geoData:CsGeoJsonData,_map:Map,_csMap:OpenLayerMap,_isContour: boolean,_onClick:CsGeoJsonClick = undefined){
     super(_geoData)
     this.name=_name;
@@ -1049,11 +771,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
     this.csMap=_csMap;
     this.onClick=_onClick;
     this.geoLayerShown=false;
-<<<<<<< Updated upstream
-    this.lastZoom = _map.getView().getZoom() || 0;
-    this.maxFeatures = 1000;
-=======
->>>>>>> Stashed changes
     this.setupEventListeners();
     this.isContour = _isContour;
   }
@@ -1090,14 +807,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
 
   public show(renderer: number): void {
     if (this.geoLayerShown) return;
-<<<<<<< Updated upstream
-    // if (!this.geoLayer) {
-    //   console.warn('Cannot show layer - geoLayer is undefined');
-    //   return;
-    // }
-    // this.geoLayer.setVisible(true);
-=======
->>>>>>> Stashed changes
     
     let vectorSource: VectorSource;
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
@@ -1250,11 +959,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   }
 
   public setFeatureStyle(state: CsViewerData,feature: Feature, timesJs: CsTimesJsData): Style {
-<<<<<<< Updated upstream
-    // const timesJs= this.parent.getParent().getTimesJs();
-    let min = timesJs.varMin[state.varId][state.selectedTimeIndex];
-    let max = timesJs.varMax[state.varId][state.selectedTimeIndex];
-=======
     let min: number = Number.MAX_VALUE;
     let max: number = Number.MIN_VALUE;
     
@@ -1265,7 +969,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
       }
     });
     
->>>>>>> Stashed changes
     let color: string = '#fff';
     let id = feature.getProperties()['id'];
     let ptr = PaletteManager.getInstance().getPainter();
@@ -1302,11 +1005,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
     let value: string;
     if (feature) {
-<<<<<<< Updated upstream
-      if (state.support == renderers[0]) feature.setStyle(this.setStationStyle(state, feature, timesJs))
-=======
       if (state.support == this.csMap.renderers[0]) feature.setStyle(this.setStationStyle(state, feature, timesJs))
->>>>>>> Stashed changes
       else feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
       this.csMap.popupContent.style.left = pixel[0] + 'px';
       this.csMap.popupContent.style.top = pixel[1] + 'px';
@@ -1319,11 +1018,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
           } 
         });
         this.csMap.popupContent.style.visibility = 'visible';
-<<<<<<< Updated upstream
-        this.csMap.popupContent.innerText = feature.get('name') +': ' + value ;
-=======
         this.csMap.popupContent.innerText = feature.get('name') +': ' +  parseFloat(value).toFixed(2) ;
->>>>>>> Stashed changes
         this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
       }
     } else {
@@ -1331,11 +1026,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
       this.csMap.popup.hidden = true
     }
     if (this.currentFeature instanceof Feature) {
-<<<<<<< Updated upstream
-      if (state.support == renderers[0]) this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs))
-=======
       if (state.support == this.csMap.renderers[0]) this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs))
->>>>>>> Stashed changes
       else this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
     }
     this.currentFeature = feature;
@@ -1364,164 +1055,4 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
 //   loadThreshold?: number;
 //   source: VectorSource;
 //   geoJSONData: any; // Your GeoJSON data
-<<<<<<< Updated upstream
 // }
-
-class DynamicFeatureManager {
-  private map: Map;
-  private source: VectorSource;
-  private maxFeatures: number;
-  private loadThreshold: number;
-  private loadedFeatures: Set<string> = new Set();
-  private geoJSONFormat: GeoJSON;
-  private allFeatures: Feature<Geometry>[];
-
-  constructor(options: FeatureManagerOptions) {
-    this.map = options.map;
-    // this.source = options.source;
-    this.maxFeatures = options.maxFeatures || 1000;
-    this.loadThreshold = options.loadThreshold || 0.8;
-    this.geoJSONFormat = new GeoJSON();
-    
-    // Parse all features from GeoJSON
-    this.allFeatures = this.geoJSONFormat.readFeatures(options.geoJSONData, {
-      featureProjection: 'EPSG:3857',    // Web Mercator (what OpenLayers uses)
-      dataProjection: 'EPSG:4326'        // WGS 84 (standard for GeoJSON)
-    });
-
-    // Assign IDs to features if they don't have them
-    this.allFeatures.forEach((feature, index) => {
-      if (!feature.getId()) {
-        feature.setId(`feature-${index}`);
-      }
-    });
-
-    // Bind event listeners
-    this.map.on('moveend', this.handleMapMove.bind(this));
-    
-    // Initial load
-    this.handleMapMove();
-  }
-
-  private handleMapMove() {
-    const view = this.map.getView();
-    const extent = view.calculateExtent(this.map.getSize());
-    const zoom = view.getZoom() || 0;
-
-    // Clean up features outside view bounds
-    this.cleanupFeatures(extent);
-
-    // Load new features within bounds
-    this.loadFeaturesInView(extent, zoom);
-  }
-
-  private cleanupFeatures(currentExtent: number[]) {
-    const features = this.source.getFeatures();
-    
-    features.forEach(feature => {
-      const featureExtent = feature.getGeometry()?.getExtent();
-      const featureId = feature.getId()?.toString();
-      
-      if (featureExtent && featureId) {
-        // Check if feature is outside current view extent
-        if (!this.intersectsExtent(featureExtent, currentExtent)) {
-          this.source.removeFeature(feature);
-          this.loadedFeatures.delete(featureId);
-        }
-      }
-    });
-  }
-
-  private loadFeaturesInView(extent: number[], zoom: number) {
-    // Filter features that intersect with current view extent
-    const featuresInView = this.allFeatures.filter(feature => {
-      const featureExtent = feature.getGeometry()?.getExtent();
-      return featureExtent && this.intersectsExtent(featureExtent, extent);
-    });
-
-    // Apply zoom-based filtering if needed
-    const filteredFeatures = this.filterFeaturesByZoom(featuresInView, zoom);
-
-    // Add features not already loaded
-    filteredFeatures.forEach(feature => {
-      const featureId = feature.getId()?.toString();
-      if (featureId && !this.loadedFeatures.has(featureId)) {
-        if (this.source.getFeatures().length < this.maxFeatures) {
-          this.source.addFeature(feature);
-          this.loadedFeatures.add(featureId);
-        }
-      }
-    });
-  }
-
-  private filterFeaturesByZoom(features: Feature<Geometry>[], zoom: number): Feature<Geometry>[] {
-    // Example zoom-based filtering logic
-    // Adjust these thresholds based on your needs
-    if (zoom < 10) {
-      // At lower zoom levels, maybe only show larger or more important features
-      return features.filter(feature => {
-        // Add your filtering logic here
-        // Example: only show features with certain properties
-        const properties = feature.getProperties();
-        return properties.importance === 'high';
-      });
-    }
-    return features;
-  }
-
-  private intersectsExtent(featureExtent: number[], viewExtent: number[]): boolean {
-    return !(
-      featureExtent[2] < viewExtent[0] || // right < left
-      featureExtent[0] > viewExtent[2] || // left > right
-      featureExtent[3] < viewExtent[1] || // top < bottom
-      featureExtent[1] > viewExtent[3]    // bottom > top
-    );
-  }
-
-  // Public methods for manual control
-  public refresh() {
-    this.handleMapMove();
-  }
-
-  public clear() {
-    this.source.clear();
-    this.loadedFeatures.clear();
-  }
-}
-
-// Example usage
-// const initializeMap = async () => {
-//   const map = new Map({
-//     target: 'map',
-//     view: new View({
-//       center: fromLonLat([0, 0]),
-//       zoom: 2
-//     })
-//   });
-
-//   const source = new VectorSource();
-//   const layer = new VectorLayer({ source });
-//   map.addLayer(layer);
-
-//   // Load GeoJSON file
-//   try {
-//     const response = await fetch('path/to/your/data.geojson');
-//     const geoJSONData = await response.json();
-
-//     const featureManager = new DynamicFeatureManager({
-//       map,
-//       source,
-//       maxFeatures: 1000,
-//       loadThreshold: 0.8,
-//       geoJSONData
-//     });
-
-//     return { map, featureManager };
-//   } catch (error) {
-//     console.error('Error loading GeoJSON:', error);
-//     throw error;
-//   }
-// };
-=======
-// }
->>>>>>> Stashed changes

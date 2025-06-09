@@ -22,10 +22,7 @@ export interface CsMapController{
     putMarker(pos:CsLatLong):void;
     setDate(dateIndex:number, state:CsViewerData):void;
     getZoom():number;
-<<<<<<< Updated upstream
-=======
     refreshFeatureLayer():void
->>>>>>> Stashed changes
 }
 
 export type CsGeoJsonClick=(feature:GeoJSON.Feature,event:any)=>void

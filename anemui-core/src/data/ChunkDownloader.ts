@@ -502,12 +502,6 @@ export function downloadTimebyRegion(folder: string, id: string, varName: string
                     skip_empty_lines: true
                 });
                 result.forEach( (dataRow: any) => {
-<<<<<<< Updated upstream
-                    // let regId = folder == 'estacion'? id:'X'+id 
-                    // rgResult[dataRow['times_mean']] = dataRow[regId]
-                    // rgCSV += dataRow['times_mean'] + ';' + dataRow[regId] +'\r\n';
-=======
->>>>>>> Stashed changes
                     rgResult[dataRow['times_mean']] = dataRow[id]
                     rgCSV += dataRow['times_mean'] + ';' + dataRow[id] +'\r\n';
                 })
@@ -519,40 +513,8 @@ export function downloadTimebyRegion(folder: string, id: string, varName: string
     },undefined,'text');
 }
 
-<<<<<<< Updated upstream
-// export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone): void {
-//     downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
-//         if (status == 200) {
-//             let stResult: []
-//             try {
-//                 const records = parse(response as Buffer, {
-//                     columns: true,
-//                     skip_empty_lines: true
-//                 });
-//                 if (records.length == 1) stResult = records[0]
-//                 else  {
-//                     records.forEach((record:any) => {
-//                         if (record['times_mean'] == time)
-//                         stResult = record
-//                     })
-//                     console.log('2')
-//                 }
-//             } catch (e) {
-//                 stResult = [];
-//             }
-//             doneCb(stResult, 'data', 'text/plain') ;
-//         }
-//     },undefined,'text');
-// }
-
-export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
-    console.log("downloadXYbyRegion called");   
-    downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
-        console.log("downloadUrl callback called with status:", status);
-=======
 export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
     downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
->>>>>>> Stashed changes
         if (status == 200) {
             let stResult: [];
             try {
@@ -571,17 +533,10 @@ export function downloadXYbyRegion(time: string, folder: string, varName: string
                 console.error("Error parsing CSV:", e);
                 stResult = [];
             }
-<<<<<<< Updated upstream
-            doneCb(stResult, 'data', 'text/plain');
-        } else {
-            console.error("Error downloading CSV. Status:", status);
-            doneCb([], 'data', 'text/plain'); // call callback even with error
-=======
             doneCb(stResult, varName, 'text/plain');
         } else {
             console.error("Error downloading CSV. Status:", status);
             doneCb([], varName, 'text/plain'); // call callback even with error
->>>>>>> Stashed changes
         }
     }, undefined, 'text');
 }

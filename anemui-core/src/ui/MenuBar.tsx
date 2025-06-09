@@ -3,11 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuInput, CsMenuItemListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-<<<<<<< Updated upstream
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, varHasPopData, sbVarHasPopData}  from "../Env";
-=======
 import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, varHasPopData, sbVarHasPopData}  from "../Env";
->>>>>>> Stashed changes
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -118,8 +114,6 @@ export class MenuBar extends BaseFrame {
                 },
             });
         }
-<<<<<<< Updated upstream
-=======
         if (hasSelectionParam) {
             this.selectionParam = new CsMenuInput("selectionParamInput", "Selección", {
                 valueChanged: (newValue: number) => {  
@@ -127,7 +121,6 @@ export class MenuBar extends BaseFrame {
                 },
             });
         }
->>>>>>> Stashed changes
         this.extraMenuItems = []
         this.extraBtns = []
         this.dropDownOrder = []
@@ -174,10 +167,6 @@ export class MenuBar extends BaseFrame {
                         </div>
                         <div id="menu-central" className="col-info">
                             <ul id="inputs" className="nav-menu">
-<<<<<<< Updated upstream
-                                {/* <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li> */}
-=======
->>>>>>> Stashed changes
                             </ul>
                             <div className="collapse-menu" onClick={() => { self.mobileMenu() }}>
                                 <span></span>
@@ -258,8 +247,6 @@ export class MenuBar extends BaseFrame {
                 this.displaySelection.hidden = false;
                 addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
                 this.selection.build(this.displaySelection);
-<<<<<<< Updated upstream
-=======
             }
             if (hasSelectionParam) {
                 let dsp: simpleDiv = {role:'selection-param', title:'', subTitle:''}
@@ -268,7 +255,6 @@ export class MenuBar extends BaseFrame {
                 this.displayParam.hidden = false;
                 addChild(this.displayParam, this.selectionParam.render(this.parent.getState().selectionParam+''));
                 this.selectionParam.build(this.displayParam);
->>>>>>> Stashed changes
             }
             if (hasClimatology) {
                 this.extraDisplays.forEach((dsp) => {
@@ -361,12 +347,9 @@ export class MenuBar extends BaseFrame {
         } 
         if (hasSelection) {
             this.displaySelection.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
-<<<<<<< Updated upstream
-=======
         }
         if (hasSelectionParam) {
             this.selectionParam.value = this.parent.getState().selectionParam
->>>>>>> Stashed changes
         }   
         
         if (this.parent.getState().climatology == true) {
