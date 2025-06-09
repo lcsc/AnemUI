@@ -332,6 +332,9 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         minArray = timesJs.varMin[status.varId][status.selectedTimeIndex];
         maxArray = timesJs.varMax[status.varId][status.selectedTimeIndex];
 
+        console.log('chunk minArray: ' + minArray)
+        console.log('chunk maxArray: ' + maxArray)
+
         // Now that we have the absolute maximums and minimums, we paint the data layers.
         for (let i = 0; i < floatArrays.length; i++) {
             const floatArray = floatArrays[i];
@@ -562,11 +565,16 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     if (portion != '') {
         // Correlative index of the pixel (starts counting at 1)
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
-        let cb: ArrayDownloadDone = (data: number[]) => {
-            let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
+        if (status.computedData[portion].length == 0) {
+            let cb: ArrayDownloadDone = (data: number[]) => {
+                let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
+                return functionValue(value, []);
+            }
+            downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
+        } else {
+            let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
             return functionValue(value, []);
         }
-        downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
 
     } else {
         functionValue(NaN, []);
@@ -606,8 +614,8 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
     },undefined,'text');
 }
 
-export function downloadCSVbyRegion(region: number, varName: string, doneCb: CsvDownloadDone): void {
-    downloadUrl("./data/" + renderers.folder[region] + "/" + varName + ".csv", (status: number, response) => {
+export function downloadCSVbyRegion(folder: string, varName: string, doneCb: CsvDownloadDone): void {
+    downloadUrl("./data/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let result: string
             try {
@@ -624,8 +632,8 @@ export function downloadCSVbyRegion(region: number, varName: string, doneCb: Csv
     },undefined,'text');
 }
 
-export function downloadTimebyRegion(region: number, id: string, varName: string, doneCb: CsvDownloadDone): void {
-    downloadUrl("./data/" + renderers.folder[region] + "/" + varName + ".csv", (status: number, response) => {
+export function downloadTimebyRegion(folder: string, id: string, varName: string, doneCb: CsvDownloadDone): void {
+    downloadUrl("./data/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let rgResult: string[] = []
             let rgCSV = 'date;' + varName +'\r\n';
@@ -635,8 +643,8 @@ export function downloadTimebyRegion(region: number, id: string, varName: string
                     skip_empty_lines: true
                 });
                 result.forEach( (dataRow: any) => {
-                    rgResult[dataRow['times_mean']] = dataRow['X'+id]
-                    rgCSV += dataRow['times_mean'] + ';' + dataRow['X'+id] +'\r\n';
+                    rgResult[dataRow['times_mean']] = dataRow[id]
+                    rgCSV += dataRow['times_mean'] + ';' + dataRow[id] +'\r\n';
                 })
             } catch (e) {
                 rgCSV = '';
@@ -646,49 +654,31 @@ export function downloadTimebyRegion(region: number, id: string, varName: string
     },undefined,'text');
 }
 
-export function downloadXYbyRegion(time: string, region: number, varName: string, doneCb: CsvDownloadDone): void {
-    let folder = region == 2? 'municipio': (region == 3?'provincia':'autonomia')
-    downloadUrl("./data/" + folder + "/" + varName + ".csv", (status: number, response) => {
+export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
+    downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let stResult: []
+            let stResult: [];
             try {
                 const records = parse(response as Buffer, {
                     columns: true,
                     skip_empty_lines: true
                 });
-
-                if (records.length == 1) stResult = records[0]
-                else  {
-                    records.forEach((record :any) => {
-                    if (record['times_mean'] == time)
-                    stResult = record
-                })}
-            } catch (e) {
-                stResult = [];
-            }
-            doneCb(stResult, 'data', 'text/plain') ;
-        }
-    },undefined,'text');
-}
-
-export function downloadJSONXYbyRegion(time: string, region: number, varName: string, doneCb: CsvDownloadDone): void {
-    let folder = region == 2? 'municipio': (region == 3?'provincia':'autonomia')
-    downloadUrl("./data/" + folder + "/" + varName + ".json", (status: number, response) => {
-        if (status == 200) {
-            let stResult: string[]
-            try {
-                const records = JSON.parse(response);
-
-                if (records.length == 1) stResult = records[0]
-                else  {
-                    for (const key in records) { 
-                        if (key == time) stResult = records[key]; 
-                    }
+                if (records.length == 1) stResult = records[0];
+                else {
+                    records.forEach((record: any) => {
+                        if (record['times_mean'] == time)
+                            stResult = record;
+                    });
                 }
             } catch (e) {
+                console.error("Error parsing CSV:", e);
                 stResult = [];
             }
-            doneCb(stResult, 'data', 'text/plain') ;
+            doneCb(stResult, varName, 'text/plain');
+        } else {
+            console.error("Error downloading CSV. Status:", status);
+            doneCb([], varName, 'text/plain'); // call callback even with error
         }
-    },undefined,'text');
+    }, undefined, 'text');
 }
+

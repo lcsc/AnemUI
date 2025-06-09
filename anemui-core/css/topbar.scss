@@ -121,11 +121,18 @@
         }
     }
 
-    .longLogo {
+    .allScrLogo {
         padding-left: 0.5em;
         img {
             height: auto;
             max-width: 100%;
+        }
+    }
+
+    .longLogo { 
+        padding-left: 0.5em;
+        img {
+            height: 50px;
         }
     }
 
@@ -140,7 +147,7 @@
         padding-left: 200px;
     }
 
-    .col.longLogo {
+    .col.longLogo, .col.allScrLogo {
         background-color: transparent !important;
     }
 
@@ -159,7 +166,7 @@
         top: 7.2rem;
         display: flex;
         flex-direction: column;
-        background-color: $color_6;
+        background-color: $title_color;
         width: auto;
         border-radius: 3px;
         text-align: center;
@@ -180,13 +187,13 @@
         margin: 2.5rem 0;
     }
 
-    .collapseMenu {
+    .collapse-menu {
         display: block;
         cursor: pointer;
         padding: 0.4rem;
     }
 
-    .collapseMenu span {
+    .collapse-menu span {
         display: block;
         width: 25px;
         height: 3px;
@@ -197,15 +204,15 @@
         background-color: $color_4;
     }
 
-    .collapseMenu.active span:nth-child(2) {
+    .collapse-menu.active span:nth-child(2) {
         opacity: 0;
     }
 
-    .collapseMenu.active span:nth-child(1) {
+    .collapse-menu.active span:nth-child(1) {
         transform: translateY(8px) rotate(-45deg);
     }
 
-    .collapseMenu.active span:nth-child(3) {
+    .collapse-menu.active span:nth-child(3) {
         transform: translateY(-8px) rotate(45deg);
     }
     
@@ -222,12 +229,12 @@
 
     @include desktop {
         .navbar {
-            .longLogo, .shortLogo {
+            .longLogo, .shortLogo, .allScrLogo {
                 padding-left: 2.2rem;
             }
         }
 
-        .longLogo img {
+        .allScrLogo img {
             height: 50px;
         }
 
@@ -253,7 +260,7 @@
             padding: 0;
             margin: 0px auto;
         }
-        .collapseMenu {
+        .collapse-menu {
             display: none;
         }
         // width: 97%;
@@ -287,7 +294,6 @@
 #inputs>li {
     display: grid;
     position: relative;
-    padding: 5px 10px;
     cursor: pointer;
     z-index: 1000;
     min-width: 120px;
@@ -295,7 +301,7 @@
     color: $color_4;
 }
 
-#inputs>li:hover {
+#inputs > li:not(.basicInput):hover {
     background-color: $color_6;
     color: $color_8;
     cursor: pointer;
@@ -317,14 +323,26 @@ li {
     text-align:left
 }
 
-.inputDiv .sub-title{
+.inputDiv .sub-title {
     display: block;
     font-size: 1em;
     font-style: normal;
     font-weight: 500;
 }
 
-.drop {
+.inputDiv .sub-title.unselectable{
+    cursor: default;
+    background-color: $title_color;
+    color: $color_4;
+}
+
+input.selection-param-input {
+    margin-left: 15px;
+    display: inline;
+    width: 50%;
+}
+
+.dpdown-menu {
     overflow: hidden;
     list-style: none;
     position: absolute;
@@ -335,21 +353,68 @@ li {
     border-bottom-right-radius: 5px;
 }
 
-// .drop div {
-.drop ul {
-    -webkit-transform: translate(0, -100%);
-    -moz-transform: translate(0, -100%);
-    -ms-transform: translate(0, -100%);
-    transform: translate(0, -100%);
-    -webkit-transition: all 0.2s 0.1s;
-    -moz-transition: all 0.2s 0.1s;
-    -ms-transition: all 0.2s 0.1s;
-    transition: all 0.2s 0.1s;
+// .dpdown-menu ul {
+//     -webkit-transform: translate(0, -100%);
+//     -moz-transform: translate(0, -100%);
+//     -ms-transform: translate(0, -100%);
+//     transform: translate(0, -100%);
+//     -webkit-transition: all 0.2s 0.1s;
+//     -moz-transition: all 0.2s 0.1s;
+//     -ms-transition: all 0.2s 0.1s;
+//     transition: all 0.2s 0.1s;
+//     position: relative;
+//     padding-left: 0px !important;
+// }
+
+// .dpdown-button {
+.menu-item {
+    padding: 5px 10px;
+}
+
+.inputDiv .dpdown-button:hover + .dpdown-menu,
+.inputDiv .dpdown-button:hover .dpdown-menu,
+.inputDiv .dpdown-menu:hover {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+
+.inputDiv .dpdown-menu {
+    display: none;
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    min-width: 100%; /* Ensure dropdown is at least as wide as the button */
+}
+
+.inputDiv {
     position: relative;
+}
+
+.inputDiv .dpdown-menu li .dropdown-item {
+    display: block;
+    padding: 5px 10px;
+    text-decoration: none;
+    color: #333;
+}
+
+// .inputDiv .dpdown-menu li .dropdown-item:hover {
+//     background-color: #f0f0f0;
+// }
+
+.inputDiv .dpdown-menu li .dropdown-item.cs-disabled {
+    color: #999;
+    cursor: not-allowed;
+}
+
+.dpdown-menu ul {
     padding-left: 0px !important;
 }
 
-.drop li {
+.dpdown-menu li {
     display: block;
     padding: 5px 10px;
     width: 100%;
@@ -360,7 +425,7 @@ li {
     // white-space: normal;
 }
 
-.drop li:hover {
+.dpdown-menu li:hover {
     background: $color_6 !important;
     color: $color_1 !important;
 }

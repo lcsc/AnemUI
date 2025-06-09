@@ -1,28 +1,55 @@
 @import "~ol/ol.css";
 
+// .marker {
+//   width: 20px;
+//   height: 20px;
+//   border: 1px solid #088;
+//   border-radius: 10px;
+//   background-color: #0FF;
+//   opacity: 0.5;
+// }
+
 .marker {
+  position: absolute;
+  top: -20px;
+  left: -10px;
+  border-radius: 50% 50% 50% 0;
+  border: 4px solid $color_9;
   width: 20px;
   height: 20px;
-  border: 1px solid #088;
-  border-radius: 10px;
-  background-color: #0FF;
-  opacity: 0.5;
+  transform: rotate(-45deg);
+  z-index: 1500;
+}
+
+.marker::after {
+  position: absolute;
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  margin-left: -5px;
+  margin-top: -5px;
+  background-color: $color_9;
+  z-index: 1500;
 }
 
 .ol-popup {
   position: absolute;
-  background-color: white;
+  background-color: $color_4;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   padding: 7px;
   border-radius: 10px;
-  border: 1px solid #cccccc;
+  border: 1px solid $border-color;
   bottom: 12px;
   left: -42px;
   min-width: 100px; 
-  width: fit-content;
+  width: max-content;
   font-size: small;
-  white-space: nowrap;
+  $color_4-space: nowrap;
   text-align:center;
+  z-index: 2000;
 }
 
 .ol-popup:after,
@@ -34,20 +61,23 @@
   width: 0;
   position: absolute;
   pointer-events: none;
+  z-index: 2000;
 }
 
 .ol-popup:after {
-  border-top-color: white;
+  border-top-color: $color_4;
   border-width: 10px;
   left: 40px;
   margin-left: -10px;
+  z-index: 2000;
 }
 
 .ol-popup:before {
-  border-top-color: #cccccc;
+  border-top-color: $border-color;
   border-width: 11px;
   left: 40px;
   margin-left: -11px;
+  z-index: 2000;
 }
 
 .ol-popup-closer {
@@ -61,43 +91,9 @@
   content: "✖";
 }
 
-
 .ol-zoom{
   display:none;
 }
-
-// .ol-zoom {
-//   width: 120px;
-//   left: unset;
-//   top: 7.5em;
-//   right: 2%;
-//   padding-left: 15px;
-//   background: transparent;
-
-//   button {
-//     float: right;
-//     width: 40px;
-//     height: 40px;
-//     border-radius: 10px !important;
-//     font-size: 1.6rem !important;
-//     padding-bottom: 0.5rem;
-//     margin-left: 8px;
-//     cursor: pointer;
-//     background-color: $color_8;
-//     color: $color_4;
-//     border: solid 1px $color_4;
-//     box-shadow: 0 1.5px 3px $color_3;
-//   }
-
-//   button:hover {
-//     background-color: $color_1;
-//     color: $color_8;
-//   }
-
-//   @include md-desktop {
-//     top: 7.5em;
-//   }
-// }
 
 #mapInfo {
   position: absolute;
@@ -105,8 +101,8 @@
   height: auto;
   width: auto;
   z-index: 100;
-  background-color: #333;
-  color: #fff;
+  background-color: $color_9;
+  color: $color_4;
   text-align: center;
   border-radius: 4px;
   padding: 5px;

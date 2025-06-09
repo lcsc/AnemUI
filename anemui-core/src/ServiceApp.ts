@@ -47,6 +47,9 @@ export class CsOptionsService {
     public selectionText(state: CsViewerData): string {
         return "Umbral"
     }
+    public selectionParamText(state: CsViewerData): string {
+        return "Umbral"
+    }
     public tpSupportText(state: CsViewerData): string {
         return "Periodo"
     }
@@ -69,33 +72,27 @@ export abstract class DataServiceApp extends BaseApp {
         let svc = this.optionsService;
         let state = this.state
 
-        // - VERSIÓN SIDEBAR_00 (DROPDOWNS)
-        // sb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
-        // sb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
-        // sb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
-        // sb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
-        // - VERSIÓN SIDEBAR_00 (DROPDOWNS)
-
+        // let oneOption = mb..values.length == 1? true:false;
         mb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
         mb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
-        // mb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
         mb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
-
+        mb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
+        mb.configSelectionParam(svc.isSelectionVisible(state), svc.selectionParamText(state))
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))
     }
 
-    public render(): BaseApp {
-        super.render()
+    public async render(): Promise<BaseApp> {
+        await super.render() // Esperar a que se complete el render de BaseApp
         if (this.optionsService != undefined) {
             this.updateOptions();
         }
         return this
     }
 
-    public update(dateChanged: boolean = false): void {
-        super.update(dateChanged)
+    public async  update(dateChanged: boolean = false): Promise<void> {
+        await super.update(dateChanged)
         if (this.optionsService != undefined) {
             this.updateOptions();
         }
@@ -112,11 +109,9 @@ export abstract class DataServiceApp extends BaseApp {
 
         if (hasSubVars) {
             let subVars = this.service.getSubVars(this.state)
-            // this.getSideBar().setSubVariables(subVars);    // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
             this.subVarSelected(0, subVars[0], subVars);
         } else {
             let selections = this.service.getSelections(this.state);
-            // this.getSideBar().setSelection(selections);  // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
             this.selectionSelected(0, selections[0], selections);
         }
     }
@@ -133,7 +128,6 @@ export abstract class DataServiceApp extends BaseApp {
             this.state.selectedTimeIndex = newIndex;
         }
         let selections = this.service.getSelections(this.state)
-        // this.getSideBar().setSelection(selections)  // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
         this.selectionSelected(0, selections[0], selections)
     }
 
@@ -147,7 +141,6 @@ export abstract class DataServiceApp extends BaseApp {
 
     public selectionParamChanged(param: number): void {
         this.state.selectionParam = param;
-        //console.log("Painting more than -> ", param)
         this.update();
     }
 
@@ -267,4 +260,8 @@ export abstract class DataServiceApp extends BaseApp {
 
     public completeGraph(graph: Dygraph, data: any) {
     }
+
+    // public getFolders(rendererName: string): string[] {
+    //     return this.getFolders(rendererName)
+    // }
 }

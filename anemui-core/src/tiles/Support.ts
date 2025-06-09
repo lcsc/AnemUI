@@ -1,43 +1,38 @@
-export const renderers = {
-    name: ["~Puntual (estaciones)","Malla (raster)","~Municipio","~Provincia","~CCAA" ],
-    folder: ["estacion","raster","municipio","provincia","autonomia"],
+export const renderers = ["~Puntual (estaciones)","Rejilla","~Municipio","~Provincia","~CCAA","~Unidad administrativa"]
+
+export const folders = {
+    renderer: [0,2,3,4,5,5,5],
+    folder: ["estacion","municipio","provincia","autonomia","municipio","provincia","autonomia"],
 }
 
-export const defaultRenderer= renderers.name[1]
+export const defaultRenderer= renderers[1]
 
 export function enableRenderer(rd:number[]){
     rd.forEach( i => {
-        if(renderers.name[i].startsWith("~")){
-            renderers.name[i]=renderers.name[i].substring(1)
+        if(renderers[i].startsWith("~")){
+            renderers[i]=renderers[i].substring(1)
         }
     } )
 }
 
 export function disableRenderer(i:number){
-    if(! renderers.name[i].startsWith("~")){
-        renderers.name[i]="~"+renderers.name[i];
+    if(! renderers[i].startsWith("~")){
+        renderers[i]="~"+renderers[i];
     }
 }
 
-
-//  ----------- convertir en clase??
-export default class Renderers {
-
-    private renderers = renderers
-    private defaultLRender = renderers.name[1]
-
-    public enableRenderer(rd:number[]){
-        rd.forEach( i => {
-            if(this.renderers.name[i].startsWith("~")){
-                this.renderers.name[i]=this.renderers.name[i].substring(1)
-            }
-        } )
+export function getFolders(rendererName: string): string[] {
+    const rendererIndex = renderers.indexOf(rendererName);
+    if (rendererIndex === -1) {
+        return []; // Renderer name not found
     }
 
-    public disableRenderer(i:number){
-        if(! this.renderers.name[i].startsWith("~")){
-            this.renderers.name[i]="~"+this.renderers.name[i];
+    const folderIds: string[] = [];
+    for (let i = 0; i < folders.renderer.length; i++) {
+        if (folders.renderer[i] === rendererIndex) { 
+            folderIds.push(folders.folder[i]);
         }
     }
-
+    return folderIds;
 }
+

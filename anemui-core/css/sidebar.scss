@@ -168,6 +168,12 @@
         display: block;
         // margin: 10px;
     }
+    .paletteFrame{
+        order: 1
+    }
+    .downloadFrame{
+        order:2
+    }
 }
 
 @keyframes blink {
@@ -696,6 +702,7 @@ div.slider.visible {
     border-color: $color_4;
     font-size: 12px;
     margin-left: 20px !important;
+    z-index: 1500;
 }
 
 .popover-header {

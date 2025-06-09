@@ -10,21 +10,28 @@ const loadScript = (src: any) => new Promise((resolve, reject) => {
     script.onload = resolve
     script.onerror = reject
     document.head.appendChild(script)
-  })
+
+    let script2 = document.createElement('script')
+    script2.innerHTML = " /* Matomo */"
+    script2.innerHTML += " var _paq = window._paq = window._paq || [];"
+    script2.innerHTML += " /* tracker methods like 'setCustomDimension' should be called before 'trackPageView' */"
+    script2.innerHTML += " _paq.push(['trackPageView']);"
+    script2.innerHTML += " _paq.push(['enableLinkTracking']);"
+    script2.innerHTML += " (function() {"
+    script2.innerHTML += " var u='https://estadisticas.hosting.sgai.csic.es/';"
+    script2.innerHTML += " _paq.push(['setTrackerUrl', u+'matomo.php']);"
+    script2.innerHTML += " _paq.push(['setSiteId', '39']);"
+    script2.innerHTML += " var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];"
+    script2.innerHTML += " g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);"
+    script2.innerHTML += " })();"
+    script2.innerHTML += " /* End Matomo Code */"
+
+    document.head.appendChild(script2)
+})
 
 export default class CsCookies {
     protected parent:BaseApp
     protected id: string;
-
-    // private static instance: CsCookies;
-
-    // public static getInstance(): CsCookies {
-    //     if (!CsCookies.instance) {
-    //         CsCookies.instance = new CsCookies();
-    //     }
-
-    //     return CsCookies.instance;
-    // }
 
     constructor(_parent: BaseApp) {
         this.id = 'G-1NK9CZR6TJ';

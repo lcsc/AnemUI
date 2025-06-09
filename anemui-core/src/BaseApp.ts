@@ -12,12 +12,12 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, locale, avoidMin, maxWhenInf, minWhenInf, hasCookies} from "./Env";
+import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer } from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
-import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, downloadXYbyRegion, getPortionForPoint } from "./data/ChunkDownloader";
+import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked, downloadCSVbyRegion } from "./data/ChunkDownloader";
 import { downloadUrl } from "./data/UrlDownloader";
-import { DEF_STYLE_STATIONS, /* DEF_STYLE_UNC, */ OpenLayerMap } from "./OpenLayersMap";
+import { DEF_STYLE_STATIONS, CsOpenLayerGeoJsonLayer, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
 import { fromLonLat } from "ol/proj";
@@ -28,7 +28,7 @@ import { FeatureLike } from "ol/Feature";
 import LeftBar from "./ui/LeftBar"; 
 import RightBar from "./ui/RightBar"; 
 import Translate from "./language/translate";
-import { renderers, defaultRenderer } from "./tiles/Support";
+import { renderers, defaultRenderer, folders } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
 
 
@@ -55,13 +55,14 @@ const INITIAL_STATE: CsViewerData = {
     uncertaintyLayer: false,
     season: "",
     month: "",
-    actionData: undefined,
-    timeSeriesData: undefined
+    timeSeriesData: undefined,
+    computedData: {}
 }
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
 const LEYEND_TITLE = "Leyenda"
+const STR_ALL = "Todo"
 
 export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFrameListener {
 
@@ -84,7 +85,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected infoDiv: InfoDiv;
     protected downloadOptionsDiv: DownloadOptionsDiv;
 
-    protected stationsLayer: CsGeoJsonLayer
+    protected stationsLayer: CsOpenLayerGeoJsonLayer
     
     protected translate: Translate;
     protected cookies: CsCookies;
@@ -164,7 +165,40 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
 
-    public render(): BaseApp {
+    public async render(): Promise<BaseApp> {
+        try {
+            // 1. Configuración inicial
+            await this.setupInitialConfiguration();
+            
+            // 2. Renderizado de la estructura base
+            this.renderBaseStructure();
+            
+            // 3. Renderizado de componentes principales (que no dependen de datos)
+            this.renderMainComponents();
+            
+            // 4. Inicialización del mapa y carga de datos
+            this.initMap();
+            if (computedDataTilesLayer) {
+                await this.waitForDataLoad()
+            }
+            
+            // 5. Renderizado de componentes que dependen de datos
+            this.renderDataDependentComponents();
+            
+            // 6. Configuraciones finales
+            this.finalizeSetup();
+            
+            return this;
+        } catch (error) {
+            console.error('Error in render method:', error);
+            // Continuar con renderizado básico aunque haya errores
+            this.renderFallback();
+            return this;
+        }
+    }
+    
+    private async setupInitialConfiguration(): Promise<void> {
+        // Configuración de zip.js
         zip.workerScriptsPath = "zip_js/";
         zip.configure({
             workerScripts: {
@@ -172,58 +206,156 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 inflate: [require('@zip.js/zip.js/lib/z-worker')]
             }
         });
-
+        
+        // Configuración de idioma
         this.setLanguage(locale);
         
-        if (this.infoDiv == null) this.infoDiv = new InfoDiv(this, "infoDiv");
-
-        // addChild(document.body, this.csMap.render())
-        // this.initMap()
-        
-        mount(this.mainFrame.render(), document.body)
-        this.mainFrame.build();
-        addChild(document.getElementById('MainFrame'), this.menuBar.render());
-        this.menuBar.build();
-        addChild(document.getElementById('MainFrame'), this.leftBar.render());
-        this.leftBar.build();
-        addChild(document.getElementById('LeftBar'), this.layerFrame.render()); 
-        this.layerFrame.build(); 
-        addChild(document.getElementById('MainFrame'), this.rightBar.render());
-        this.rightBar.build();
-        addChild(document.getElementById('RightBar'), this.paletteFrame.render())
-        this.paletteFrame.build();
-        addChild(document.getElementById('RightBar'), this.downloadFrame.render());
-        this.downloadFrame.build();
-        addChild(document.getElementById('MainFrame'), this.dateSelectorFrame.render())
-        this.dateSelectorFrame.build();
-        addChild(document.getElementById('MainFrame'), this.graph.render())
-        this.graph.build();
-        addChild(document.getElementById('MainFrame'), this.infoDiv.render())
-        let tl = document.createElement("div")
-        tl.className = "TopRightFrame"
-        addChild(document.getElementById('info'), tl);
-        this.infoDiv.build()
-        addChild(tl, this.infoFrame.render())
-        this.infoFrame.build();
-        if (isKeyCloakEnabled) {
-            addChild(tl, this.loginFrame.render())
-            this.loginFrame.build();
+        // Inicialización de InfoDiv si es necesario
+        if (this.infoDiv == null) {
+            this.infoDiv = new InfoDiv(this, "infoDiv");
         }
-
-        addChild(document.getElementById('MainFrame'), this.downloadOptionsDiv.render())
-        this.downloadOptionsDiv.build()
-        addChild(document.body, this.csMap.render())
-        addChild(document.getElementById('MainFrame'), DownloadIframe())  //Iframe to download
-
-        this.initMap()
+    }
+    
+    private renderBaseStructure(): void {
+        // Renderizado del frame principal
+        mount(this.mainFrame.render(), document.body);
+        this.mainFrame.build();
+    }
+    
+    private renderMainComponents(): void {
+        // Componentes que no dependen de datos
+        const mainFrameElement = document.getElementById('MainFrame');
+        if (!mainFrameElement) {
+            throw new Error('MainFrame element not found');
+        }
         
-        if (hasCookies) this.cookies.addCookies()
-
-        return this;
+        // Menu Bar
+        addChild(mainFrameElement, this.menuBar.render());
+        this.menuBar.build();
+        
+        // Left Bar
+        addChild(mainFrameElement, this.leftBar.render());
+        this.leftBar.build();
+        
+        // Layer Frame
+        const leftBarElement = document.getElementById('LeftBar');
+        if (leftBarElement) {
+            addChild(leftBarElement, this.layerFrame.render());
+            this.layerFrame.build();
+        }
+        
+        // Right Bar
+        addChild(mainFrameElement, this.rightBar.render());
+        this.rightBar.build();
+        
+        // Date Selector Frame
+        addChild(mainFrameElement, this.dateSelectorFrame.render());
+        this.dateSelectorFrame.build();
+        
+        // Graph
+        addChild(mainFrameElement, this.graph.render());
+        this.graph.build();
+        
+        // Info Div
+        addChild(mainFrameElement, this.infoDiv.render());
+        
+        // Top Right Frame
+        const infoElement = document.getElementById('info');
+        if (infoElement) {
+            const topRightFrame = document.createElement("div");
+            topRightFrame.className = "TopRightFrame";
+            addChild(infoElement, topRightFrame);
+            
+            this.infoDiv.build();
+            addChild(topRightFrame, this.infoFrame.render());
+            this.infoFrame.build();
+            
+            if (isKeyCloakEnabled) {
+                addChild(topRightFrame, this.loginFrame.render());
+                this.loginFrame.build();
+            }
+        }
+        
+        // Download Options
+        addChild(mainFrameElement, this.downloadOptionsDiv.render());
+        this.downloadOptionsDiv.build();
+        
+        // CS Map
+        addChild(document.body, this.csMap.render());
+        
+        // Download Iframe
+        addChild(mainFrameElement, DownloadIframe());
+    }
+    
+    private renderDataDependentComponents(): void {
+        // Componentes que necesitan datos cargados
+        const rightBarElement = document.getElementById('RightBar');
+        if (rightBarElement) {
+            // Palette Frame
+            addChild(rightBarElement, this.paletteFrame.render());
+            this.paletteFrame.build();
+            
+            // Download Frame
+            if (hasDownload) {
+                addChild(rightBarElement, this.downloadFrame.render());
+                this.downloadFrame.build();
+                this.downloadFrame.update();
+            }
+        }
+    }
+    
+    private finalizeSetup(): void {
+        // Configuraciones finales
+        if (hasCookies) {
+            this.cookies.addCookies();
+        }
+    }
+    
+    private renderFallback(): void {
+        // Renderizado mínimo en caso de error
+        console.warn('Using fallback rendering');
+        try {
+            mount(this.mainFrame.render(), document.body);
+            this.mainFrame.build();
+        } catch (fallbackError) {
+            console.error('Fallback rendering also failed:', fallbackError);
+        }
+    }
+    
+    private waitForDataLoad(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            // Si ya hay datos, resolver inmediatamente
+            if (this.state.computedData && Object.keys(this.state.computedData).length > 1) {
+                resolve();
+                return;
+            }
+            
+            let attempts = 0;
+            const maxAttempts = 100; // 10 segundos con intervalos de 100ms
+            
+            const checkInterval = setInterval(() => {
+                attempts++;
+                
+                // Verificar si los datos están disponibles
+                if (this.state.computedData && Object.keys(this.state.computedData).length > 1) {
+                    clearInterval(checkInterval);
+                    console.log('Data loaded successfully');
+                    resolve();
+                    return;
+                }
+                
+                // Timeout de seguridad
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    console.warn('Timeout waiting for data to load, proceeding anyway');
+                    resolve(); // Resolver aunque no haya datos para continuar
+                }
+            }, 100);
+        });
     }
 
     onDragStart(event: CsMapEvent): void {
-        if (avoidMin) return;
+        if (avoidMinimize) return;
         this.menuBar.minimize();
         this.leftBar.minimize();
         this.downloadFrame.minimize();
@@ -271,22 +403,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             });
     }
 
-    public onMouseMoveEnd(event: CsMapEvent): void {
-            loadLatLogValue(event.latLong, this.state, this.timesJs, this.csMap.getZoom())
-            .then(value => {
-                if (this.state.support == defaultRenderer) {
-                    this.csMap.showValue(event.latLong, value);
-                } else {
-                    let evt = event.original
-                    this.csMap.showFeatureValue(this.state.actionData, evt.pixel, event.latLong, evt.originalEvent.target);
-                }
-            })
-            .catch(reason => {
-                console.log("error: " + reason)
-            })
-        
-    }
-
     protected getUrlForNC(suffix?: string): string {
         let currUrl = new URL(document.location.toString())
         currUrl.search = "";
@@ -295,7 +411,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
             currUrl.pathname += ".nc";
         } else {
-            currUrl.pathname += "data/" + renderers.folder[renderers.name.indexOf(this.state.support)] + "/" + this.state.varId +  ".csv";
+            currUrl.pathname += "data/" + this.getFolders(this.state.support) + "/" + this.state.varId +  ".csv";
         }
         
         return currUrl.toString();
@@ -308,7 +424,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public downloadPoint(): void {
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
+        // downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
+        if (computedDataTilesLayer) this.computeTimeData(this.lastLlData.value, portion, [],browserDownloadFile);
+        else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
     }
 
     public downloadFeature(featureProps:  any = []):void {
@@ -320,14 +438,15 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadOptionsDiv.openModal();
     }
     
-    // ------- UNIFICAR
-    public showGraph() {
+    // ------- UNIFICAR 
+    public showGraph() { 
         let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
             this.graph.showGraph(data, this.lastLlData.latlng)
         }
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
+        if (computedDataTilesLayer) this.computeTimeData(this.lastLlData.value, portion, [], open);
+        else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
     }
 
     public showGraphBySt(stParams: any) {
@@ -337,12 +456,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         downloadCSVbySt(stParams['id'], this.state.varId, open);
     }
 
-    public showGraphByRegion(region:number, stParams: any) {
+    public showGraphByRegion(folder: string, stParams: any) {
         let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
             this.state.timeSeriesData = data
             this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
         }
-        downloadTimebyRegion(region, stParams['id'], this.state.varId, open);
+        if (computedDataTilesLayer) this.computeTimeData(-1, '_all', stParams, open);
+        else downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
     }
     // ------- UNIFICAR
 
@@ -424,13 +544,16 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return ret
     }
 
-    public update(dateChanged: boolean = false):void {
+    public async update(dateChanged: boolean = false):Promise<void> {
         this.menuBar.update();
         this.leftBar.update();
-        this.paletteFrame.update();
         this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
         this.csMap.updateRender(this.state.support)
+        if (computedDataTilesLayer) {
+            await this.waitForDataLoad()
+        }
         if (!dateChanged) this.dateSelectorFrame.update();
+        this.paletteFrame.update();
         this.changeUrl();
     }
 
@@ -469,14 +592,11 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     }
 
-
     // Generic dropdown handling
     public abstract dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     
     public abstract selectionParamChanged(param: number): void;
     public abstract getLegendValues(): number[];
-
-    
 
     public getLegendText() {
         let ret: string[]
@@ -488,82 +608,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public async filterValues(values: number[], t: number, varName: string, portion: string): Promise<number[]> {
+        if (this.state.selection==STR_ALL)return values;
         for (let i = 0; i < values.length; i++) {
             if (values[i] < this.state.selectionParam) {
                 values[i] = NaN;
             }
         }
-
         return values;
-    }
-
-    async onStationClick(feature: GeoJSON.Feature, event: any) {
-        let stationId = feature.properties['id'];
-        let varId = this.state.support == renderers.name[0]? this.state.varId + "_" + this.state.selectionParam + "y": this.state.varId;
-        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-        let hasData = await this.stHasData(varId,stationId);
-        let div = document.createElement("div");
-        let header = document.createElement("h5");
-        let hdText = document.createTextNode('Estación: ' + feature.properties['name']);
-        header.appendChild(hdText);
-        div.appendChild(header);
-        let list = document.createElement('ul');
-        div.appendChild(list);
-
-        Object.keys(feature.properties).forEach((value) => {
-            if (value == varId) {
-                const stProp = document.createElement("li");
-                const textBold = document.createElement("B");
-                const propKey = document.createTextNode(value + ": ");
-                textBold.appendChild(propKey);
-                stProp.appendChild(textBold);
-                const propValue = document.createTextNode(feature.properties[value]);
-                stProp.appendChild(propValue);
-                list.appendChild(stProp);
-            }
-        });
-
-        if (hasData == true) {
-            let btndiv = document.createElement("div");
-            btndiv.className = "d-flex justify-content-center";
-            let button = document.createElement("button");
-            button.id = "st_" + stationId;
-            button.className = "btn navbar-btn";
-            button.innerText = "Gráfico";
-            if (this.state.support== renderers.name[0]) button.addEventListener("click", () => {this.showGraphBySt(stParams)})
-            else button.addEventListener("click", () => {this.showGraphByRegion(renderers.name.indexOf(this.state.support), stParams)});
-            btndiv.appendChild(button);
-            div.appendChild(btndiv);
-        }
-
-        this.stationsLayer.setPopupContent(event.popup, div, event);
-    }
-
-    public async onFeatureClick(feature: GeoJSON.Feature, event: any) {
-        if (feature) {
-            if (!this.state.climatology) {
-                let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-                if (this.state.support== renderers.name[0]) this.showGraphBySt(stParams)
-                else this.showGraphByRegion(renderers.name.indexOf(this.state.support), stParams)
-            }
-        }
-    }
-
-    public async stHasData(varId: string, station: string) {
-        let num:number = renderers.name.indexOf(this.state.support) 
-        // let num = this.state.support == renderers[0]? 0 : this.state.support == 'Municipio'? 2: this.state.support == 'Provincia'? 3:4;
-        let url = this.state.support == renderers.name[0]? renderers.folder[0] + station + ".csv": "./data/" + renderers.folder[num] + "/" + varId + ".csv";
-        try {
-            // const response = await fetch("./stations/"+this.state.varId+"/" + station + ".csv", {
-            const response = await fetch(url, {
-                method: 'HEAD',
-                cache: 'no-cache'
-            });
-            return response.status === 200;
-
-        } catch (error) {
-            return false;
-        }
     }
 
     public notifyMaxMinChanged(): void {
@@ -576,12 +627,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex] = minWhenInf;
         }
         // this.paletteFrame.update();
-        if (this.stationsLayer != undefined) {
-            this.stationsLayer.refresh()
-        }
-        if (this.stationsLayer != undefined) {
-            this.stationsLayer.refresh()
-        }
+        // if (this.stationsLayer != undefined) {
+        //     this.stationsLayer.refresh()
+        // }
+        this.csMap.refreshFeatureLayer()
     }
 
     public dateDateBack(): void {
@@ -669,21 +718,98 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         //Do nothing
     }
 
+    // Customizable graph in each viewer
     public completeGraph(graph: Dygraph, data: any) {
-
+        //Do nothing
     }
 
-   /*  public getuncertaintyStyle(feature: FeatureLike): Style {
-        return DEF_STYLE_UNC;
-    } */
+    // Customizable data layer in each viewer    
+    public computeLayerData(t: number, varName: string, portion: string): any  {
+        //Do nothing
+    }
+
+    // Customizable graph data in each viewer
+    public computeTimeData(x: number, portion: string, station: any = [], doneCb: CsvDownloadDone): void {
+        //Do nothing
+    }
+
+    public computeFeatureLayerData(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
+        //Do nothing
+    }
 
     public getFeatureStyle(feature: FeatureLike): Style {
         return DEF_STYLE_STATIONS;
     }
 
-    // public formatPopupValue(pos: CsLatLong, value: number): string {
-
-    //     ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']'
-    //     return "Valor: " + value
+    // public formatPopupValue(text: string, value: number): string {
+    //     return this.getTranslation('valor_en') + text + value.toFixed(2)
     // }
+
+    public formatPopupValue(text: string, value: number): string {
+        let formattedValue: string;
+        if (value % 1 === 0) {
+            formattedValue = value.toString(); // Convierte el número directamente a string sin decimales
+        } else {
+            formattedValue = value.toFixed(2); // Mantiene 2 decimales para estos casos
+        }
+    
+        return this.getTranslation('valor_en') + text + formattedValue;
+    }
+
+    // Metohds to manage renderers & folders
+    public setRenderers(rd:number[] = [], remove: boolean = false): string[] {
+        if (rd.length > 0 ) this.enableRenderer(rd);
+        // else {
+            for (let i = 0; i < renderers.length; i++ ){
+                if(renderers[i].startsWith("~")){
+                    if (remove) {this.removeRenderer(i)} else { this.disableRenderer(i)}
+                }
+            }
+        // }
+        return renderers;
+    }
+    
+    public getRenderers(): string[] {
+        return renderers;
+    }
+
+    public getDefaultRenderer(): string {
+        return defaultRenderer;
+    }
+
+    public enableRenderer(rd:number[]){
+        rd.forEach( i => {
+            if(renderers[i].startsWith("~")){
+                renderers[i]=renderers[i].substring(1)
+            }
+        } )
+    }
+
+    public disableRenderer(i:number){
+        if(! renderers[i].startsWith("~")){
+            renderers[i]="~"+renderers[i];
+        }
+    }
+
+    public removeRenderer(i:number){
+        if(! renderers[i].startsWith("-")){
+            renderers[i]=renderers[i].substring(1)
+        }
+        renderers[i]="-"+renderers[i];
+    }
+
+    public getFolders(rendererName: string): string[] {
+        const rendererIndex = renderers.indexOf(rendererName);
+        if (rendererIndex === -1) {
+            return []; // Renderer name not found
+        }
+
+        const folderIds: string[] = [];
+        for (let i = 0; i < folders.renderer.length; i++) {
+            if (folders.renderer[i] === rendererIndex) { 
+                folderIds.push(folders.folder[i]);
+            }
+        }
+        return folderIds;
+    }
 }

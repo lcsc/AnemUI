@@ -9,7 +9,7 @@ export default class Translate {
         return Translate.instance;
     }
 
-    private defaultLocale = 'es';
+    private defaultLocale: string = 'es';
 
     private locales: any = {
         en: {
@@ -17,7 +17,7 @@ export default class Translate {
             "descargar_peninsula": "Download Peninsula",
             "descargar_baleares": "Download Baleares",
             "descargar_canarias": "Download Canarias",
-            "descargar_pixel": "Download Point",
+            "descargar_pixel": "Download data",
             "opciones_avanzadas": "Advanced Options",
             "grafico_pixel": "Point Graph",
             "paleta": "Palette",
@@ -40,6 +40,7 @@ export default class Translate {
             'cookies_info':'More info',
             'cookies_accept':'Accept',
             'cookies_decline':'Decline',
+            'valor_en': 'Value at',
             'hiperarido':'Hyperarid', 
             'arido':'Arid' , 
             'semiarido':'Semiarid', 
@@ -72,7 +73,7 @@ export default class Translate {
             "descargar_peninsula": "Descargar Península",
             "descargar_baleares": "Descargar Baleares",
             "descargar_canarias": "Descargar Canarias",
-            "descargar_pixel": "Descargar Píxel",
+            "descargar_pixel": "Descargar datos",
             "opciones_avanzadas": "Opciones Avanzandas",
             "grafico_pixel": "Gráfico de Píxel",
             "paleta": "Paleta",
@@ -95,6 +96,7 @@ export default class Translate {
             'cookies_info':'Más información',
             'cookies_accept':'Aceptar',
             'cookies_decline':'Rechazar',
+            'valor_en': 'Valor en',
             'hiperarido':'Hiperárido', 
             'arido':'Árido' , 
             'semiarido':'Semiárido', 

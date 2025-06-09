@@ -17,6 +17,62 @@ export interface Painter{
     getValIndex(val:number):number
 }
 
+export class NiceSteps {
+    // Método para calcular el percentil
+    public percentile(arr: number[], p: number): number {
+        const pos = (arr.length - 1) * (p / 100);
+        const base = Math.floor(pos);
+        const rest = pos - base;
+        if (arr[base + 1] !== undefined) {
+            return arr[base] + rest * (arr[base + 1] - arr[base]);
+        } else {
+            return arr[base];
+        }
+    }
+
+    // Método para encontrar un paso regular
+    public niceStep(rawStep: number): number {
+        const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+        const niceFractions = [1, 2, 2.5, 5, 10];
+        for (let f of niceFractions) {
+            const step = f * magnitude;
+            if (step >= rawStep) return step;
+        }
+        return 10 * magnitude;
+    }
+
+    // Método para obtener pasos regulares
+    public getRegularSteps(data: number[], numBreaks = 5): number[] {
+        // Filtramos y ordenamos los datos
+        data = data.filter(v => !isNaN(v)).sort((a, b) => a - b);
+
+        // Calculamos percentiles
+        const p05 = this.percentile(data, 0.5);
+        const p95 = this.percentile(data, 95);
+
+        // Calculamos el paso inicial
+        const rawStep = (p95 - p05) / numBreaks;
+        const step = this.niceStep(rawStep);
+
+        // Ajustamos los límites para que sean múltiplos del paso
+        const start = Math.floor(p05 / step) * step;
+        const end = Math.ceil(p95 / step) * step;
+
+        // Generamos los puntos de corte asegurándonos de que no sean duplicados
+        const breaks: number[] = [];
+        for (let val = start; val <= end + 0.5 * step; val += step) {
+            const roundedValue = Math.round(val * 10) / 10; // Redondeamos a 1 decimal
+
+            // Evitamos valores duplicados
+            if (!breaks.includes(roundedValue)) {
+                breaks.push(roundedValue);
+            }
+        }
+
+        return breaks;
+    }
+}
+
 export class CategoryRangePainter implements Painter{
 
     protected ranges:{a:number,b:number}[]

@@ -2,26 +2,28 @@ import { Feature, Map, MapBrowserEvent, MapEvent, Overlay, TileQueue, View } fro
 import GeoJSON from 'ol/format/GeoJSON.js';
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
 import { CsGeoJsonClick, CsLatLong, CsMapController, CsMapEvent } from "./CsMapTypes";
-import { CsTimesJsData, CsViewerData, CsGeoJsonData, Array4Portion } from "./data/CsDataTypes";
+import { CsTimesJsData, CsViewerData, CsGeoJsonData, Array4Portion, ArrayData } from "./data/CsDataTypes";
 import { MapOptions } from "ol/Map";
 import { TileWMS, XYZ, OSM, TileDebug, ImageStatic as Static } from "ol/source";
 import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
-import { fromLonLat, toLonLat, transform, Projection } from "ol/proj";
+import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, intValues,computedDataTilesLayer } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, downloadJSONXYbyRegion } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
+import { Select } from 'ol/interaction';
+import { pointerMove } from 'ol/events/condition';
 import { LayerManager } from "./LayerManager";
-import { loadRegionFeatures, loadGeoJsonData } from "./data/CsDataLoader";
+import { loadLatLogValue, loadGeoJsonData } from "./data/CsDataLoader";
 import DataTileSource from "ol/source/DataTile";
 import { Geometry } from 'ol/geom';
-import { renderers, defaultRenderer } from "./tiles/Support";
+// import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
 
 // Define alternative projections
 proj4.defs([
@@ -41,15 +43,21 @@ const imgStation = new CircleStyle({
 });
 export const DEF_STYLE_STATIONS=new Style({image:imgStation,})
 
-const style = new Style({
-  fill: new Fill({
-    color: '#eeeeee',
-  }),
-  stroke: new Stroke({
-    color: 'rgba(255, 255, 255, 0.7)',
-    width: 2,
-  }),
+let contourStyle = new Style({
+  fill: new Fill({ color: '#ffffff00' }),
+  stroke: new Stroke({ color: '#b683a1', width: 2 }),
 });
+
+const contours = ["provincia","autonomia"]
+
+interface FeatureManagerOptions {
+  folder: string;
+  map: Map;
+  csMap: OpenLayerMap;
+  geoJSONData: CsGeoJsonData;
+  maxFeatures?: number;
+  loadThreshold?: number;
+}
 
 //const SLD='<?xml version="1.0" encoding="ISO-8859-1"?>'+
 const SLD_HEADER='<StyledLayerDescriptor version="1.0.0"'+
@@ -80,9 +88,13 @@ export class OpenLayerMap implements CsMapController{
     protected parent:CsMap;
     protected map:Map;
     protected marker:Overlay;
-    protected value:Overlay;
-    protected popup: HTMLElement;
-    protected popupContent:HTMLDivElement;
+    protected mouseMoveTo:NodeJS.Timeout;
+    
+    public value:Overlay;
+    public popup: HTMLElement;
+    public popupContent:HTMLDivElement;
+    public defaultRenderer:string;
+    public renderers: string[];
 
     protected dataWMSLayer: TileWMS;
     protected dataTilesLayer: (ImageLayer<Static> | TileLayer)[];
@@ -94,9 +106,13 @@ export class OpenLayerMap implements CsMapController{
     protected terrainLayer:Layer;
     protected politicalLayer:Layer;
     protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
-    protected currentFeature: any;
+    protected currentFeature: Feature;
     protected glmgr: GeoLayerManager;
     protected featureLayer: CsOpenLayerGeoJsonLayer;
+    protected contourLayer: CsOpenLayerGeoJsonLayer;
+    protected selectInteraction: Select;
+    protected hoverInteraction: Select;
+    protected selectableLayers: CsOpenLayerGeoJsonLayer[]
      
     protected setExtents(timesJs: CsTimesJsData, varId: string): void {
         timesJs.portions[varId].forEach((portion: string, index, array) => {
@@ -112,6 +128,8 @@ export class OpenLayerMap implements CsMapController{
         const timesJs= this.parent.getParent().getTimesJs();
         const center:Coordinate= fromLonLat([timesJs.center['lng'],timesJs.center['lat']], olProjection);
         this.setExtents(timesJs, state.varId);
+        this.defaultRenderer = this.parent.getParent().getDefaultRenderer()
+        this.renderers = this.parent.getParent().getRenderers()
         let layers: (ImageLayer<Static> | TileLayer)[] = isWmsEnabled ? this.buildWmsLayers(state) : this.buildChunkLayers(state);
 
         let options:MapOptions ={
@@ -129,6 +147,7 @@ export class OpenLayerMap implements CsMapController{
         this.map.on('movestart',event=>{self.onDragStart(event)})
         this.map.on('loadend',()=>{self.onMapLoaded()})
         this.map.on('click',(event)=>{self.onClick(event)})
+        this.map.on('moveend', self.handleMapMove.bind(this));
         this.marker=new Overlay({
           positioning: 'center-center',
           element: document.createElement('div'),
@@ -136,25 +155,21 @@ export class OpenLayerMap implements CsMapController{
         })
         this.popup = document.getElementById('popUp') as HTMLElement,
         this.value=new Overlay({
-           positioning: 'center-center',
-          // element: document.createElement('div'),
+          positioning: 'center-center',
           element: this.popup,
           stopEvent: false,
         })
         this.map.addOverlay(this.marker);
         this.map.addOverlay(this.value);
         this.marker.getElement().classList.add("marker")
-        this.buildPopUp(/* this.value.getElement() as HTMLDivElement */)
+        this.buildPopUp()
         this.map.on('pointermove',(event)=>self.onMouseMove(event))
-        /*
-        this.initLayers();    
-        this.marker=new Marker(center);*/
-        this.lastSupport = defaultRenderer
+        this.lastSupport = this.parent.getParent().getDefaultRenderer()
+        this.buildFeatureLayers();
         if (!isWmsEnabled) {
           this.buildDataTilesLayers(state, timesJs);
             if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
         }
-        this.buildFeatureLayers();
       } 
 
     private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
@@ -228,11 +243,11 @@ export class OpenLayerMap implements CsMapController{
       this.popup.appendChild(this.popupContent);
     }
 
-    private mouseMoveTo:NodeJS.Timeout;
     public onMouseMove(event:MapBrowserEvent<any>){
-       if(this.mouseMoveTo){clearTimeout(this.mouseMoveTo)}
+        this.hideMarker();
+        if(this.mouseMoveTo){clearTimeout(this.mouseMoveTo)}
         this.mouseMoveTo=setTimeout(()=>{
-            this.parent.onMouseMoveEnd(this.toCsMapEvent(event));
+            this.onMouseMoveEnd(this.toCsMapEvent(event));
         },100)
     }
 
@@ -240,7 +255,6 @@ export class OpenLayerMap implements CsMapController{
         let ret=new CsMapEvent();
         ret.original=event;
 
-        
         let coord=event.frameState.viewState.center
         if(event.type=='click' || event.type=='pointermove'){
             let browserEvent=event as MapBrowserEvent<any>
@@ -251,6 +265,41 @@ export class OpenLayerMap implements CsMapController{
         const coord4326: number[]  = proj4(olProjection, 'EPSG:4326', coord);
         ret.latLong={lat:coord4326[1],lng:coord4326[0]}
         return ret;
+    }
+
+    public onMouseMoveEnd(event: CsMapEvent): void {
+      let self = this
+      const state= this.parent.getParent().getState();
+      const timesJs= this.parent.getParent().getTimesJs();
+      loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
+      .then(value => {
+          if (state.support == this.defaultRenderer) {
+              self.showValue(event.latLong, value);
+          } else {
+             let evt = event.original
+            var features: Feature[] = [];
+            this.map.forEachFeatureAtPixel(evt.pixel, (feature: Feature) => {
+              features.push(feature);
+            });
+
+            let selectableFeatureIDS: string[] = []
+
+            if (features.length > 0) {
+              const selectableFeatures = self.featureLayer.getFeatures();
+              selectableFeatures.forEach( feature => {
+                selectableFeatureIDS.push(feature.properties['id'])
+               })
+              for (var i = 0; i < features.length; ++i) {
+                let featId = features[i].getProperties()['id']
+                if (selectableFeatureIDS.includes(features[i].getProperties()['id']))
+                  self.featureLayer.showFeatureValue(self.featureLayer.indexData, features[i], evt.pixel, event.latLong)
+              }
+            }
+          }
+        })
+      .catch(reason => {
+          console.log("error: " + reason)
+      })
     }
 
     public onDragStart(event:MapEvent){
@@ -268,8 +317,20 @@ export class OpenLayerMap implements CsMapController{
         this.parent.onMapClick(this.toCsMapEvent(event))
     }
 
+    public handleMapMove(){
+      let state= this.parent.getParent().getState();
+      //  if (state.support == renderers[2]) {
+      if (state.support != this.defaultRenderer) {
+          this.parent.getParent().update();
+      }
+    }
+
     public putMarker(pos: CsLatLong): void {
         this.marker.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+    }
+
+    public hideMarker(): void {
+      this.marker.setPosition(undefined)
     }
 
     public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
@@ -286,15 +347,58 @@ export class OpenLayerMap implements CsMapController{
         this.map.getLayers().insertAt(this.map.getLayers().getLength() - 1, imageLayer);
       });
 
-      // Download and build new data layers
       let promises: Promise<number[]>[] = [];
       this.setExtents(timesJs, state.varId);
-      timesJs.portions[state.varId].forEach((portion: string, index, array) => {
-        promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
-      });
-
+        
+      if (computedDataTilesLayer) {
+        // Build calculated Layer
+        timesJs.portions[state.varId].forEach((portion: string) => {
+          promises.push(this.computeLayerData(state.selectedTimeIndex, state.varId, portion));
+        });
+      } else {
+        // Download and build new data layers
+        timesJs.portions[state.varId].forEach((portion: string, index, array) => {
+          promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
+        });
+      }
+      
       // Draw new data layers
       buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
+    }
+
+    public computeLayerData (t: number, varName: string, portion: string): Promise<number[]>{
+      let promise: Promise<number[]>  = this.parent.getParent().computeLayerData(t, varName, portion);
+      return promise;
+    }
+
+    public computeFeatureLayerData(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
+      this.parent.getParent().computeFeatureLayerData(time, folder, varName, doneCb);
+    }
+
+    async initializeFeatureLayer(time: string, folder: string, varName: string): Promise<void> {
+      return new Promise((resolve, reject) => {
+          let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
+              if (this.featureLayer) {
+                  this.featureLayer.indexData = data;
+                  if (this.featureLayer.show) {
+                      this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+                  }
+                  resolve();
+              } else {
+                  console.error("featureLayer is undefined in initializeFeatureLayer callback");
+                  reject("featureLayer is undefined");
+              }
+          };
+          
+          if (computedDataTilesLayer) {
+            // Build calculated Layer
+            this.computeFeatureLayerData(time, folder, varName, openSt);
+          } else {
+            // Download and build new data layers
+            downloadXYbyRegion(time, folder, varName, openSt);
+          }
+          
+      });
     }
 
     public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
@@ -322,6 +426,25 @@ export class OpenLayerMap implements CsMapController{
         lmgr.showUncertaintyLayer(false); // ---------------- Por defecto desactivada
     } 
 
+    public buildFeatureLayers () {
+      this.glmgr = GeoLayerManager.getInstance();
+      let self = this
+      Object.entries(this.renderers).forEach(([key, renderer]) => {
+          if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
+            const folders = this.parent.getParent().getFolders(renderer)
+            folders.forEach( folder =>{
+              loadGeoJsonData(folder)
+              .then(GeoJsonData => { 
+                  self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
+              })
+              .catch(error => {
+                  console.error('Error: ', error);
+              });
+            })
+          }
+      } )
+    }
+
     public setDate(dateIndex: number, state: CsViewerData): void {
         if (isWmsEnabled) {
           this.dataWMSLayer.updateParams({ "time": state.times[state.selectedTimeIndex], STYLES: undefined, SLD_BODY: this.getSld() });
@@ -339,183 +462,258 @@ export class OpenLayerMap implements CsMapController{
         return this.map.getView().getZoom();
     }
 
-    public showValue(pos: CsLatLong, value: number): void {
+    public showValue(pos: CsLatLong, value: number, int:boolean = false): void {
         if(Number.isNaN(value)){
           this.value.setPosition(undefined)
           return;
         }
-        this.popupContent.textContent=this.formatPopupValue(pos,value);
+        this.popupContent.textContent=this.formatPopupValue(pos,value, int);
         this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
         this.popupContent.style.visibility = 'visible';
         this.popup.hidden = false
     }
 
-    public formatPopupValue(pos: CsLatLong, value: number): string {
-      return 'Valor en [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: '  + value
+    public formatPopupValue(pos: CsLatLong, value: number, int:boolean = false): string {
+      value = int? Math.round(value):value
+      return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', value);
     }
 
-    public getFeatureStyle(feature: Feature): Style {
-      const showColor = feature.get('showcolor');
-      console.log(showColor);
-      const color = feature.get('COLOR');
-      style.getFill().setColor(color);
-        return style; 
-    }
-
-    public showFeatureValue (data: any, pixel: any, pos: CsLatLong, target:any):void {
-      let value: string;
-      const feature = target.closest('.ol-control')
-        ? undefined
-        : this.map.forEachFeatureAtPixel(pixel, function (feature: Feature) {
-            return feature;
-          });
-      if (feature) {
-        this.popupContent.style.left = pixel[0] + 'px';
-        this.popupContent.style.top = pixel[1] + 'px';
-        this.popup.hidden = false
-        if (feature !== this.currentFeature) {
-
-          let id = 'X'+feature.getProperties()['id']
-          Object.keys(data).forEach(key => {
-              if (key == id) {
-                  value = data[key]
-              } 
-          });
-          this.popupContent.style.visibility = 'visible';
-          this.popupContent.innerText = feature.get('name') +': ' + value ;
-          this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
-        }
-      } else {
-        this.popupContent.style.visibility = 'hidden';
-        this.popup.hidden = true
+    public isFeatureSelectable(
+      feature: Feature,
+      layer: CsOpenLayerGeoJsonLayer,
+      selectInteraction: Select,
+      selectableLayers: CsOpenLayerGeoJsonLayer[]
+    ): boolean { 
+      if (selectInteraction.get('filter')) {
+          if (!(selectInteraction.get('filter') as (feature: Feature, layer: CsOpenLayerGeoJsonLayer) => boolean)(feature, layer)) {
+              return false;
+          }
       }
-      this.currentFeature = feature;
+  
+      if (selectableLayers && selectableLayers.length > 0) {
+          let isLayerInSelectable = false;
+          for (let selectableLayerCheck of selectableLayers) {
+              if (selectableLayerCheck === layer) {
+                  isLayerInSelectable = true;
+              }
+          }
+          if (!isLayerInSelectable) {
+              return false;
+          }
+      }
+      return true;
+  }
+
+  public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
+    let state = this.parent.getParent().getState()
+    if(typeof state.times === 'string'&& !computedDataTilesLayer) return 1
+    if (feature) {
+        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
+        if (state.support== this.renderers[0]) this.parent.getParent().showGraphBySt(stParams)
+        this.parent.getParent().showGraphByRegion(folder, stParams)
+    }
+  }
+
+  public refreshFeatureLayer() {
+    if (this.featureLayer && this.featureLayer.refresh) {
+      this.featureLayer.refresh();
+    }
+  }
+
+  private getSld():string{
+    let ret = SLD_HEADER;
+    let values= this.parent.getParent().getLegendValues();
+    let mgr=PaletteManager.getInstance().getPainter();
+    let min = this.parent.getParent().getTimesJs().varMin[this.parent.getParent().getState().varId][this.parent.getParent().getState().selectedTimeIndex];
+    let max = this.parent.getParent().getTimesJs().varMax[this.parent.getParent().getState().varId][this.parent.getParent().getState().selectedTimeIndex];
+    let limit= this.parent.getParent().getState().selectionParam;
+    values=values.sort((a,b)=>a - b);
+    values.map((val, index) =>{ 
+      let alpha=0
+      if(val>limit)
+        alpha=1;
+      ret+='<ColorMapEntry color="'+mgr.getColorString(val,min,max)+'" quantity="'+val+'" label="'+val+'" opacity="'+alpha+'"/>'
+      });
+
+    ret+=SLD_END;
+    return ret;
+  }
+
+  private setupInteractions(): void {
+    if (this.selectInteraction) {
+        this.map.removeInteraction(this.selectInteraction);
+        this.selectInteraction = null;
+    }
+    
+    if (this.hoverInteraction) {
+        this.map.removeInteraction(this.hoverInteraction);
+        this.hoverInteraction = null;
+    }
+    
+    const self = this;
+    
+    console.log('initilalize hoverInteraction')
+    this.hoverInteraction = new Select({
+        condition: pointerMove,
+        style: null,
+        filter: function(feature, layer) {
+        const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
+        if (!contourGeoLayer) {
+          return true; 
+        }
+        return layer !== contourGeoLayer;
+      }
+    });
+    
+    this.map.addInteraction(this.hoverInteraction);
+    
+    this.hoverInteraction.on('select', function(e) {
+        e.deselected.forEach(function(feature) {
+            feature.set('hover', false);
+        });
+        
+        e.selected.forEach(function(feature) {
+            feature.set('hover', true);
+        });
+    });
+    
+    const layerFilter = function(feature:any, layer: any) {
+      const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
+      return !contourGeoLayer || layer !== contourGeoLayer;
     };
 
-    async configureFeature (region:string): Promise<void> {
-      loadGeoJsonData(region).then(data => { 
-        if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
-          return; // Salir de la función si los datos son inválidos
-      }
-        this.featureLayer = new CsOpenLayerGeoJsonLayer (data,this.map,this,(feature, event) => { this.onFeatureClick(feature, event) });
-       })
-       .catch((error: any) => {
-            console.error('Error al cargar GeoJSON: ', error);
-        })
+    console.log('initilalize selectInteraction')
+    this.selectInteraction = new Select({
+        filter: layerFilter
+    });
+    
+    this.map.addInteraction(this.selectInteraction);
+    
+    this.selectableLayers = this.featureLayer ? [this.featureLayer] : [];
+    
+    this.selectInteraction.on('select', (e) => {
+        console.log('Selected features:', e.target.getFeatures().getArray());
+    });
+  }
+
+  async updateRender(support: string): Promise<void> {
+    let state = this.parent.getParent().getState();
+    
+    if (this.featureLayer && this.featureLayer.hide) {
+        this.featureLayer.hide();
+        this.featureLayer = null;
     }
-
-    public buildFeatureLayers () {
-      this.glmgr = GeoLayerManager.getInstance();
-      renderers.name.forEach( renderer => {
-          if(!renderer.startsWith("~") && renderer != defaultRenderer){
-            loadGeoJsonData(renderers.folder[renderers.name.indexOf(renderer)])
-              .then(data => { 
-                  this.glmgr.addGeoLayer(renderer, data, this.map, this, (feature, event) => { this.onFeatureClick(feature, event) })
-              })
-              .catch(error => {
-                  console.error('Error: ', error);
-              });
-          }
-      } )
+    
+    if (this.contourLayer && this.contourLayer.hide) {
+        this.contourLayer.hide();
+        this.contourLayer = null;
     }
-
-    public onFeatureClick(feature: GeoJSON.Feature, event: any) {
-      let state = this.parent.getParent().getState()
-      if(typeof state.times === 'string') return 1
-      if (feature) {
-          let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
-          if (state.support== renderers.name[0]) this.parent.getParent().showGraphBySt(stParams)
-          else this.parent.getParent().showGraphByRegion(renderers.name.indexOf(state.support), stParams)
-      }
-    }
-
-    public setFeatureStyle(feature: Feature, state: CsViewerData, timesJs: CsTimesJsData): Style {
-      let min = timesJs.varMin[state.varId][state.selectedTimeIndex];
-      let max = timesJs.varMax[state.varId][state.selectedTimeIndex];
-      let color: string = '#fff';
-      let id = 'X'+feature.getProperties()['id']
-      let ptr = PaletteManager.getInstance().getPainter();
-      Object.keys(state.actionData).forEach(key => {
-          if (key == id) {
-              color = ptr.getColorString(state.actionData[key],min,max)
-          } 
-      });
-      return new Style({
-          fill: new Fill({ color: color }),
-          stroke: new Stroke({ color: '#000000', width: 1 }),
-      });
-    }
-
-    private getSld():string{
-      let ret = SLD_HEADER;
-      let values= this.parent.getParent().getLegendValues();
-      let mgr=PaletteManager.getInstance().getPainter();
-      let min = this.parent.getParent().getTimesJs().varMin[this.parent.getParent().getState().varId][this.parent.getParent().getState().selectedTimeIndex];
-      let max = this.parent.getParent().getTimesJs().varMax[this.parent.getParent().getState().varId][this.parent.getParent().getState().selectedTimeIndex];
-      let limit= this.parent.getParent().getState().selectionParam;
-      values=values.sort((a,b)=>a - b);
-      values.map((val, index) =>{ 
-        let alpha=0
-        if(val>limit)
-          alpha=1;
-
-        ret+='<ColorMapEntry color="'+mgr.getColorString(val,min,max)+'" quantity="'+val+'" label="'+val+'" opacity="'+alpha+'"/>'
-        });
-
-      ret+=SLD_END;
-      return ret;
-    }
-
-    public updateRender(support: string): void {
-        let state= this.parent.getParent().getState();
-        let timesJs= this.parent.getParent().getTimesJs();
-        if (this.featureLayer != undefined) {   /// ??????????
-          this.featureLayer.hide()
-        } 
-        switch (support){
-          case defaultRenderer:
-            break;      
-          case renderers.name[0]:
-            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
-            this.featureLayer.show(0);
+    
+    switch (support) {
+        case this.renderers[1]:  
             break;
-          case renderers.name[2]: 
-          case renderers.name[3]: 
-          case renderers.name[4]:
-            this.featureLayer = this.glmgr.getGeoLayer(support)
-            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer));
-            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-                state.actionData = data
-                this.featureLayer.show(renderers.name.indexOf(support));
+            
+        case this.renderers[0]:  
+            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer))
+            this.featureLayer = this.glmgr.getGeoLayer(this.parent.getParent().getFolders(support)[0]);
+            this.featureLayer.indexData = null;
+            
+            if (!this.featureLayer) {
+                console.error('Failed to get geo layer for', support);
+                break;
             }
-            downloadXYbyRegion(state.times[state.selectedTimeIndex], renderers.name.indexOf(support), state.varId, open);
-            break;         
-          default:
-            throw new Error("Render "+support+" not supported")
-        }
-      this.lastSupport=support;
-      if(this.featureLayer!=undefined){
-        this.featureLayer.refresh();
-      }
-      let lmgr = LayerManager.getInstance();
-      let layersLength =  lmgr.getBaseSelected().length
-      for (let i = 0; i < layersLength; i++) {
-        let tSource = lmgr.getBaseLayerSource(i);
-        if(this.terrainLayer.getSource()!=tSource){
-          this.terrainLayer.setSource(tSource);
-        }
-      }
-      let pLayer=lmgr.getTopLayerOlLayer();
-      if(pLayer!=this.politicalLayer){
-        this.map.removeLayer(this.politicalLayer)
-        this.map.addLayer(pLayer)
-        this.politicalLayer=pLayer;
-      }
-      let pSource = lmgr.getTopLayerSource();
-      if(this.politicalLayer.getSource()!=pSource){
-        this.politicalLayer.setSource(lmgr.getTopLayerSource());
-      }
+            
+            let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                if (this.featureLayer && this.featureLayer.show) {
+                  this.featureLayer.indexData = data;
+                  this.featureLayer.show(this.renderers.indexOf(support));
+                }
+            };
+            downloadXYbyRegion(state.times[state.selectedTimeIndex], this.parent.getParent().getFolders(support)[0], state.varId, openSt);
+            break;
+            
+        case this.renderers[2]:  
+        case this.renderers[3]:
+        case this.renderers[4]:
+        case this.renderers[5]:
+            this.dataTilesLayer.forEach((layer: (ImageLayer<Static> | TileLayer)) => this.map.getLayers().remove(layer))
+            let folders = this.parent.getParent().getFolders(support);
+            let dataFolder: string;
+            let contourFolder: string = undefined;
+            
+            if (folders.length > 1) {
+              let zoom = this.getZoom();
+              if (zoom <= 7) {
+                dataFolder = folders[2];
+              } else if (zoom > 7 && zoom <= 10) {
+                  dataFolder = folders[1];
+                  // contourFolder = folders[2];
+              } else {
+                  dataFolder = folders[0];
+                // contourFolder = folders[1];
+              }
+            } else {
+              dataFolder = folders[0];
+            }
+            
+            // --------- CAPA DE CONTORNO
+            /* if (contourFolder) {
+                this.contourLayer = this.glmgr.getGeoLayer(contourFolder+'_contour');
+                if (this.contourLayer && this.contourLayer.show) {
+                    this.contourLayer.show(renderers.indexOf(support));
+                }
+            } */
+            
+            this.featureLayer = this.glmgr.getGeoLayer(dataFolder);
+            
+            if (this.featureLayer) {
+              this.featureLayer.indexData = null;
+              console.log("featureLayer before initializeFeatureLayer:", this.featureLayer);
+              let times = typeof(state.times) == 'string'? state.times: state.times[state.selectedTimeIndex];
+              await this.initializeFeatureLayer(times, dataFolder, state.varId);
+              console.log("featureLayer after initializeFeatureLayer:", this.featureLayer);
+            } else {
+                console.log("featureLayer is undefined before initializeFeatureLayer");
+            }
+            this.setupInteractions();
+            
+            break;
+            
+        default:
+            console.error("Render " + support + " not supported");
+            return;
     }
+    
+    this.lastSupport = support;
+    
+    if (this.featureLayer && this.featureLayer.refresh) {
+        this.featureLayer.refresh();
+    }
+    
+    let lmgr = LayerManager.getInstance();
+    
+    let layersLength = lmgr.getBaseSelected().length;
+    for (let i = 0; i < layersLength; i++) {
+        let tSource = lmgr.getBaseLayerSource(i);
+        if (this.terrainLayer && this.terrainLayer.getSource() !== tSource) {
+            this.terrainLayer.setSource(tSource);
+        }
+    }
+    
+    let pLayer = lmgr.getTopLayerOlLayer();
+    if (pLayer && this.politicalLayer !== pLayer) {
+        if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
+            this.map.removeLayer(this.politicalLayer);
+        }
+        this.map.addLayer(pLayer);
+        this.politicalLayer = pLayer;
+    }
+    
+    let pSource = lmgr.getTopLayerSource();
+    if (this.politicalLayer && this.politicalLayer.getSource() !== pSource) {
+        this.politicalLayer.setSource(pSource);
+    }
+  }
 }
 
 export class GeoLayerManager {
@@ -532,30 +730,28 @@ export class GeoLayerManager {
       return GeoLayerManager.instance;
   }
 
-  public addGeoLayer(region:string, data:CsGeoJsonData, _map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick){
+  public addGeoLayer(_folder:string, _data:CsGeoJsonData, _map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick,isContour: boolean = false){
     this.map=_map;
     this.csMap=_csMap;
-    this.geoLayers[region]= new CsOpenLayerGeoJsonLayer (data, _map, _csMap, _onClick)
+    let options: FeatureManagerOptions =  {
+      folder : _folder,
+      map: _map,
+      csMap: _csMap,
+      geoJSONData: _data
+    }
+    this.geoLayers[_folder]= new CsOpenLayerGeoJsonLayer (_folder,_data, _map, _csMap, false, _onClick)
+    // if (contours.includes(_folder)) this.geoLayers[_folder+'_contour']= new CsOpenLayerGeoJsonLayer (_folder+'_contour',_data, _map, _csMap, true)
   }
 
-  public getGeoLayer(region: string):CsOpenLayerGeoJsonLayer{
-    return this.geoLayers[region];
-  }
-
-  public getGeoLayerNames():string[]{
-      return Object.keys(this.geoLayers);
-  }
-  
-  public getGeoLayerSelected():string[]{
-      return this.layerSelected;
+  public getGeoLayer(folder: string):CsOpenLayerGeoJsonLayer{
+    return this.geoLayers[folder];
   }
 }
 
-class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
+export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   private map:Map;
   private csMap:OpenLayerMap;
   private geoLayer:Layer;
-  // private geoLayers:Layer[];
   private onClick:CsGeoJsonClick;
 
   private popupOverlay:Overlay
@@ -564,62 +760,145 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
   public name:string;
   public url:string; 
   public source?: VectorSource;
-  public geoJsonData: any;
+  public isContour: boolean;
+  protected currentFeature: Feature;
+  public indexData: ArrayData;
 
-  constructor(_data:CsGeoJsonData,_map:Map,_csMap:OpenLayerMap,_onClick:CsGeoJsonClick){
-    super(_data)
+  constructor(_name:string,_geoData:CsGeoJsonData,_map:Map,_csMap:OpenLayerMap,_isContour: boolean,_onClick:CsGeoJsonClick = undefined){
+    super(_geoData)
+    this.name=_name;
     this.map=_map;
     this.csMap=_csMap;
     this.onClick=_onClick;
     this.geoLayerShown=false;
-    this.geoJsonData = _data
+    this.setupEventListeners();
+    this.isContour = _isContour;
+  }
 
+  private setupEventListeners(): void { 
     this.map.on("click",(evt:MapBrowserEvent<any>)=>{
       if(this.geoLayer==undefined)return;
       if(!this.geoLayerShown)return;
       this.geoLayer.getFeatures(evt.pixel).then((features:FeatureLike[])=>{
-        //Emtpy Array if no Feature
         if(this.popupOverlay!=undefined)this.popupOverlay.setPosition(undefined)
         if(features.length>=0 && features[0]!=undefined){
           this.onClick(this.getFeature(features[0].get('id')),evt)
         }
       })
     })
+
+    // const pointerInteraction = new Select({
+    //   condition: pointerMove,
+    //   style: null  
+    // });
+    
+    // this.map.addInteraction(pointerInteraction);
+    
+    // pointerInteraction.on('select', function(e) {
+    //     e.deselected.forEach(function(feature:Feature) {
+    //         feature.set('hover', false);
+    //     });
+        
+    //     e.selected.forEach(function(feature:Feature) {
+    //         feature.set('hover', true);
+    //     });
+    // });
   }
 
   public show(renderer: number): void {
     if (this.geoLayerShown) return;
-
+    
+    let vectorSource: VectorSource;
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
-    
-    console.log("Datos capa:", this.data);
-
     const geojsonFormat = new GeoJSON();
-    if (this.geoJsonData.type !== 'FeatureCollection' || !Array.isArray(this.geoJsonData.features)) {
-      return; 
+    
+    if (!this.geoData) {
+        console.error('No data available for layer');
+        return;
     }
-
-    const vectorSource = new VectorSource({
-        features: geojsonFormat.readFeatures(this.data,{featureProjection: olProjection})
-        // .filter(function(feature) {
-        //   return bounds.intersects(feature.getGeometry().getExtent()) // ---- definir bounds = límites bbox
-    });
-
-    this.geoLayer = new VectorLayer({
-        source: vectorSource,
-        style: (feature:Feature)=>{return this.csMap.setFeatureStyle(feature, state, timesJs)},
-    });
-
-    this.map.addLayer(this.geoLayer);
-    this.geoLayerShown = true;
+    
+    let myFeatures;
+    try {
+        myFeatures = geojsonFormat.readFeatures(this.geoData, {featureProjection: olProjection});
+    } catch (e) {
+        console.error('Error reading features:', e);
+        return;
+    }
+    
+    if (!myFeatures || myFeatures.length === 0) {
+        console.warn('No features found in data');
+    }
+    
+    if (renderer == 0) { 
+        vectorSource = new VectorSource({
+            features: myFeatures,
+            wrapX: false 
+        });
+        
+        this.geoLayer = new VectorLayer({
+            source: vectorSource,
+            style: (feature: Feature) => this.setStationStyle(state, feature, timesJs),
+            visible: true, 
+            zIndex: 1000 
+        });
+    } else {
+        const view = this.map.getView();
+        const mapSize = this.map.getSize() || [100, 100]; // Fallback size
+        const extent = view.calculateExtent(mapSize);
+        
+        const filteredFeatures = myFeatures.filter(feature => {
+            const geometry = feature.getGeometry();
+            if (!geometry) return false;
+            
+            const featureExtent = geometry.getExtent();
+            return this.intersectsExtent(featureExtent, extent);
+        });
+        
+        vectorSource = new VectorSource({
+            features: filteredFeatures,
+            wrapX: false
+        });
+        
+        if (this.isContour) {
+            this.geoLayer = new VectorLayer({
+                source: vectorSource,
+                style: contourStyle,
+                visible: true,
+                zIndex: 2000
+            });
+        } else {
+            this.geoLayer = new VectorLayer({
+                source: vectorSource,
+                style: (feature: Feature) => this.setFeatureStyle(state, feature, timesJs),
+                visible: true, 
+                zIndex: 999
+            });
+        }
+    }
+    
+    if (this.geoLayer) {
+        this.map.addLayer(this.geoLayer);
+        this.geoLayer.setVisible(true);
+        this.geoLayerShown = true;
+    } else {
+        console.error('Failed to create layer');
+    }
   }
 
+  public getGeoLayer(): Layer {
+    return this.geoLayer
+  } 
+
   public hide(): void {
-    // if(!this.geoLayerShown)return;
+    if (!this.geoLayer) {
+      console.warn('Cannot hide layer - geoLayer is undefined');
+      return;
+    }
+    this.geoLayer.setVisible(false);
+    this.geoLayerShown = false;
     this.map.removeLayer(this.geoLayer)
     this.geoLayer = undefined;
-    this.geoLayerShown=false;
     if(this.popupOverlay!=undefined)this.popupOverlay.setPosition(undefined)
   }
 
@@ -645,10 +924,135 @@ class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer{
     }
     this.popupContent.appendChild(content)
     this.popupOverlay.setPosition(evt.coordinate)
-    //throw new Error("Method not implemented.");
   }
   
   public refresh():void{
     if(this.geoLayerShown) this.geoLayer.changed()
   }
+
+  public setStationStyle(state: CsViewerData, feature: FeatureLike, timesJs: CsTimesJsData): Style {
+    let ptr = PaletteManager.getInstance().getPainter();
+    let minValue = timesJs.varMin[state.varId][state.selectedTimeIndex];
+    let maxValue = timesJs.varMax[state.varId][state.selectedTimeIndex];
+    let targetMin: number = 5
+    let targetMax: number = 20
+    let currentRange = maxValue - minValue;
+    let targetRange = targetMax - targetMin;
+    let color: string = '#fff';
+    let radius: number = 10.0;
+    let id = feature.getProperties()['id']
+    Object.keys(this.indexData).forEach(key => {
+      if (key == id) {
+          color = ptr.getColorString(this.indexData[key],minValue,maxValue)
+          radius = Math.abs(targetMin + ((this.indexData[key] - minValue) / currentRange) * targetRange)
+      } 
+    });
+
+    const isHovered = feature.get('hover');
+
+    let imgStation: CircleStyle = new CircleStyle({
+        radius: radius,
+        fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+        stroke: new Stroke({ color: '#999', width: 1 }),
+    });
+    return new Style({ image: imgStation, })
+  }
+
+  public setFeatureStyle(state: CsViewerData,feature: Feature, timesJs: CsTimesJsData): Style {
+    let min: number = Number.MAX_VALUE;
+    let max: number = Number.MIN_VALUE;
+    
+    Object.values(this.indexData).forEach((value) => {
+      if (!isNaN(value)) {
+          min = Math.min(min, value);
+          max = Math.max(max, value);
+      }
+    });
+    
+    let color: string = '#fff';
+    let id = feature.getProperties()['id'];
+    let ptr = PaletteManager.getInstance().getPainter();
+    
+    Object.keys(this.indexData).forEach(key => {
+      if (key.includes(id)) {
+          color = ptr.getColorString(this.indexData[key],min,max);
+      } 
+    });
+
+    const isHovered = feature.get('hover');
+
+    if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
+    else this.map.getTargetElement().style.cursor = '';
+    return new Style({
+        fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+        stroke: new Stroke({ 
+            color: '#999', 
+        }),
+    });
+  }
+
+  private intersectsExtent(featureExtent: number[], viewExtent: number[]): boolean {
+    return !(
+      featureExtent[2] < viewExtent[0] || // right < left
+      featureExtent[0] > viewExtent[2] || // left > right
+      featureExtent[3] < viewExtent[1] || // top < bottom
+      featureExtent[1] > viewExtent[3]    // bottom > top
+    );
+  }
+
+  public showFeatureValue (data: any, feature: any, pixel: any, pos: CsLatLong):void {
+    let state: CsViewerData = this.csMap.getParent().getParent().getState();
+    let timesJs = this.csMap.getParent().getParent().getTimesJs();
+    let value: string;
+    if (feature) {
+      if (state.support == this.csMap.renderers[0]) feature.setStyle(this.setStationStyle(state, feature, timesJs))
+      else feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
+      this.csMap.popupContent.style.left = pixel[0] + 'px';
+      this.csMap.popupContent.style.top = pixel[1] + 'px';
+      this.csMap.popup.hidden = false
+      if (feature !== this.currentFeature) {
+        let id = feature.getProperties()['id']
+        Object.keys(data).forEach(key => {
+          if (key.includes(id)) {
+              value = data[key]
+          } 
+        });
+        this.csMap.popupContent.style.visibility = 'visible';
+        this.csMap.popupContent.innerText = feature.get('name') +': ' +  parseFloat(value).toFixed(2) ;
+        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+      }
+    } else {
+      this.csMap.popupContent.style.visibility = 'hidden';
+      this.csMap.popup.hidden = true
+    }
+    if (this.currentFeature instanceof Feature) {
+      if (state.support == this.csMap.renderers[0]) this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs))
+      else this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+    }
+    this.currentFeature = feature;
+  };
+
+  public highLightColor(hex: string, lum: number): string {
+    hex = String(hex).replace(/[^0-9a-f]/gi, '');
+    if (hex.length < 6) {
+        hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    }
+    lum = lum || 0;
+    var rgb = "#", c, i;
+    for (i = 0; i < 3; i++) {
+        c = parseInt(hex.slice(i*2, i*2+2), 16);
+        c = Math.round(Math.min(Math.max(0, c + (c * lum)), 255)).toString(16);
+        rgb += ("00"+c).slice(c.length);
+    }
+    return rgb;
+  }
 }
+
+
+// interface FeatureManagerOptions {
+//   map: Map;
+//   maxFeatures?: number;
+//   loadThreshold?: number;
+//   source: VectorSource;
+//   geoJSONData: any; // Your GeoJSON data
+// }

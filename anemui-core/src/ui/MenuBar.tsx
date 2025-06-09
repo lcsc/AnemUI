@@ -1,9 +1,9 @@
 import { createElement, addChild } from 'tsx-create-element';
 import "../../css/anemui-core.scss"
-import { CsMenuItem, CsMenuItemListener } from './CsMenuItem';
+import { CsMenuItem, CsMenuInput, CsMenuItemListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, varHasPopData, sbVarHasPopData}  from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, varHasPopData, sbVarHasPopData}  from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -55,9 +55,9 @@ export class MenuBar extends BaseFrame {
     private variable: CsMenuItem;
     private subVariable: CsMenuItem;
     private selection: CsMenuItem;
+    private selectionParam: CsMenuInput;
     private extraMenuItems: CsMenuItem[];
     private dropDownOrder: string[]
-    // private containerHandler: HTMLElement;
 
     private popData: any;
     private extraBtns: BaseUiElement[];
@@ -107,26 +107,35 @@ export class MenuBar extends BaseFrame {
                 },
             });
         }
+        if (hasSelection) {
+            this.selection = new CsMenuItem("SelectionDD", "Selección", {
+                valueSelected(origin, index, value, values) {
+                    self.listener.selectionSelected(index, value, values)
+                },
+            });
+        }
+        if (hasSelectionParam) {
+            this.selectionParam = new CsMenuInput("selectionParamInput", "Selección", {
+                valueChanged: (newValue: number) => {  
+                    this.listener.selectionParamChanged(newValue);
+                },
+            });
+        }
         this.extraMenuItems = []
         this.extraBtns = []
         this.dropDownOrder = []
     }
-
 
     public setTitle(_title: string) {
         this.title = _title;
         document.title = _title;
     }
 
-    private fireParamChanged(): void {
-        this.listener.selectionParamChanged(parseFloat(this.displayParam.value));
-    }
-
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
         let divs = Array.from(document.getElementsByClassName("inputDiv") as HTMLCollectionOf<HTMLElement>)
         let maxId = divs.reduce(function(a, b){
             return Math.max(a, parseInt(b.id))
-        }, Number.NEGATIVE_INFINITY);
+        }, 0);
         let nextId = (maxId + 1).toString()
         let element = (
             <li id={nextId} role={display.role} className={'inputDiv ' + btnType}></li>
@@ -135,7 +144,6 @@ export class MenuBar extends BaseFrame {
     }
 
     public updateDisplay(_title: string, _id: string): void {
-    //     // querySelector(".navbar-btn-title span").textContent  = _title
         this.inputsFrame.querySelector('[role=' + _id + ']').innerHTML = _title
     }
 
@@ -145,7 +153,13 @@ export class MenuBar extends BaseFrame {
             (
                 <div id="TopBar" className="fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                     <div className={"navbar " + logoStyle}>
-                        <img src={'./images/'+logo}></img>
+                        <img src={'./images/'+logo} useMap="#LogoMap"></img>
+                        <map id="LogoMap">
+                            <area shape="rect" coords="0,0,280,50" alt="csic" href="https://www.csic.es/es" target="_blank"></area>
+                            <area shape="rect" coords="300,0,500,50" alt="plan_recuepracion" href="https://planderecuperacion.gob.es/" target="_blank"></area>
+                            <area shape="rect" coords="510,0,670,50" alt="next_generation" href="https://next-generation-eu.europa.eu/index_en" target="_blank"></area>
+                            <area shape="rect" coords="680,0,730,350" alt="lcsc" href="https://lcsc.csic.es/es/lcsc/" target="_blank"></area>
+                        </map>
                     </div>
                     <div id="menu-title" className="menu-info text-left row mx-0 px-4">
                         <div className="col-title">
@@ -153,27 +167,19 @@ export class MenuBar extends BaseFrame {
                         </div>
                         <div id="menu-central" className="col-info">
                             <ul id="inputs" className="nav-menu">
-                                <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li>
                             </ul>
-                            <div className="collapseMenu" onClick={() => { self.mobileMenu() }}>
+                            <div className="collapse-menu" onClick={() => { self.mobileMenu() }}>
                                 <span></span>
                                 <span></span>
                                 <span></span>
                             </div>
-                            {/* <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
-                                placeholder="Selection Param" value={this.parent.getState().selectionParam}
-                                disabled={!this.parent.getState().selectionParamEnable}
-                                onChange={() => { this.fireParamChanged(); return false }} /> */}
                             <div className="col-auto">
-                                <span className="ms-2" id="fetching-text" hidden>{this.fetchingText}</span>
-                                <span className="data-error-text" id="nodata-text" hidden>{this.errorText}  </span>
+                                <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
+                                <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
                                 <div className="spinner-grow text-info" role="status" hidden />
                             </div>
-
                         </div>
-                        {/* <span className="menu-info d-flex flex-row-reverse" id="info"></span> */}
                         <div className="col menu-info  d-flex flex-row-reverse" id="info">
-
                         </div>
                     </div>
                 </div>
@@ -187,12 +193,11 @@ export class MenuBar extends BaseFrame {
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
-        // this.menuInfo2 = this.container.getElementsByClassName("menu-info")[1] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
-        this.collapseMenu = document.querySelector(".collapseMenu");
+        this.collapseMenu = document.querySelector(".collapse-menu");
         this.navMenu = document.querySelector(".nav-menu");
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
@@ -235,17 +240,22 @@ export class MenuBar extends BaseFrame {
                 addChild(this.displayTpSupport, this.temporalSupport.render(this.parent.getState().tpSupport));
                 this.temporalSupport.build(this.displayTpSupport);
             }
-            
-            this.displaySelection = this.container.querySelector("[role=selection]")
-            this.displayParam = this.container.querySelector("[role=selection-param]")
-            if (this.selectionHidden) {
-                this.displaySelection.hidden = true;
-                document.getElementById("inputs").classList.add('no-wrap');
+            if (hasSelection) {
+                let dsp: simpleDiv = {role:'selection', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displaySelection = this.container.querySelector("[role=selection]")
+                this.displaySelection.hidden = false;
+                addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
+                this.selection.build(this.displaySelection);
             }
-            /* if (this.paramHidden) {
-                this.displayParam.hidden = true;
-                document.getElementById("inputs").classList.add('no-wrap');
-            } */
+            if (hasSelectionParam) {
+                let dsp: simpleDiv = {role:'selection-param', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicInput'));
+                this.displayParam = this.container.querySelector("[role=selection-param]")
+                this.displayParam.hidden = false;
+                addChild(this.displayParam, this.selectionParam.render(this.parent.getState().selectionParam+''));
+                this.selectionParam.build(this.displayParam);
+            }
             if (hasClimatology) {
                 this.extraDisplays.forEach((dsp) => {
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
@@ -258,13 +268,10 @@ export class MenuBar extends BaseFrame {
                     });
                 });
             }
-
             if(this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
             }
-
             this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
-            
             this.climBtnArray.forEach((btn) =>{
                 btn.hidden = true;
             })
@@ -276,20 +283,13 @@ export class MenuBar extends BaseFrame {
             }
         }
 
-        // this.collapseMenu.addEventListener("click", this.mobileMenu);
-        // const navLink = document.querySelectorAll(".inputDiv");
-        // navLink.forEach(n => n.addEventListener("click", this.closeMenu));
+        
     }
 
     public mobileMenu() {
         this.collapseMenu.classList.toggle("active");
         this.navMenu.classList.toggle("active");
     }
-
-    // public closeMenu() {
-    //     this.collapseMenu.classList.remove("active");
-    //     this.navMenu.classList.remove("active");
-    // }
 
     public minimize(): void {
         this.menuInfo1.hidden = true;
@@ -344,16 +344,19 @@ export class MenuBar extends BaseFrame {
         }
         if (hasSubVars) {
             this.displaySubVar.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
+        } 
+        if (hasSelection) {
+            this.displaySelection.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
+        }
+        if (hasSelectionParam) {
+            this.selectionParam.value = this.parent.getState().selectionParam
         }   
-        this.displaySelection.textContent = this.parent.getState().selection;
-        // this.displayParam.value = this.parent.getState().selectionParam + "";
-        // this.displayParam.disabled = !this.parent.getState().selectionParamEnable;
+        
         if (this.parent.getState().climatology == true) {
             this.showClimFrame()
         } else {
             this.hideClimFrame()
         }
-        
     }
 
     //Llamar en el configure antes del build
@@ -366,6 +369,7 @@ export class MenuBar extends BaseFrame {
             btn.hidden = true;
         })
     }
+    
     public showClimFrame(): void {
         this.climBtnArray.forEach((btn) =>{
             btn.hidden = false;
@@ -457,12 +461,19 @@ export class MenuBar extends BaseFrame {
     }
 
     public setSelection(_selections: string[]) {
-        this.selection.setValues(_selections);
+        if (hasSelection) {
+            this.selection.setValues(_selections);
+        }
     }
 
     public configSelection(visible: boolean, shortVisible?: boolean, newText?: string) {
-        if (!hasButtons) return;
+        if (!hasButtons || !hasSelection) return;
         this.selection.config(visible, newText);
+    }
+
+    public configSelectionParam(visible: boolean, newText?: string) {
+        if (!hasButtons || !hasSelectionParam) return;
+        this.selectionParam.config(visible, newText);
     }
 
     public updateMenuItem(btnName: string, btnTitle: string, options: string[]) {

@@ -10,7 +10,7 @@ div.GraphContainer {
     background: white;
     color: #333;
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
-    z-index: 200;
+    z-index: 2000;
     width: fit-content;
     position: relative;
 
@@ -58,7 +58,7 @@ div.GraphContainer {
     }
 
     .dygraph-ylabel, .dygraph-axis-label-y {
-        width: 100px !important; /* Adjust this value as needed */
+        // width: 100px !important; /* Adjust this value as needed */
         overflow: visible;
         padding-right: 10px;
       }

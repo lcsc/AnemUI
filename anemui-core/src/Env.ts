@@ -25,6 +25,7 @@ export const hasCookies:boolean = typeof ENV.hasCookies !== 'undefined'? ENV.has
 export const hasInf:boolean = typeof ENV.hasInf !== 'undefined'? ENV.hasInf:false;
 export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
+export const computedDataTilesLayer:boolean = typeof ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer:false;
 export const dataSource: string = ENV.dataSource || 'nc';
 
 // Defines the appearance of the display -- Default values
@@ -34,10 +35,14 @@ export const hasSpSupport:boolean = typeof ENV.hasSpSupport !== 'undefined'? ENV
 export const hasVars:boolean = typeof ENV.hasVars !== 'undefined'? ENV.hasVars:true;
 export const hasSubVars:boolean = typeof ENV.hasSubVars !== 'undefined'? ENV.hasSubVars:false;
 export const hasTpSupport:boolean = typeof ENV.hasTpSupport !== 'undefined'? ENV.hasTpSupport:false;
+export const hasSelection:boolean = typeof ENV.hasSelection !== 'undefined'? ENV.hasSelection:false;
+export const hasSelectionParam:boolean = typeof ENV.hasSelectionParam !== 'undefined'? ENV.hasSelectionParam:false;
 export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? ENV.varHasPopData:false;
 export const sbVarHasPopData:boolean = typeof ENV.sbVarHasPopData !== 'undefined'? ENV.sbVarHasPopData:false;
+export const hasDownload:boolean = typeof ENV.hasDownload !== 'undefined'? ENV.hasDownload:true;
 export const disableDownload:boolean = typeof ENV.disableDownload !== 'undefined'? ENV.disableDownload:false;
-export const avoidMin:boolean = typeof ENV.avoidMin !== 'undefined'? ENV.avoidMin:false;
+export const avoidMinimize:boolean = typeof ENV.avoidMinimize !== 'undefined'? ENV.avoidMinimize:false;
 export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.showLayers:true;
+export const intValues:boolean = typeof ENV.intValues !== 'undefined'? ENV.intValues:false;
 export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
