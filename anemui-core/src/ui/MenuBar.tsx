@@ -1,9 +1,13 @@
 import { createElement, addChild } from 'tsx-create-element';
 import "../../css/anemui-core.scss"
-import { CsMenuItem, CsMenuItemListener } from './CsMenuItem';
+import { CsMenuItem, CsMenuInput, CsMenuItemListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
+<<<<<<< Updated upstream
 import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, varHasPopData, sbVarHasPopData}  from "../Env";
+=======
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, varHasPopData, sbVarHasPopData}  from "../Env";
+>>>>>>> Stashed changes
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -55,9 +59,9 @@ export class MenuBar extends BaseFrame {
     private variable: CsMenuItem;
     private subVariable: CsMenuItem;
     private selection: CsMenuItem;
+    private selectionParam: CsMenuInput;
     private extraMenuItems: CsMenuItem[];
     private dropDownOrder: string[]
-    // private containerHandler: HTMLElement;
 
     private popData: any;
     private extraBtns: BaseUiElement[];
@@ -114,19 +118,24 @@ export class MenuBar extends BaseFrame {
                 },
             });
         }
+<<<<<<< Updated upstream
+=======
+        if (hasSelectionParam) {
+            this.selectionParam = new CsMenuInput("selectionParamInput", "Selección", {
+                valueChanged: (newValue: number) => {  
+                    this.listener.selectionParamChanged(newValue);
+                },
+            });
+        }
+>>>>>>> Stashed changes
         this.extraMenuItems = []
         this.extraBtns = []
         this.dropDownOrder = []
     }
 
-
     public setTitle(_title: string) {
         this.title = _title;
         document.title = _title;
-    }
-
-    private fireParamChanged(): void {
-        this.listener.selectionParamChanged(parseFloat(this.displayParam.value));
     }
 
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
@@ -151,7 +160,13 @@ export class MenuBar extends BaseFrame {
             (
                 <div id="TopBar" className="fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                     <div className={"navbar " + logoStyle}>
-                        <img src={'./images/'+logo}></img>
+                        <img src={'./images/'+logo} useMap="#LogoMap"></img>
+                        <map id="LogoMap">
+                            <area shape="rect" coords="0,0,280,50" alt="csic" href="https://www.csic.es/es" target="_blank"></area>
+                            <area shape="rect" coords="300,0,500,50" alt="plan_recuepracion" href="https://planderecuperacion.gob.es/" target="_blank"></area>
+                            <area shape="rect" coords="510,0,670,50" alt="next_generation" href="https://next-generation-eu.europa.eu/index_en" target="_blank"></area>
+                            <area shape="rect" coords="680,0,730,350" alt="lcsc" href="https://lcsc.csic.es/es/lcsc/" target="_blank"></area>
+                        </map>
                     </div>
                     <div id="menu-title" className="menu-info text-left row mx-0 px-4">
                         <div className="col-title">
@@ -159,27 +174,23 @@ export class MenuBar extends BaseFrame {
                         </div>
                         <div id="menu-central" className="col-info">
                             <ul id="inputs" className="nav-menu">
+<<<<<<< Updated upstream
                                 {/* <li id="1" role="selection" className="inputDiv">{this.parent.getState().selection}</li> */}
+=======
+>>>>>>> Stashed changes
                             </ul>
-                            <div className="collapseMenu" onClick={() => { self.mobileMenu() }}>
+                            <div className="collapse-menu" onClick={() => { self.mobileMenu() }}>
                                 <span></span>
                                 <span></span>
                                 <span></span>
                             </div>
-                            {/* <input role="selection-param" type="text" className="form-control form-control-sm autoSizingInputGroup"
-                                placeholder="Selection Param" value={this.parent.getState().selectionParam}
-                                disabled={!this.parent.getState().selectionParamEnable}
-                                onChange={() => { this.fireParamChanged(); return false }} /> */}
                             <div className="col-auto">
-                                <span className="ms-2" id="fetching-text" hidden>{this.fetchingText}</span>
-                                <span className="data-error-text" id="nodata-text" hidden>{this.errorText}  </span>
+                                <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
+                                <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
                                 <div className="spinner-grow text-info" role="status" hidden />
                             </div>
-
                         </div>
-                        {/* <span className="menu-info d-flex flex-row-reverse" id="info"></span> */}
                         <div className="col menu-info  d-flex flex-row-reverse" id="info">
-
                         </div>
                     </div>
                 </div>
@@ -197,7 +208,7 @@ export class MenuBar extends BaseFrame {
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
-        this.collapseMenu = document.querySelector(".collapseMenu");
+        this.collapseMenu = document.querySelector(".collapse-menu");
         this.navMenu = document.querySelector(".nav-menu");
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
@@ -247,6 +258,17 @@ export class MenuBar extends BaseFrame {
                 this.displaySelection.hidden = false;
                 addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
                 this.selection.build(this.displaySelection);
+<<<<<<< Updated upstream
+=======
+            }
+            if (hasSelectionParam) {
+                let dsp: simpleDiv = {role:'selection-param', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicInput'));
+                this.displayParam = this.container.querySelector("[role=selection-param]")
+                this.displayParam.hidden = false;
+                addChild(this.displayParam, this.selectionParam.render(this.parent.getState().selectionParam+''));
+                this.selectionParam.build(this.displayParam);
+>>>>>>> Stashed changes
             }
             if (hasClimatology) {
                 this.extraDisplays.forEach((dsp) => {
@@ -260,13 +282,10 @@ export class MenuBar extends BaseFrame {
                     });
                 });
             }
-
             if(this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
             }
-
             this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
-            
             this.climBtnArray.forEach((btn) =>{
                 btn.hidden = true;
             })
@@ -342,6 +361,12 @@ export class MenuBar extends BaseFrame {
         } 
         if (hasSelection) {
             this.displaySelection.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
+<<<<<<< Updated upstream
+=======
+        }
+        if (hasSelectionParam) {
+            this.selectionParam.value = this.parent.getState().selectionParam
+>>>>>>> Stashed changes
         }   
         
         if (this.parent.getState().climatology == true) {
@@ -461,6 +486,11 @@ export class MenuBar extends BaseFrame {
     public configSelection(visible: boolean, shortVisible?: boolean, newText?: string) {
         if (!hasButtons || !hasSelection) return;
         this.selection.config(visible, newText);
+    }
+
+    public configSelectionParam(visible: boolean, newText?: string) {
+        if (!hasButtons || !hasSelectionParam) return;
+        this.selectionParam.config(visible, newText);
     }
 
     public updateMenuItem(btnName: string, btnTitle: string, options: string[]) {

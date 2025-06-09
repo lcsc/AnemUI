@@ -94,7 +94,18 @@ export type CsViewerData={
     uncertaintyLayer:boolean,
     season:string,
     month:string,
+<<<<<<< Updated upstream
     timeSeriesData: ArrayData
+=======
+    timeSeriesData: ArrayData,
+    computedData: Array4Portion
+}
+
+export type CsComputedData ={ 
+    computedData: Array4Portion,
+    computedDataById: ArrayData,
+    int: boolean
+>>>>>>> Stashed changes
 }
 
 export type Array4Portion={ [portion: string]: number[] }

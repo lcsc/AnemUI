@@ -1,5 +1,5 @@
 import { CsGeoJsonLayer, CsMap } from "./CsMap";
-import { CsViewerData } from "./data/CsDataTypes";
+import { CsViewerData, CsTimesJsData } from "./data/CsDataTypes";
 
 export interface CsLatLong{
     lat:number
@@ -22,6 +22,10 @@ export interface CsMapController{
     putMarker(pos:CsLatLong):void;
     setDate(dateIndex:number, state:CsViewerData):void;
     getZoom():number;
+<<<<<<< Updated upstream
+=======
+    refreshFeatureLayer():void
+>>>>>>> Stashed changes
 }
 
 export type CsGeoJsonClick=(feature:GeoJSON.Feature,event:any)=>void

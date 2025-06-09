@@ -248,6 +248,9 @@ export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, 
         minArray = timesJs.varMin[status.varId][status.selectedTimeIndex];
         maxArray = timesJs.varMax[status.varId][status.selectedTimeIndex];
 
+        console.log('chunk minArray: ' + minArray)
+        console.log('chunk maxArray: ' + maxArray)
+
         // Now that we have the absolute maximums and minimums, we paint the data layers.
         floatArrays.forEach((floatArray, index) => {
             const width: number = timesJs.lonNum[status.varId + timesJs.portions[status.varId][index]];
@@ -421,11 +424,16 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     if (portion != '') {
         // Correlative index of the pixel (starts counting at 1)
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
-        let cb: ArrayDownloadDone = (data: number[]) => {
-            let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
+        if (status.computedData[portion].length == 0) {
+            let cb: ArrayDownloadDone = (data: number[]) => {
+                let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
+                return functionValue(value, []);
+            }
+            downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
+        } else {
+            let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
             return functionValue(value, []);
         }
-        downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
 
     } else {
         functionValue(NaN, []);
@@ -494,9 +502,12 @@ export function downloadTimebyRegion(folder: string, id: string, varName: string
                     skip_empty_lines: true
                 });
                 result.forEach( (dataRow: any) => {
+<<<<<<< Updated upstream
                     // let regId = folder == 'estacion'? id:'X'+id 
                     // rgResult[dataRow['times_mean']] = dataRow[regId]
                     // rgCSV += dataRow['times_mean'] + ';' + dataRow[regId] +'\r\n';
+=======
+>>>>>>> Stashed changes
                     rgResult[dataRow['times_mean']] = dataRow[id]
                     rgCSV += dataRow['times_mean'] + ';' + dataRow[id] +'\r\n';
                 })
@@ -508,6 +519,7 @@ export function downloadTimebyRegion(folder: string, id: string, varName: string
     },undefined,'text');
 }
 
+<<<<<<< Updated upstream
 // export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone): void {
 //     downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
 //         if (status == 200) {
@@ -537,6 +549,10 @@ export function downloadXYbyRegion(time: string, folder: string, varName: string
     console.log("downloadXYbyRegion called");   
     downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
         console.log("downloadUrl callback called with status:", status);
+=======
+export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
+    downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
+>>>>>>> Stashed changes
         if (status == 200) {
             let stResult: [];
             try {
@@ -555,10 +571,17 @@ export function downloadXYbyRegion(time: string, folder: string, varName: string
                 console.error("Error parsing CSV:", e);
                 stResult = [];
             }
+<<<<<<< Updated upstream
             doneCb(stResult, 'data', 'text/plain');
         } else {
             console.error("Error downloading CSV. Status:", status);
             doneCb([], 'data', 'text/plain'); // call callback even with error
+=======
+            doneCb(stResult, varName, 'text/plain');
+        } else {
+            console.error("Error downloading CSV. Status:", status);
+            doneCb([], varName, 'text/plain'); // call callback even with error
+>>>>>>> Stashed changes
         }
     }, undefined, 'text');
 }

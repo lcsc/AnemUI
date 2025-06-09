@@ -55,27 +55,18 @@ div.paletteFrame {
         box-shadow: 0.5px 0.5px 3px $color_3;
         border-radius: 10px;
         width: auto;
-        max-width: 40px;
-        min-width: 40px;
-        -webkit-transition: all 0.6s;
-        transition: all 0.6s;
+        max-width: fit-content;
+        min-width: fit-content;
     }
 
     div.legend .legendText {
-        visibility: hidden;
         white-space: nowrap;
         padding-block: 5px;
         margin: 10px;
     }
 
     div.legend:hover {
-        max-width: fit-content;
-        min-width: fit-content;
         cursor:pointer;
-    }
-
-    div.legend:hover .legendText{
-        visibility:visible;
     }
 
     #units {
@@ -101,125 +92,10 @@ div.paletteFrame {
         font-size: 12px;
     }
 
-    // div.paletteSelect {
-    //     text-align: right;
-    //     padding: 0.5em 0.1em;
-    //     min-height: 47px;
-    //     border-radius: 0px 0px 10px 10px;
-        
-    //     .form-check-input {
-    //         visibility: hidden;
-    //     }
-
-    //     .form-switch {
-    //         padding-left: 0em !important;
-    //     }
-    // }
-
-    // div.paletteSelect.visible {
-    //     select {
-    //         margin: 0px auto;
-    //         display: block;
-    //         width: 90%;
-    //         text-align: center;
-
-    //         option {
-    //             cursor: pointer;
-    //         }
-    //         cursor: pointer;
-    //     }
-
-    //     div.slider {
-    //         display: inline-block;
-    //         margin: 0px auto;
-    //         width: 90%;
-    //         cursor: pointer;
-    //     }
-
-    //     span {
-    //         display: none;
-    //     }
-
-    //     .form-check-input {
-    //         visibility: visible;
-    //         margin: 10px auto;
-    //         width: 4em !important;
-    //         height: 2em !important;
-    //         background-color: $color_8;
-    //     }
-
-    //     .selectDiv {
-    //         padding: 0.25rem;
-    //         margin-top: 10px;
-    //         outline: none !important;
-    //         display: block;
-    //         background-color: transparent;
-    //         border: none;
-    //         color: $color_4 !important;
-    //         text-align: center;
-    //     }
-    // }
-
-    // @include md-desktop {
-    //      top: 2em;
-    // }
-
     div.row.selectDiv{
         width: 200px;
         margin: 0.45em 0em;
     }
-
-    // --- BUTTON EXPAND HOVER
-    // .buttonDiv.visible {
-    //     height: 40px;
-    //     padding: 0.46rem;
-    //     font-size: 0.875rem;
-    //     margin-top: 5px;
-    //     box-shadow: 0.5px 0.5px 3px $color_3;
-    //     outline: none !important;
-    //     background-color: $color_8;
-    //     color: $color_4 !important;
-    //     border-radius: 50px;
-    //     border: solid 1px $color_4;
-    //     text-decoration: none;
-    //     border-radius: 20px;
-    //     display: inline-flex;
-    //     align-items: center;
-    //     overflow: hidden;
-    //     width: auto;
-    //     max-width: 40px;
-    //     transition: max-width 0.3s;
-
-    //     .icon {
-    //         font-size: 24px !important;
-    //         margin-right: 15px;
-    //         display: flex;
-    //         align-items: center;
-    //     }
-
-    //     .text {
-    //         white-space: nowrap;
-    //         padding-right: 15px;
-    //     }
-    // }
-
-    // .buttonDiv.visible:hover {
-    //     cursor: pointer;
-    //     max-width: 300px;
-    // }
-
-    // select.selectDiv.visible{
-    //     margin: 0px auto;
-    //     display: block;
-    //     width: 90%;
-    //     text-align: center;
-
-    //     option {
-    //         cursor: pointer;
-    //     }
-
-    //     cursor: pointer;
-    // }
 
     .uncDiv input.form-check-input {
         visibility: visible;
@@ -321,23 +197,6 @@ div.paletteFrame {
         }
       }
     }
-   /*  &:focus {
-      + .radio-label {
-        &:before {
-          outline: none;
-          border-color: $color_8;
-        }
-      }
-    }
-    &:disabled {
-      + .radio-label {
-        &:before {
-          box-shadow: inset 0 0 0 4px $color_1;
-          border-color: darken($color_1, 25%);
-          background: darken($color_1, 25%);
-        }
-      }
-    } */
     + .radio-label {
       &:empty {
         &:before {

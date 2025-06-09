@@ -168,6 +168,12 @@
         display: block;
         // margin: 10px;
     }
+    .paletteFrame{
+        order: 1
+    }
+    .downloadFrame{
+        order:2
+    }
 }
 
 @keyframes blink {

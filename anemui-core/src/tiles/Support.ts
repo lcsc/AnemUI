@@ -1,8 +1,16 @@
+<<<<<<< Updated upstream
 export const renderers = ["~Puntual (estaciones)","Malla (raster)","~Unidad administrativa"]
 
 const folders = {
     renderer: [1,3,3,3],
     folder: ["estacion","municipio","provincia","autonomia"],
+=======
+export const renderers = ["~Puntual (estaciones)","Rejilla","~Municipio","~Provincia","~CCAA","~Unidad administrativa"]
+
+export const folders = {
+    renderer: [0,2,3,4,5,5,5],
+    folder: ["estacion","municipio","provincia","autonomia","municipio","provincia","autonomia"],
+>>>>>>> Stashed changes
 }
 
 export const defaultRenderer= renderers[1]
@@ -29,13 +37,18 @@ export function getFolders(rendererName: string): string[] {
 
     const folderIds: string[] = [];
     for (let i = 0; i < folders.renderer.length; i++) {
+<<<<<<< Updated upstream
         if (folders.renderer[i] === rendererIndex + 1) { // renderer indexes starts at 1
+=======
+        if (folders.renderer[i] === rendererIndex) { 
+>>>>>>> Stashed changes
             folderIds.push(folders.folder[i]);
         }
     }
     return folderIds;
 }
 
+<<<<<<< Updated upstream
 // export const renderers: {
 //     name: { [key: number]: string },
 //     folder: { [key: number]: string }
@@ -146,3 +159,5 @@ export function getFolders(rendererName: string): string[] {
 //         return undefined;
 //     }
 // }
+=======
+>>>>>>> Stashed changes

@@ -1,6 +1,6 @@
 import { createElement } from "tsx-create-element";
 import { CsGeoJsonClick, CsLatLong, CsMapController, CsMapEvent, CsMapListener } from "./CsMapTypes";
-import { CsViewerData, CsGeoJsonData } from "./data/CsDataTypes";
+import { CsViewerData, CsGeoJsonData, CsTimesJsData } from "./data/CsDataTypes";
 import { BaseApp } from "./BaseApp";
 import { defaultRenderer } from "./tiles/Support"
 import { abstract } from "ol/util";
@@ -108,5 +108,10 @@ export class CsMap{
     public updateRender(support: string) {
         this.controller.updateRender(support)
     }
+
+    public refreshFeatureLayer() {
+        this.controller.refreshFeatureLayer()
+    }
+
 }
 

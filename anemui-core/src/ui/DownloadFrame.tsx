@@ -37,7 +37,7 @@ export class DownloadFrame extends BaseFrame {
                 <div className='downlad-buttons'>
                     <div className='btnSelect right mx-auto'>
                         { !oneOption &&
-                            <div id="dropNc" role="dropNc">
+                            <div id="dropNc" role="dropNc" className='dropdown-item'>
                                 <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>
                                     <span className="icon"><i className="bi bi-box-arrow-down"></i></span>
                                     <span className="text" aria-label='top'>
@@ -52,7 +52,7 @@ export class DownloadFrame extends BaseFrame {
                                         <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.parent.downloadNc(event.target.value)}>
                                             {
                                             this.downloadNcOptions.map((value) => {
-                                                    let option = value.value;
+                                                let option = value.value;
                                                     return (
                                                         <option value={value.suffix}>{this.parent.getTranslation(option)}</option>
                                                     )
@@ -64,7 +64,7 @@ export class DownloadFrame extends BaseFrame {
                             </div>
                         }
                         { oneOption && 
-                            <fieldset id="btnNc" role="dropNc" className='navbar-btn buttonDiv visible'>
+                            <fieldset id="btnNc" role="dropNc" className='dropdown-item navbar-btn buttonDiv visible'>
                                 <span className="icon"><i className="bi bi-box-arrow-down"></i></span>
                                 <span className="text" aria-label='base' onClick={() => { this.parent.downloadNc() }}>
                                     {this.parent.getTranslation('descargar_nc')}
