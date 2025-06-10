@@ -41,9 +41,7 @@ export class NiceSteps {
         return 10 * magnitude;
     }
 
-    // Método para obtener pasos regulares
     public getRegularSteps(data: number[], numBreaks = 5): number[] {
-        // Filtramos y ordenamos los datos
         data = data.filter(v => !isNaN(v)).sort((a, b) => a - b);
         
         // Calculamos percentiles
@@ -52,7 +50,6 @@ export class NiceSteps {
         
         // Calculamos el paso inicial
         const rawStep = (p95 - p05) / numBreaks;
-        
         const step = this.niceStep(rawStep);
         
         // Ajustamos los límites para que sean múltiplos del paso
@@ -73,7 +70,6 @@ export class NiceSteps {
                 breaks.push(roundedValue);
             }
         }
-
         return breaks;
     }
 }
@@ -212,37 +208,6 @@ export class CsDynamicPainter implements Painter{
         return paletteStr[i]
     }
 
-
-    // public async paintValues(floatArray:number[],width:number,height:number,minArray:number,maxArray:number,pxTransparent:number,uncertaintyLayer:boolean):Promise<HTMLCanvasElement>{
-    //     let canvas: HTMLCanvasElement = document.createElement('canvas');
-    //     let context: CanvasRenderingContext2D = canvas.getContext('2d');    
-    //     canvas.width = width;
-    //     canvas.height = height;
-    //     let imgData: ImageData = context.getImageData(0, 0, width, height);
-    //     let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
-    //     let gradientLength = gradient.length - 1
-
-    //     const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
-        
-    //     // colorize canvas
-    //     for (let y: number = 0; y < height; y++) {
-    //         for (let x: number = 0; x < width; x++) {
-    //             let ncIndex: number = x + y * width;
-    //             let value: number = floatArray[ncIndex];
-    //             let pxIndex: number = x + ((height - 1) - y) * width;
-    //             if (!isNaN(value)) {
-    //                 value = Math.max(minArray, Math.min(value, maxArray));
-    //                 let index: number = Math.round(((value - minArray) / (maxArray - minArray)) * gradientLength);
-    //                 bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
-    //             }else{
-    //                 bitmap[pxIndex]=pxTransparent;
-    //             }
-    //         }
-    //     }
-    //     context.putImageData(imgData, 0, 0);
-    //     return canvas;
-    // }
-
     public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');
@@ -300,8 +265,6 @@ export class CsDynamicPainter implements Painter{
     }
 }
 
-//const ALPHA_VAL = "bb";
-//const ALPHA_VAL = "ff";
 export class PaletteManager {
     private static instance: PaletteManager;
 
