@@ -45,24 +45,29 @@ export class NiceSteps {
     public getRegularSteps(data: number[], numBreaks = 5): number[] {
         // Filtramos y ordenamos los datos
         data = data.filter(v => !isNaN(v)).sort((a, b) => a - b);
-
+        
         // Calculamos percentiles
-        const p05 = this.percentile(data, 0.5);
+        const p05 = this.percentile(data, 5);
         const p95 = this.percentile(data, 95);
-
+        
         // Calculamos el paso inicial
         const rawStep = (p95 - p05) / numBreaks;
+        
         const step = this.niceStep(rawStep);
-
+        
         // Ajustamos los límites para que sean múltiplos del paso
         const start = Math.floor(p05 / step) * step;
         const end = Math.ceil(p95 / step) * step;
-
+        
         // Generamos los puntos de corte asegurándonos de que no sean duplicados
         const breaks: number[] = [];
-        for (let val = start; val <= end + 0.5 * step; val += step) {
-            const roundedValue = Math.round(val * 10) / 10; // Redondeamos a 1 decimal
-
+        
+        // Generamos exactamente numBreaks + 1 breaks
+        for (let i = 0; i <= numBreaks; i++) {
+            const val = start + (i * step);
+            // Redondeamos a 2 decimales para preservar más precisión
+            const roundedValue = Math.round(val * 100) / 100;
+            
             // Evitamos valores duplicados
             if (!breaks.includes(roundedValue)) {
                 breaks.push(roundedValue);
@@ -208,32 +213,84 @@ export class CsDynamicPainter implements Painter{
     }
 
 
-    public async paintValues(floatArray:number[],width:number,height:number,minArray:number,maxArray:number,pxTransparent:number,uncertaintyLayer:boolean):Promise<HTMLCanvasElement>{
+    // public async paintValues(floatArray:number[],width:number,height:number,minArray:number,maxArray:number,pxTransparent:number,uncertaintyLayer:boolean):Promise<HTMLCanvasElement>{
+    //     let canvas: HTMLCanvasElement = document.createElement('canvas');
+    //     let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+    //     canvas.width = width;
+    //     canvas.height = height;
+    //     let imgData: ImageData = context.getImageData(0, 0, width, height);
+    //     let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
+    //     let gradientLength = gradient.length - 1
+
+    //     const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
+        
+    //     // colorize canvas
+    //     for (let y: number = 0; y < height; y++) {
+    //         for (let x: number = 0; x < width; x++) {
+    //             let ncIndex: number = x + y * width;
+    //             let value: number = floatArray[ncIndex];
+    //             let pxIndex: number = x + ((height - 1) - y) * width;
+    //             if (!isNaN(value)) {
+    //                 value = Math.max(minArray, Math.min(value, maxArray));
+    //                 let index: number = Math.round(((value - minArray) / (maxArray - minArray)) * gradientLength);
+    //                 bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
+    //             }else{
+    //                 bitmap[pxIndex]=pxTransparent;
+    //             }
+    //         }
+    //     }
+    //     context.putImageData(imgData, 0, 0);
+    //     return canvas;
+    // }
+
+    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
         let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
         let imgData: ImageData = context.getImageData(0, 0, width, height);
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
-        let gradientLength = gradient.length - 1
-
-        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
+        let gradientLength = gradient.length - 1;
+    
+        let niceSteps = new NiceSteps();
+        let breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), 10);
         
-        // colorize canvas
+        console.log('DEBUG paintValues - breaks:', breaks);
+        
+        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
+    
+        function getIntervalIndex(value: number, breaks: number[]): number {
+            if (value <= breaks[0]) return 0;
+            
+            if (value >= breaks[breaks.length - 1]) return breaks.length - 1;
+            
+            for (let i = 0; i < breaks.length - 1; i++) {
+                if (value >= breaks[i] && value < breaks[i + 1]) {
+                    return i;
+                }
+            }
+            
+            return breaks.length - 1;
+        }
+    
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
                 let pxIndex: number = x + ((height - 1) - y) * width;
+                
                 if (!isNaN(value)) {
-                    value = Math.max(minArray, Math.min(value, maxArray));
-                    let index: number = Math.round(((value - minArray) / (maxArray - minArray)) * gradientLength);
-                    bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
-                }else{
-                    bitmap[pxIndex]=pxTransparent;
+                    let intervalIndex = getIntervalIndex(value, breaks);
+                    
+                    let gradientIndex = Math.round((intervalIndex / (breaks.length - 1)) * gradientLength);
+                    
+                    bitmap[pxIndex] = gradient[gradientIndex];
+                } else {
+                    bitmap[pxIndex] = pxTransparent;
                 }
             }
         }
+        
         context.putImageData(imgData, 0, 0);
         return canvas;
     }
@@ -323,7 +380,6 @@ export class PaletteManager {
         opacity= parseInt(255*opacity/100+"");
         let ALPHA_VAL = opacity.toString(16);
         if(ALPHA_VAL.length==1)ALPHA_VAL="0"+ALPHA_VAL;
-        //console.log("Trans: "+ this.transparency  +" ->  "+ opacity+" - > "+ALPHA_VAL)
         let paletteStr: string[] = uncertaintyLayer? this.palettes['uncertainty']():(_palette.length == 0? this.palettes[this.selected]():_palette)
         let gradient = new Uint32Array(paletteStr.length); // RGBA values
         let rgba = new Uint8Array(gradient.buffer);

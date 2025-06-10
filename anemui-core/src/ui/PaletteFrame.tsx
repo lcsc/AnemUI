@@ -14,8 +14,10 @@ export default class PaletteFrame  extends BaseFrame{
         let mgr=PaletteManager.getInstance();
         let lmgr = LayerManager.getInstance();
         let ptr=mgr.getPainter();
-        let min: number = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        let max: number = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        // let min: number = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        // let max: number = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        let min: number =  Math.min(...values);
+        let max: number =  Math.max(...values);
 
         console.log('PaletteFrame min: ' + min)
         console.log('PaletteFrame max: ' + max)
