@@ -10,9 +10,11 @@ import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, hasInf, maxWhenInf, minWhenInf} from "../Env";
+import { ncSignif, hasInf, maxWhenInf, minWhenInf, dataSource} from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
+import { NestedArray, openArray, TypedArray } from 'zarr';
+import { isNestedArray } from "./CsDataLoader";
 
 export type ArrayDownloadDone = (data: number[]) => void;
 export type DateDownloadDone = (dataUrl: string) => void;
@@ -130,6 +132,31 @@ function getMinMax(arr: number[]): [number, number] {
     return [min, max];
 }
 
+/**
+ * Downloads a chunk of data based on the specified parameters.
+ *
+ * @param x - The index or position of the chunk to download.
+ * @param varName - The name of the variable to download.
+ * @param portion - The portion or segment of the data to download.
+ * @param timesJs - An object containing metadata for the download.
+ * @returns A promise that resolves to an array of numbers representing the downloaded chunk.
+ */
+async function downloadTChunk(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    return dataSource === 'nc' ? downloadTChunkNC(x, varName, portion, timesJs) : downloadTChunkZarr(x, varName, portion, timesJs);
+}
+
+/**
+ * Downloads a chunk of data based on the specified parameters.
+ *
+ * @param x - The index or position of the chunk to download.
+ * @param varName - The name of the variable to download.
+ * @param portion - The portion or segment of the data to download.
+ * @param timesJs - An object containing metadata for the download.
+ * @returns A promise that resolves to an array of numbers representing the downloaded chunk.
+ */
+export async function downloadXYChunk(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    return dataSource === 'nc' ? downloadXYChunkNC(x, varName, portion, timesJs) : downloadXYChunkZarr(x, varName, portion, timesJs);
+}
 
 // Obtener el chunk correspondiente y terminar llamando doneCb(data, filename, 'text/plain')
 // x    Índice CSV contando desde 1
@@ -188,7 +215,7 @@ export function downloadTArrayChunked(x: number, varName: string, portion: strin
         });
 }
 
-async function downloadTChunk(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+async function downloadTChunkNC(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
     let app = window.CsViewerApp;
     let promise: Promise<number[]> = new Promise((resolve, reject) => {
         let chunkDataStruct = struct('<' + timesJs.offsetType + timesJs.sizeType);
@@ -226,14 +253,70 @@ async function downloadTChunk(x: number, varName: string, portion: string, times
     return promise;
 }
 
+/**
+ * Downloads and processes a chunk of T data from a Zarr array for a specific spatial location. Zarr version of downloadTChunkNC
+ * @param x - Linear index for spatial location (1-based index)
+ * @param varName - The name of the variable to retrieve from the Zarr store
+ * @param portion - The specific portion of the data to download. In zarr store only one portion is available ("_all"). The argument is maintained for compatibility with the NetCDF version of the function.
+ * @param timesJs - Object containing time series metadata, including dimension sizes
+ * @returns A promise that resolves to an array of numbers representing the retrieved data
+ * @remarks
+ * This function connects to a Zarr data store at the current origin, retrieves data
+ * for the specified variable and location index, flattens it if necessary, and then
+ * passes it to the application's transformDataXY method before returning.
+ */
+async function downloadTChunkZarr(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    const zarrBasePath = window.location.origin + '/zarr';
+    let app = window.CsViewerApp;
+    let promise: Promise<number[]> = new Promise((resolve, reject) => {
+        // Calculate the 2D index from the linear index x
+        // x starts from 1 (first pixel), so we subtract 1 to get 0-based index
+        const xIndex = (x - 1) % timesJs.lonNum[varName + portion];
+        const yIndex = Math.floor((x - 1) / timesJs.lonNum[varName + portion]);
 
-export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
-    // We can only determine the maximums and minimums and draw the data layers when all the promises are resolved.
-    Promise.all(promises).then((floatArrays) => {
+        // Open the Zarr array for reading
+        openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" })
+            .then(varArray => {
+                // Get the time series data for the specific location (xIndex, yIndex)
+                // In Zarr, we're getting all times for a specific location
+                varArray.get([null, yIndex, xIndex])
+                    .then(data => {
+                        let floatArray: number[];
+                        // Convert data to number array
+                        if (isNestedArray(data)) {
+                            floatArray = Array.from(data.flatten(), value => Number(value));
+                        } else {
+                            floatArray = [Number(data)];
+                        }
+
+                        // Apply any necessary transformations to the data
+                        app.transformDataT(floatArray, x, varName, portion);
+                        resolve(floatArray);
+                    })
+                    .catch(error => {
+                        console.error('Error getting zarr time series data:', error);
+                        reject(error);
+                    });
+            })
+            .catch(error => {
+                console.error('Error opening zarr array for time series:', error);
+                reject(error);
+            });
+    });
+
+    return promise;
+}
+
+export async function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
+    try {
+        // We can only determine the maximums and minimums and draw the data layers when all the promises are resolved.
+        const floatArrays = await Promise.all(promises);
+
         // We determine the minimum and maximum of the data layer values excluding the NaNs
         let minArray: number = Number.MAX_VALUE;
         let maxArray: number = Number.MIN_VALUE;
         let painter = PaletteManager.getInstance().getPainter();
+
         floatArrays.forEach((floatArray, index) => {
             floatArray.forEach((value) => {
                 if (!isNaN(value)) {
@@ -242,6 +325,7 @@ export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, 
                 }
             });
         });
+
         timesJs.varMin[status.varId][status.selectedTimeIndex] = minArray;
         timesJs.varMax[status.varId][status.selectedTimeIndex] = maxArray;
         app.notifyMaxMinChanged();
@@ -252,25 +336,28 @@ export function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, 
         console.log('chunk maxArray: ' + maxArray)
 
         // Now that we have the absolute maximums and minimums, we paint the data layers.
-        floatArrays.forEach((floatArray, index) => {
-            const width: number = timesJs.lonNum[status.varId + timesJs.portions[status.varId][index]];
-            const height: number = timesJs.latNum[status.varId + timesJs.portions[status.varId][index]];
+        for (let i = 0; i < floatArrays.length; i++) {
+            const floatArray = floatArrays[i];
+            const width: number = timesJs.lonNum[status.varId + timesJs.portions[status.varId][i]];
+            const height: number = timesJs.latNum[status.varId + timesJs.portions[status.varId][i]];
+
             // We call filterValues to apply the selection filter and the comparison filter if necessary and when it is resolved we paint the data layer.
-            app.filterValues(floatArray, status.selectedTimeIndex, status.varId, timesJs.portions[status.varId][index])
-                .then((floatArray) => {
-                    painter.paintValues(floatArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer)
-                        .then((canvas) => {
-                            dataTilesLayer[index].setSource(new Static({
-                                url: canvas.toDataURL('image/png'),
-                                crossOrigin: '',
-                                projection: timesJs.projection,
-                                imageExtent: ncExtents[timesJs.portions[status.varId][index]],
-                                interpolate: false
-                            }));
-                        });
-                });
-        });
-    });
+            const filteredArray = await app.filterValues(floatArray, status.selectedTimeIndex, status.varId, timesJs.portions[status.varId][i]);
+
+            // Rendering the data layer
+            const canvas = await painter.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
+
+            dataTilesLayer[i].setSource(new Static({
+                url: canvas.toDataURL('image/png'),
+                crossOrigin: '',
+                projection: timesJs.projection,
+                imageExtent: ncExtents[timesJs.portions[status.varId][i]],
+                interpolate: false
+            }));
+        }
+    } catch (error) {
+        console.error('Error in buildImages:', error);
+    }
 }
 
 export function downloadXYArrayChunked(x: number, varName: string, portion: string, doneCb: ArrayDownloadDone): void {
@@ -293,18 +380,17 @@ let xyCache: {
     data: number[]
 } = undefined
 
-export async function downloadXYChunk(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-    let app = window.CsViewerApp
-    //Como es Async podemos hacer un return del dato
+async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    let app = window.CsViewerApp;
+
+    // Como es Async podemos hacer un return del dato
     if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == t) {
-        let ret = [...xyCache.data]; //Una copia sin referencia
+        let ret = [...xyCache.data]; // Una copia sin referencia
         app.transformDataXY(ret, t, varName, portion);
-        return ret
+        return ret;
     }
 
-    let promise: Promise<number[]> = new Promise((resolve, reject) => {
-        let app = window.CsViewerApp;
-        let timesJs: CsTimesJsData = app.getTimesJs();
+    try {
         let chunkDataStruct = struct('<' + timesJs.offsetType + timesJs.sizeType);
         let chunkStruct = struct('<' + timesJs.varType);
 
@@ -314,43 +400,98 @@ export async function downloadXYChunk(t: number, varName: string, portion: strin
         let chunkDataDir: bigint = BigInt(t * chunkDataSize);
 
         // Petición range request de la información del chunk (offset y size)
-        rangeRequest('./nc/' + varName + portion + '-xy.bin', chunkDataDir, chunkDataDir + BigInt(chunkDataSize - 1))
-            .then((chunkData: Uint8Array) => {
-                let [chunkOffset, chunkSize] = chunkDataStruct.unpack(chunkData.buffer);
-                // Petición range request del chunk
-                rangeRequest('./nc/' + varName + portion + '-xy.nc', BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1))
-                    .then((chunk: Uint8Array) => {
-                        // Decompress the received data
-                        const uncompressedArray = inflate(chunk);
-                        // Create an array of values from the bytes
-                        const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
-                        /* Gestion de Cache */
-                        if (xyCache == undefined) {
-                            xyCache = { t: t, varName, portion, data: floatArray }
-                        } else {
-                            xyCache.t = t;
-                            xyCache.varName = varName;
-                            xyCache.portion = portion;
-                            xyCache.data = floatArray;
-                        }
-                        let ret = [...floatArray];
-                        app.transformDataXY(ret, t, varName, portion);
-                        resolve(ret);
-                    })
-                    .catch(error => {
-                        console.error('Error: ', error);
-                    });
-            })
-            .catch(error => {
-                console.error('Error: ', error);
-            });
-    });
+        const chunkData = await rangeRequest('./nc/' + varName + portion + '-xy.bin', chunkDataDir, chunkDataDir + BigInt(chunkDataSize - 1));
 
-    return promise;
+        let [chunkOffset, chunkSize] = chunkDataStruct.unpack(chunkData.buffer);
+
+        // Petición range request del chunk
+        const chunk = await rangeRequest('./nc/' + varName + portion + '-xy.nc', BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
+
+        // Decompress the received data
+        const uncompressedArray = inflate(chunk);
+
+        // Create an array of values from the bytes
+        const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
+
+        /* Gestion de Cache */
+        if (xyCache == undefined) {
+            xyCache = { t: t, varName, portion, data: floatArray };
+        } else {
+            xyCache.t = t;
+            xyCache.varName = varName;
+            xyCache.portion = portion;
+            xyCache.data = floatArray;
+        }
+
+        let ret = [...floatArray];
+        app.transformDataXY(ret, t, varName, portion);
+        return ret;
+    } catch (error) {
+        console.error('Error: ', error);
+        throw error;
+    }
+}
+
+/**
+ * Downloads and processes a chunk of XY data from a Zarr array for a specific time step. Zarr version of downloadXYChunkNC
+ * @param t - The time index/step to retrieve data for
+ * @param varName - The name of the variable to retrieve from the Zarr store
+ * @param portion - The specific portion of the data to download. In zarr store only one portion is available ("_all"). The argument is maintained for compatibility with the NetCDF version of the function.
+ * @param timesJs - Object containing time series metadata, including dimension sizes
+ * @returns A promise that resolves to an array of numbers representing the retrieved data
+ * @throws Will throw an error if opening the Zarr array or getting the data fails
+ * @remarks
+ * This function connects to a Zarr data store at the current origin, retrieves data
+ * for the specified variable and time index, flattens it if necessary, and then
+ * passes it to the application's transformDataXY method before returning.
+ */
+async function downloadXYChunkZarr(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
+    const zarrBasePath = window.location.origin + '/zarr';
+    let app = window.CsViewerApp;
+
+    // Check cache - similar to downloadXYChunkNC
+    if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == t) {
+        let ret = [...xyCache.data]; // Make a copy without reference
+        app.transformDataXY(ret, t, varName, portion);
+        return ret;
+    }
+
+    try {
+        // Abrir el array Zarr para lectura
+        const varArray = await openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" });
+
+        // Obtener los datos para el tiempo seleccionado
+        const data = await varArray.get([t]);
+
+        // Convertir a array de números
+        let floatArray: number[];
+        if (isNestedArray(data)) {
+            floatArray = Array.from(data.flatten(), value => Number(value));
+        } else {
+            floatArray = [Number(data)];
+        }
+
+        // Gestión de caché
+        if (xyCache == undefined) {
+            xyCache = { t: t, varName, portion, data: floatArray };
+        } else {
+            xyCache.t = t;
+            xyCache.varName = varName;
+            xyCache.portion = portion;
+            xyCache.data = floatArray;
+        }
+
+        let ret = [...floatArray]; // Hacer una copia
+        app.transformDataXY(ret, t, varName, portion);
+        return ret;
+    } catch (error) {
+        console.error('Error en downloadXYChunkZarr:', error);
+        throw error;
+    }
 }
 
 
-// Calcula el índice correlativo del pixel dentro del nc chunkeado para descargar las series temporales de cada pixel.
+// Calcula el índice correlativo del pixel dentro del nc chunkeado para descargar las series temporales de cada pixel (-t).
 // El índice empieza a contar en 1 siendo éste el pixel superior izquierdo y termina en lonNum*latNum siendo éste el pixel inferior derecho.
 // El argumento ncCoords es un array de dos elementos con las coordenadas del pixel en el sistema de referencia del nc.
 export function calcPixelIndex(ncCoords: number[], portion: string): number {

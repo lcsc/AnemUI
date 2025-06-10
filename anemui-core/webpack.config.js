@@ -204,6 +204,12 @@ const development={
         changeOrigin:true,
         "target": moduleConfig.proxyDataUrl
       },
+      "/zarr": {
+        "secure": false,
+        "logger": console,
+        changeOrigin:true,
+        "target": moduleConfig.proxyDataUrl
+      },
       "/popData.json": {
         "secure": false,
         "logger": console,

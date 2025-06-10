@@ -26,6 +26,7 @@ export const hasInf:boolean = typeof ENV.hasInf !== 'undefined'? ENV.hasInf:fals
 export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
 export const computedDataTilesLayer:boolean = typeof ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer:false;
+export const dataSource: string = ENV.dataSource || 'nc';
 
 // Defines the appearance of the display -- Default values
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
