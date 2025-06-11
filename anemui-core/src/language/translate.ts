@@ -47,6 +47,7 @@ export default class Translate {
             'subh-seco':'Dry Subhumid', 
             'subh-humedo':'Subhumid', 
             'humedo':'Humid',
+            'politico':'Political',
             'month': {
                 1: "January",
                 2: "February",
@@ -103,6 +104,7 @@ export default class Translate {
             'subh-seco':'Sub-húmedo seco', 
             'subh-humedo':'Sub-húmedo húmedo', 
             'humedo':'Húmedo',
+            'politico':'Politico',
             'month': {
                 0: "Enero",
                 1: "Febrero",

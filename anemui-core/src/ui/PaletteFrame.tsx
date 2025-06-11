@@ -14,6 +14,7 @@ export default class PaletteFrame  extends BaseFrame{
         let mgr=PaletteManager.getInstance();
         let lmgr = LayerManager.getInstance();
         let ptr=mgr.getPainter();
+<<<<<<< Updated upstream
         // let min: number = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         // let max: number = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let min: number =  Math.min(...values);
@@ -21,6 +22,10 @@ export default class PaletteFrame  extends BaseFrame{
 
         console.log('PaletteFrame min: ' + min)
         console.log('PaletteFrame max: ' + max)
+=======
+        let min: number =  Math.min(...values);
+        let max: number =  Math.max(...values);
+>>>>>>> Stashed changes
 
         let name = this.parent.getState().legendTitle;
         let palettes=mgr.getPalettesNames();
@@ -105,8 +110,6 @@ export default class PaletteFrame  extends BaseFrame{
         let ptr=PaletteManager.getInstance().getPainter();
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();
-        // let min: number = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        // let max: number = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let min: number =  Math.min(...values);
         let max: number =  Math.max(...values);
         let name:string; 

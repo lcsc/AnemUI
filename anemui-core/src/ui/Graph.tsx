@@ -271,46 +271,6 @@ export class CsGraph extends BaseFrame {
     return graph;
   }
 
-    //   public drawLinearGraph(url: string, station: any): Dygraph {
-    //     let labels:string = 'years,media,margen inferior,margen superior'
-        
-    //     url = url.replace('years,fit,lwr,upr', labels); 
-    //     var graph = new Dygraph(
-    //         document.getElementById("popGraph"),
-    //         url,
-    //         {
-    //             labelsDiv: document.getElementById('labels'),
-    //             digitsAfterDecimal: 3,
-    //             title: this.graphTitle + this.graphSubTitle,
-    //             ylabel: this.yLabel,
-    //             xlabel: this.xLabel,
-    //             // axes: { x: { logscale: true } },
-    //             valueFormatter:  (num, opts, seriesName, dygraph, row, col) => {
-    //                 if (seriesName === 'years') {
-    //                 console.log(seriesName)
-    //                     return Math.round(num).toString();
-    //                 }
-    //                 return num.toString();
-    //             },
-    //             series: {
-    //                 'media': { 
-    //                   color: "#aa3311",
-    //                   strokeWidth: 2
-    //                 },
-    //                 'margen inferior': { 
-    //                   color: "#454545",
-    //                   strokePattern: Dygraph.DASHED_LINE
-    //                 },
-    //                 'margen superior': { 
-    //                   color: "#454545",
-    //                   strokePattern: Dygraph.DASHED_LINE
-    //                 }
-    //             },
-    //         }
-    //     );
-    //     return graph
-    // } 
-    
     public drawLinearGraph(url: string, station: any): Dygraph {
       let labels: string = 'years,media,margen inferior,margen superior'
       
