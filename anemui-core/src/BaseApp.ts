@@ -498,7 +498,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             selectedTimeIndex: timeIndex,
             legendTitle: legendTitle,
             selection: "",
-            selectionParam: 0,
             selectionParamEnable: false,
             uncertaintyLayer: uncertainty
         }

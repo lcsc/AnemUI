@@ -17,95 +17,6 @@ export interface Painter{
     getValIndex(val:number):number
 }
 
-// export class NiceSteps {
-//     // Método para calcular el percentil
-//     public percentile(arr: number[], p: number): number {
-//         const pos = (arr.length - 1) * (p / 100);
-//         const base = Math.floor(pos);
-//         const rest = pos - base;
-//         if (arr[base + 1] !== undefined) {
-//             return arr[base] + rest * (arr[base + 1] - arr[base]);
-//         } else {
-//             return arr[base];
-//         }
-//     }
-
-//     // Método para encontrar un paso regular
-//     public niceStep(rawStep: number): number {
-//         const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-//         const niceFractions = [1, 2, 2.5, 5, 10];
-//         for (let f of niceFractions) {
-//             const step = f * magnitude;
-//             if (step >= rawStep) return step;
-//         }
-//         return 10 * magnitude;
-//     }
-
-//     // Método para obtener pasos regulares
-//     public getRegularSteps(data: number[], numBreaks = 10, topVal: number = 1000): number[] {
-//         // Filtramos y ordenamos los datos
-//         data = data.filter(v => !isNaN(v)).sort((a, b) => a - b);
-        
-//         console.log('DEBUG - Data length:', data.length);
-//         console.log('DEBUG - Data range:', Math.min(...data), 'to', Math.max(...data));
-//         console.log('DEBUG - numBreaks:', numBreaks);
-//         console.log('DEBUG - topVal:', topVal);
-
-//         // Calculamos percentiles
-//         const p05 = this.percentile(data, 5);
-//         const p95 = this.percentile(data, 95);
-        
-//         console.log('DEBUG - p05 (5th percentile):', p05);
-//         console.log('DEBUG - p95 (95th percentile):', p95);
-
-//         // Si p95 excede topVal, usamos topVal para calcular el paso
-//         const effectiveMax = Math.min(p95, topVal);
-//         console.log('DEBUG - effectiveMax:', effectiveMax);
-
-//         // Calculamos el paso inicial usando el rango efectivo
-//         const rawStep = (effectiveMax - p05) / numBreaks;
-//         console.log('DEBUG - rawStep:', rawStep);
-        
-//         const step = this.niceStep(rawStep);
-//         console.log('DEBUG - nice step:', step);
-
-//         // Ajustamos los límites para que sean múltiplos del paso
-//         const start = Math.floor(p05 / step) * step;
-//         // El end se calcula normalmente, pero no excederá topVal porque effectiveMax ya está limitado
-//         const end = Math.ceil(effectiveMax / step) * step;
-        
-//         console.log('DEBUG - start:', start, 'end:', end);
-
-//         // Generamos los puntos de corte asegurándonos de que no sean duplicados
-//         const breaks: number[] = [];
-        
-//         // Generamos exactamente numBreaks + 1 breaks
-//         for (let i = 0; i <= numBreaks; i++) {
-//             const val = start + (i * step);
-            
-//             // Si el valor excede topVal, lo limitamos
-//             const limitedVal = Math.min(val, topVal);
-            
-//             // Redondeamos a 2 decimales para preservar más precisión
-//             const roundedValue = Math.round(limitedVal * 100) / 100;
-//             console.log('DEBUG - Adding break:', roundedValue);
-
-//             // Evitamos valores duplicados
-//             if (!breaks.includes(roundedValue)) {
-//                 breaks.push(roundedValue);
-//             }
-            
-//             // Si hemos alcanzado topVal, no generamos más breaks
-//             if (limitedVal >= topVal) {
-//                 break;
-//             }
-//         }
-
-//         console.log('DEBUG - Final breaks:', breaks);
-//         return breaks;
-//     }
-// }
-
 export class NiceSteps {
     // Método para calcular el percentil
     public percentile(arr: number[], p: number): number {
@@ -130,31 +41,17 @@ export class NiceSteps {
         return 10 * magnitude;
     }
 
-<<<<<<< Updated upstream
-    public getRegularSteps(data: number[], numBreaks = 5): number[] {
-        data = data.filter(v => !isNaN(v)).sort((a, b) => a - b);
-=======
     // Método para obtener pasos regulares
     public getRegularSteps(data: number[], numBreaks = 10, topVal: number = 1000): number[] {
         // Filtramos y ordenamos los datos, convirtiendo infinitos a topVal
         data = data.filter(v => !isNaN(v))
                   .map(v => isFinite(v) ? v : topVal)
                   .sort((a, b) => a - b);
->>>>>>> Stashed changes
         
         // Calculamos percentiles
         const p05 = this.percentile(data, 5);
         const p95 = this.percentile(data, 95);
         
-<<<<<<< Updated upstream
-        // Calculamos el paso inicial
-        const rawStep = (p95 - p05) / numBreaks;
-        const step = this.niceStep(rawStep);
-        
-        // Ajustamos los límites para que sean múltiplos del paso
-        const start = Math.floor(p05 / step) * step;
-        const end = Math.ceil(p95 / step) * step;
-=======
         // Si el p05 ya excede topVal, usamos un rango desde 0 hasta topVal
         let effectiveMin = p05;
         let effectiveMax = Math.min(p95, topVal);
@@ -176,7 +73,6 @@ export class NiceSteps {
         // Ajustamos los límites para que sean múltiplos del paso
         const start = Math.floor(effectiveMin / step) * step;
         const end = Math.ceil(effectiveMax / step) * step;
->>>>>>> Stashed changes
         
         // Generamos los puntos de corte asegurándonos de que no sean duplicados
         const breaks: number[] = [];
@@ -184,11 +80,6 @@ export class NiceSteps {
         // Generamos exactamente numBreaks + 1 breaks
         for (let i = 0; i <= numBreaks; i++) {
             const val = start + (i * step);
-<<<<<<< Updated upstream
-            // Redondeamos a 2 decimales para preservar más precisión
-            const roundedValue = Math.round(val * 100) / 100;
-            
-=======
             
             // Si el valor excede topVal, lo limitamos
             const limitedVal = Math.min(val, topVal);
@@ -196,7 +87,6 @@ export class NiceSteps {
             // Redondeamos a 2 decimales para preservar más precisión
             const roundedValue = Math.round(limitedVal * 100) / 100;
         
->>>>>>> Stashed changes
             // Evitamos valores duplicados
             if (!breaks.includes(roundedValue)) {
                 breaks.push(roundedValue);
@@ -353,21 +243,6 @@ export class CsDynamicPainter implements Painter{
         let imgData: ImageData = context.getImageData(0, 0, width, height);
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
         let gradientLength = gradient.length - 1;
-<<<<<<< Updated upstream
-    
-        let niceSteps = new NiceSteps();
-        let breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), 10);
-        
-        console.log('DEBUG paintValues - breaks:', breaks);
-        
-        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
-    
-        function getIntervalIndex(value: number, breaks: number[]): number {
-            if (value <= breaks[0]) return 0;
-            
-            if (value >= breaks[breaks.length - 1]) return breaks.length - 1;
-            
-=======
 
         // Obtener los breaks de NiceSteps
         let niceSteps = new NiceSteps();
@@ -394,39 +269,23 @@ export class CsDynamicPainter implements Painter{
             if (value >= breaks[breaks.length - 1]) return breaks.length - 1;
             
             // Encontrar el intervalo correcto
->>>>>>> Stashed changes
             for (let i = 0; i < breaks.length - 1; i++) {
                 if (value >= breaks[i] && value < breaks[i + 1]) {
                     return i;
                 }
             }
             
-<<<<<<< Updated upstream
-            return breaks.length - 1;
-        }
-    
-=======
             // Por defecto, usar el último intervalo
             return breaks.length - 1;
         }
 
         // Colorizar canvas
->>>>>>> Stashed changes
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
                 let pxIndex: number = x + ((height - 1) - y) * width;
                 
-<<<<<<< Updated upstream
-                if (!isNaN(value)) {
-                    let intervalIndex = getIntervalIndex(value, breaks);
-                    
-                    let gradientIndex = Math.round((intervalIndex / (breaks.length - 1)) * gradientLength);
-                    
-                    bitmap[pxIndex] = gradient[gradientIndex];
-                } else {
-=======
                 if (!isNaN(value) && isFinite(value)) {
                     // Obtener el índice del intervalo basado en los breaks
                     let intervalIndex = getIntervalIndex(value, breaks);
@@ -447,7 +306,6 @@ export class CsDynamicPainter implements Painter{
                     bitmap[pxIndex] = gradient[gradientIndex];
                 } else {
                     // NaN y otros casos
->>>>>>> Stashed changes
                     bitmap[pxIndex] = pxTransparent;
                 }
             }

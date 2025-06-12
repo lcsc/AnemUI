@@ -3,6 +3,7 @@ import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { GradientPainter, PaletteManager } from '../PaletteManager';
 import Slider from 'bootstrap-slider';
 import { LayerManager } from '../LayerManager';
+
 export default class PaletteFrame  extends BaseFrame{
 
     protected slider: Slider
@@ -14,18 +15,8 @@ export default class PaletteFrame  extends BaseFrame{
         let mgr=PaletteManager.getInstance();
         let lmgr = LayerManager.getInstance();
         let ptr=mgr.getPainter();
-<<<<<<< Updated upstream
-        // let min: number = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        // let max: number = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let min: number =  Math.min(...values);
         let max: number =  Math.max(...values);
-
-        console.log('PaletteFrame min: ' + min)
-        console.log('PaletteFrame max: ' + max)
-=======
-        let min: number =  Math.min(...values);
-        let max: number =  Math.max(...values);
->>>>>>> Stashed changes
 
         let name = this.parent.getState().legendTitle;
         let palettes=mgr.getPalettesNames();
@@ -36,10 +27,12 @@ export default class PaletteFrame  extends BaseFrame{
                 <div id="units"><span className='legendText'>{name}</span><br/></div>
                 { 
                     values.map((val, index) =>  {
+                        const backgroundColor = ptr.getColorString(val, min, max)
                         if (ptr instanceof GradientPainter){
-                            return (<div style={{background:ptr.getColorString(val,min,max), height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>
+                            return (<div style={{background:backgroundColor, height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>
                         )} else {
-                            return (<div style={{background:ptr.getColorString(val,min,max), color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className='legendText smallText'> {texts[index]}</span><br/></div>)
+                            const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
+                            return (<div style={{background:backgroundColor, color:textColor}}><span className='legendText smallText'> {texts[index]}</span><br/></div>)
                         }
                     })
                 }
@@ -121,17 +114,49 @@ export default class PaletteFrame  extends BaseFrame{
             name = this.parent.getState().legendTitle;
         }
         
-        data.innerHTML="<div id='units'><span class='legendText'>"+name+"</span><br/></div>"
-        values.map((val, index) =>{ 
-            if (ptr instanceof GradientPainter){
-                addChild(data, (<div style={{background:ptr.getColorString(val,min,max), height: '1px'}} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>));
+        data.innerHTML = "<div id='units'><span class='legendText'>" + name + "</span><br/></div>";
+
+        values.map((val, index) => { 
+            const backgroundColor = ptr.getColorString(val, min, max);
+            
+            if (ptr instanceof GradientPainter) {
+                addChild(data, (<div style={{
+                    background: backgroundColor, 
+                    height: '1px'
+                }} data-toggle="tooltip" data-placement="left" title={texts[index]}></div>));
             } else {
-                addChild(data, (<div style={{background:ptr.getColorString(val,min,max),color:ptr.getColorString(val,min,max)>='#CCCCCC'?'#000':'#fff'}}><span className={`legendText smallText`} > {texts[index]}</span><br/></div>));
+                // Determinar el color del texto basado en el fondo
+                const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
+                
+                addChild(data, (<div style={{
+                    background: backgroundColor,
+                    color: textColor
+                }}>
+                    <span className={`legendText smallText`}>{texts[index]}</span><br/>
+                </div>));
             }
         });
-        data.innerHTML+="<div id='legendBottom'></div>"
+
+        data.innerHTML += "<div id='legendBottom'></div>";
 
         let palettes=mgr.getPalettesNames();
         if (palettes.length > 2) this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
+    }
+
+    // Función para determinar si un color es claro u oscuro
+    private isLightColor(hexColor: string): boolean {
+        // Remover el # si existe
+        const hex = hexColor.replace('#', '');
+        
+        // Convertir hex a RGB
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        
+        // Calcular la luminancia usando la fórmula estándar
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        
+        // Si la luminancia es mayor a 0.5, es un color claro
+        return luminance > 0.5;
     }
 }
