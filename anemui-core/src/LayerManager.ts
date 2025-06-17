@@ -69,8 +69,7 @@ export class LayerManager {
     private topLayerVector:Layer;
     private topLayerImage:Image<ImageWMS>;
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
-    protected uncertaintyVectorLayer: Layer;
-
+    
     private constructor() {
         // CAPAS BASE
         // ------ Global ()

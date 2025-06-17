@@ -10,7 +10,7 @@ import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, hasInf, maxWhenInf, minWhenInf, dataSource} from "../Env";
+import { ncSignif, dataSource, computedDataTilesLayer} from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestedArray, openArray, TypedArray } from 'zarr';
@@ -174,10 +174,6 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
                 if (!isNaN(value[1])) download = true;
                 asciiResult += value[0];
                 asciiResult += ';';
-                if (graph && hasInf) {
-                    if (value[1] == Infinity || value[1] > maxWhenInf) value[1] = maxWhenInf
-                    if (value[1] == -Infinity || value[1] < minWhenInf) value[1] = minWhenInf
-                }
                 if (['e', 'f', 'd'].includes(timesJs.varType))
                     asciiResult += parseFloat(value[1].toPrecision(ncSignif)) + "\n";
                 else
@@ -331,9 +327,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         app.notifyMaxMinChanged();
         minArray = timesJs.varMin[status.varId][status.selectedTimeIndex];
         maxArray = timesJs.varMax[status.varId][status.selectedTimeIndex];
-
-        console.log('chunk minArray: ' + minArray)
-        console.log('chunk maxArray: ' + maxArray)
 
         // Now that we have the absolute maximums and minimums, we paint the data layers.
         for (let i = 0; i < floatArrays.length; i++) {
@@ -565,7 +558,7 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     if (portion != '') {
         // Correlative index of the pixel (starts counting at 1)
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
-        if (status.computedData[portion].length == 0) {
+        if (!computedDataTilesLayer || status.computedData[portion].length == 0 ) {
             let cb: ArrayDownloadDone = (data: number[]) => {
                 let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
                 return functionValue(value, []);

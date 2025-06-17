@@ -9,7 +9,7 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, intValues,computedDataTilesLayer } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
 import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion } from "./data/ChunkDownloader";

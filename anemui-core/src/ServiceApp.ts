@@ -91,7 +91,7 @@ export abstract class DataServiceApp extends BaseApp {
         return this
     }
 
-    public async  update(dateChanged: boolean = false): Promise<void> {
+    public async update(dateChanged: boolean = false): Promise<void> {
         await super.update(dateChanged)
         if (this.optionsService != undefined) {
             this.updateOptions();
@@ -238,7 +238,6 @@ export abstract class DataServiceApp extends BaseApp {
                 resolve(values);
             })
         })
-
         return ret;
     }
 

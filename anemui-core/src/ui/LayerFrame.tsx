@@ -10,25 +10,16 @@ export default class LayerFrame  extends BaseFrame {
 
     protected slider: Slider
     private baseDiv: HTMLElement
-    private dataDiv: HTMLElement
+    private polDiv: HTMLElement
     private trpDiv: HTMLElement
     private uncertaintyFrame: HTMLElement; 
 
     public render():JSX.Element{
         let self=this;
-        let values= [...this.parent.getLegendValues()].reverse();
-        let texts=[...this.parent.getLegendText()].reverse();
         let mgr=PaletteManager.getInstance();
         let lmgr = LayerManager.getInstance();
-        let ptr=mgr.getPainter();
-        let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        let name = this.parent.getState().legendTitle;
-        let palettes=mgr.getPalettesNames();
         let baseLayers=lmgr.getBaseLayerNames();
         let topLayers=lmgr.getTopLayerNames();
-        let bgcolor;
-        let color = '#ffffff';
         let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
         let i: number = 0;
@@ -88,15 +79,15 @@ export default class LayerFrame  extends BaseFrame {
                         </div>
                     </div>
                 </div>
-                <div id="data-div">
-                    <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>
+                <div id="pol-div">
+                    <div className="buttonDiv polDiv visible" onClick={()=>this.toggleSelect('polDiv')}>
                         <span className="icon"><i className="bi bi-map"></i></span>
                         <span className="text" aria-label='top'>
-                            {this.parent.getTranslation('top_layer')}: Politico
+                            {this.parent.getTranslation('top_layer')}: {this.parent.getTranslation('politico')}
                         </span>
                     </div>
-                    <div className='row selectDiv dataDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('dataDiv')}>
+                    <div className='row selectDiv polDiv hidden'>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('polDiv')}>
                             <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
                         <div className='col-9 p-0 inputDiv'>
@@ -197,7 +188,7 @@ export default class LayerFrame  extends BaseFrame {
     public build(){
         this.container = document.getElementById("layer-frame") as HTMLDivElement
         this.baseDiv = document.getElementById('base-div') as HTMLElement;
-        this.dataDiv = document.getElementById('data-div') as HTMLElement;
+        this.polDiv = document.getElementById('pol-div') as HTMLElement;
         this.trpDiv = document.getElementById('trp-div') as HTMLElement;
         this.slider=new Slider(document.getElementById("transparencySlider"),{
             natural_arrow_keys: true,
@@ -215,7 +206,7 @@ export default class LayerFrame  extends BaseFrame {
 
         if (!showLayers){
             this.baseDiv.hidden = true;
-            this.dataDiv.hidden = true;
+            this.polDiv.hidden = true;
             this.trpDiv.hidden = true;
         } 
     }

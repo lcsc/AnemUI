@@ -1,8 +1,11 @@
 import Gradient from "javascript-color-gradient";
+import { maxPaletteValue, maxPaletteSteps  } from "./Env";
 
 export type PaletteUpdater = () => string[];
 
 const DEFAULT_CHARACTERS: string[] = ["·", " "];
+const NUM_BREAKS: number = 10
+const MAX_DISPLAY_VALUE:number = 1000
 
 type CS_RGBA_Info = {
     r: number,
@@ -42,33 +45,118 @@ export class NiceSteps {
     }
 
     // Método para obtener pasos regulares
-    public getRegularSteps(data: number[], numBreaks = 5): number[] {
-        // Filtramos y ordenamos los datos
-        data = data.filter(v => !isNaN(v)).sort((a, b) => a - b);
-
+    public getRegularSteps(data: number[], numBreaks = NUM_BREAKS, maxDisplayVal: number = MAX_DISPLAY_VALUE): number[] {
+        // Filtramos y ordenamos los datos, convirtiendo infinitos a maxDisplayVal
+        data = data.filter(v => !isNaN(v))
+                  .map(v => isFinite(v) ? v : maxDisplayVal)
+                  .sort((a, b) => a - b);
+        
         // Calculamos percentiles
-        const p05 = this.percentile(data, 0.5);
+        const p05 = this.percentile(data, 5);
         const p95 = this.percentile(data, 95);
-
-        // Calculamos el paso inicial
-        const rawStep = (p95 - p05) / numBreaks;
-        const step = this.niceStep(rawStep);
-
+        
+        // Si el p05 ya excede maxDisplayVal, usamos un rango desde 0 hasta maxDisplayVal
+        let effectiveMin = p05;
+        let effectiveMax = Math.min(p95, maxDisplayVal);
+        
+        if (effectiveMin >= maxDisplayVal) {
+            effectiveMin = 0;
+            effectiveMax = maxDisplayVal;
+        }
+        
+        // Calculamos el paso inicial usando el rango efectivo
+        const rawStep = (effectiveMax - effectiveMin) / numBreaks;
+        // Si rawStep es muy pequeño o negativo, usar un paso mínimo
+        const minStep = (effectiveMax - effectiveMin) / 100; // 1% del rango
+        const safeRawStep = Math.max(rawStep, minStep);
+        
+        const step = this.niceStep(safeRawStep);
+        
+        
         // Ajustamos los límites para que sean múltiplos del paso
-        const start = Math.floor(p05 / step) * step;
-        const end = Math.ceil(p95 / step) * step;
-
+        const start = Math.floor(effectiveMin / step) * step;
+        const end = Math.ceil(effectiveMax / step) * step;
+        
         // Generamos los puntos de corte asegurándonos de que no sean duplicados
         const breaks: number[] = [];
-        for (let val = start; val <= end + 0.5 * step; val += step) {
-            const roundedValue = Math.round(val * 10) / 10; // Redondeamos a 1 decimal
-
+        
+        // Generamos exactamente numBreaks + 1 breaks
+        for (let i = 0; i <= numBreaks; i++) {
+            const val = start + (i * step);
+            
+            // Si el valor excede maxDisplayVal, lo limitamos
+            const limitedVal = Math.min(val, maxDisplayVal);
+            
+            // Redondeamos a 2 decimales para preservar más precisión
+            const roundedValue = Math.round(limitedVal * 100) / 100;
+        
             // Evitamos valores duplicados
             if (!breaks.includes(roundedValue)) {
                 breaks.push(roundedValue);
             }
+            
+            // Si hemos alcanzado maxDisplayVal, no generamos más breaks
+            if (limitedVal >= maxDisplayVal) {
+                break;
+            }
         }
+        return breaks;
+    }
 
+    // ---- Detección automática de límite superior maxDisplayVal
+    public getRegularStepsAdaptive(data: number[], numBreaks = NUM_BREAKS): number[] {
+        data = data.filter(v => !isNaN(v) && isFinite(v)).sort((a, b) => a - b);
+        
+        if (data.length === 0) return [];
+        
+        // Calculamos varios percentiles para decidir el mejor corte
+        const p70 = this.percentile(data, 70);
+        const p80 = this.percentile(data, 80);
+        const p90 = this.percentile(data, 90);
+        const p95 = this.percentile(data, 95);
+        
+        // Calculamos la densidad de datos en diferentes rangos
+        const countBelow80 = data.filter(v => v <= p80).length;
+        const countBelow90 = data.filter(v => v <= p90).length;
+        const countBelow95 = data.filter(v => v <= p95).length;
+        
+        const density80 = countBelow80 / data.length;
+        const density90 = countBelow90 / data.length;
+        const density95 = countBelow95 / data.length;
+        
+        // Elegimos el percentil que capture entre 75-85% de los datos
+        let effectiveMax: number;
+        if (density80 >= 0.75 && density80 <= 0.85) {
+            effectiveMax = p80;
+        } else if (density90 >= 0.75 && density90 <= 0.85) {
+            effectiveMax = p90;
+        } else {
+            effectiveMax = p80; // Por defecto usamos P80
+        }
+        
+        const effectiveMin = Math.max(0, this.percentile(data, 5));
+        
+        // Resto del código igual que antes
+        const rawStep = (effectiveMax - effectiveMin) / numBreaks;
+        const minStep = (effectiveMax - effectiveMin) / 100;
+        const safeRawStep = Math.max(rawStep, minStep);
+        
+        const step = this.niceStep(safeRawStep);
+        
+        const start = Math.floor(effectiveMin / step) * step;
+        const end = Math.ceil(effectiveMax / step) * step;
+        
+        const breaks: number[] = [];
+        for (let i = 0; i <= numBreaks; i++) {
+            const val = start + (i * step);
+            if (val <= end) {
+                const roundedValue = Math.round(val * 100) / 100;
+                if (!breaks.includes(roundedValue)) {
+                    breaks.push(roundedValue);
+                }
+            }
+        }
+        
         return breaks;
     }
 }
@@ -207,33 +295,82 @@ export class CsDynamicPainter implements Painter{
         return paletteStr[i]
     }
 
-
-    public async paintValues(floatArray:number[],width:number,height:number,minArray:number,maxArray:number,pxTransparent:number,uncertaintyLayer:boolean):Promise<HTMLCanvasElement>{
+    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
         let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
         let imgData: ImageData = context.getImageData(0, 0, width, height);
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
-        let gradientLength = gradient.length - 1
+        let gradientLength = gradient.length - 1;
 
-        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
+        // Obtener los breaks de NiceSteps
+        let niceSteps = new NiceSteps();
+        let breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), maxPaletteSteps, maxPaletteValue);
         
-        // colorize canvas
+        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
+
+        // Función para encontrar el índice del intervalo correcto
+        function getIntervalIndex(value: number, breaks: number[]): number {
+            // Tratar valores infinitos como > 1000
+            if (!isFinite(value)) {
+                if (value === Infinity || value === -Infinity) {
+                    value = 1000;
+                }
+            }
+            
+            // Si el valor es menor que el primer break pero > 0, usar el primer color
+            if (value > 0 && value < breaks[0]) return 0;
+            
+            // Si el valor es <= 0, será transparente (manejado fuera de esta función)
+            if (value <= 0) return -1;
+            
+            // Si el valor es mayor que el último break, saturar al último color
+            if (value >= breaks[breaks.length - 1]) return breaks.length - 1;
+            
+            // Encontrar el intervalo correcto
+            for (let i = 0; i < breaks.length - 1; i++) {
+                if (value >= breaks[i] && value < breaks[i + 1]) {
+                    return i;
+                }
+            }
+            
+            // Por defecto, usar el último intervalo
+            return breaks.length - 1;
+        }
+
+        // Colorear canvas
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
                 let pxIndex: number = x + ((height - 1) - y) * width;
-                if (!isNaN(value)) {
-                    value = Math.max(minArray, Math.min(value, maxArray));
-                    let index: number = Math.round(((value - minArray) / (maxArray - minArray)) * gradientLength);
-                    bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
-                }else{
-                    bitmap[pxIndex]=pxTransparent;
+                
+                if (!isNaN(value) && isFinite(value)) {
+                    // Obtener el índice del intervalo basado en los breaks
+                    let intervalIndex = getIntervalIndex(value, breaks);
+                    
+                    // Si el valor es <= 0, hacerlo transparente
+                    if (intervalIndex === -1) {
+                        bitmap[pxIndex] = pxTransparent;
+                    } else {
+                        // Mapear el índice del intervalo al índice del gradiente
+                        // Distribuir los intervalos uniformemente a lo largo del gradiente
+                        let gradientIndex = Math.round((intervalIndex / (breaks.length - 1)) * gradientLength);
+                        bitmap[pxIndex] = gradient[gradientIndex];
+                    }
+                } else if (!isFinite(value) && !isNaN(value)) {
+                    // Manejar valores infinitos como > 1000
+                    let intervalIndex = getIntervalIndex(value, breaks); // La función ya maneja infinitos internamente
+                    let gradientIndex = Math.round((intervalIndex / (breaks.length - 1)) * gradientLength);
+                    bitmap[pxIndex] = gradient[gradientIndex];
+                } else {
+                    // NaN y otros casos
+                    bitmap[pxIndex] = pxTransparent;
                 }
             }
         }
+        
         context.putImageData(imgData, 0, 0);
         return canvas;
     }
@@ -243,8 +380,6 @@ export class CsDynamicPainter implements Painter{
     }
 }
 
-//const ALPHA_VAL = "bb";
-//const ALPHA_VAL = "ff";
 export class PaletteManager {
     private static instance: PaletteManager;
 
@@ -255,7 +390,6 @@ export class PaletteManager {
 
         return PaletteManager.instance;
     }
-
 
     protected palettes: { [key: string]: PaletteUpdater } = {}
     protected painters: { [key: string]: Painter } = {}
@@ -323,7 +457,6 @@ export class PaletteManager {
         opacity= parseInt(255*opacity/100+"");
         let ALPHA_VAL = opacity.toString(16);
         if(ALPHA_VAL.length==1)ALPHA_VAL="0"+ALPHA_VAL;
-        //console.log("Trans: "+ this.transparency  +" ->  "+ opacity+" - > "+ALPHA_VAL)
         let paletteStr: string[] = uncertaintyLayer? this.palettes['uncertainty']():(_palette.length == 0? this.palettes[this.selected]():_palette)
         let gradient = new Uint32Array(paletteStr.length); // RGBA values
         let rgba = new Uint8Array(gradient.buffer);
