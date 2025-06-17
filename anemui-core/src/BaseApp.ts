@@ -1,29 +1,25 @@
 import { addChild, mount } from "tsx-create-element";
 import { MainFrame } from "./ui/MainFrame";
-// import { MenuBarListener } from "./ui/MenuBar";
-// import { MenuBar } from './ui/MenuBar';
 import { MenuBar, MenuBarListener } from './ui/MenuBar'; 
-import { CsGeoJsonLayer, CsMap } from "./CsMap";
+import { CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
 import LayerFrame from './ui/LayerFrame'
 import PaletteFrame from "./ui/PaletteFrame";  
 import { CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
-import { loadLatLogValue, loadLatLongData } from "./data/CsDataLoader";
+import { loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer } from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
-import { downloadTCSVChunked, downloadCSVbyRegion } from "./data/ChunkDownloader";
-import { downloadUrl } from "./data/UrlDownloader";
+import { downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, CsOpenLayerGeoJsonLayer, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
 import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
-import GeoJSON from 'ol/format/GeoJSON';
 import { FeatureLike } from "ol/Feature";
 import LeftBar from "./ui/LeftBar"; 
 import RightBar from "./ui/RightBar"; 
@@ -595,7 +591,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public abstract dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     
     public abstract selectionParamChanged(param: number): void;
-    public abstract getLegendValues(): number[];
+    public abstract getLegendValues(maxDisplayValue?: number): number[];
 
     public getLegendText() {
         let ret: string[]

@@ -1,8 +1,11 @@
 import Gradient from "javascript-color-gradient";
+import { maxPaletteValue, maxPaletteSteps  } from "./Env";
 
 export type PaletteUpdater = () => string[];
 
 const DEFAULT_CHARACTERS: string[] = ["·", " "];
+const NUM_BREAKS: number = 10
+const MAX_DISPLAY_VALUE:number = 1000
 
 type CS_RGBA_Info = {
     r: number,
@@ -42,23 +45,23 @@ export class NiceSteps {
     }
 
     // Método para obtener pasos regulares
-    public getRegularSteps(data: number[], numBreaks = 10, topVal: number = 1000): number[] {
-        // Filtramos y ordenamos los datos, convirtiendo infinitos a topVal
+    public getRegularSteps(data: number[], numBreaks = NUM_BREAKS, maxDisplayVal: number = MAX_DISPLAY_VALUE): number[] {
+        // Filtramos y ordenamos los datos, convirtiendo infinitos a maxDisplayVal
         data = data.filter(v => !isNaN(v))
-                  .map(v => isFinite(v) ? v : topVal)
+                  .map(v => isFinite(v) ? v : maxDisplayVal)
                   .sort((a, b) => a - b);
         
         // Calculamos percentiles
         const p05 = this.percentile(data, 5);
         const p95 = this.percentile(data, 95);
         
-        // Si el p05 ya excede topVal, usamos un rango desde 0 hasta topVal
+        // Si el p05 ya excede maxDisplayVal, usamos un rango desde 0 hasta maxDisplayVal
         let effectiveMin = p05;
-        let effectiveMax = Math.min(p95, topVal);
+        let effectiveMax = Math.min(p95, maxDisplayVal);
         
-        if (effectiveMin >= topVal) {
+        if (effectiveMin >= maxDisplayVal) {
             effectiveMin = 0;
-            effectiveMax = topVal;
+            effectiveMax = maxDisplayVal;
         }
         
         // Calculamos el paso inicial usando el rango efectivo
@@ -81,8 +84,8 @@ export class NiceSteps {
         for (let i = 0; i <= numBreaks; i++) {
             const val = start + (i * step);
             
-            // Si el valor excede topVal, lo limitamos
-            const limitedVal = Math.min(val, topVal);
+            // Si el valor excede maxDisplayVal, lo limitamos
+            const limitedVal = Math.min(val, maxDisplayVal);
             
             // Redondeamos a 2 decimales para preservar más precisión
             const roundedValue = Math.round(limitedVal * 100) / 100;
@@ -92,11 +95,68 @@ export class NiceSteps {
                 breaks.push(roundedValue);
             }
             
-            // Si hemos alcanzado topVal, no generamos más breaks
-            if (limitedVal >= topVal) {
+            // Si hemos alcanzado maxDisplayVal, no generamos más breaks
+            if (limitedVal >= maxDisplayVal) {
                 break;
             }
         }
+        return breaks;
+    }
+
+    // ---- Detección automática de límite superior maxDisplayVal
+    public getRegularStepsAdaptive(data: number[], numBreaks = NUM_BREAKS): number[] {
+        data = data.filter(v => !isNaN(v) && isFinite(v)).sort((a, b) => a - b);
+        
+        if (data.length === 0) return [];
+        
+        // Calculamos varios percentiles para decidir el mejor corte
+        const p70 = this.percentile(data, 70);
+        const p80 = this.percentile(data, 80);
+        const p90 = this.percentile(data, 90);
+        const p95 = this.percentile(data, 95);
+        
+        // Calculamos la densidad de datos en diferentes rangos
+        const countBelow80 = data.filter(v => v <= p80).length;
+        const countBelow90 = data.filter(v => v <= p90).length;
+        const countBelow95 = data.filter(v => v <= p95).length;
+        
+        const density80 = countBelow80 / data.length;
+        const density90 = countBelow90 / data.length;
+        const density95 = countBelow95 / data.length;
+        
+        // Elegimos el percentil que capture entre 75-85% de los datos
+        let effectiveMax: number;
+        if (density80 >= 0.75 && density80 <= 0.85) {
+            effectiveMax = p80;
+        } else if (density90 >= 0.75 && density90 <= 0.85) {
+            effectiveMax = p90;
+        } else {
+            effectiveMax = p80; // Por defecto usamos P80
+        }
+        
+        const effectiveMin = Math.max(0, this.percentile(data, 5));
+        
+        // Resto del código igual que antes
+        const rawStep = (effectiveMax - effectiveMin) / numBreaks;
+        const minStep = (effectiveMax - effectiveMin) / 100;
+        const safeRawStep = Math.max(rawStep, minStep);
+        
+        const step = this.niceStep(safeRawStep);
+        
+        const start = Math.floor(effectiveMin / step) * step;
+        const end = Math.ceil(effectiveMax / step) * step;
+        
+        const breaks: number[] = [];
+        for (let i = 0; i <= numBreaks; i++) {
+            const val = start + (i * step);
+            if (val <= end) {
+                const roundedValue = Math.round(val * 100) / 100;
+                if (!breaks.includes(roundedValue)) {
+                    breaks.push(roundedValue);
+                }
+            }
+        }
+        
         return breaks;
     }
 }
@@ -246,7 +306,7 @@ export class CsDynamicPainter implements Painter{
 
         // Obtener los breaks de NiceSteps
         let niceSteps = new NiceSteps();
-        let breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), 10);
+        let breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), maxPaletteSteps, maxPaletteValue);
         
         const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
 
@@ -279,7 +339,7 @@ export class CsDynamicPainter implements Painter{
             return breaks.length - 1;
         }
 
-        // Colorizar canvas
+        // Colorear canvas
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
                 let ncIndex: number = x + y * width;
