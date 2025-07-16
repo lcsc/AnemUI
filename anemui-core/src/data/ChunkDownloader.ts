@@ -10,7 +10,7 @@ import { fromLonLat } from "ol/proj";
 import { PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, hasInf, maxWhenInf, minWhenInf, dataSource, computedDataTilesLayer} from "../Env";
+import { ncSignif, dataSource, computedDataTilesLayer} from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestedArray, openArray, TypedArray } from 'zarr';

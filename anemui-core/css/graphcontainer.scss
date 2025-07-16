@@ -84,4 +84,13 @@ div.GraphContainer {
     #labels {
         text-align: center;
     }
+
+    #scaleSelectorsContainer {
+        margin: 10px 0;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+        
 }

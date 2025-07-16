@@ -24,13 +24,8 @@ export const hasCookies:boolean = typeof ENV.hasCookies !== 'undefined'? ENV.has
 export const hasInf:boolean = typeof ENV.hasInf !== 'undefined'? ENV.hasInf:false;
 export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhenInf:10;
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
-<<<<<<< Updated upstream
-export const computedDataTilesLayer:boolean = typeof ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer:false;
-export const dataSource: string = ENV.dataSource || 'nc';
-=======
 export const computedDataTilesLayer:boolean = ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer: false;
 export const dataSource: string = ENV.dataSource !== 'undefined'? ENV.dataSource:'nc';
->>>>>>> Stashed changes
 
 // Defines the appearance of the display -- Default values
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
@@ -40,18 +35,6 @@ export const hasVars:boolean = typeof ENV.hasVars !== 'undefined'? ENV.hasVars:t
 export const hasSubVars:boolean = typeof ENV.hasSubVars !== 'undefined'? ENV.hasSubVars:false;
 export const hasTpSupport:boolean = typeof ENV.hasTpSupport !== 'undefined'? ENV.hasTpSupport:false;
 export const hasSelection:boolean = typeof ENV.hasSelection !== 'undefined'? ENV.hasSelection:false;
-<<<<<<< Updated upstream
-export const hasSelectionParam:boolean = typeof ENV.hasSelectionParam !== 'undefined'? ENV.hasSelectionParam:false;
-export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? ENV.varHasPopData:false;
-export const sbVarHasPopData:boolean = typeof ENV.sbVarHasPopData !== 'undefined'? ENV.sbVarHasPopData:false;
-export const hasDownload:boolean = typeof ENV.hasDownload !== 'undefined'? ENV.hasDownload:true;
-export const disableDownload:boolean = typeof ENV.disableDownload !== 'undefined'? ENV.disableDownload:false;
-export const avoidMinimize:boolean = typeof ENV.avoidMinimize !== 'undefined'? ENV.avoidMinimize:false;
-export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.showLayers:true;
-export const intValues:boolean = typeof ENV.intValues !== 'undefined'? ENV.intValues:false;
-export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
-export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
-=======
 export const hasSelectionParam:boolean = ENV.hasSelectionParam || false;
 export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? ENV.varHasPopData:false;
 export const sbVarHasPopData:boolean = typeof ENV.sbVarHasPopData !== 'undefined'? ENV.sbVarHasPopData:false;
@@ -59,9 +42,8 @@ export const hasDownload:boolean = ENV.hasDownload !== 'undefined'? ENV.hasDownl
 export const disableDownload:boolean = typeof ENV.disableDownload !== 'undefined'? ENV.disableDownload:false;
 export const avoidMinimize:boolean = typeof ENV.avoidMinimize !== 'undefined'? ENV.avoidMinimize:false;
 export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.showLayers:true;
-export const intValues:boolean = ENV.intValues || false;
+export const intValues:boolean = ENV.intValues !== 'undefined'? ENV.intValues:false;
 export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
 export const maxPaletteValue = ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
 export const maxPaletteSteps = ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
->>>>>>> Stashed changes

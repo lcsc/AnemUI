@@ -16,19 +16,10 @@ export default class LayerFrame  extends BaseFrame {
 
     public render():JSX.Element{
         let self=this;
-        let values= [...this.parent.getLegendValues()].reverse();
-        let texts=[...this.parent.getLegendText()].reverse();
         let mgr=PaletteManager.getInstance();
         let lmgr = LayerManager.getInstance();
-        let ptr=mgr.getPainter();
-        let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        let name = this.parent.getState().legendTitle;
-        let palettes=mgr.getPalettesNames();
         let baseLayers=lmgr.getBaseLayerNames();
         let topLayers=lmgr.getTopLayerNames();
-        let bgcolor;
-        let color = '#ffffff';
         let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
         let i: number = 0;
