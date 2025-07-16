@@ -57,6 +57,7 @@ export class MenuBar extends BaseFrame {
     private selection: CsMenuItem;
     private selectionParam: CsMenuInput;
     private extraMenuItems: CsMenuItem[];
+    private extraMenuInputs: CsMenuInput[];
     private dropDownOrder: string[]
 
     private popData: any;
@@ -122,6 +123,7 @@ export class MenuBar extends BaseFrame {
             });
         }
         this.extraMenuItems = []
+        this.extraMenuInputs = []
         this.extraBtns = []
         this.dropDownOrder = []
     }
@@ -266,6 +268,15 @@ export class MenuBar extends BaseFrame {
                             dpn.build(container)
                         }
                     });
+                    if (this.extraMenuInputs.length > 0) {
+                        this.extraMenuInputs.forEach((input) => {
+                            if (input.id == dsp.role) {
+                                let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
+                                addChild(container, input.render(this.parent.getState().selectionParam+''));
+                                input.build(container)
+                            }
+                        })
+                    }
                 });
             }
             if(this.dropDownOrder.length) {
@@ -376,29 +387,51 @@ export class MenuBar extends BaseFrame {
         })
     }
 
-    public setExtraDisplay(id: string, displayTitle:string, options: string[]) { 
+    public setExtraDisplay(type: number, id: string, displayTitle:string, options: string[]) { 
         this.extraDisplays.push( { role: id, title: displayTitle, subTitle: options[0] })
         let listener = this.listener
 
-        this.extraMenuItems.push( new CsMenuItem (id , displayTitle,  {
-            valueSelected(origin, index, value, values) {
-                listener.dropdownSelected(id, index, value, values)
-            },
-        }))
-
-        for (let i = 0; i < this.extraMenuItems.length; i++) {
-            if (this.extraMenuItems[i]['id'] == id) this.extraMenuItems[i].setValues(options);
+        switch (type) {
+            case 1:
+                this.extraMenuItems.push( new CsMenuItem (id , displayTitle,  {
+                    valueSelected(origin, index, value, values) {
+                        listener.dropdownSelected(id, index, value, values)
+                    },
+                }))
+                for (let i = 0; i < this.extraMenuItems.length; i++) {
+                    if (this.extraMenuItems[i]['id'] == id) this.extraMenuItems[i].setValues(options);
+                }
+                break;
+            case 2:
+                this.extraMenuInputs.push( new CsMenuInput(id, displayTitle, {
+                    valueChanged: (newValue: number) => {  
+                        listener.selectionParamChanged(newValue);
+                    },
+                }))
+                break;
         }
+        
     }
 
-    public updateExtraDisplay(dspRole: string, displayTitle:string, options: string[]) {
-        this.extraMenuItems.forEach((dpn) => {
-            if (dpn.id == dspRole) {
-                dpn.setTitle(displayTitle)
-                dpn.setSubTitle(options[0])
-                dpn.setValues(options)
-            }
-        });
+    public updateExtraDisplay(type: number, dspRole: string, displayTitle:string, options: string[]) {
+        switch (type) {
+            case 1:
+                this.extraMenuItems.forEach((dpn) => {
+                    if (dpn.id == dspRole) {
+                        dpn.setTitle(displayTitle)
+                        dpn.setSubTitle(options[0])
+                        dpn.setValues(options)
+                    }
+                });
+                break;
+            case 2:
+                this.extraMenuInputs.forEach((inp) => {
+                    if (inp.id == dspRole) {
+                        inp.setTitle(displayTitle)
+                    }
+                });
+                break;    
+        }
     }
 
     public updateExtraDrpodown(_dpn: string, title: string, sbTitle: string) {

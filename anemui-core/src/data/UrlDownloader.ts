@@ -1,5 +1,5 @@
 export type DownloadDoneCB = (status: number, response: any) => void;
-export type DownloadErrorCB=(status:number, error?:Error)=>void;
+export type DownloadErrorCB = (status:number, error?:Error) => void;
 
 
 var requests: { [key: string]: [DownloadDoneCB] } = {};
@@ -8,7 +8,6 @@ var requests: { [key: string]: [DownloadDoneCB] } = {};
 export function downloadUrl(url: string, cb: DownloadDoneCB, errorCb?:DownloadErrorCB,responseType:XMLHttpRequestResponseType="arraybuffer"): void {
 
     var request = new XMLHttpRequest();
-
 
     var onload = function (e:any) {
         //request.onload_(request.status, request.response);
@@ -32,13 +31,12 @@ export function downloadUrl(url: string, cb: DownloadDoneCB, errorCb?:DownloadEr
         }
     }
 
-
     request.onerror = onerror;
     request.onload = onload;
     //request.onload_ = onload_;
 
-
     let asynchronous = true;
+    console.log("downLoadUrl: " + url)
     request.open('GET', url, asynchronous);
     request.responseType = responseType;
 

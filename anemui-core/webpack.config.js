@@ -216,6 +216,12 @@ const development={
         changeOrigin:true,
         "target": moduleConfig.proxyDataUrl
       },
+      "/regData": {
+        "secure": false,
+        "logger": console,
+        changeOrigin:true,
+        "target": moduleConfig.proxyDataUrl
+      },
       "/geoserver":{
         "secure": false,
         "logger": console,
