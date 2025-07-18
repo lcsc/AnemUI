@@ -532,4 +532,8 @@ export class MenuBar extends BaseFrame {
             k++
         })
     }
+
+    public selectFirstSpatialSupportValue(): void {
+        this.spatialSupport.selectFirstValidValue();
+    }   
 }
