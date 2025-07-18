@@ -52,6 +52,7 @@ const INITIAL_STATE: CsViewerData = {
     season: "",
     month: "",
     timeSeriesData: undefined,
+    computedLayer: false,
     computedData: {}
 }
 
@@ -544,7 +545,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.leftBar.update();
         this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
         this.csMap.updateRender(this.state.support)
-        if (this.state.climatology && computedDataTilesLayer) {    
+        // if (this.state.climatology && computedDataTilesLayer) {    
+        if (computedDataTilesLayer && this.state.computedLayer) {        
             await this.waitForDataLoad()
         }
         if (!dateChanged) this.dateSelectorFrame.update();

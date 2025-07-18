@@ -406,8 +406,8 @@ export class MenuBar extends BaseFrame {
                 this.extraMenuInputs.push( new CsMenuInput(id, displayTitle, {
                     valueChanged: (newValue: number) => {  
                         listener.selectionParamChanged(newValue);
-                    },
-                }))
+                    }, 
+                }, +options[0]))
                 break;
         }
         

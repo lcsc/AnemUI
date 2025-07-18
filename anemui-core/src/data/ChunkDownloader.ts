@@ -542,16 +542,16 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     if (portion != '') {
         // Correlative index of the pixel (starts counting at 1)
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
-        // if (!computedDataTilesLayer || status.computedData[portion].length == 0 ) {
-        if (!computedDataTilesLayer || !status.climatology) {    
+        // if (!computedDataTilesLayer || !status.climatology) {    
+        if (status.computedLayer) {
+            let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
+            return functionValue(value, []);
+        } else {
             let cb: ArrayDownloadDone = (data: number[]) => {
                 let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
                 return functionValue(value, []);
             }
             downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
-        } else {
-            let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
-            return functionValue(value, []);
         }
     } else {
         functionValue(NaN, []);
