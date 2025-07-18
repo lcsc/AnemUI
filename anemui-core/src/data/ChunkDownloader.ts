@@ -116,22 +116,6 @@ function getTypeSize(type: string): number {
     }
 }
 
-
-// Obtener mínimo y máximo de un array de números
-function getMinMax(arr: number[]): [number, number] {
-    let len: number = arr.length;
-    let min: number = Infinity;
-    let max: number = -Infinity;
-
-    while (len--) {
-        if (!isNaN(arr[len])) {
-            min = arr[len] < min ? arr[len] : min;
-            max = arr[len] > max ? arr[len] : max;
-        }
-    }
-    return [min, max];
-}
-
 /**
  * Downloads a chunk of data based on the specified parameters.
  *
@@ -558,17 +542,17 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     if (portion != '') {
         // Correlative index of the pixel (starts counting at 1)
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
-        if (!computedDataTilesLayer || status.computedData[portion].length == 0 ) {
+        // if (!computedDataTilesLayer || !status.climatology) {    
+        if (status.computedLayer) {
+            let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
+            return functionValue(value, []);
+        } else {
             let cb: ArrayDownloadDone = (data: number[]) => {
                 let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
                 return functionValue(value, []);
             }
             downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
-        } else {
-            let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
-            return functionValue(value, []);
         }
-
     } else {
         functionValue(NaN, []);
     }
@@ -608,7 +592,7 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
 }
 
 export function downloadCSVbyRegion(folder: string, varName: string, doneCb: CsvDownloadDone): void {
-    downloadUrl("./data/" + folder + "/" + varName + ".csv", (status: number, response) => {
+    downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let result: string
             try {
@@ -626,7 +610,7 @@ export function downloadCSVbyRegion(folder: string, varName: string, doneCb: Csv
 }
 
 export function downloadTimebyRegion(folder: string, id: string, varName: string, doneCb: CsvDownloadDone): void {
-    downloadUrl("./data/" + folder + "/" + varName + ".csv", (status: number, response) => {
+    downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let rgResult: string[] = []
             let rgCSV = 'date;' + varName +'\r\n';
@@ -648,7 +632,7 @@ export function downloadTimebyRegion(folder: string, id: string, varName: string
 }
 
 export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
-    downloadUrl("./data/" + folder +  "/" + varName + ".csv", (status: number, response) => {
+    downloadUrl("./regData/" + folder +  "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let stResult: [];
             try {

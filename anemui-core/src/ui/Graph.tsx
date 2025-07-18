@@ -275,10 +275,6 @@ export class CsGraph extends BaseFrame {
   }
 
     public drawLinearGraph(url: string, station: any): Dygraph {
-      let labels: string = 'years,media,margen inferior,margen superior'
-      
-      url = url.replace('years,fit,lwr,upr', labels); 
-      
       var graph = new Dygraph(
           document.getElementById("popGraph"),
           url,
@@ -302,15 +298,15 @@ export class CsGraph extends BaseFrame {
               rightGap: 20,
               yRangePad: 10, 
               series: {
-                  'media': { 
+                  'fit': { 
                       color: "#aa3311",
                       strokeWidth: 2
                   },
-                  'margen inferior': { 
+                  'lwr': { 
                       color: "#454545",
                       strokePattern: Dygraph.DASHED_LINE
                   },
-                  'margen superior': { 
+                  'upr': { 
                       color: "#454545",
                       strokePattern: Dygraph.DASHED_LINE
                   }

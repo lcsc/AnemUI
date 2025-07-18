@@ -145,6 +145,8 @@ export default class PaletteFrame  extends BaseFrame{
 
     // Función para determinar si un color es claro u oscuro
     private isLightColor(hexColor: string): boolean {
+
+        if (hexColor == undefined) return false;
         // Remover el # si existe
         const hex = hexColor.replace('#', '');
         

@@ -63,10 +63,10 @@ export default class Translate {
                 12: "December"
             },
             'season': {
-                0: 'Jan - Mar',
-                1: 'Apr - Jun',
-                2: 'Jul - Sep',
-                3: 'Oct - Dec'
+                1: 'Jan - Mar',
+                2: 'Apr - Jun',
+                3: 'Jul - Sep',
+                4: 'Oct - Dec'
             }
         },
         es: {

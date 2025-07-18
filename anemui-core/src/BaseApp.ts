@@ -52,6 +52,7 @@ const INITIAL_STATE: CsViewerData = {
     season: "",
     month: "",
     timeSeriesData: undefined,
+    computedLayer: false,
     computedData: {}
 }
 
@@ -174,7 +175,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             
             // 4. Inicialización del mapa y carga de datos
             this.initMap();
-            if (computedDataTilesLayer) {
+            if (this.state.climatology && computedDataTilesLayer) {
                 await this.waitForDataLoad()
             }
             
@@ -421,7 +422,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
         // downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
-        if (computedDataTilesLayer) this.computeTimeData(this.lastLlData.value, portion, [],browserDownloadFile);
+        if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [],browserDownloadFile);
         else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
     }
 
@@ -441,7 +442,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        if (computedDataTilesLayer) this.computeTimeData(this.lastLlData.value, portion, [], open);
+        if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [], open);
         else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
     }
 
@@ -457,7 +458,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             this.state.timeSeriesData = data
             this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
         }
-        if (computedDataTilesLayer) this.computeTimeData(-1, '_all', stParams, open);
+        if (computedDataTilesLayer) this.computeGraphData(-1, '_all', stParams, open);
         else downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
     }
     // ------- UNIFICAR
@@ -544,7 +545,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.leftBar.update();
         this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
         this.csMap.updateRender(this.state.support)
-        if (computedDataTilesLayer) {
+        // if (this.state.climatology && computedDataTilesLayer) {    
+        if (computedDataTilesLayer && this.state.computedLayer) {        
             await this.waitForDataLoad()
         }
         if (!dateChanged) this.dateSelectorFrame.update();
@@ -724,7 +726,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     // Customizable graph data in each viewer
-    public computeTimeData(x: number, portion: string, station: any = [], doneCb: CsvDownloadDone): void {
+    public computeGraphData(x: number, portion: string, station: any = [], doneCb: CsvDownloadDone): void {
         //Do nothing
     }
 

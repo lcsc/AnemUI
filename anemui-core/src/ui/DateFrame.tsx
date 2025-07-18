@@ -250,13 +250,15 @@ export class DateSelectorFrame extends BaseFrame {
         }
     };
 
-    private getSeason (season: string): string {
+    private getSeason(season: string): string {
+        const translations: any = this.parent.getTranslation('season'); 
+        
         switch (season.trim()) {
-            case 'Abr - Jun':
+            case translations[2]:    
                 return '04'
-            case 'Jul - Sep':
+            case translations[3]:    
                 return '07' 
-            case 'Oct - Dic':
+            case translations[4]:    
                 return '10'
             default:
                 return '01'    
@@ -264,19 +266,20 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     public setSeason (seasonId: string) {
+        const translations: any = this.parent.getTranslation('season'); 
         let season: string;
         switch (seasonId) {
             case '04':
-                season = 'Abr - Jun';
+                season = translations[2];
                 break;
             case '07':
-                season = 'Jul - Sep';
+                season = translations[3];
                 break; 
             case '10':
-                season = 'Oct - Dic';
+                season = translations[4];
                 break;
             default:
-                season = 'Ene - Mar';
+                season = translations[1];
                 break;    
         }
         this.season.config(true, season);
@@ -523,11 +526,11 @@ export class DateSelectorFrame extends BaseFrame {
             this.slider.setAttribute("max",endDate)
             this.slider.setValue(this.parent.getState().selectedTimeIndex);
             this.var=this.parent.getState().varId;
-                        return
+            return
         }
         this.setValidDates(this.parent.getState().times, varChanged);
         this.slider.setValue(this.parent.getState().selectedTimeIndex,false,false);
-            }
+    }
 
     protected updateMode(){
         let time = this.getTime(this.parent.getState().times)
