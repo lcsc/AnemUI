@@ -272,7 +272,6 @@ export class OpenLayerMap implements CsMapController {
     const timesJs = this.parent.getParent().getTimesJs();
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
       .then(value => {
-        console.log("latlong value: " + value)
         if (state.support == this.defaultRenderer) {
           self.showValue(event.latLong, value);
         } else {

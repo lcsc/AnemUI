@@ -102,6 +102,7 @@ export type CsViewerData={
 export type CsComputedData ={ 
     computedData: Array4Portion,
     computedDataById: ArrayData,
+    params: Array4Portion[],
     int: boolean
 }
 

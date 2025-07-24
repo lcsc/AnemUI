@@ -97,9 +97,9 @@ export default class PaletteFrame  extends BaseFrame{
         this.container.classList.remove("paletteSmall")
     }
 
-    public update(): void {
-        let values= [...this.parent.getLegendValues()].reverse();
-        let texts=[...this.parent.getLegendText()].reverse();
+    public async update(): Promise<void> {
+        let values= [...(await this.parent.getLegendValues())].reverse();
+        let texts=[...(await this.parent.getLegendText())].reverse();
         let ptr=PaletteManager.getInstance().getPainter();
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();
@@ -108,10 +108,20 @@ export default class PaletteFrame  extends BaseFrame{
         let name:string; 
         let data=this.container.querySelector(".info")
         
-        if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
-            name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
-        }else {
+        // if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
+        //     name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+        // }else {
+        //     name = this.parent.getState().legendTitle;
+        // }
+
+        if (this.parent.getState().computedLayer) {
             name = this.parent.getState().legendTitle;
+        } else {
+            if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
+                    name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+            } else {
+                    name = this.parent.getState().legendTitle;
+            }
         }
         
         data.innerHTML = "<div id='units'><span class='legendText'>" + name + "</span><br/></div>";
