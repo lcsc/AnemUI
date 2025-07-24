@@ -229,7 +229,6 @@ function degrees2meters(lon:number, lat:number):[number,number] {
     return [x, y]
 }
 
-
 export async function loadLatLongData(latLng:CsLatLong,appStatus:CsViewerData,timejs:CsTimesJsData):Promise<CsLatLongData>{
     let ret = new Promise<CsLatLongData>((resolve, reject) => {
         let done:TileArrayCB=(value:number,values:number[])=>{

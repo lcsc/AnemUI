@@ -319,7 +319,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
     
-    private waitForDataLoad(): Promise<void> {
+    /* private waitForDataLoad(): Promise<void> {
         return new Promise((resolve, reject) => {
             // Si ya hay datos, resolver inmediatamente
             if (this.state.computedData && Object.keys(this.state.computedData).length > 1) {
@@ -346,6 +346,48 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                     clearInterval(checkInterval);
                     console.warn('Timeout waiting for data to load, proceeding anyway');
                     resolve(); // Resolver aunque no haya datos para continuar
+                }
+            }, 100);
+        });
+    } */
+
+    private waitForDataLoad(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            // Check if we have data for all expected portions
+            const expectedPortions = this.timesJs.portions[this.state.varId] || [];
+            const hasAllData = expectedPortions.every(portion => 
+                this.state.computedData[portion] && 
+                this.state.computedData[portion].length > 0
+            );
+            
+            if (hasAllData) {
+                resolve();
+                return;
+            }
+            
+            let attempts = 0;
+            const maxAttempts = 100;
+            
+            const checkInterval = setInterval(() => {
+                attempts++;
+                
+                // Check again for all portions
+                const currentHasAllData = expectedPortions.every(portion => 
+                    this.state.computedData[portion] && 
+                    this.state.computedData[portion].length > 0
+                );
+                
+                if (currentHasAllData) {
+                    clearInterval(checkInterval);
+                    console.log('All portion data loaded successfully');
+                    resolve();
+                    return;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    console.warn('Timeout waiting for all portion data, proceeding anyway');
+                    resolve();
                 }
             }, 100);
         });
@@ -421,7 +463,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public downloadPoint(): void {
         let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
         let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        // downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
         if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [],browserDownloadFile);
         else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, browserDownloadFile);
     }
@@ -540,18 +581,29 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return ret
     }
 
-    public async update(dateChanged: boolean = false):Promise<void> {
-        this.menuBar.update();
-        this.leftBar.update();
-        this.csMap.updateDate(this.state.selectedTimeIndex, this.state)
-        this.csMap.updateRender(this.state.support)
-        // if (this.state.climatology && computedDataTilesLayer) {    
-        if (computedDataTilesLayer && this.state.computedLayer) {        
-            await this.waitForDataLoad()
+    public async update(dateChanged: boolean = false): Promise<void> {
+        try {
+            this.menuBar.update();
+            this.leftBar.update();
+            this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
+            this.csMap.updateRender(this.state.support);
+            
+            // Wait for data only if we have computed data tiles layer
+            if (computedDataTilesLayer && this.state.computedLayer) {        
+                await this.waitForDataLoad();
+            }
+            
+            if (!dateChanged) this.dateSelectorFrame.update();
+            this.paletteFrame.update();
+            this.changeUrl();
+            
+        } catch (error) {
+            console.error('Error during update:', error);
+            // Continue with update even if there's an error
+            if (!dateChanged) this.dateSelectorFrame.update();
+            this.paletteFrame.update();
+            this.changeUrl();
         }
-        if (!dateChanged) this.dateSelectorFrame.update();
-        this.paletteFrame.update();
-        this.changeUrl();
     }
 
     public getInfoDiv(): InfoDiv {
@@ -737,10 +789,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public getFeatureStyle(feature: FeatureLike): Style {
         return DEF_STYLE_STATIONS;
     }
-
-    // public formatPopupValue(text: string, value: number): string {
-    //     return this.getTranslation('valor_en') + text + value.toFixed(2)
-    // }
 
     public formatPopupValue(text: string, value: number): string {
         let formattedValue: string;

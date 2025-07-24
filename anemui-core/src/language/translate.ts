@@ -78,7 +78,7 @@ export default class Translate {
             "opciones_avanzadas": "Opciones Avanzandas",
             "grafico_pixel": "Gráfico de Píxel",
             "paleta": "Paleta",
-            "en_la_coordenada": "en la coordenada",
+            "en_la_coordenada": "Coordenada",
             "en_la_estacion": "en la estación",
             "serie_temporal": "Serie temporal",
             "modelo_lineal":"Serie temporal con modelo lineal + intervalos de confianza",

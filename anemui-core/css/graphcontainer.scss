@@ -3,7 +3,7 @@ div.GraphContainer {
     
     position: absolute;
     left: 50%;
-    top: 50%;
+    top: 30%;
     transform: translate(-50%, -30%);
     padding: 0.8em 1.5em;
     background-color: rgba(255, 255, 255, 1);
@@ -48,6 +48,8 @@ div.GraphContainer {
     }
 
     .dygraph-title {
+        margin-bottom: 15px; /* Ajusta este valor para aumentar o disminuir la separación */
+        text-align: center;
         font-size: 20px;
         color: gray 2px 2px 2px;
     }

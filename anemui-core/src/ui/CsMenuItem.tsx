@@ -173,12 +173,13 @@ export class CsMenuItem extends BaseUiElement {
     }
   }
 
-  public selectFirstValidValue(): void {
-    const firstValidIndex = this.values.findIndex(v => !v.startsWith("~") && !v.startsWith("-"));
-    if (firstValidIndex !== -1) {
-      this.select(firstValidIndex);
-    }
-  }
+  // public selectFirstValidValue(): void {
+  //   const firstValidIndex = this.values.findIndex(v => !v.startsWith("~") && !v.startsWith("-"));
+  //   if (firstValidIndex !== -1) {
+  //     this.select(firstValidIndex);
+  //   }
+  // }
+
 }
 
 export class CsMenuInput extends BaseUiElement {
