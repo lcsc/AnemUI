@@ -82,7 +82,7 @@
             font-size: 1.5em;
             font-weight: 500;
             margin-bottom: 0px;
-            padding: 0.4rem;
+            padding: 1rem;
         }
         @include desktop {
             width: 45%;
@@ -130,7 +130,7 @@
     }
 
     .longLogo { 
-        padding-left: 0.5em;
+        padding-left: 2.5em;
         img {
             height: 50px;
         }
