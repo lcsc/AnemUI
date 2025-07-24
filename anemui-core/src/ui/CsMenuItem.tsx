@@ -172,8 +172,6 @@ export class CsMenuItem extends BaseUiElement {
       }
     }
   }
-<<<<<<< Updated upstream
-=======
 
   // public selectFirstValidValue(): void {
   //   const firstValidIndex = this.values.findIndex(v => !v.startsWith("~") && !v.startsWith("-"));
@@ -181,7 +179,7 @@ export class CsMenuItem extends BaseUiElement {
   //     this.select(firstValidIndex);
   //   }
   // }
->>>>>>> Stashed changes
+
 }
 
 export class CsMenuInput extends BaseUiElement {
