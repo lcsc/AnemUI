@@ -16,12 +16,10 @@
     
     #info {
         display:flex;
-        // justify-content: center;
         align-items: center;
     }
     
     #inputs {
-        // flex-direction: row;
         #input1 {
             order: 1;
         }
@@ -74,18 +72,26 @@
 
     .col-title {
         float:left;
-        width: 90%;
+        width: 100%;
         #title {
             width: auto !important;
             text-decoration: none;
             color: $title_bgcolor;
-            font-size: 1.5em;
+            font-size: 1.0em;
             font-weight: 500;
             margin-bottom: 0px;
+<<<<<<< Updated upstream
             padding: 0.4rem;
+=======
+            padding: 0.3rem 0rem;
+>>>>>>> Stashed changes
         }
         @include desktop {
             width: 45%;
+            #title {
+                font-size: 1.2em;
+                padding: 0.7rem 1rem;
+            }
         }
 
         @include md-desktop {
@@ -156,8 +162,11 @@
     }
 
     #menu-central {
-        display:flex;
+        display:block;
         justify-content: end;
+        @include desktop {
+            display:flex;
+        }
     }
 
     .nav-menu {
@@ -228,11 +237,11 @@
     }
 
     @include desktop {
-        .navbar {
-            .longLogo, .shortLogo, .allScrLogo {
-                padding-left: 2.2rem;
-            }
+        
+        .longLogo, .shortLogo, .allScrLogo {
+            padding-left: 2.2rem;
         }
+        
 
         .allScrLogo img {
             height: 50px;
@@ -270,6 +279,10 @@
         // width: 97%;
         padding-top: 0em;
 
+        .longLogo, .shortLogo, .allScrLogo {
+            padding-left: 2.5rem;
+        }
+        
         #logo img {
             width: 120px;
             margin-left: 7%;
@@ -406,8 +419,9 @@ input.selection-param-input {
 // }
 
 .inputDiv .dpdown-menu li .dropdown-item.cs-disabled {
-    color: #999;
-    cursor: not-allowed;
+    // color: #999;
+    // cursor: not-allowed;
+    display: none;
 }
 
 .dpdown-menu ul {
