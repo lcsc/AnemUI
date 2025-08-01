@@ -103,7 +103,7 @@ export class CsGraph extends BaseFrame {
   }
 
   public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station: any = []) {
-    this.graphSubTitle = station.length != 0? ' - ' + station['name'] : '. ' +  this.parent.getTranslation('en_la_coordenada') + ' ' + latlng.lat.toFixed(2) + ' N ' + latlng.lng.toFixed(2) + ' E', 
+    this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E', 
     this.container.hidden = false;
     if (Object.keys(station).length != 0)  this.enableStationDwButton(station)
     else this.disableStationDwButton()
@@ -194,7 +194,7 @@ export class CsGraph extends BaseFrame {
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 3,
         delimiter: ";",
-        title: this.graphTitle + ' ' + this.parent.getTranslation('en_la_coordenada')  + ' [' + latlng.lat.toFixed(2) + ', ' + latlng.lng.toFixed(2) + ']',
+        title: this.graphTitle + ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E',
         ylabel: this.parent.getState().legendTitle,
         xlabel: dateText,
         showRangeSelector: true,
@@ -282,7 +282,7 @@ export class CsGraph extends BaseFrame {
           {
               labelsDiv: document.getElementById('labels'),
               digitsAfterDecimal: 3,
-              title: '<div>' + this.graphTitle + '</div><div style="font-size: 12px; padding: 0px 5px; white-space: nowrap;">'  + this.graphSubTitle +'</div>',
+              title: this.graphTitle + this.graphSubTitle,
               ylabel: this.yLabel,
               xlabel: this.xLabel,
               // Ajustar márgenes para evitar solapamiento del yLabel

@@ -44,11 +44,12 @@
     max-width: 250px;
     background: #ffffff00;
     position: fixed;
-    top: 7em;
+    top: 7rem; 
     z-index: 50;
     color: $color_4;
     transition: all 0.3s;
-
+    margin-top: 1rem;
+    
     ul {
         li {
             position: relative;
@@ -94,7 +95,6 @@
 
     #SideBarHeader {
         padding: 10px;
-        // background: $color_4;
         text-align: left;
 
         strong {
@@ -106,16 +106,6 @@
     ul.components {
         padding-bottom: 20px;
     }
-
-    /* .dropdown-toggle {
-        &::after {
-            display: block;
-            position: absolute;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%);
-        }
-    } */
 
     .selected {
         margin-left: 20px;
@@ -144,29 +134,45 @@
         position: fixed;
         bottom: 20px;
         left: 2%;
-        width: auto; /* Or specific dimensions as needed */
+        width: auto;
         max-width: 100%;
         img {
-            height: 5em;
+            height: 5rem; 
+        }
+    }
+
+    @include tablet {
+        top: 6rem;
+        min-width: 200px;
+        max-width: 200px;
+        margin-top: 0.5rem;
+        
+        #bottom-logos {
+            img {
+                height: 4rem;
+            }
         }
     }
 
     @include md-desktop {
-        top: 7em;
+        top: 7rem; 
+        margin-top: 1rem;
     }
 
     @include xl-desktop {
-        top: 8em;
+        top: 8rem; 
+        margin-top: 1rem;
     }
 }
 
 #RightBar {
     right: 1%;    
     text-align: right;
+    top: 7rem; 
+    margin-top: 1rem; 
 
     .rightbar-item {
         display: block;
-        // margin: 10px;
     }
     .paletteFrame{
         order: 1
@@ -174,15 +180,53 @@
     .downloadFrame{
         order:2
     }
+
+    @include tablet {
+        top: 6rem;
+        margin-top: 0.5rem;
+        right: 2%;
+    }
+
+    @include md-desktop {
+        top: 7rem;
+        margin-top: 1rem;
+    }
+
+    @include xl-desktop {
+        top: 8rem;
+        margin-top: 1rem;
+    }
+}
+
+#LeftBar {
+    left: 1%;
+    top: 7rem; 
+    margin-top: 1rem; 
+
+    @include tablet {
+        top: 6rem;
+        margin-top: 0.5rem;
+        left: 2%;
+    }
+
+    @include md-desktop {
+        top: 7rem;
+        margin-top: 1rem;
+    }
+
+    @include xl-desktop {
+        top: 8rem;
+        margin-top: 1rem;
+    }
 }
 
 @keyframes blink {
     0% { opacity: 1; }
     50% { opacity: 0; }
     100% { opacity: 1; }
-  }
+}
 
-  .blinking-text {
+.blinking-text {
     animation: blink 2s infinite;
 }
 
@@ -197,52 +241,41 @@ div.menu {
     right:0;
     margin-left:auto;
     margin-right:auto;
-    margin-top: 0em;
-    @include blurBgFrame(3em);
+    margin-top: 1rem; 
+    @include blurBgFrame(3rem);
 
     div.menu-container{
-        min-height: 1em;
+        min-height: 1rem; 
         max-width: fit-content;
-       // background-color: aquamarine;
     }
     div.menu-title {
-        min-height: 1em; // Reduce el valor si es mayor de lo necesario
-        padding: 0.5em 1em; // Ajusta para minimizar el espacio en blanco
+        min-height: 1rem; 
+        padding: 0.5rem 1rem; 
         background-color: $color_1;
     
-        // Opcional: Ajusta el espacio alrededor del texto si es necesario
         display: flex;
-        align-items: center; // Centra verticalmente el texto
-        justify-content: center; // Centra horizontalmente el texto
+        align-items: center;
+        justify-content: center;
     }
     
     button {
-        margin-left:10px
+        margin-left: 0.625rem; 
     }
     div.spinner-grow{
-        margin-top:2px;
-        margin-left:1em;
+        margin-top: 0.125rem; 
+        margin-left: 1rem;
+    }
+
+    @include tablet {
+        min-width: 60%;
+        margin-top: 0.5rem;
+    }
+
+    @include mobile {
+        min-width: 90%;
+        margin-top: 0.25rem;
     }
 }
-
-// .navbar {
-
-//     /// --------------- Versión transparente
-//     /* width: 98%;
-//     margin: 0px auto;
-//     background-color: transparent;
-//     border-bottom: 1px solid #fff; */
-//     /// --------------- Versión transparente
-    
-//     width: 100%;
-//     background-color: $color_4;
-//     border-bottom: 1px solid $border-color;
-//     justify-content: center;
-
-//     img {
-//         height: 50px;
-//     }
-// }
 
 .navbar-btn {
     box-shadow: none;
@@ -253,8 +286,6 @@ div.menu {
     color: $color_4 !important;
     border-radius: 50px;
     border-color: $color_4;
-    // box-shadow: 0.5px 1px 5px $color_3;
-    // margin-bottom: 0.5em;
 }
 
 .navbar-btn-title {
@@ -266,11 +297,9 @@ div.menu {
     border-left: none;
 }
 
-
 .navbar-btn:hover,
 .navbar-btn:focus,
-.navbar-btn:active
-{
+.navbar-btn:active {
     background-color: $color_6;
     color: $color_8;
     cursor: pointer;
@@ -313,12 +342,8 @@ div.menu {
 }
 
 #menu-title{
-<<<<<<< Updated upstream
-    min-height: 1em;
-=======
     padding: 0rem 0rem;
     min-height: 1rem; 
->>>>>>> Stashed changes
     background-color: $title_color;
     box-shadow: 0.5px 0.5px 3px $color_3;
     @include desktop { 
@@ -330,7 +355,7 @@ div.menu {
     width: 100%;
     height: 1px;
     border-bottom: 1px dashed $border-color;
-    margin: 40px 0;
+    margin: 2.5rem 0; 
 }
 
 .hide {
@@ -341,7 +366,6 @@ div.menu {
     display: flex;
     align-items: stretch;
 }
-
 
 .side-bar.active {
     min-width: 226px;
@@ -400,6 +424,10 @@ div.menu {
         }
     }
 
+    @include tablet {
+        min-width: 180px;
+        max-width: 180px;
+    }
 }
 
 a[aria-expanded="true"] {
@@ -455,38 +483,31 @@ a.article {
 }
 
 .container {
-    margin-top: 80px;
+    margin-top: 5rem; 
+
+    @include tablet {
+        margin-top: 4rem;
+    }
+
+    @include mobile {
+        margin-top: 3rem;
+    }
 }
 
 #SideBarCollapse {
     img {
-        width: 30;
+        width: 30px; 
         cursor: pointer;
     }
 }
 
 .no-wrap {
     flex-wrap: nowrap !important;
-
-    /* .input-group-text:last-child {
-        border-top-right-radius: 0.25rem;
-        border-bottom-right-radius: 0.25rem;
-    } */
 }
 
 .orange-nav {
     color: $color_7 !important;
 }
-
-/* #header {
-    height: 3.5em;
-    padding-top: 0.5em;
-}
-#header {
-    max-width: 42.5em;
-    width: 34em;
-    transition: .25s;
-} */
 
 .alone {
     padding: 1.2rem 0rem!important;
@@ -510,7 +531,11 @@ a.article {
     }
 
     #inputs {
-        margin: 1.2em auto;
+        margin: 1.2rem auto;
+    }
+
+    @include tablet {
+        width: 80% !important;
     }
 
     @include md-desktop {
@@ -521,11 +546,6 @@ a.article {
 #SubBar {
     display: inline-block !important;
     padding-top: 0.4rem;
-    // margin: 0px auto;
-
-    /* .input-group{
-        padding-top: 0.75em;
-    } */
 
     #info {
         padding-left: 0px;
@@ -535,15 +555,6 @@ a.article {
     .TopRightFrame {
         float: right;
     }
-
-    /* @include desktop {
-        width: 60%;
-    }
-
-    @include xl-desktop {
-        width: 60%;
-    } */
-
 }
 
 .Input-group-end {
@@ -557,21 +568,20 @@ ul .two-columns {
     -moz-columns: 2;
 }
 
-
 /* ---------------------------------------------------
     SELECTORES DE CAPAS
 ----------------------------------------------------- */
 
 div.row.selectDiv{
     width: 200px;
-    margin: 0.45em 0em;
+    margin: 0.45rem 0rem; 
 }
 
 .uncDiv input.form-check-input {
     visibility: visible;
     margin: 0px auto;
-    width: 4em !important;
-    height: 2em !important;
+    width: 4rem !important; 
+    height: 2rem !important;
     background-color: $color_8;
     box-shadow: 0.5px 0.5px 3px $color_3;
     cursor:pointer;
@@ -616,7 +626,7 @@ div.slider.visible {
 .closeDiv .icon {
     height: 30px;
     width: 30px;
-    font-size: 1.8em !important;
+    font-size: 1.8rem !important; 
     box-shadow: 0.5px 1px 5px $color_3;
     background-color: $color_8;
     color: $color_4 !important;
@@ -633,72 +643,52 @@ div.slider.visible {
     color: $color_8;
 }
 
-
 // ----------------- CHECKBOX
 .radio {
     width:100%;
-  margin: 0.5rem;
-  text-align: left;
-  font-size: 0.8em;
-  color: $color_3;
-  input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    + .radio-label {
-      &:before {
-        content: '';
-        background: $color_1;
-        border-radius: 100%;
-        border: 1px solid darken($color_1, 25%);
-        display: inline-block;
-        width: 1.1em;
-        height: 1.1em;
-        position: relative;
-        top: 0.25em;
-        margin-right: 0.6em !important; 
-        vertical-align: top;
+    margin: 0.5rem;
+    text-align: left;
+    font-size: 0.8rem; 
+    color: $color_3;
+    input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
         cursor: pointer;
-        text-align: left;
-        transition: all 250ms ease;
-      }
-    }
-    &:checked {
-      + .radio-label {
-        &:before {
-          background-color: $color_8;
-          box-shadow: inset 0 0 0 2px $color_1;
+        + .radio-label {
+            &:before {
+                content: '';
+                background: $color_1;
+                border-radius: 100%;
+                border: 1px solid darken($color_1, 25%);
+                display: inline-block;
+                width: 1.1rem; 
+                height: 1.1rem; 
+                position: relative;
+                top: 0.25rem; 
+                margin-right: 0.6rem !important; 
+                vertical-align: top;
+                cursor: pointer;
+                text-align: left;
+                transition: all 250ms ease;
+            }
         }
-      }
-    }
-   /*  &:focus {
-      + .radio-label {
-        &:before {
-          outline: none;
-          border-color: $color_8;
+        &:checked {
+            + .radio-label {
+                &:before {
+                    background-color: $color_8;
+                    box-shadow: inset 0 0 0 2px $color_1;
+                }
+            }
         }
-      }
-    }
-    &:disabled {
-      + .radio-label {
-        &:before {
-          box-shadow: inset 0 0 0 4px $color_1;
-          border-color: darken($color_1, 25%);
-          background: darken($color_1, 25%);
+        + .radio-label {
+            &:empty {
+                &:before {
+                    margin-right: 0;
+                }
+            }
         }
-      }
-    } */
-    + .radio-label {
-      &:empty {
-        &:before {
-          margin-right: 0;
-        }
-      }
     }
-  }
 }
-
-// -------------------------------- SELECTORES DE CAPAS
 
 /* ---------------------------------------------------
     ESTILOS POPOVERS
@@ -708,9 +698,21 @@ div.slider.visible {
     max-width: 40% !important;
     background-color: $color_8;
     border-color: $color_4;
-    font-size: 12px;
-    margin-left: 20px !important;
+    font-size: 0.75rem; 
+    margin-left: 1.25rem !important;
     z-index: 1500;
+
+    @include tablet {
+        max-width: 60% !important;
+        font-size: 0.875rem;
+        margin-left: 1rem !important;
+    }
+
+    @include mobile {
+        max-width: 90% !important;
+        font-size: 1rem;
+        margin-left: 0.5rem !important;
+    }
 }
 
 .popover-header {
@@ -728,7 +730,12 @@ div.slider.visible {
         max-width: 80px;
         text-align: center;
         margin-left: -80px !important;
-        margin-left: 0;
+        top: 5rem;
+        margin-top: 0.5rem;
+
+        &.active {
+            margin-left: 0 !important;
+        }
 
         .dropdown-toggle {
             &::after {
@@ -761,13 +768,13 @@ div.slider.visible {
                     padding: 20px 10px;
 
                     span {
-                        font-size: 0.85em;
+                        font-size: 0.85rem; 
                     }
 
                     i {
                         margin-right: 0;
                         display: block;
-                        font-size: 1.3em;
+                        font-size: 1.3rem;
                     }
                 }
             }
@@ -778,10 +785,21 @@ div.slider.visible {
                 }
             }
         }
+
+        #bottom-logos {
+            img {
+                height: 3rem;
+            }
+        }
     }
 
-    .side-bar.active {
-        margin-left: 0 !important;
+    #RightBar, #LeftBar {
+        top: 5rem;
+        margin-top: 0.5rem;
+    }
+
+    .container {
+        margin-top: 2rem;
     }
 
     #SideBarCollapse {

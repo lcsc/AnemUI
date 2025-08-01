@@ -80,11 +80,7 @@
             font-size: 1.0em;
             font-weight: 500;
             margin-bottom: 0px;
-<<<<<<< Updated upstream
-            padding: 0.4rem;
-=======
             padding: 0.3rem 0rem;
->>>>>>> Stashed changes
         }
         @include desktop {
             width: 45%;
@@ -136,7 +132,7 @@
     }
 
     .longLogo { 
-        padding-left: 0.5em;
+        padding-left: 2.5em;
         img {
             height: 50px;
         }
