@@ -9,9 +9,8 @@ div.DateSelectorFrame.small{
 
 div.DateSelectorFrame{
     // @include blurBgFrame();
-    @include bgFrame();
-    width: 60%;
-
+    @include mbBgFrame();
+    width: 90%;
     left:0;
     right:0;
     bottom: 0.25em;
@@ -89,12 +88,30 @@ div.DateSelectorFrame{
     div.tooltip{
         max-width: fit-content;
     }
+
+    @include desktop {
+        @include bgFrame();
+        width: 60%;
+    }
+
+    // @include md-desktop {
+    //     width: 40%;
+    //     #title {
+    //         font-size: 1.5em;
+    //         font-weight: 600;
+    //     }
+    // }
 }
 
 .datepicker {
     border-radius: 0.5em!important;
     color: $title_color;
     background-color: $title_bgcolor;
+    position: fixed !important;
+    // top: 70% !important;
+    left: 50% !important;
+    transform: translate(-50%, 0%) !important;
+    display: block !important;
 }
 
 .datepicker table tr td, .datepicker table tr th {

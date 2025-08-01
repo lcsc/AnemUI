@@ -823,24 +823,33 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public enableRenderer(rd:number[]){
+        console.log('* -------> disableRenderers')
+        console.log(renderers)
         rd.forEach( i => {
             if(renderers[i].startsWith("~")){
                 renderers[i]=renderers[i].substring(1)
             }
         } )
+        console.log(renderers)
     }
 
     public disableRenderer(i:number){
+        console.log('* -------> disableRenderers')
+        console.log(renderers)
         if(! renderers[i].startsWith("~")){
             renderers[i]="~"+renderers[i];
         }
+        console.log(renderers)
     }
 
     public removeRenderer(i:number){
+        console.log('* -------> removeRenderers')
+        console.log(renderers)
         if(! renderers[i].startsWith("-")){
             renderers[i]=renderers[i].substring(1)
         }
         renderers[i]="-"+renderers[i];
+        console.log(renderers)
     }
 
     public getFolders(rendererName: string): string[] {

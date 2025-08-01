@@ -342,9 +342,13 @@ div.menu {
 }
 
 #menu-title{
+    padding: 0rem 0rem;
     min-height: 1rem; 
     background-color: $title_color;
     box-shadow: 0.5px 0.5px 3px $color_3;
+    @include desktop { 
+        padding: 0rem 1.5rem;
+    }
 }
 
 .line {

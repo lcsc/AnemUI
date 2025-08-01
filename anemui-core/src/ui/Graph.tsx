@@ -134,7 +134,7 @@ export class CsGraph extends BaseFrame {
         graph = this.drawWindRoseGraph(data, latlng);
         break;
     }
-    if (this.scaleSelectors) this.addScaleSelectors(graph)
+    // if (this.scaleSelectors) this.addScaleSelectors(graph)
     this.parent.completeGraph(graph, data);
   }
 
@@ -274,6 +274,7 @@ export class CsGraph extends BaseFrame {
     return graph;
   }
 
+<<<<<<< Updated upstream
     public drawLinearGraph(url: string, station: any): Dygraph {
       var graph = new Dygraph(
           document.getElementById("popGraph"),
@@ -312,6 +313,114 @@ export class CsGraph extends BaseFrame {
                   }
               },
           }
+=======
+  //   public drawLinearGraph(url: string, station: any): Dygraph {
+  //     var graph = new Dygraph(
+  //         document.getElementById("popGraph"),
+  //         url,
+  //         {
+  //             labelsDiv: document.getElementById('labels'),
+  //             digitsAfterDecimal: 1,
+  //             title: this.graphTitle + this.graphSubTitle,
+  //             ylabel: this.yLabel,
+  //             xlabel: this.xLabel,
+  //             // Ajustar márgenes para evitar solapamiento del yLabel
+  //             axes: {
+  //                 y: {
+  //                     axisLabelWidth: 80, // Aumentar el ancho reservado para la etiqueta del eje Y
+  //                     axisLabelFontSize: 12,
+  //                 },
+  //                 x: {
+  //                     axisLabelFontSize: 12,
+  //                 }
+  //             },
+  //             // Márgenes del gráfico
+  //             rightGap: 20,
+  //             yRangePad: 10, 
+  //             series: {
+  //                 'fit': { 
+  //                     color: "#aa3311",
+  //                     strokeWidth: 2
+  //                 },
+  //                 'lwr': { 
+  //                     color: "#454545",
+  //                     strokePattern: Dygraph.DASHED_LINE
+  //                 },
+  //                 'upr': { 
+  //                     color: "#454545",
+  //                     strokePattern: Dygraph.DASHED_LINE
+  //                 }
+  //             },
+  //         }
+  //     );
+
+  //     // this.addScaleSelectors(graph)
+      
+  //     return graph;
+  // }
+
+  public drawLinearGraph(url: string, station: any): Dygraph {
+    var graph = new Dygraph(
+        document.getElementById("popGraph"),
+        url,
+        {
+            labelsDiv: document.getElementById('labels'),
+            digitsAfterDecimal: 1,
+            title: this.graphTitle + this.graphSubTitle,
+            ylabel: this.yLabel,
+            xlabel: this.xLabel,
+            // Ajustar márgenes para evitar solapamiento del yLabel
+            axes: {
+                y: {
+                    axisLabelWidth: 80,
+                    axisLabelFontSize: 12,
+                    // Formatear números del eje Y
+                    axisLabelFormatter: (y: number | Date) => {
+                        if (typeof y === 'number') {
+                            return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+                        }
+                        return (y as Date).toLocaleDateString();
+                    }
+                },
+                x: {
+                    axisLabelFontSize: 12,
+                    // Formatear números del eje X
+                    axisLabelFormatter: (x: number | Date) => {
+                        if (typeof x === 'number') {
+                            return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+                        }
+                        return (x as Date).toLocaleDateString();
+                    }
+                }
+            },
+            // Formatear valores en general
+            valueFormatter: (y: number | Date) => {
+                if (typeof y === 'number') {
+                    return parseFloat(y.toFixed(3)).toString().replace('.', ',');
+                }
+                return (y as Date).toLocaleDateString();
+            },
+            // Márgenes del gráfico
+            rightGap: 20,
+            yRangePad: 10,
+            // Controlar la altura del eje X
+            xAxisHeight: 30,
+            series: {
+                'fit': { 
+                    color: "#aa3311",
+                    strokeWidth: 2
+                },
+                'lwr': { 
+                    color: "#454545",
+                    strokePattern: Dygraph.DASHED_LINE
+                },
+                'upr': { 
+                    color: "#454545",
+                    strokePattern: Dygraph.DASHED_LINE
+                }
+            },
+        }
+>>>>>>> Stashed changes
       );
 
       // this.addScaleSelectors(graph)
@@ -364,144 +473,345 @@ export class CsGraph extends BaseFrame {
     return undefined
   }
 
-  private addScaleSelectors(graph: Dygraph): void {
-    // Buscar si ya existe el contenedor de selectores
-    let existingContainer = document.getElementById('scaleSelectorsContainer');
-    if (existingContainer) {
-        existingContainer.remove();
-    }
+//   private addScaleSelectors(graph: Dygraph): void {
+//     // Buscar si ya existe el contenedor de selectores
+//     let existingContainer = document.getElementById('scaleSelectorsContainer');
+//     if (existingContainer) {
+//         existingContainer.remove();
+//     }
 
-    // Crear el contenedor principal
-    const mainContainer = document.createElement('div');
-    mainContainer.id = 'scaleSelectorsContainer';
+//     // Crear el contenedor principal
+//     const mainContainer = document.createElement('div');
+//     mainContainer.id = 'scaleSelectorsContainer';
     
-    // Crear selector para eje X
-    const xContainer = this.createAxisSelector('x', 'Eje X (años)');
-    mainContainer.appendChild(xContainer);
+//     // Crear selector para eje X
+//     const xContainer = this.createAxisSelector('x', 'Eje X (años)');
+//     mainContainer.appendChild(xContainer);
     
-    // Crear selector para eje Y
-    const yContainer = this.createAxisSelector('y', 'Eje Y (valores)');
-    mainContainer.appendChild(yContainer);
+//     // Crear selector para eje Y
+//     const yContainer = this.createAxisSelector('y', 'Eje Y (valores)');
+//     mainContainer.appendChild(yContainer);
     
-    // Insertar el contenedor antes del gráfico
-    const graphContainer = document.getElementById("popGraph");
-    if (graphContainer && graphContainer.parentNode) {
-        graphContainer.parentNode.insertBefore(mainContainer, graphContainer);
-    }
+//     // Insertar el contenedor antes del gráfico
+//     const graphContainer = document.getElementById("popGraph");
+//     if (graphContainer && graphContainer.parentNode) {
+//         graphContainer.parentNode.insertBefore(mainContainer, graphContainer);
+//     }
     
-    // Agregar eventos para cambiar las escalas
-    this.attachScaleEvents(graph);
-  }
+//     // Agregar eventos para cambiar las escalas
+//     this.attachScaleEvents(graph);
+//   }
 
-  private createAxisSelector(axis: 'x' | 'y', labelText: string): HTMLElement {
-    const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.gap = '8px';
+//   private createAxisSelector(axis: 'x' | 'y', labelText: string): HTMLElement {
+//     const container = document.createElement('div');
+//     container.style.display = 'flex';
+//     container.style.alignItems = 'center';
+//     container.style.gap = '8px';
     
-    const label = document.createElement('label');
-    label.textContent = labelText + ': ';
-    label.style.fontWeight = 'bold';
-    label.style.minWidth = '100px';
+//     const label = document.createElement('label');
+//     label.textContent = labelText + ': ';
+//     label.style.fontWeight = 'bold';
+//     label.style.minWidth = '100px';
     
-    const select = document.createElement('select');
-    select.id = `${axis}ScaleSelect`;
-    select.style.padding = '4px 8px';
-    select.style.border = '1px solid #ccc';
-    select.style.borderRadius = '4px';
+//     const select = document.createElement('select');
+//     select.id = `${axis}ScaleSelect`;
+//     select.style.padding = '4px 8px';
+//     select.style.border = '1px solid #ccc';
+//     select.style.borderRadius = '4px';
     
-    // Opciones del selector
-    const linearOption = document.createElement('option');
-    linearOption.value = 'linear';
-    linearOption.textContent = 'Lineal';
-    linearOption.selected = true;
+//     // Opciones del selector
+//     const linearOption = document.createElement('option');
+//     linearOption.value = 'linear';
+//     linearOption.textContent = 'Lineal';
+//     linearOption.selected = true;
     
-    const logOption = document.createElement('option');
-    logOption.value = 'logarithmic';
-    logOption.textContent = 'Logarítmica';
+//     const logOption = document.createElement('option');
+//     logOption.value = 'logarithmic';
+//     logOption.textContent = 'Logarítmica';
     
-    select.appendChild(linearOption);
-    select.appendChild(logOption);
+//     select.appendChild(linearOption);
+//     select.appendChild(logOption);
     
-    container.appendChild(label);
-    container.appendChild(select);
+//     container.appendChild(label);
+//     container.appendChild(select);
     
-    return container;
-  }
+//     return container;
+//   }
 
-  private attachScaleEvents(graph: Dygraph): void {
-    // Evento para eje X
-    const xSelect = document.getElementById('xScaleSelect') as HTMLSelectElement;
-    if (xSelect) {
-        xSelect.addEventListener('change', (event) => {
-            const target = event.target as HTMLSelectElement;
-            const ySelect = document.getElementById('yScaleSelect') as HTMLSelectElement;
-            this.updateGraphScale(graph, target.value === 'logarithmic', ySelect?.value === 'logarithmic');
-        });
-    }
+//   private attachScaleEvents(graph: Dygraph): void {
+//     // Evento para eje X
+//     const xSelect = document.getElementById('xScaleSelect') as HTMLSelectElement;
+//     if (xSelect) {
+//         xSelect.addEventListener('change', (event) => {
+//             const target = event.target as HTMLSelectElement;
+//             const ySelect = document.getElementById('yScaleSelect') as HTMLSelectElement;
+//             this.updateGraphScale(graph, target.value === 'logarithmic', ySelect?.value === 'logarithmic');
+//         });
+//     }
     
-    // Evento para eje Y
-    const ySelect = document.getElementById('yScaleSelect') as HTMLSelectElement;
-    if (ySelect) {
-        ySelect.addEventListener('change', (event) => {
-            const target = event.target as HTMLSelectElement;
-            const xSelect = document.getElementById('xScaleSelect') as HTMLSelectElement;
-            this.updateGraphScale(graph, xSelect?.value === 'logarithmic', target.value === 'logarithmic');
-        });
-    }
-  }
+//     // Evento para eje Y
+//     const ySelect = document.getElementById('yScaleSelect') as HTMLSelectElement;
+//     if (ySelect) {
+//         ySelect.addEventListener('change', (event) => {
+//             const target = event.target as HTMLSelectElement;
+//             const xSelect = document.getElementById('xScaleSelect') as HTMLSelectElement;
+//             this.updateGraphScale(graph, xSelect?.value === 'logarithmic', target.value === 'logarithmic');
+//         });
+//     }
+//   }
 
-  private updateGraphScale(graph: Dygraph, xLogScale: boolean, yLogScale: boolean): void {
-    // Configurar las opciones de los ejes
-    const axesOptions: any = {};
+//   private updateGraphScale(graph: Dygraph, xLogScale: boolean, yLogScale: boolean): void {
+//     // Configuración de ejes (mismo código anterior)
+//     const axesOptions: any = {};
     
-    // Configuración eje X
-    axesOptions.x = {
-        logscale: xLogScale,
-        valueFormatter: (num: number, opts: any, seriesName: string, dygraph: any, row: number, col: number) => {
-            if (xLogScale) {
-                // Para escala logarítmica en X, mostrar años como enteros
-                return Math.round(num).toString();
-            }
-            return Math.round(num).toString();
-        }
-    };
+//     axesOptions.x = {
+//         logscale: xLogScale,
+//         axisLabelFontSize: 12,
+//         axisLabelFormatter: (x: number | Date) => {
+//             if (typeof x === 'number') {
+//                 if (xLogScale) {
+//                     return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+//                 }
+//                 return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+//             }
+//             return (x as Date).toLocaleDateString();
+//         }
+//     };
     
-    // Configuración eje Y
-    axesOptions.y = {
-        logscale: yLogScale,
-        valueFormatter: (num: number, opts: any, seriesName: string, dygraph: any, row: number, col: number) => {
-            if (yLogScale) {
-                // Formato para escala logarítmica en Y
-                if (Math.abs(num) >= 1000000 || (Math.abs(num) < 0.001 && num !== 0)) {
-                    return num.toExponential(2);
-                }
-                return num.toFixed(3);
-            }
-            return num.toFixed(3);
-        }
-    };
+//     axesOptions.y = {
+//         logscale: yLogScale,
+//         axisLabelWidth: 80,
+//         axisLabelFontSize: 12,
+//         axisLabelFormatter: (y: number | Date) => {
+//             if (typeof y === 'number') {
+//                 if (yLogScale) {
+//                     if (Math.abs(y) >= 1000000 || (Math.abs(y) < 0.001 && y !== 0)) {
+//                         return y.toExponential(2);
+//                     }
+//                     return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+//                 }
+//                 return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+//             }
+//             return (y as Date).toLocaleDateString();
+//         }
+//     };
+    
+//     // Obtener punto personalizado y callback del manager
+//     const pointManager = GraphPointManager.getInstance();
+//     const customPoint = pointManager.getCustomPoint();
+//     const drawCallback = pointManager.getDrawCallback();
+    
+//     const updateOptions: any = {
+//         axes: axesOptions,
+//         valueFormatter: (num: number | Date) => {
+//             if (typeof num === 'number') {
+//                 if (yLogScale && Math.abs(num) >= 1000000 || (Math.abs(num) < 0.001 && num !== 0)) {
+//                     return num.toExponential(2);
+//                 }
+//                 return parseFloat(num.toFixed(3)).toString().replace('.', ',');
+//             }
+//             return (num as Date).toLocaleDateString();
+//         }
+//     };
+    
+//     // Si existe un punto personalizado, recrear el underlayCallback
+//     if (customPoint && drawCallback) {
+//         updateOptions.underlayCallback = function(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph) {
+//             setTimeout(() => {
+//                 drawCallback(canvas, area, dygraph, customPoint);
+//             }, 1);
+//         };
+//     }
+    
+//     graph.updateOptions(updateOptions);
+// }
+
+  // private updateGraphScale(graph: Dygraph, xLogScale: boolean, yLogScale: boolean): void {
+  //   // Configurar las opciones de los ejes
+  //   const axesOptions: any = {};
+    
+  //   // Configuración eje X
+  //   axesOptions.x = {
+  //       logscale: xLogScale,
+  //       valueFormatter: (num: number, opts: any, seriesName: string, dygraph: any, row: number, col: number) => {
+  //           if (xLogScale) {
+  //               // Para escala logarítmica en X, mostrar años como enteros
+  //               return Math.round(num).toString();
+  //           }
+  //           return Math.round(num).toString();
+  //       }
+  //   };
+    
+  //   // Configuración eje Y
+  //   axesOptions.y = {
+  //       logscale: yLogScale,
+  //       valueFormatter: (num: number, opts: any, seriesName: string, dygraph: any, row: number, col: number) => {
+  //           if (yLogScale) {
+  //               // Formato para escala logarítmica en Y
+  //               if (Math.abs(num) >= 1000000 || (Math.abs(num) < 0.001 && num !== 0)) {
+  //                   return num.toExponential(2);
+  //               }
+  //               return num.toFixed(3);
+  //           }
+  //           return num.toFixed(3);
+  //       }
+  //   };
+    
+  //   // Actualizar el gráfico
+  //   graph.updateOptions({
+  //       axes: axesOptions,
+  //       // Formatter global para la tabla de valores
+  //       valueFormatter: (num: number, opts: any, seriesName: string, dygraph: any, row: number, col: number) => {
+  //           if (seriesName === 'years') {
+  //               return Math.round(num).toString();
+  //           }
+            
+  //           // Usar formato apropiado según si Y está en escala log
+  //           if (yLogScale) {
+  //               if (Math.abs(num) >= 1000000 || (Math.abs(num) < 0.001 && num !== 0)) {
+  //                   return num.toExponential(2);
+  //               }
+  //               return num.toFixed(3);
+  //           }
+  //           return num.toFixed(3);
+  //       }
+  //   });
+  // }
+
+  
+  // private updateGraphScale(graph: Dygraph, xLogScale: boolean, yLogScale: boolean): void {
+  //   // Configurar las opciones de los ejes
+  //   const axesOptions: any = {};
+    
+  //   // Configuración eje X
+  //   axesOptions.x = {
+  //       logscale: xLogScale,
+  //       axisLabelFontSize: 12,
+  //       axisLabelFormatter: (x: number | Date) => {
+  //           if (typeof x === 'number') {
+  //               if (xLogScale) {
+  //                   // Para escala logarítmica en X, mostrar años con más precisión
+  //                   return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+  //               }
+  //               return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+  //           }
+  //           return (x as Date).toLocaleDateString();
+  //       }
+  //   };
+    
+  //   // Configuración eje Y
+  //   axesOptions.y = {
+  //       logscale: yLogScale,
+  //       axisLabelWidth: 80,
+  //       axisLabelFontSize: 12,
+  //       axisLabelFormatter: (y: number | Date) => {
+  //           if (typeof y === 'number') {
+  //               if (yLogScale) {
+  //                   // Formato para escala logarítmica en Y
+  //                   if (Math.abs(y) >= 1000000 || (Math.abs(y) < 0.001 && y !== 0)) {
+  //                       return y.toExponential(2);
+  //                   }
+  //                   return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+  //               }
+  //               return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+  //           }
+  //           return (y as Date).toLocaleDateString();
+  //       }
+  //   };
     
     // Actualizar el gráfico
-    graph.updateOptions({
-        axes: axesOptions,
-        // Formatter global para la tabla de valores
-        valueFormatter: (num: number, opts: any, seriesName: string, dygraph: any, row: number, col: number) => {
-            if (seriesName === 'years') {
-                return Math.round(num).toString();
-            }
-            
-            // Usar formato apropiado según si Y está en escala log
-            if (yLogScale) {
-                if (Math.abs(num) >= 1000000 || (Math.abs(num) < 0.001 && num !== 0)) {
-                    return num.toExponential(2);
-                }
-                return num.toFixed(3);
-            }
-            return num.toFixed(3);
-        }
-    });
-  }
+  //   graph.updateOptions({
+  //       axes: axesOptions,
+  //       // Formatter global para tooltips y leyendas
+  //       valueFormatter: (num: number | Date) => {
+  //           if (typeof num === 'number') {
+  //               // Usar formato apropiado según si Y está en escala log
+  //               if (yLogScale && Math.abs(num) >= 1000000 || (Math.abs(num) < 0.001 && num !== 0)) {
+  //                   return num.toExponential(2);
+  //               }
+  //               return parseFloat(num.toFixed(3)).toString().replace('.', ',');
+  //           }
+  //           return (num as Date).toLocaleDateString();
+  //       }
+  //   });
+    
+  //   // IMPORTANTE: Forzar el redibujado del gráfico para que se actualice el punto personalizado
+  //   graph.resize();
+  // }
+
+//   private customPointData: {x: number, y: number} | null = null;
+//   private currentGraph: Dygraph | null = null;
+
+//   private updateGraphScale(graph: Dygraph, xLogScale: boolean, yLogScale: boolean): void {
+//     // Configurar las opciones de los ejes
+//     const axesOptions: any = {};
+    
+//     // Configuración eje X
+//     axesOptions.x = {
+//         logscale: xLogScale,
+//         axisLabelFontSize: 12,
+//         axisLabelFormatter: (x: number | Date) => {
+//             if (typeof x === 'number') {
+//                 if (xLogScale) {
+//                     // Para escala logarítmica en X, mostrar años con más precisión
+//                     return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+//                 }
+//                 return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+//             }
+//             return (x as Date).toLocaleDateString();
+//         }
+//     };
+    
+//     // Configuración eje Y
+//     axesOptions.y = {
+//         logscale: yLogScale,
+//         axisLabelWidth: 80,
+//         axisLabelFontSize: 12,
+//         axisLabelFormatter: (y: number | Date) => {
+//             if (typeof y === 'number') {
+//                 if (yLogScale) {
+//                     // Formato para escala logarítmica en Y
+//                     if (Math.abs(y) >= 1000000 || (Math.abs(y) < 0.001 && y !== 0)) {
+//                         return y.toExponential(2);
+//                     }
+//                     return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+//                 }
+//                 return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+//             }
+//             return (y as Date).toLocaleDateString();
+//         }
+//     };
+    
+//     // Actualizar el gráfico
+//     graph.updateOptions({
+//         axes: axesOptions,
+//         // Formatter global para tooltips y leyendas
+//         valueFormatter: (num: number | Date) => {
+//             if (typeof num === 'number') {
+//                 // Usar formato apropiado según si Y está en escala log
+//                 if (yLogScale && Math.abs(num) >= 1000000 || (Math.abs(num) < 0.001 && num !== 0)) {
+//                     return num.toExponential(2);
+//                 }
+//                 return parseFloat(num.toFixed(3)).toString().replace('.', ',');
+//             }
+//             return (num as Date).toLocaleDateString();
+//         }
+//     });
+    
+//     // SOLUCIÓN ALTERNATIVA: Usar requestAnimationFrame para asegurar el redibujado
+//     // Esto permite que Dygraph complete todos sus cálculos internos antes del redibujado
+//     requestAnimationFrame(() => {
+//         // Forzar redibujado completo
+//         graph.resize();
+        
+//         // Como alternativa adicional, también puedes forzar un evento de redimensionado
+//         // que hace que Dygraph recalcule todas las coordenadas
+//         const resizeEvent = new Event('resize');
+//         window.dispatchEvent(resizeEvent);
+//     });
+// }
+
+
 
   // Versión alternativa con checkboxes en lugar de dropdowns
   private createScaleSelectorsCheckbox(graph: Dygraph): void {
@@ -566,12 +876,12 @@ export class CsGraph extends BaseFrame {
     // Eventos para los checkboxes
     xCheckbox.addEventListener('change', (event) => {
         const target = event.target as HTMLInputElement;
-        this.updateGraphScale(graph, target.checked, yCheckbox.checked);
+        // this.updateGraphScale(graph, target.checked, yCheckbox.checked);
     });
     
     yCheckbox.addEventListener('change', (event) => {
         const target = event.target as HTMLInputElement;
-        this.updateGraphScale(graph, xCheckbox.checked, target.checked);
+        // this.updateGraphScale(graph, xCheckbox.checked, target.checked);
     });
   }
 
@@ -625,5 +935,37 @@ function parseDate(input: string) { //"28/10/50"
     return Date.UTC(year, month - 1, day);
   } else {
     return null;
+  }
+}
+
+// Clase o módulo compartido para almacenar el estado del punto
+export class GraphPointManager {
+  private static instance: GraphPointManager;
+  private customPoint: {x: number, y: number} | null = null;
+  private drawCallback: Function | null = null;
+  
+  public static getInstance(): GraphPointManager {
+      if (!GraphPointManager.instance) {
+          GraphPointManager.instance = new GraphPointManager();
+      }
+      return GraphPointManager.instance;
+  }
+  
+  public setCustomPoint(x: number, y: number, drawCallback: Function): void {
+      this.customPoint = {x, y};
+      this.drawCallback = drawCallback;
+  }
+  
+  public getCustomPoint(): {x: number, y: number} | null {
+      return this.customPoint;
+  }
+  
+  public getDrawCallback(): Function | null {
+      return this.drawCallback;
+  }
+  
+  public clearCustomPoint(): void {
+      this.customPoint = null;
+      this.drawCallback = null;
   }
 }

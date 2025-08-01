@@ -37,6 +37,7 @@ export class MenuBar extends BaseFrame {
     private titleDiv: HTMLElement
     private collapseMenu: HTMLElement
     private navMenu: HTMLElement
+    private logoMap: HTMLElement
 
     private displaySpSupport: HTMLDivElement
     private displayTpSupport: HTMLDivElement
@@ -59,6 +60,7 @@ export class MenuBar extends BaseFrame {
     private extraMenuItems: CsMenuItem[];
     private extraMenuInputs: CsMenuInput[];
     private dropDownOrder: string[]
+    private logoMaps:string[]
 
     private popData: any;
     private extraBtns: BaseUiElement[];
@@ -157,13 +159,10 @@ export class MenuBar extends BaseFrame {
                     <div className={"navbar " + logoStyle}>
                         <img src={'./images/'+logo} useMap="#LogoMap"></img>
                         <map id="LogoMap">
-                            <area shape="rect" coords="0,0,280,50" alt="csic" href="https://www.csic.es/es" target="_blank"></area>
-                            <area shape="rect" coords="300,0,500,50" alt="plan_recuepracion" href="https://planderecuperacion.gob.es/" target="_blank"></area>
-                            <area shape="rect" coords="510,0,670,50" alt="next_generation" href="https://next-generation-eu.europa.eu/index_en" target="_blank"></area>
-                            <area shape="rect" coords="680,0,730,350" alt="lcsc" href="https://lcsc.csic.es/es/lcsc/" target="_blank"></area>
+                            
                         </map>
                     </div>
-                    <div id="menu-title" className="menu-info text-left row mx-0 px-4">
+                    <div id="menu-title" className="menu-info text-left row mx-0git status">
                         <div className="col-title">
                             <h3 id="title">{this.title}</h3>
                         </div>
@@ -198,9 +197,10 @@ export class MenuBar extends BaseFrame {
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
-        this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
+        // this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
         this.collapseMenu = document.querySelector(".collapse-menu");
         this.navMenu = document.querySelector(".nav-menu");
+        this.logoMap = document.getElementById('LogoMap') as HTMLElement;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
 
@@ -293,13 +293,55 @@ export class MenuBar extends BaseFrame {
                 this.changeInputOrder()
             }
         }
-
+        this.setupMobileDropdowns();
+        this.buildLogoMaps();
         
     }
 
     public mobileMenu() {
         this.collapseMenu.classList.toggle("active");
         this.navMenu.classList.toggle("active");
+    }
+
+    private setupMobileDropdowns(): void {
+        // Solo para móvil
+        if (window.innerWidth <= 768) {
+            document.addEventListener('click', (e) => {
+                const button = (e.target as HTMLElement).closest('.dpdown-button');
+                if (button) {
+                    e.preventDefault();
+                    const parent = button.closest('.inputDiv');
+                    // Cerrar otros
+                    document.querySelectorAll('.inputDiv.active').forEach(el => {
+                        if (el !== parent) el.classList.remove('active');
+                    });
+                    // Toggle actual
+                    parent?.classList.toggle('active');
+                } else if (!(e.target as HTMLElement).closest('.inputDiv')) {
+                    // Cerrar todos si click fuera
+                    document.querySelectorAll('.inputDiv.active').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                }
+            });
+        }
+    }
+
+    public setLogoMaps(_logoMaps:string[]){
+        this.logoMaps = _logoMaps
+    }
+
+    public buildLogoMaps(){
+        this.logoMaps.forEach((logoMap) => {
+            let attrs = logoMap.split('-')
+            const area = document.createElement('area');
+            area.shape = 'rect';
+            area.coords = attrs[0];
+            area.alt = attrs[1];
+            area.href = attrs[2];
+            area.target = '_blank';
+            this.logoMap.appendChild(area);
+        });
     }
 
     public minimize(): void {
