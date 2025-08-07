@@ -274,46 +274,6 @@ export class CsGraph extends BaseFrame {
     return graph;
   }
 
-<<<<<<< Updated upstream
-    public drawLinearGraph(url: string, station: any): Dygraph {
-      var graph = new Dygraph(
-          document.getElementById("popGraph"),
-          url,
-          {
-              labelsDiv: document.getElementById('labels'),
-              digitsAfterDecimal: 3,
-              title: this.graphTitle + this.graphSubTitle,
-              ylabel: this.yLabel,
-              xlabel: this.xLabel,
-              // Ajustar márgenes para evitar solapamiento del yLabel
-              axes: {
-                  y: {
-                      axisLabelWidth: 80, // Aumentar el ancho reservado para la etiqueta del eje Y
-                      axisLabelFontSize: 12,
-                  },
-                  x: {
-                      axisLabelFontSize: 12,
-                  }
-              },
-              // Márgenes del gráfico
-              rightGap: 20,
-              yRangePad: 10, 
-              series: {
-                  'fit': { 
-                      color: "#aa3311",
-                      strokeWidth: 2
-                  },
-                  'lwr': { 
-                      color: "#454545",
-                      strokePattern: Dygraph.DASHED_LINE
-                  },
-                  'upr': { 
-                      color: "#454545",
-                      strokePattern: Dygraph.DASHED_LINE
-                  }
-              },
-          }
-=======
   //   public drawLinearGraph(url: string, station: any): Dygraph {
   //     var graph = new Dygraph(
   //         document.getElementById("popGraph"),
@@ -420,7 +380,6 @@ export class CsGraph extends BaseFrame {
                 }
             },
         }
->>>>>>> Stashed changes
       );
 
       // this.addScaleSelectors(graph)
