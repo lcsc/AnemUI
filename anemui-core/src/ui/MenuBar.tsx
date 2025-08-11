@@ -128,6 +128,7 @@ export class MenuBar extends BaseFrame {
         this.extraMenuInputs = []
         this.extraBtns = []
         this.dropDownOrder = []
+        this.logoMaps = []
     }
 
     public setTitle(_title: string) {
@@ -332,6 +333,9 @@ export class MenuBar extends BaseFrame {
     }
 
     public buildLogoMaps(){
+        if (!this.logoMaps || this.logoMaps.length === 0 || !this.logoMap) {
+            return;
+        }
         this.logoMaps.forEach((logoMap) => {
             let attrs = logoMap.split('-')
             const area = document.createElement('area');
