@@ -24,11 +24,11 @@ if(fs.existsSync(viewerAssets)){
 }
 
 const copyPatterns=[
-  { from: assetsPath, to: moduleConfig.distPath },
+  { from: assetsPath, to: moduleConfig.distPath, noErrorOnMissing: true },
 ];
 
 if(viewerAssets!=undefined) {
-  copyPatterns.push({ from: viewerAssets, to: moduleConfig.distPath })
+  copyPatterns.push({ from: viewerAssets, to: moduleConfig.distPath, noErrorOnMissing: true })
 }
 
 
