@@ -75,20 +75,34 @@ const base={
     path:moduleConfig.distPath,
   },
   resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+    modules: [
+      path.resolve(__dirname, 'node_modules'),
+      'node_modules',
+    ],
+    alias: {
+      'tsx-create-element': require.resolve('tsx-create-element')
+    },
     fallback: {
-      buffer: require.resolve('buffer'),
+      buffer: require.resolve('buffer/'),
     }
+  },
+  resolveLoader: {
+    modules: [
+      path.resolve(__dirname, 'node_modules'),
+      'node_modules',
+    ]
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        loader: 'ts-loader',
+        loader: require.resolve('ts-loader'),
         options: { allowTsInNodeModules: true }
       },
       {
         test: /\.css$/i,
-        use: [miniCssExtractPlugin.loader, 'css-loader'],
+        use: [miniCssExtractPlugin.loader, require.resolve('css-loader')],
         //type: 'asset/resource',
       },
       {
@@ -105,21 +119,19 @@ const base={
             loader: miniCssExtractPlugin.loader
           },
           {
-            loader: 'css-loader'
+            loader: require.resolve('css-loader')
           },
           {
-            loader: 'postcss-loader',
+            loader: require.resolve('postcss-loader'),
           },
           {
-            loader: 'sass-loader'
+            loader: require.resolve('sass-loader')
           }
         ]
       }
     ],
   },
-  resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
-  },
+  // resolve merged into single definition above
   plugins: [
     new webpack.DefinePlugin({
       'process.env.ENV':JSON.stringify(ENV),
