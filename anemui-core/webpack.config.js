@@ -3,6 +3,7 @@ const miniCssExtractPlugin = require('mini-css-extract-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 const webpack = require('webpack');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 //const distPath= path.resolve(__dirname, 'dist');
 const assetsPath=path.resolve(__dirname, 'assets');
 const fs = require("fs");
@@ -74,6 +75,7 @@ const base={
     filename: '[name].bundle.js',
     path:moduleConfig.distPath,
   },
+  cache: { type: 'filesystem' },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
     modules: [
@@ -98,7 +100,7 @@ const base={
       {
         test: /\.tsx?$/,
         loader: require.resolve('ts-loader'),
-        options: { allowTsInNodeModules: true }
+        options: { allowTsInNodeModules: true, transpileOnly: true }
       },
       {
         test: /\.css$/i,
@@ -152,12 +154,16 @@ const base={
       Buffer: ['buffer', 'Buffer'],
     }),
     new miniCssExtractPlugin(),
+    new ForkTsCheckerWebpackPlugin(),
   ]
 };
 
 const production={
   ...base,
-  mode:'production'
+  mode:'production',
+  optimization: {
+    splitChunks: { chunks: 'all' }
+  }
 }
 
 const development={

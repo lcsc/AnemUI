@@ -2,7 +2,13 @@
   "name": "@lcsc/anemui-core",
   "version": "0.0.2-SNAPSHOT",
   "description": "Climatic Services Viewer Core",
-  "main": "index.js",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./webpack.config": "./webpack.config.js",
+    "./csconfig": "./csconfig.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -49,6 +55,7 @@
     "fs-extra": "^11.1.1",
     "globby": "^13.2.2",
     "html-webpack-plugin": "^5.5.1",
+    "fork-ts-checker-webpack-plugin": "^9.0.2",
     "keycloak-js": "^22.0.1",
     "mini-css-extract-plugin": "^2.7.6",
     "mocha": "^10.2.0",
