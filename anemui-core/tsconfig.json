@@ -1,7 +1,17 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist/",
+    "target": "ES2019",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM"],
+    "moduleResolution": "Node",
+    "strict": false,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
     "jsx": "react",
     "jsxFactory": "createElement",
     "types": ["@types/gtag.js"]
