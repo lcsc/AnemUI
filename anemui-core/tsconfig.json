@@ -1,18 +1,19 @@
 {
-    "compilerOptions": {
-      "outDir": "./dist/",
-      "noImplicitAny": true,
-      "sourceMap": true,
-      "target": "es2020",
-      "module": "esnext",
-      "lib": ["es2020", "dom"],
-      "jsx": "react",
-      "jsxFactory": "createElement",
-      "allowJs": true,
-      "moduleResolution": "node",
-      "resolveJsonModule": true,
-      "esModuleInterop": true,
-      "allowSyntheticDefaultImports":true,
-      "types": ["@types/gtag.js"]
-    }
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "target": "ES2019",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM"],
+    "moduleResolution": "Node",
+    "strict": false,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "jsx": "react",
+    "jsxFactory": "createElement",
+    "types": ["@types/gtag.js"]
   }
+}

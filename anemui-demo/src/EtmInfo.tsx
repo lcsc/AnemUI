@@ -1,5 +1,4 @@
-import { InfoDiv } from "@lcsc/anemui-core/src/ui/InfoPanel";
-import { BaseApp } from "@lcsc/anemui-core/src/BaseApp";
+import { InfoDiv, BaseApp } from "@lcsc/anemui-core";
 import { createElement } from "tsx-create-element";
 
 export class EtmInfo extends InfoDiv{
