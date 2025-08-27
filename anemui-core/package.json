@@ -33,6 +33,7 @@
     "@types/bootstrap-slider": "^11.0.2",
     "@types/dygraphs": "^2.1.4",
     "@types/geojson": "^7946.0.14",
+    "@types/gtag.js": "^0.0.20",
     "@types/jquery": "^3.5.16",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.17",
