@@ -13,7 +13,6 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "jsx": "react",
-    "jsxFactory": "createElement",
-    "types": ["@types/gtag.js"]
+    "jsxFactory": "createElement"
   }
 }
