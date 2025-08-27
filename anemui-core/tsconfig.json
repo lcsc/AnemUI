@@ -14,5 +14,6 @@
     "sourceMap": true,
     "jsx": "react",
     "jsxFactory": "createElement"
-  }
+  },
+  "include": ["src/**/*"]
 }
