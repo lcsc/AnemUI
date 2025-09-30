@@ -37,10 +37,19 @@
         }
         #climatologyDisplay {
             order: 6;
+            min-width: 80px !important; // Más pequeño que el 120px por defecto
+            max-width: 100px !important; // Limitar el ancho máximo
+        }
+        
+        // Hacer más compactos los inputs dentro de climatología
+        #climatologyDisplay .input-group-text {
+            min-width: 40px !important;
+            font-size: 11px !important;
+            padding: 2px 4px;
         }
         .input-group-text {
             min-width: 50px !important;
-            margin: 0px 2px;
+            margin: 0px 0px; // SOLO cambio esto: eliminar margen horizontal
             border-radius: 5px;
             width: -moz-fit-content !important;
             width: fit-content !important;
@@ -250,6 +259,7 @@
         .inputDiv .sub-title {
             font-size: 0.8em;
         }
+        
 
         #menu-central {
             display:block
@@ -305,10 +315,21 @@
     position: relative;
     cursor: pointer;
     z-index: 1000;
-    min-width: 120px;
+    min-width: fit-content;
+    width: fit-content;
     // font-size: 0.8rem;
     color: $color_4;
+    
 }
+
+// ----- ÑAPA PARA VISOR ETM. HACER DESARROLLO PARA CONFIGURAR ANCHURAS 
+#inputs>li[role=var] {
+    min-width: 182px;
+}
+#inputs>li[role=selection] {
+    min-width: 145px;
+}
+// ----- ÑAPA PARA VISOR ETM. HACER DESARROLLO PARA CONFIGURAR ANCHURAS 
 
 #inputs > li:not(.basicInput):hover {
     background-color: $color_6;
@@ -329,7 +350,10 @@ li {
     font-size: 0.7em;
     font-style: italic;
     line-height: 1.2;
-    text-align:left
+    text-align: left;
+    width: fit-content;
+    min-width: fit-content;
+    padding: 2px 0px;
 }
 
 .inputDiv .sub-title {
@@ -337,6 +361,10 @@ li {
     font-size: 1em;
     font-style: normal;
     font-weight: 500;
+    width: fit-content;
+    min-width: fit-content;
+    padding: 2px 0px;
+    white-space: nowrap;
 }
 
 .inputDiv .sub-title.unselectable{
@@ -346,9 +374,9 @@ li {
 }
 
 input.selection-param-input {
-    margin-left: 15px;
+    // margin-left: 15px;
     display: inline;
-    width: 50%;
+    // width: 50%;
 }
 
 .dpdown-menu {
@@ -378,6 +406,15 @@ input.selection-param-input {
 // .dpdown-button {
 .menu-item {
     padding: 5px 10px;
+    max-width: none;
+    width: fit-content;
+    min-width: fit-content;
+}
+
+.menu-input {
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
 }
 
 .inputDiv .dpdown-button:hover + .dpdown-menu,
@@ -401,11 +438,21 @@ input.selection-param-input {
 
 .inputDiv {
     position: relative;
+    // width: fit-content;
+    min-width: fit-content;
+}
+
+.inputDiv.cs-disabled {
+    display: none !important;
+}
+
+.inputDiv.cs-enabled {
+    display: grid !important;
 }
 
 .inputDiv .dpdown-menu li .dropdown-item {
     display: block;
-    padding: 5px 10px;
+    padding: 2px;
     text-decoration: none;
     color: #333;
 }
@@ -454,7 +501,8 @@ input.selection-param-input {
     background-color: $color_1;
     position: absolute;
     bottom: 0;
-    width: 120px;
+    width: 100%;
+    min-width: fit-content;
     z-index: 999;
     -webkit-transition: all 0.35s;
     -moz-transition: all 0.35s;

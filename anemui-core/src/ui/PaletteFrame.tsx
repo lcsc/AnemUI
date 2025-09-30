@@ -10,8 +10,20 @@ export default class PaletteFrame  extends BaseFrame{
 
     public render():JSX.Element{
         let self=this;
-        let values= [...this.parent.getLegendValues()].reverse();
-        let texts=[...this.parent.getLegendText()].reverse();
+        const legendValues = this.parent.getLegendValues();
+        const legendText = this.parent.getLegendText();
+
+        if (!legendValues || !legendText) {
+            // Return empty palette if values are not available
+            return (<div id="PaletteFrame" className='rightbar-item paletteFrame'>
+                <div className="info legend">
+                    <div id="units"><span className='legendText'>Loading...</span><br/></div>
+                </div>
+            </div>);
+        }
+
+        let values= [...legendValues].reverse();
+        let texts=[...legendText].reverse();
         let mgr=PaletteManager.getInstance();
         let lmgr = LayerManager.getInstance();
         let ptr=mgr.getPainter();
@@ -98,8 +110,16 @@ export default class PaletteFrame  extends BaseFrame{
     }
 
     public async update(): Promise<void> {
-        let values= [...(await this.parent.getLegendValues())].reverse();
-        let texts=[...(await this.parent.getLegendText())].reverse();
+        const legendValues = await this.parent.getLegendValues();
+        const legendText = await this.parent.getLegendText();
+
+        if (!legendValues || !legendText) {
+            console.warn('Legend values or text are undefined, skipping palette update');
+            return;
+        }
+
+        let values= [...legendValues].reverse();
+        let texts=[...legendText].reverse();
         let ptr=PaletteManager.getInstance().getPainter();
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();

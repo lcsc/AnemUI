@@ -432,7 +432,6 @@ export class OpenLayerMap implements CsMapController {
     this.setExtents(timesJs, state.varId);
 
     if (computedDataTilesLayer) {
-    // if (state.climatology && computedDataTilesLayer) {
       timesJs.portions[state.varId].forEach((portion: string) => {
         promises.push(this.computeLayerData(state.selectedTimeIndex, state.varId, portion));
       });

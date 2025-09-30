@@ -694,7 +694,7 @@ div.slider.visible {
     ESTILOS POPOVERS
 ----------------------------------------------------- */
 
-.popover {
+/* .popover {
     max-width: 40% !important;
     background-color: $color_8;
     border-color: $color_4;
@@ -713,6 +713,24 @@ div.slider.visible {
         font-size: 1rem;
         margin-left: 0.5rem !important;
     }
+}
+
+.popover-header {
+    color: $title_color;
+    background-color: $title_bgcolor;
+}
+
+.popover-body {
+    color: $color_4 !important;
+} */
+
+.popover {
+    max-width: 40% !important;
+    background-color: $color_8;
+    border-color: $color_4;
+    font-size: 12px;
+    margin-left: 20px !important;
+    z-index: 1500;
 }
 
 .popover-header {

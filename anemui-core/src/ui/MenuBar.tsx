@@ -11,8 +11,9 @@ export interface MenuBarListener {
     varSelected(index: number, value?: string, values?: string[]): void;
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
-    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     selectionParamChanged(param: number): void;
+    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
+    inputParamChanged(id: string, param: number): void;
 }
 
 export type simpleDiv = {
@@ -119,7 +120,7 @@ export class MenuBar extends BaseFrame {
         }
         if (hasSelectionParam) {
             this.selectionParam = new CsMenuInput("selectionParamInput", "Selección", {
-                valueChanged: (newValue: number) => {  
+                valueChanged: (origin, newValue: number) => {  
                     this.listener.selectionParamChanged(newValue);
                 },
             });
@@ -174,14 +175,14 @@ export class MenuBar extends BaseFrame {
                                 <span></span>
                                 <span></span>
                             </div>
-                            <div className="col-auto">
-                                <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
-                                <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
-                                <div className="spinner-grow text-info" role="status" hidden />
-                            </div>
                         </div>
                         <div className="col menu-info  d-flex flex-row-reverse" id="info">
                         </div>
+                    </div>
+                    <div className="col-auto">
+                        <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
+                        <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
+                        <div className="spinner-grow text-info" role="status" hidden />
                     </div>
                 </div>
             );
@@ -246,7 +247,7 @@ export class MenuBar extends BaseFrame {
                 let dsp: simpleDiv = {role:'selection', title:'', subTitle:''}
                 addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
                 this.displaySelection = this.container.querySelector("[role=selection]")
-                this.displaySelection.hidden = false;
+                this.displaySelection.hidden = this.selectionHidden;
                 addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
                 this.selection.build(this.displaySelection);
             }
@@ -259,7 +260,9 @@ export class MenuBar extends BaseFrame {
                 this.selectionParam.build(this.displayParam);
             }
             if (hasClimatology) {
+                console.log('hasClimatology is true, building extra displays. extraDisplays:', this.extraDisplays);
                 this.extraDisplays.forEach((dsp) => {
+                    console.log('Processing extraDisplay:', dsp);
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
                     this.extraMenuItems.forEach((dpn) => {
                         if (dpn.id == dsp.role) {
@@ -269,8 +272,11 @@ export class MenuBar extends BaseFrame {
                         }
                     });
                     if (this.extraMenuInputs.length > 0) {
+                        console.log('Processing extraMenuInputs for dsp.role:', dsp.role);
                         this.extraMenuInputs.forEach((input) => {
+                            console.log('Checking input.id:', input.id, 'against dsp.role:', dsp.role);
                             if (input.id == dsp.role) {
+                                console.log('Building input:', input.id);
                                 let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
                                 addChild(container, input.render(this.parent.getState().selectionParam+''));
                                 input.build(container)
@@ -278,6 +284,8 @@ export class MenuBar extends BaseFrame {
                         })
                     }
                 });
+            } else {
+                console.log('hasClimatology is false - inputs will not be built');
             }
             if(this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
@@ -371,9 +379,19 @@ export class MenuBar extends BaseFrame {
     }
     
     public hideSelection() {
-        this.selectionHidden = true;
-
+        // this.selectionHidden = true;
+        this.displaySelection.hidden = true;
+        // this.displaySelection.classList.remove('cs-enabled')
+        // this.displaySelection.classList.add('cs-disabled')
     }
+
+    public showSelection() {
+        // this.selectionHidden = false;
+        this.displaySelection.hidden = false;
+        // this.displaySelection.classList.remove('cs-disabled')
+        // this.displaySelection.classList.add('cs-enabled')
+    }
+
     public hideParam() {
         this.paramHidden = true;
     }
@@ -446,10 +464,12 @@ export class MenuBar extends BaseFrame {
                 break;
             case 2:
                 this.extraMenuInputs.push( new CsMenuInput(id, displayTitle, {
-                    valueChanged: (newValue: number) => {  
-                        listener.selectionParamChanged(newValue);
+                    valueChanged: (origin, newValue: number) => {  
+                        console.log('Input valueChanged called:', { id, origin, newValue });
+                        listener.inputParamChanged(id, newValue);
                     }, 
-                }, +options[0]))
+                }, +options[0], +options[1], +options[2]))
+                console.log('extraMenuInputs length after push:', this.extraMenuInputs.length);
                 break;
         }
         
