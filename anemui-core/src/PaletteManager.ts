@@ -247,7 +247,7 @@ export class GradientPainter implements Painter{
                 let pxIndex: number = x + ((height - 1) - y) * width;
                 if (!isNaN(value)) {
                     value = Math.max(minArray, Math.min(value, maxArray));
-                    let index: number = uncertaintyLayer? value: /* this.getValRange(value) */ this.getValIndex(value);
+                    let index: number = uncertaintyLayer? value: this.getValIndex(value);
                     bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
                 }else{
                     bitmap[pxIndex]=pxTransparent;
@@ -323,7 +323,7 @@ export class CsDynamicPainter implements Painter{
             if (value > 0 && value < breaks[0]) return 0;
             
             // Si el valor es <= 0, será transparente (manejado fuera de esta función)
-            if (value <= 0) return -1;
+            // if (value <= 0) return -1;
             
             // Si el valor es mayor que el último break, saturar al último color
             if (value >= breaks[breaks.length - 1]) return breaks.length - 1;
@@ -417,7 +417,7 @@ export class PaletteManager {
         
         this.paletteBuffer = new ArrayBuffer(256 * 4);
         this.palette = new Uint8Array(this.paletteBuffer);
-        this.painter=new CsDynamicPainter();
+        this.painter = new CsDynamicPainter();
         this.transparency=0;
     }
 

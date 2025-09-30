@@ -222,8 +222,8 @@ export default class LayerFrame  extends BaseFrame {
     public update(): void {
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();
-        let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        // let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
+        // let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let name:string; 
         if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
             name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];

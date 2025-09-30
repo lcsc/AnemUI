@@ -17,14 +17,15 @@ import { downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, CsOpenLayerGeoJsonLayer, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
+import { ElementManager } from "./ElementManager";
 import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
 import LeftBar from "./ui/LeftBar"; 
 import RightBar from "./ui/RightBar"; 
-import Translate from "./language/translate";
-import { renderers, defaultRenderer, folders } from "./tiles/Support";
+import Language from "./language/language";
+import { renderers, folders, defaultRenderer } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
 
 
@@ -76,6 +77,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected graph: CsGraph
     protected infoFrame: InfoFrame
     protected loginFrame: LoginFrame
+    protected elementManager: ElementManager
 
     protected state: CsViewerData;
     protected timesJs: CsTimesJsData;
@@ -84,7 +86,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     protected stationsLayer: CsOpenLayerGeoJsonLayer
     
-    protected translate: Translate;
+    protected language: Language;
     protected cookies: CsCookies;
 
     protected constructor() {
@@ -106,7 +108,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
         
-        this.translate = Translate.getInstance();
+        this.language = Language.getInstance();
         
         if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);
         if (hasCookies) this.cookies = new CsCookies(this);
@@ -137,15 +139,19 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public getTranslation(text:string): string {
-        return this.translate.locale(text) ;
-    } 
+        return this.language.getTranslation(text) ;
+    }
+    
+    public getCode(text:string): string {
+        return this.language.getCode(text) ;
+    }
 
     public getLastLlData(): CsLatLongData {
         return this.lastLlData;
     }
     
     public setLanguage(lang:string): void {
-        this.translate.setDefault(lang) ;
+        this.language.setDefault(lang) ;
     } 
 
     public abstract configure(): void;
@@ -445,7 +451,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected getUrlForNC(suffix?: string): string {
         let currUrl = new URL(document.location.toString())
         currUrl.search = "";
-        if (this.state.support == defaultRenderer) {
+        if (this.state.support == this.elementManager.getDefaultElement()) {
             currUrl.pathname += "nc/data/" + this.state.varId;
             if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
             currUrl.pathname += ".nc";
@@ -595,6 +601,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             
             if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
+            this.layerFrame.update();
             this.changeUrl();
             
         } catch (error) {
@@ -628,23 +635,20 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     //Methods Handling the Menus
     public abstract varSelected(index: number, value?: string, values?: string[]): void;
     //by default do nothing, only apps that have subVars
-    public subVarSelected(index: number, value?: string, values?: string[]): void {
-
-    }
+    public subVarSelected(index: number, value?: string, values?: string[]): void {}
     public abstract selectionSelected(index: number, value?: string, values?: string[]): void;
+    public abstract selectionParamChanged(param: number): void;
 
     public seasonSelected(index: number, value?: string, values?: string[]): void {
         this.state.season = value;
         this.update( true );
     }
-    public monthSelected(index: number, value?: string, values?: string[]): void {
-
-    }
+    public monthSelected(index: number, value?: string, values?: string[]): void {}
 
     // Generic dropdown handling
     public abstract dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
+    public abstract inputParamChanged(id: string, param: number): void;
     
-    public abstract selectionParamChanged(param: number): void;
     public abstract getLegendValues(maxDisplayValue?: number): number[];
 
     public getLegendText() {

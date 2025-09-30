@@ -11,6 +11,7 @@ export const P_Hight_DIS=["~>P 90","~>P 95","~>P 97","~>P 99"]
 export const P_Low_DIS=["~<P 5","~<P 1","~<P 3","~<P 10"]
 export const STR_CUSTOM = "Custom";
 export const STR_ALL = "Todo"
+export const TP_SUPPORT = ["Monitorización","Climatología"]
 
 export interface CsDataService {
     getRenderers(): string[]
@@ -59,10 +60,10 @@ export class CsOptionsService {
     public getDateFrameMode(state:CsViewerData):DateFrameMode{
         return DateFrameMode.DateFrameDate;
     }
+    
 }
 
 export abstract class DataServiceApp extends BaseApp {
-
     protected service: CsDataService
     protected optionsService: CsOptionsService
 
@@ -144,6 +145,11 @@ export abstract class DataServiceApp extends BaseApp {
         this.update();
     }
 
+    public inputParamChanged(id: string, param: number): void {
+        this.state.selectionParam = param;
+        this.update();
+    }
+
     // Looking for the index of the old date in the list of new dates.
     // If not, we will look for the nearest date.
     public searchNearestDate(oldDate: string, newDates: string[]): number {
@@ -180,7 +186,7 @@ export abstract class DataServiceApp extends BaseApp {
             this.state.selectionParam=selectionValue
             this.state.tpSupport=value;
             this.state.selectedTimeIndex = newIndex;
-            if (this.state.tpSupport == 'Climatología') {
+            if (this.state.tpSupport == TP_SUPPORT[1]) {
                 this.state.climatology = true;
             } else { 
                 this.state.climatology = false;
