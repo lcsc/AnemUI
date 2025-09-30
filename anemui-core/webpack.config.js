@@ -3,6 +3,7 @@ const miniCssExtractPlugin = require('mini-css-extract-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 const webpack = require('webpack');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 //const distPath= path.resolve(__dirname, 'dist');
 const assetsPath=path.resolve(__dirname, 'assets');
 const fs = require("fs");
@@ -24,11 +25,11 @@ if(fs.existsSync(viewerAssets)){
 }
 
 const copyPatterns=[
-  { from: assetsPath, to: moduleConfig.distPath },
+  { from: assetsPath, to: moduleConfig.distPath, noErrorOnMissing: true },
 ];
 
 if(viewerAssets!=undefined) {
-  copyPatterns.push({ from: viewerAssets, to: moduleConfig.distPath })
+  copyPatterns.push({ from: viewerAssets, to: moduleConfig.distPath, noErrorOnMissing: true })
 }
 
 
@@ -74,21 +75,36 @@ const base={
     filename: '[name].bundle.js',
     path:moduleConfig.distPath,
   },
+  cache: { type: 'filesystem' },
   resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+    modules: [
+      path.resolve(__dirname, 'node_modules'),
+      'node_modules',
+    ],
+    alias: {
+      'tsx-create-element': require.resolve('tsx-create-element')
+    },
     fallback: {
-      buffer: require.resolve('buffer'),
+      buffer: require.resolve('buffer/'),
     }
+  },
+  resolveLoader: {
+    modules: [
+      path.resolve(__dirname, 'node_modules'),
+      'node_modules',
+    ]
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        loader: 'ts-loader',
-        options: { allowTsInNodeModules: true }
+        loader: require.resolve('ts-loader'),
+        options: { allowTsInNodeModules: true, transpileOnly: true }
       },
       {
         test: /\.css$/i,
-        use: [miniCssExtractPlugin.loader, 'css-loader'],
+        use: [miniCssExtractPlugin.loader, require.resolve('css-loader')],
         //type: 'asset/resource',
       },
       {
@@ -105,21 +121,19 @@ const base={
             loader: miniCssExtractPlugin.loader
           },
           {
-            loader: 'css-loader'
+            loader: require.resolve('css-loader')
           },
           {
-            loader: 'postcss-loader',
+            loader: require.resolve('postcss-loader'),
           },
           {
-            loader: 'sass-loader'
+            loader: require.resolve('sass-loader')
           }
         ]
       }
     ],
   },
-  resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
-  },
+  // resolve merged into single definition above
   plugins: [
     new webpack.DefinePlugin({
       'process.env.ENV':JSON.stringify(ENV),
@@ -140,12 +154,16 @@ const base={
       Buffer: ['buffer', 'Buffer'],
     }),
     new miniCssExtractPlugin(),
+    new ForkTsCheckerWebpackPlugin(),
   ]
 };
 
 const production={
   ...base,
-  mode:'production'
+  mode:'production',
+  optimization: {
+    splitChunks: { chunks: 'all' }
+  }
 }
 
 const development={

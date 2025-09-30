@@ -20,7 +20,3 @@ export { DateFrameMode } from "./ui/DateFrame";
 export type { CsvDownloadDone } from './data/ChunkDownloader';
 export { downloadUrl } from './data/UrlDownloader';
 export { downloadXYArrayChunked, downloadXYChunk, downloadTCSVChunked, getPortionForPoint, downloadXYbyRegion, downloadCSVbyRegion, downloadCSVbySt, downloadTimebyRegion } from './data/ChunkDownloader';
-
-// Statistical utilities
-// import jStat from './data/jstat';
-// export { jStat }

@@ -112,11 +112,17 @@ export class DownloadFrame extends BaseFrame {
     }
 
     public minimize(): void {
+        if (!this.containerButons || !this.containerHandler) {
+            return;
+        }
         this.containerButons.hidden = true;
         this.containerHandler.hidden = false;
     }
    
     public showFrame(): void {
+        if (!this.containerButons || !this.containerHandler) {
+            return;
+        }
         if (!this.containerButons.hidden) return;
         this.containerButons.hidden = false;
         this.containerHandler.hidden = true;

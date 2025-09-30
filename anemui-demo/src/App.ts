@@ -1,14 +1,11 @@
-import { MenuBar } from "@lcsc/anemui-core/src/ui/MenuBar";
-import { DataServiceApp } from "@lcsc/anemui-core/src/ServiceApp";
-import { loadTimesJs } from "@lcsc/anemui-core/src/data/CsDataLoader";
-import { renderers } from "@lcsc/anemui-core/src/tiles/Support";
+import { DataServiceApp, loadTimesJs, PaletteManager } from "@lcsc/anemui-core";
 import { EtoService } from "./EtmService";
-import { PaletteManager } from "@lcsc/anemui-core/src/PaletteManager";
 import { EtmInfo } from "./EtmInfo";
 
 const VIEWER_NAME = "Monitor de Evapotranspiración de Referencia"
 const GRAPH_TYPE = "Serial"
 const GRAPH_POINT = true   
+const SCALE_SELECTORS = false
 
 export class AppETO extends DataServiceApp {
     private static instance: AppETO;
@@ -52,11 +49,11 @@ export class AppETO extends DataServiceApp {
         }
 
         this.getMenuBar().setTitle(VIEWER_NAME);
-        this.getSideBar().setSupportValues(this.service.getRenderers());
-        this.getSideBar().setVariables(vars);
-        this.getSideBar().setSelection(selections);
+        this.getMenuBar().setSupportValues(this.service.getRenderers());
+        this.getMenuBar().setVariables(vars);
+        this.getMenuBar().setSelection(selections);
 
-        this.getGraph().setParams("Evapotranspiración ", GRAPH_TYPE, GRAPH_POINT)
+        this.getGraph().setParams("Evapotranspiración ", GRAPH_TYPE, GRAPH_POINT, SCALE_SELECTORS)
 
         //this.getDateSelectorFrame().setValidDates(timesJs.times[varId]);
 
