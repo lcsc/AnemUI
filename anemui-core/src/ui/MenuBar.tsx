@@ -383,17 +383,15 @@ export class MenuBar extends BaseFrame {
     }
     
     public hideSelection() {
-        // this.selectionHidden = true;
-        this.displaySelection.hidden = true;
-        // this.displaySelection.classList.remove('cs-enabled')
-        // this.displaySelection.classList.add('cs-disabled')
+        if (hasSelection) {
+            this.displaySelection.hidden = true;
+        }
     }
 
     public showSelection() {
-        // this.selectionHidden = false;
-        this.displaySelection.hidden = false;
-        // this.displaySelection.classList.remove('cs-disabled')
-        // this.displaySelection.classList.add('cs-enabled')
+        if (hasSelection) {
+            this.displaySelection.hidden = false;
+        }
     }
 
     public hideParam() {
