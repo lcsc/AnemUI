@@ -451,7 +451,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected getUrlForNC(suffix?: string): string {
         let currUrl = new URL(document.location.toString())
         currUrl.search = "";
-        if (this.state.support == this.elementManager.getDefaultElement()) {
+        if (this.state.support == defaultRenderer) {
             currUrl.pathname += "nc/data/" + this.state.varId;
             if (suffix != undefined) currUrl.pathname += suffix != "none" ? "_" + suffix : "";
             currUrl.pathname += ".nc";
