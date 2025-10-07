@@ -52,6 +52,7 @@ const INITIAL_STATE: CsViewerData = {
     uncertaintyLayer: false,
     season: "",
     month: "",
+    xyValue: NaN,
     timeSeriesData: undefined,
     computedLayer: false,
     computedData: {}
@@ -82,6 +83,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected state: CsViewerData;
     protected timesJs: CsTimesJsData;
     protected infoDiv: InfoDiv;
+    protected infoDivMb: InfoDiv;
     protected downloadOptionsDiv: DownloadOptionsDiv;
 
     protected stationsLayer: CsOpenLayerGeoJsonLayer
@@ -141,9 +143,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public getTranslation(text:string): string {
         return this.language.getTranslation(text) ;
     }
-    
+
     public getCode(text:string): string {
         return this.language.getCode(text) ;
+    }
+
+    public getMonthName(monthIndex: number, short: boolean = false): string {
+        return this.language.getMonthName(monthIndex, short);
     }
 
     public getLastLlData(): CsLatLongData {
@@ -217,6 +223,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         if (this.infoDiv == null) {
             this.infoDiv = new InfoDiv(this, "infoDiv");
         }
+        if (this.infoDivMb == null) {
+            this.infoDivMb = new InfoDiv(this, "infoDiv-mb");
+        }
     }
     
     private renderBaseStructure(): void {
@@ -261,6 +270,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         
         // Info Div
         addChild(mainFrameElement, this.infoDiv.render());
+        addChild(mainFrameElement, this.infoDivMb.render());
         
         // Top Right Frame
         const infoElement = document.getElementById('info');
@@ -278,6 +288,21 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 this.loginFrame.build();
             }
         }
+        const infoMbElement = document.getElementById('info-mobile');
+        if (infoMbElement) {
+            const topMbRightFrame = document.createElement("div");
+            topMbRightFrame.className = "TopRightFrame";
+            addChild(infoMbElement, topMbRightFrame);
+            
+            this.infoDivMb.build();
+            addChild(topMbRightFrame, this.infoFrame.render());
+            this.infoFrame.build();
+            
+            if (isKeyCloakEnabled) {
+                addChild(topMbRightFrame, this.loginFrame.render());
+                this.loginFrame.build();
+            }
+        }
         
         // Download Options
         addChild(mainFrameElement, this.downloadOptionsDiv.render());
@@ -285,7 +310,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         
         // CS Map
         addChild(document.body, this.csMap.render());
-        
+            
         // Download Iframe
         addChild(mainFrameElement, DownloadIframe());
     }
@@ -481,34 +506,33 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public downloadPointOptions(): void {
         this.downloadOptionsDiv.openModal();
     }
-    
-    // ------- UNIFICAR 
-    public showGraph() { 
-        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            this.graph.showGraph(data, this.lastLlData.latlng)
-        }
-        let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
-        let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [], open);
-        else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
-    }
 
-    public showGraphBySt(stParams: any) {
-        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
+    public showGraph(params?: { type: 'point' | 'station' | 'region', stParams?: any, folder?: string }) {
+        if (!params || params.type === 'point') {
+            // Graph for a point (pixel click)
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.graph.showGraph(data, this.lastLlData.latlng);
+            };
+            let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
+            let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
+            if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [], open);
+            else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
+        } else if (params.type === 'station') {  // --- Unificar con region ??
+            // Graph for a station
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, params.stParams);
+            };
+            downloadCSVbySt(params.stParams['id'], this.state.varId, open);
+        } else if (params.type === 'region') {
+            // Graph for a region
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.state.timeSeriesData = data;
+                this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, params.stParams);
+            };
+            if (computedDataTilesLayer) this.computeGraphData(-1, '_all', params.stParams, open);
+            else downloadTimebyRegion(params.folder, params.stParams['id'], this.state.varId, open);
         }
-        downloadCSVbySt(stParams['id'], this.state.varId, open);
     }
-
-    public showGraphByRegion(folder: string, stParams: any) {
-        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            this.state.timeSeriesData = data
-            this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
-        }
-        if (computedDataTilesLayer) this.computeGraphData(-1, '_all', stParams, open);
-        else downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
-    }
-    // ------- UNIFICAR
 
     public getState(): CsViewerData {
         return this.state
@@ -643,6 +667,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.state.season = value;
         this.update( true );
     }
+
     public monthSelected(index: number, value?: string, values?: string[]): void {}
 
     // Generic dropdown handling
@@ -679,7 +704,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             this.timesJs.varMax[this.state.varId][this.state.selectedTimeIndex] = maxWhenInf;
             this.timesJs.varMin[this.state.varId][this.state.selectedTimeIndex] = minWhenInf;
         }
-        // this.paletteFrame.update();
+        this.paletteFrame.update();
         // if (this.stationsLayer != undefined) {
         //     this.stationsLayer.refresh()
         // }
@@ -827,33 +852,24 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public enableRenderer(rd:number[]){
-        console.log('* -------> disableRenderers')
-        console.log(renderers)
         rd.forEach( i => {
             if(renderers[i].startsWith("~")){
                 renderers[i]=renderers[i].substring(1)
             }
         } )
-        console.log(renderers)
     }
 
     public disableRenderer(i:number){
-        console.log('* -------> disableRenderers')
-        console.log(renderers)
         if(! renderers[i].startsWith("~")){
             renderers[i]="~"+renderers[i];
         }
-        console.log(renderers)
     }
 
     public removeRenderer(i:number){
-        console.log('* -------> removeRenderers')
-        console.log(renderers)
         if(! renderers[i].startsWith("-")){
             renderers[i]=renderers[i].substring(1)
         }
         renderers[i]="-"+renderers[i];
-        console.log(renderers)
     }
 
     public getFolders(rendererName: string): string[] {
