@@ -1,3 +1,4 @@
+@import "media-queries.scss";
 @import "~bootstrap/scss/bootstrap";
 
 $bootstrap-icons-font-src: url("~bootstrap-icons/font/fonts/bootstrap-icons.woff2") format("woff2"), url("~bootstrap-icons/font/fonts/bootstrap-icons.woff") format("woff");
@@ -20,7 +21,11 @@ body,
 
 #map {
     position: absolute;
-    top: 80px;
+    top: 60px;
+
+    @include desktop {
+        top: 80px;
+    }
 }
 
 #download_iframe {

@@ -94,6 +94,7 @@ export type CsViewerData={
     uncertaintyLayer:boolean,
     season:string,
     month:string,
+    xyValue:number,
     timeSeriesData: ArrayData,
     computedLayer: boolean,
     computedData: Array4Portion

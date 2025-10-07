@@ -56,8 +56,12 @@ export default class Language {
             'provincia':'Province',
             'monitorizacion':'Monitoring',    
             'climatologia':'Climatology',        
-            'magnitud':'Magnitude',    
+            'magnitud':'Magnitude',
             'ret_periodo':'Return period (years)',
+            'temperatura':'Temperature (°C)',
+            'superficie_afectada':'Affected area %',
+            'duracion_ola_frio':'Cold wave duration (days)', 
+            'duracion_ola_calor':'Heat wave duration (days)',   
             'month': {
                 1: "January",
                 2: "February",
@@ -71,6 +75,20 @@ export default class Language {
                 10: "October",
                 11: "November",
                 12: "December"
+            },
+            'month_short': {
+                0: "Jan",
+                1: "Feb",
+                2: "Mar",
+                3: "Apr",
+                4: "May",
+                5: "Jun",
+                6: "Jul",
+                7: "Aug",
+                8: "Sep",
+                9: "Oct",
+                10: "Nov",
+                11: "Dec"
             },
             'season': {
                 1: 'Jan - Mar',
@@ -123,8 +141,12 @@ export default class Language {
             'provincia':'Provincia',
             'monitorizacion':'Monitorización',    
             'climatologia':'Climatología',        
-            'magnitud':'Magnitud (°C)',    
-            'ret_periodo':'Periodo de retorno (años)',   
+            'magnitud':'Magnitud (°C)',
+            'ret_periodo':'Periodo de retorno (años)',
+            'temperatura':'Temperatura (°C)',
+            'superficie_afectada':'Superficie afectada %',
+            'duracion_ola_frio':'Duración de la ola de frio (días)', 
+            'duracion_ola_calor':'Duración de la ola de calor (días)',   
             'month': {
                 0: "Enero",
                 1: "Febrero",
@@ -138,6 +160,20 @@ export default class Language {
                 9: "Octubre",
                 10: "Noviembre",
                 11: "Diciembre"
+            },
+            'month_short': {
+                0: "Ene",
+                1: "Feb",
+                2: "Mar",
+                3: "Abr",
+                4: "May",
+                5: "Jun",
+                6: "Jul",
+                7: "Ago",
+                8: "Sep",
+                9: "Oct",
+                10: "Nov",
+                11: "Dic"
             },
             'season': {
                 1: 'Ene - Mar',
@@ -170,5 +206,13 @@ export default class Language {
 
     public setDefault(locale: string){
         this.defaultLocale = locale;
+    }
+
+    public getMonthName(monthIndex: number, short: boolean = false): string {
+        const key = short ? 'month_short' : 'month';
+        if (this.locales[this.defaultLocale][key] && this.locales[this.defaultLocale][key][monthIndex] !== undefined) {
+            return this.locales[this.defaultLocale][key][monthIndex];
+        }
+        return monthIndex.toString();
     }
 }

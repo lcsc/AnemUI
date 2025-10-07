@@ -46,6 +46,10 @@ div.paletteFrame {
         height: 114px;
     }
 
+    div.legend:hover {
+        cursor:pointer;
+    }
+
     div.legend {
         line-height: 12px;
         text-align: center;
@@ -55,18 +59,27 @@ div.paletteFrame {
         box-shadow: 0.5px 0.5px 3px $color_3;
         border-radius: 10px;
         width: auto;
-        max-width: fit-content;
-        min-width: fit-content;
+        max-width: 40px;
+        min-width: 40px;
+        -webkit-transition: all 0.6s;
+        transition: all 0.6s;
     }
 
     div.legend .legendText {
+        visibility: hidden;
         white-space: nowrap;
         padding-block: 5px;
         margin: 10px;
     }
 
     div.legend:hover {
+        max-width: fit-content;
+        min-width: fit-content;
         cursor:pointer;
+    }
+
+    div.legend:hover .legendText{
+        visibility:visible;
     }
 
     #units {
@@ -212,7 +225,14 @@ div.paletteFrame {
         top: 8.6em;
         div.legend {
             line-height: 14px;
+            max-width: fit-content;
+            min-width: fit-content;
         }
+
+        div.legend .legendText{
+            visibility:visible;
+        }
+    
     }
 
     @include xl-desktop {
