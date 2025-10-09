@@ -247,7 +247,7 @@ export class GradientPainter implements Painter{
                 let pxIndex: number = x + ((height - 1) - y) * width;
                 if (!isNaN(value)) {
                     value = Math.max(minArray, Math.min(value, maxArray));
-                    let index: number = uncertaintyLayer? value: /* this.getValRange(value) */ this.getValIndex(value);
+                    let index: number = uncertaintyLayer? value: this.getValIndex(value);
                     bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
                 }else{
                     bitmap[pxIndex]=pxTransparent;
@@ -318,23 +318,20 @@ export class CsDynamicPainter implements Painter{
                     value = 1000;
                 }
             }
-            
-            // Si el valor es menor que el primer break pero > 0, usar el primer color
-            if (value > 0 && value < breaks[0]) return 0;
-            
-            // Si el valor es <= 0, será transparente (manejado fuera de esta función)
-            if (value <= 0) return -1;
-            
+
+            // Si el valor es menor que el primer break, usar el primer color
+            if (value < breaks[0]) return 0;
+
             // Si el valor es mayor que el último break, saturar al último color
             if (value >= breaks[breaks.length - 1]) return breaks.length - 1;
-            
+
             // Encontrar el intervalo correcto
             for (let i = 0; i < breaks.length - 1; i++) {
                 if (value >= breaks[i] && value < breaks[i + 1]) {
                     return i;
                 }
             }
-            
+
             // Por defecto, usar el último intervalo
             return breaks.length - 1;
         }
@@ -345,23 +342,18 @@ export class CsDynamicPainter implements Painter{
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
                 let pxIndex: number = x + ((height - 1) - y) * width;
-                
+
                 if (!isNaN(value) && isFinite(value)) {
                     // Obtener el índice del intervalo basado en los breaks
                     let intervalIndex = getIntervalIndex(value, breaks);
-                    
-                    // Si el valor es <= 0, hacerlo transparente
-                    if (intervalIndex === -1) {
-                        bitmap[pxIndex] = pxTransparent;
-                    } else {
-                        // Mapear el índice del intervalo al índice del gradiente
-                        // Distribuir los intervalos uniformemente a lo largo del gradiente
-                        let gradientIndex = Math.round((intervalIndex / (breaks.length - 1)) * gradientLength);
-                        bitmap[pxIndex] = gradient[gradientIndex];
-                    }
+
+                    // Mapear el índice del intervalo al índice del gradiente
+                    // Distribuir los intervalos uniformemente a lo largo del gradiente
+                    let gradientIndex = Math.round((intervalIndex / (breaks.length - 1)) * gradientLength);
+                    bitmap[pxIndex] = gradient[gradientIndex];
                 } else if (!isFinite(value) && !isNaN(value)) {
                     // Manejar valores infinitos como > 1000
-                    let intervalIndex = getIntervalIndex(value, breaks); // La función ya maneja infinitos internamente
+                    let intervalIndex = getIntervalIndex(value, breaks);
                     let gradientIndex = Math.round((intervalIndex / (breaks.length - 1)) * gradientLength);
                     bitmap[pxIndex] = gradient[gradientIndex];
                 } else {
@@ -417,7 +409,7 @@ export class PaletteManager {
         
         this.paletteBuffer = new ArrayBuffer(256 * 4);
         this.palette = new Uint8Array(this.paletteBuffer);
-        this.painter=new CsDynamicPainter();
+        this.painter = new CsDynamicPainter();
         this.transparency=0;
     }
 

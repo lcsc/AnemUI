@@ -1,12 +1,12 @@
-export default class Translate {
-    private static instance: Translate;
+export default class Language {
+    private static instance: Language;
 
-    public static getInstance(): Translate {
-        if (!Translate.instance) {
-            Translate.instance = new Translate();
+    public static getInstance(): Language {
+        if (!Language.instance) {
+            Language.instance = new Language();
         }
 
-        return Translate.instance;
+        return Language.instance;
     }
 
     private defaultLocale: string = 'es';
@@ -48,6 +48,20 @@ export default class Translate {
             'subh-humedo':'Subhumid', 
             'humedo':'Humid',
             'politico':'Political',
+            'extremos_calidos':'Hot extremes',
+            'extremos_frios':'Cold extremes',
+            "olas_calor":"Heat waves",
+            "olas_frio":"Cold waves",       
+            'rejilla':'Grid',
+            'provincia':'Province',
+            'monitorizacion':'Monitoring',    
+            'climatologia':'Climatology',        
+            'magnitud':'Magnitude',
+            'ret_periodo':'Return period (years)',
+            'temperatura':'Temperature (°C)',
+            'superficie_afectada':'Affected area %',
+            'duracion_ola_frio':'Cold wave duration (days)', 
+            'duracion_ola_calor':'Heat wave duration (days)',   
             'month': {
                 1: "January",
                 2: "February",
@@ -61,6 +75,20 @@ export default class Translate {
                 10: "October",
                 11: "November",
                 12: "December"
+            },
+            'month_short': {
+                0: "Jan",
+                1: "Feb",
+                2: "Mar",
+                3: "Apr",
+                4: "May",
+                5: "Jun",
+                6: "Jul",
+                7: "Aug",
+                8: "Sep",
+                9: "Oct",
+                10: "Nov",
+                11: "Dec"
             },
             'season': {
                 1: 'Jan - Mar',
@@ -82,7 +110,7 @@ export default class Translate {
             "en_la_estacion": "en la estación",
             "serie_temporal": "Serie temporal",
             "modelo_lineal":"Serie temporal con modelo lineal + intervalos de confianza",
-            "modelo_mg_fr":"Modelo magnitud / frecuencia",
+            "modelo_mg_fr":"Curva de magnitud-frecuencia",
             "base_layer":"Capa Base",
             "top_layer":"Capa Info",
             "transparency":"Transparencia",
@@ -104,7 +132,21 @@ export default class Translate {
             'subh-seco':'Sub-húmedo seco', 
             'subh-humedo':'Sub-húmedo húmedo', 
             'humedo':'Húmedo',
-            'politico':'Politico',
+            'politico':'Político',
+            "extremos_calidos":"Extremos cálidos mensuales",
+            "extremos_frios":"Extremos fríos mensuales",
+            "olas_calor":"Olas de calor",
+            "olas_frio":"Olas de frío",       
+            'rejilla':'Rejilla',
+            'provincia':'Provincia',
+            'monitorizacion':'Monitorización',    
+            'climatologia':'Climatología',        
+            'magnitud':'Magnitud (°C)',
+            'ret_periodo':'Periodo de retorno (años)',
+            'temperatura':'Temperatura (°C)',
+            'superficie_afectada':'Superficie afectada %',
+            'duracion_ola_frio':'Duración de la ola de frio (días)', 
+            'duracion_ola_calor':'Duración de la ola de calor (días)',   
             'month': {
                 0: "Enero",
                 1: "Febrero",
@@ -119,6 +161,20 @@ export default class Translate {
                 10: "Noviembre",
                 11: "Diciembre"
             },
+            'month_short': {
+                0: "Ene",
+                1: "Feb",
+                2: "Mar",
+                3: "Abr",
+                4: "May",
+                5: "Jun",
+                6: "Jul",
+                7: "Ago",
+                8: "Sep",
+                9: "Oct",
+                10: "Nov",
+                11: "Dic"
+            },
             'season': {
                 1: 'Ene - Mar',
                 2: 'Abr - Jun',
@@ -128,9 +184,18 @@ export default class Translate {
         }
     }
 
-    public locale(text: string): string {
+    public getTranslation(text: string): string {
         if (this.locales[this.defaultLocale][text] !== undefined) {
             return this.locales[this.defaultLocale][text];
+        }
+        return text;
+    }
+
+    public getCode(text: string): string {
+        for (const code in this.locales[this.defaultLocale]) {
+            if (this.locales[this.defaultLocale][code] === text) {
+                return code;
+            }
         }
         return text;
     }
@@ -141,5 +206,13 @@ export default class Translate {
 
     public setDefault(locale: string){
         this.defaultLocale = locale;
+    }
+
+    public getMonthName(monthIndex: number, short: boolean = false): string {
+        const key = short ? 'month_short' : 'month';
+        if (this.locales[this.defaultLocale][key] && this.locales[this.defaultLocale][key][monthIndex] !== undefined) {
+            return this.locales[this.defaultLocale][key][monthIndex];
+        }
+        return monthIndex.toString();
     }
 }

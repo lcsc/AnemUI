@@ -5,8 +5,7 @@
   "main": "src/index.ts",
   "devDependencies": {},
   "scripts": {
-    "build": "NODE_ENV=development webpack",
-    "prod": "NODE_ENV=production webpack",
+    "build": "NODE_ENV=production webpack",
     "build-wms": "NODE_ENV=wms webpack",
     "watch": "webpack --watch",
     "start": "webpack serve --open",

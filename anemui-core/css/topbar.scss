@@ -2,9 +2,102 @@
     box-sizing: border-box;
 }
 
+
+#menu-title{
+    padding: 0rem 0rem;
+    min-height: 1rem; 
+    background-color: $title_color;
+    box-shadow: 0.5px 0.5px 3px $color_3;
+    @include desktop { 
+        padding: 0rem 1.5rem;
+    }
+}
+
 #TopBar {
         padding: 0px !important;
         z-index: 1000;
+
+    // Mobile first: show mobile, hide desktop
+    .topbar-mobile {
+        display: block;
+    }
+    .topbar-desktop {
+        display: none;
+    }
+
+    // Desktop: hide mobile, show desktop
+    @include desktop {
+        .topbar-mobile {
+            display: none;
+        }
+        .topbar-desktop {
+            display: block;
+        }
+    }
+
+    // Mobile TopBar styles
+    .topbar-mobile {
+        .mobile-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: $title_color;
+            border-bottom: 1px solid $border-color;
+        }
+
+        .mobile-title-row {
+            background-color: $title_color;
+            border-bottom: 1px solid $border-color;
+            padding: 0.3rem;
+            text-align: center;
+        
+            #title-mobile {
+                color: $title_bgcolor;
+                font-size: 1.0em;
+                font-weight: 500;
+                margin: 0;
+            }
+        }
+
+        .mobile-menu-central {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .mobile-menu-info {
+            padding-right: 0.5rem;
+        }
+
+        .collapse-menu-mb {
+            display: block;
+            cursor: pointer;
+            padding: 0.4rem;
+        }
+    
+        .collapse-menu-mb span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            border-radius: 1px;
+            margin: 5px auto;
+            -webkit-transition: all 0.3s ease-in-out;
+            transition: all 0.3s ease-in-out;
+            background-color: $color_4;
+        }
+    
+        .collapse-menu-mb.active span:nth-child(2) {
+            opacity: 0;
+        }
+    
+        .collapse-menu-mb.active span:nth-child(1) {
+            transform: translateY(8px) rotate(-45deg);
+        }
+    
+        .collapse-menu-mb.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(45deg);
+        }
+    }
    
     #header-central {
         display: flex;
@@ -37,10 +130,19 @@
         }
         #climatologyDisplay {
             order: 6;
+            min-width: 80px !important; // Más pequeño que el 120px por defecto
+            max-width: 100px !important; // Limitar el ancho máximo
+        }
+        
+        // Hacer más compactos los inputs dentro de climatología
+        #climatologyDisplay .input-group-text {
+            min-width: 40px !important;
+            font-size: 11px !important;
+            padding: 2px 4px;
         }
         .input-group-text {
             min-width: 50px !important;
-            margin: 0px 2px;
+            margin: 0px 0px; // SOLO cambio esto: eliminar margen horizontal
             border-radius: 5px;
             width: -moz-fit-content !important;
             width: fit-content !important;
@@ -131,18 +233,30 @@
         }
     }
 
-    .longLogo { 
-        padding-left: 2.5em;
+    .longLogo {
+        padding-left: 0.5em;
         img {
-            height: 50px;
+            height: 30px;
+        }
+
+        @include desktop {
+            padding-left: 2.5em;
+            img {
+                height: 50px;
+            }
         }
     }
 
-    .navbar {
+    .topbar-desktop .navbar {
         width: 100%;
         background-color: $color_4;
         border-bottom: 1px solid $border-color;
         justify-content: left;
+    }
+
+    .topbar-mobile .navbar {
+        width: 100%;
+        justify-content: center;
     }
 
     .col.shortLogo {
@@ -165,27 +279,25 @@
         }
     }
 
-    .nav-menu {
+    .nav-menu, .nav-menu-mb {
         position: fixed;
         left: -100%;
-        top: 7.2rem;
+        top: 4.7rem;
         display: flex;
         flex-direction: column;
-        background-color: $title_color;
+        background-color: $navbar_bgcolor;
         width: auto;
-        border-radius: 3px;
         text-align: center;
         transition: 0.3s;
-        box-shadow: 0.5px 0.5px 3px $color_3;
+    }
+
+    .nav-menu.active, .nav-menu-mb.active {
+        left: 0%;
+        transform: translateX(0%);
     }
 
     .nav-link {
         color: $color_1;
-    }
-
-    .nav-menu.active {
-        left: 50%;
-        transform: translateX(-50%);
     }
 
     .nav-item {
@@ -250,6 +362,7 @@
         .inputDiv .sub-title {
             font-size: 0.8em;
         }
+        
 
         #menu-central {
             display:block
@@ -305,10 +418,21 @@
     position: relative;
     cursor: pointer;
     z-index: 1000;
-    min-width: 120px;
+    min-width: fit-content;
+    width: fit-content;
     // font-size: 0.8rem;
     color: $color_4;
+    
 }
+
+// ----- ÑAPA PARA VISOR ETM. HACER DESARROLLO PARA CONFIGURAR ANCHURAS 
+#inputs>li[role=var] {
+    min-width: 182px;
+}
+#inputs>li[role=selection] {
+    min-width: 145px;
+}
+// ----- ÑAPA PARA VISOR ETM. HACER DESARROLLO PARA CONFIGURAR ANCHURAS 
 
 #inputs > li:not(.basicInput):hover {
     background-color: $color_6;
@@ -329,7 +453,10 @@ li {
     font-size: 0.7em;
     font-style: italic;
     line-height: 1.2;
-    text-align:left
+    text-align: left;
+    width: fit-content;
+    min-width: fit-content;
+    padding: 2px 0px;
 }
 
 .inputDiv .sub-title {
@@ -337,6 +464,10 @@ li {
     font-size: 1em;
     font-style: normal;
     font-weight: 500;
+    width: fit-content;
+    min-width: fit-content;
+    padding: 2px 0px;
+    white-space: nowrap;
 }
 
 .inputDiv .sub-title.unselectable{
@@ -346,9 +477,9 @@ li {
 }
 
 input.selection-param-input {
-    margin-left: 15px;
+    // margin-left: 15px;
     display: inline;
-    width: 50%;
+    // width: 50%;
 }
 
 .dpdown-menu {
@@ -378,6 +509,15 @@ input.selection-param-input {
 // .dpdown-button {
 .menu-item {
     padding: 5px 10px;
+    max-width: none;
+    width: fit-content;
+    min-width: fit-content;
+}
+
+.menu-input {
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
 }
 
 .inputDiv .dpdown-button:hover + .dpdown-menu,
@@ -401,11 +541,21 @@ input.selection-param-input {
 
 .inputDiv {
     position: relative;
+    // width: fit-content;
+    min-width: fit-content;
+}
+
+.inputDiv.cs-disabled {
+    display: none !important;
+}
+
+.inputDiv.cs-enabled {
+    display: grid !important;
 }
 
 .inputDiv .dpdown-menu li .dropdown-item {
     display: block;
-    padding: 5px 10px;
+    padding: 2px;
     text-decoration: none;
     color: #333;
 }
@@ -454,7 +604,8 @@ input.selection-param-input {
     background-color: $color_1;
     position: absolute;
     bottom: 0;
-    width: 120px;
+    width: 100%;
+    min-width: fit-content;
     z-index: 999;
     -webkit-transition: all 0.35s;
     -moz-transition: all 0.35s;
@@ -470,8 +621,62 @@ $elements: 15;
         -ms-transform: translate(0, 0);
         transform: translate(0, 0);
     }
-    
+
     #inputs li:nth-child(#{$i}):hover~#marker {
+        -webkit-transform: translate(360px, 0);
+        -moz-transform: translate(360px, 0);
+        -ms-transform: translate(360px, 0);
+        transform: translate(360px, 0);
+    }
+}
+
+// Duplicate styles for mobile inputs
+#inputs-mobile {
+    position: relative;
+    list-style: none;
+    font-weight: 400;
+    display: inline-block;
+    padding: 0;
+    margin: 0px auto;
+}
+
+#inputs-mobile>li {
+    display: grid;
+    position: relative;
+    cursor: pointer;
+    z-index: 1000;
+    min-width: fit-content;
+    width: fit-content;
+    color: $color_4;
+}
+
+#inputs-mobile>li[role=var] {
+    min-width: 182px;
+}
+
+#inputs-mobile>li[role=selection] {
+    min-width: 145px;
+}
+
+#inputs-mobile > li:not(.basicInput):hover {
+    background-color: $color_6;
+    color: $color_8;
+    cursor: pointer;
+}
+
+#inputs-mobile>li a {
+    padding-left: 0px !important;
+}
+
+@for $i from 0 to $elements {
+    #inputs-mobile li:nth-child(#{$i}):hover div ul  {
+        -webkit-transform: translate(0, 0);
+        -moz-transform: translate(0, 0);
+        -ms-transform: translate(0, 0);
+        transform: translate(0, 0);
+    }
+
+    #inputs-mobile li:nth-child(#{$i}):hover~#marker {
         -webkit-transform: translate(360px, 0);
         -moz-transform: translate(360px, 0);
         -ms-transform: translate(360px, 0);

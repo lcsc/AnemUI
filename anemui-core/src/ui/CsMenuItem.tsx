@@ -7,7 +7,7 @@ export interface CsMenuItemListener {
 }
 
 export interface CsMenuIputListener {
-  valueChanged(newValue: number): void;
+  valueChanged(origin: CsMenuInput, newValue: number | null): void;
 }
 
 export class CsMenuItem extends BaseUiElement {
@@ -186,20 +186,23 @@ export class CsMenuInput extends BaseUiElement {
   public id: string;
   private title: string
   private subTitle: string
-  public value: number
+  public value: number | null
   private listener: CsMenuIputListener;
   private minValue: number;
+  private step: number;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onChange/onBlur
   private inputDebounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onInput
 
-  constructor(_id: string, _title: string, _listener: CsMenuIputListener, _minValue: number = 1) {
+  constructor(_id: string, _title: string, _listener: CsMenuIputListener, _minValue: number = 1, _value: number = undefined, _step: number = 1) {
     super()
     this.title = _title;
     this.subTitle = ''
-    this.value = Math.max(1, _minValue)
+    // this.value = null // Permitir que inicie vacío
+    this.value = _value // Permitir que inicie vacío
     this.id = _id;
     this.listener = _listener
     this.minValue = _minValue;
+    this.step = _step;
   }
 
   public setTitle(_title: string, _role?: string) {
@@ -218,9 +221,9 @@ export class CsMenuInput extends BaseUiElement {
 
   public setMinValue(_minValue: number) {
     this.minValue = _minValue;
-    if (this.value < this.minValue) {
+    if (this.value !== null && this.value < this.minValue) {
       this.value = this.minValue;
-      this.listener.valueChanged(this.value);
+      this.listener.valueChanged(this, this.value);
     }
   }
 
@@ -232,45 +235,62 @@ export class CsMenuInput extends BaseUiElement {
     return this.title
   }
 
-  private validateValue(inputValue: number): number {
-    if (isNaN(inputValue) || inputValue < this.minValue) {
-      return this.minValue;
+  private validateValue(inputValue: number): number | null {
+    /* if (isNaN(inputValue)) {
+      return null; // Permitir campo vacío
     }
+    if (inputValue < this.minValue) {
+      return this.minValue;
+    } */
     return inputValue;
   }
 
   public render(_value?: string, _disabled: boolean = false): JSX.Element {
-    const displayValue = _value ?
-      Math.max(parseFloat(_value) || this.minValue, this.minValue).toString() :
-      this.value.toString();
+    // const displayValue = _value !== undefined ? _value :
+    //   (this.value !== null ? this.value.toString() : "");
+
+    const displayValue = this.value !== null ? this.value.toString() : (_value !== undefined ? _value : "");  
 
     const DEBOUNCE_DELAY_INPUT_VISUAL = 100;
 
     return (
-      <div className={"menu-item"}>
+      <div className={"menu-input menu-item"}>
         <span className={"title"}>{this.title}</span>
         <input
           id= {this.id}
           type="number"
           min={this.minValue}
-          step="1"
+          step={this.step}
           className="form-control form-control-sm selection-param-input"
           placeholder={`Mín: ${this.minValue}`}
           value={displayValue}
           disabled={_disabled}
           onInput={(e: React.FormEvent<HTMLInputElement>) => {
-            const inputValue = parseFloat(e.currentTarget.value);
+            const rawValue = e.currentTarget.value;
             const inputElement = e.currentTarget;
             if (this.inputDebounceTimer) {
               clearTimeout(this.inputDebounceTimer);
             }
             this.inputDebounceTimer = setTimeout(() => {
+              // Si el campo está vacío, permitir null
+              if (rawValue === "" || rawValue === null || rawValue === undefined) {
+                this.value = null;
+                this.listener.valueChanged(this,null);
+                return;
+              }
+              
+              const inputValue = parseFloat(rawValue);
               const validatedValue = this.validateValue(inputValue);
               this.value = validatedValue;
-              if (inputValue !== validatedValue) {
+              
+              // Solo actualizar el input si el valor cambió
+              if (validatedValue !== null && inputValue !== validatedValue) {
                 inputElement.value = validatedValue.toString();
+              } else if (validatedValue === null && rawValue !== "") {
+                inputElement.value = "";
               }
-              this.listener.valueChanged(validatedValue);
+              
+              this.listener.valueChanged(this, validatedValue);
             }, DEBOUNCE_DELAY_INPUT_VISUAL);
           }}
         />

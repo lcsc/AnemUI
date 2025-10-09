@@ -11,8 +11,9 @@ export interface MenuBarListener {
     varSelected(index: number, value?: string, values?: string[]): void;
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
-    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
     selectionParamChanged(param: number): void;
+    dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
+    inputParamChanged(id: string, param: number): void;
 }
 
 export type simpleDiv = {
@@ -37,16 +38,25 @@ export class MenuBar extends BaseFrame {
     private titleDiv: HTMLElement
     private collapseMenu: HTMLElement
     private navMenu: HTMLElement
+    private collapseMenuMb: HTMLElement
+    private navMenuMb: HTMLElement
     private logoMap: HTMLElement
 
     private displaySpSupport: HTMLDivElement
+    private displaySpSupportMb: HTMLDivElement
     private displayTpSupport: HTMLDivElement
+    private displayTpSupportMb: HTMLDivElement
     private displayVar: HTMLDivElement
+    private displayVarMb: HTMLDivElement
     private displaySubVar: HTMLDivElement
+    private displaySubVarMb: HTMLDivElement
     private displaySelection: HTMLDivElement
+    private displaySelectionMb: HTMLDivElement
     private displayParam: HTMLInputElement
-    
+    private displayParamMb: HTMLInputElement
+
     private inputsFrame: HTMLDivElement
+    private inputsFrameMobile: HTMLDivElement
     private extraDisplays: simpleDiv[];
     private inputOrder: string[];
 
@@ -119,7 +129,7 @@ export class MenuBar extends BaseFrame {
         }
         if (hasSelectionParam) {
             this.selectionParam = new CsMenuInput("selectionParamInput", "Selección", {
-                valueChanged: (newValue: number) => {  
+                valueChanged: (origin, newValue: number) => {  
                     this.listener.selectionParamChanged(newValue);
                 },
             });
@@ -152,37 +162,97 @@ export class MenuBar extends BaseFrame {
         this.inputsFrame.querySelector('[role=' + _id + ']').innerHTML = _title
     }
 
+    /**
+     * Helper method to add menu items to both desktop and mobile frames
+     */
+    private addMenuItemToBothFrames(
+        role: string,
+        btnType: string,
+        menuItem: CsMenuItem | CsMenuInput,
+        renderFunction: () => JSX.Element,
+        displayProperty: string
+    ): void {
+        // Desktop version
+        let dsp: simpleDiv = { role: role, title: '', subTitle: '' };
+        addChild(this.inputsFrame, this.renderDisplay(dsp, btnType));
+        const desktopContainer = this.container.querySelector(`[role=${role}]`) as HTMLDivElement;
+        addChild(desktopContainer, renderFunction());
+        (this as any)[displayProperty] = desktopContainer;
+        if (menuItem instanceof CsMenuItem) {
+            menuItem.build(desktopContainer);
+        } else if (menuItem instanceof CsMenuInput) {
+            menuItem.build(desktopContainer);
+        }
+
+        // Mobile version
+        let dspMb: simpleDiv = { role: role + 'Mb', title: '', subTitle: '' };
+        addChild(this.inputsFrameMobile, this.renderDisplay(dspMb, btnType));
+        const mobileContainer = this.container.querySelector(`[role=${role}Mb]`) as HTMLDivElement;
+        addChild(mobileContainer, renderFunction());
+        (this as any)[displayProperty + 'Mb'] = mobileContainer;
+    }
+
     public render(): JSX.Element {
         let self = this;
         let element =
             (
                 <div id="TopBar" className="fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
-                    <div className={"navbar " + logoStyle}>
-                        <img src={'./images/'+logo} useMap="#LogoMap"></img>
-                        <map id="LogoMap">
-                            
-                        </map>
+                    {/* Desktop TopBar */}
+                    <div className="topbar-desktop">
+                        <div className={"navbar " + logoStyle}>
+                            <img src={'./images/'+logo} useMap="#LogoMap"></img>
+                            <map id="LogoMap">
+
+                            </map>
+                        </div>
+                        <div id="menu-title" className="menu-info text-left row mx-0">
+                            <div className="col-title">
+                                <h3 id="title">{this.title}</h3>
+                            </div>
+                            <div id="menu-central" className="col-info">
+                                <ul id="inputs" className="nav-menu">
+                                </ul>
+                                <div className="collapse-menu" onClick={() => { self.desktopMenu() }}>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div className="col menu-info d-flex flex-row-reverse" id="info">
+                            </div>
+                        </div>
                     </div>
-                    <div id="menu-title" className="menu-info text-left row mx-0git status">
-                        <div className="col-title">
-                            <h3 id="title">{this.title}</h3>
-                        </div>
-                        <div id="menu-central" className="col-info">
-                            <ul id="inputs" className="nav-menu">
-                            </ul>
-                            <div className="collapse-menu" onClick={() => { self.mobileMenu() }}>
-                                <span></span>
-                                <span></span>
-                                <span></span>
+
+                    {/* Mobile TopBar */}
+                    <div className="topbar-mobile">
+                        <div className="mobile-top-row">
+                            <div id="menu-central-mobile" className="mobile-menu-central">
+                                <ul id="inputs-mobile" className="nav-menu-mb">
+                                </ul>
+                                <div className="collapse-menu-mb" onClick={() => { self.mobileMenu() }}>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
                             </div>
-                            <div className="col-auto">
-                                <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
-                                <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
-                                <div className="spinner-grow text-info" role="status" hidden />
+                            <div className={"navbar " + logoStyle}>
+                                <img src={'./images/logo_aemet.svg'} useMap="#LogoMapMobile"></img> {/* incluir en env.js */}
+                                <map id="LogoMapMobile">
+
+                                </map>
+                            </div>
+                            <div className="mobile-menu-info d-flex flex-row-reverse" id="info-mobile">
                             </div>
                         </div>
-                        <div className="col menu-info  d-flex flex-row-reverse" id="info">
+                        <div className="mobile-title-row">
+                            <h3 id="title-mobile">{this.title}</h3>
                         </div>
+                    </div>
+
+                    <div className="col-auto">
+                        <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
+                        <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
+                        <div className="spinner-grow text-info" role="status" hidden />
                     </div>
                 </div>
             );
@@ -197,10 +267,13 @@ export class MenuBar extends BaseFrame {
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
+        this.inputsFrameMobile = document.getElementById('inputs-mobile') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         // this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
         this.collapseMenu = document.querySelector(".collapse-menu");
         this.navMenu = document.querySelector(".nav-menu");
+        this.collapseMenuMb = document.querySelector(".collapse-menu-mb");
+        this.navMenuMb = document.querySelector(".nav-menu-mb");
         this.logoMap = document.getElementById('LogoMap') as HTMLElement;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
@@ -212,56 +285,75 @@ export class MenuBar extends BaseFrame {
 
         if (hasButtons) {
             if (hasSpSupport) {
-                let dsp: simpleDiv = {role:'spSupport', title:'', subTitle:''}
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-                this.displaySpSupport = this.container.querySelector("[role=spSupport]")
-                addChild(this.displaySpSupport, this.spatialSupport.render(this.parent.getState().support));
-                this.spatialSupport.build(this.displaySpSupport)
+                this.addMenuItemToBothFrames(
+                    'spSupport',
+                    'basicBtn',
+                    this.spatialSupport,
+                    () => this.spatialSupport.render(this.parent.getState().support),
+                    'displaySpSupport'
+                );
             }
             if (hasVars) {
-                let dsp: simpleDiv = {role:'var', title:'', subTitle:''}
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-                this.displayVar = this.container.querySelector("[role=var]")
-                addChild(this.displayVar, this.variable.render(this.parent.getState().varName,varHasPopData))
-                this.variable.build(this.displayVar)
-                if (varHasPopData) this.variable.configPopOver(this.popData)
+                this.addMenuItemToBothFrames(
+                    'var',
+                    'basicBtn',
+                    this.variable,
+                    () => this.variable.render(this.parent.getState().varName, varHasPopData),
+                    'displayVar'
+                );
+                if (varHasPopData) this.variable.configPopOver(this.popData);
             }
             if (hasSubVars) {
-                let dsp: simpleDiv = {role:'subVar', title:'', subTitle:''}
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-                this.displaySubVar = this.container.querySelector("[role=subVar]")
+                this.addMenuItemToBothFrames(
+                    'subVar',
+                    'basicBtn',
+                    this.subVariable,
+                    () => this.subVariable.render(this.parent.getState().subVarName, sbVarHasPopData),
+                    'displaySubVar'
+                );
                 this.displaySubVar.hidden = false;
-                addChild(this.displaySubVar, this.subVariable.render(this.parent.getState().subVarName,sbVarHasPopData));
-                this.subVariable.build(this.displaySubVar)
+                this.displaySubVarMb.hidden = false;
                 if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
             }
             if (hasTpSupport) {
-                let dsp: simpleDiv = {role:'tpSupport', title:'', subTitle:''}
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-                this.displayTpSupport = this.container.querySelector("[role=tpSupport]")
+                this.addMenuItemToBothFrames(
+                    'tpSupport',
+                    'basicBtn',
+                    this.temporalSupport,
+                    () => this.temporalSupport.render(this.parent.getState().tpSupport),
+                    'displayTpSupport'
+                );
                 this.displayTpSupport.hidden = false;
-                addChild(this.displayTpSupport, this.temporalSupport.render(this.parent.getState().tpSupport));
-                this.temporalSupport.build(this.displayTpSupport);
+                this.displayTpSupportMb.hidden = false;
             }
             if (hasSelection) {
-                let dsp: simpleDiv = {role:'selection', title:'', subTitle:''}
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-                this.displaySelection = this.container.querySelector("[role=selection]")
-                this.displaySelection.hidden = false;
-                addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
-                this.selection.build(this.displaySelection);
+                this.addMenuItemToBothFrames(
+                    'selection',
+                    'basicBtn',
+                    this.selection,
+                    () => this.selection.render(this.parent.getState().selection),
+                    'displaySelection'
+                );
+                this.displaySelection.hidden = this.selectionHidden;
+                this.displaySelectionMb.hidden = this.selectionHidden;
             }
             if (hasSelectionParam) {
-                let dsp: simpleDiv = {role:'selection-param', title:'', subTitle:''}
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicInput'));
-                this.displayParam = this.container.querySelector("[role=selection-param]")
+                this.addMenuItemToBothFrames(
+                    'selection-param',
+                    'basicInput',
+                    this.selectionParam,
+                    () => this.selectionParam.render(this.parent.getState().selectionParam + ''),
+                    'displayParam'
+                );
                 this.displayParam.hidden = false;
-                addChild(this.displayParam, this.selectionParam.render(this.parent.getState().selectionParam+''));
-                this.selectionParam.build(this.displayParam);
+                this.displayParamMb.hidden = false;
             }
             if (hasClimatology) {
+                console.log('hasClimatology is true, building extra displays. extraDisplays:', this.extraDisplays);
                 this.extraDisplays.forEach((dsp) => {
+                    console.log('Processing extraDisplay:', dsp);
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
+                    addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
                     this.extraMenuItems.forEach((dpn) => {
                         if (dpn.id == dsp.role) {
                             let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
@@ -270,8 +362,11 @@ export class MenuBar extends BaseFrame {
                         }
                     });
                     if (this.extraMenuInputs.length > 0) {
+                        console.log('Processing extraMenuInputs for dsp.role:', dsp.role);
                         this.extraMenuInputs.forEach((input) => {
+                            console.log('Checking input.id:', input.id, 'against dsp.role:', dsp.role);
                             if (input.id == dsp.role) {
+                                console.log('Building input:', input.id);
                                 let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
                                 addChild(container, input.render(this.parent.getState().selectionParam+''));
                                 input.build(container)
@@ -279,6 +374,8 @@ export class MenuBar extends BaseFrame {
                         })
                     }
                 });
+            } else {
+                console.log('hasClimatology is false - inputs will not be built');
             }
             if(this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
@@ -299,9 +396,14 @@ export class MenuBar extends BaseFrame {
         
     }
 
-    public mobileMenu() {
+    public desktopMenu() {
         this.collapseMenu.classList.toggle("active");
         this.navMenu.classList.toggle("active");
+    }
+
+    public mobileMenu() {
+        this.collapseMenuMb.classList.toggle("active");
+        this.navMenuMb.classList.toggle("active");
     }
 
     private setupMobileDropdowns(): void {
@@ -375,9 +477,17 @@ export class MenuBar extends BaseFrame {
     }
     
     public hideSelection() {
-        this.selectionHidden = true;
-
+        if (hasSelection) {
+            this.displaySelection.hidden = true;
+        }
     }
+
+    public showSelection() {
+        if (hasSelection) {
+            this.displaySelection.hidden = false;
+        }
+    }
+
     public hideParam() {
         this.paramHidden = true;
     }
@@ -391,22 +501,26 @@ export class MenuBar extends BaseFrame {
 
         if (hasSpSupport) {
             this.displaySpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().support;
-            // this.displaySpSupport.setSubTitle() ;
+            this.displaySpSupportMb.querySelector('.sub-title').innerHTML = this.parent.getState().support;
         }
         if (hasTpSupport) {
             this.displayTpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().tpSupport;
+            this.displayTpSupportMb.querySelector('.sub-title').innerHTML = this.parent.getState().tpSupport;
         }
         if (hasVars) {
             this.displayVar.querySelector('.sub-title').innerHTML = this.parent.getState().varName;
+            this.displayVarMb.querySelector('.sub-title').innerHTML = this.parent.getState().varName;
         }
         if (hasSubVars) {
             this.displaySubVar.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
+            this.displaySubVarMb.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
         } 
         if (hasSelection) {
             this.displaySelection.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
+            this.displaySelectionMb.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
         }
         if (hasSelectionParam) {
-            this.selectionParam.value = this.parent.getState().selectionParam
+            this.selectionParam.value = this.parent.getState().selectionParam;
         }   
         
         if (this.parent.getState().climatology == true) {
@@ -450,10 +564,12 @@ export class MenuBar extends BaseFrame {
                 break;
             case 2:
                 this.extraMenuInputs.push( new CsMenuInput(id, displayTitle, {
-                    valueChanged: (newValue: number) => {  
-                        listener.selectionParamChanged(newValue);
+                    valueChanged: (origin, newValue: number) => {  
+                        console.log('Input valueChanged called:', { id, origin, newValue });
+                        listener.inputParamChanged(id, newValue);
                     }, 
-                }, +options[0]))
+                }, +options[0], +options[1], +options[2]))
+                console.log('extraMenuInputs length after push:', this.extraMenuInputs.length);
                 break;
         }
         

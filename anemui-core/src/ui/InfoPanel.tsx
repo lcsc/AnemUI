@@ -55,7 +55,7 @@ export class InfoDiv extends BaseFrame {
     }
 
     public render(): JSX.Element {
-        return (<div id={this.id}>
+        return (<div id={this.id} hidden>
             <div className="modal-header">
                 <h1>{document.title}</h1>
             </div>
