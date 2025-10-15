@@ -181,6 +181,20 @@
         order:2
     }
 
+    #latLong {
+        display: inline-block; 
+        white-space: nowrap; 
+        width: 100%;
+        margin-bottom: 0.5em;
+        padding: 0.2em 0.4em;
+        border-radius: 5px;
+        color: $title_color;
+        background-color: $title_bgcolor;
+        font-size: 14px;
+        font-weight: 400;
+        box-shadow: 0.5px 0.5px 3px $color_3;
+    }
+
     @include tablet {
         top: 6rem;
         margin-top: 0.5rem;
@@ -358,8 +372,8 @@ div.menu {
 }
 
 .side-bar.active {
-    min-width: 226px;
-    max-width: 226px;
+    min-width: 50%;
+    max-width: 50%;
     text-align: center;
 
     .sidebar-header {
@@ -418,6 +432,11 @@ div.menu {
         min-width: 180px;
         max-width: 180px;
     }
+
+    // @include md-desktop {
+    //     min-width: 226px;
+    //     max-width: 226px;
+    // }
 }
 
 a[aria-expanded="true"] {

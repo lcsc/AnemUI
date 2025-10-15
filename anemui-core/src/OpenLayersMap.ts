@@ -246,7 +246,10 @@ export class OpenLayerMap implements CsMapController {
     this.hideMarker();
     if (this.mouseMoveTo) { clearTimeout(this.mouseMoveTo) }
     this.mouseMoveTo = setTimeout(() => {
-      this.onMouseMoveEnd(this.toCsMapEvent(event));
+      let mapEvent: CsMapEvent = this.toCsMapEvent(event)
+       this.parent.getParent().getRightBar().enableLatLng(mapEvent.latLong)
+      // this.onMouseMoveEnd(this.toCsMapEvent(event));
+      this.onMouseMoveEnd(mapEvent);
     }, 100)
   }
 
@@ -273,7 +276,7 @@ export class OpenLayerMap implements CsMapController {
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
       .then(value => {
         if (state.support == this.defaultRenderer) {
-          self.showValue(event.latLong, value);
+          self.showValue(event.latLong, value[0], value[1], value[2] == 0? '_can':'_pen');
         } else {
           let evt = event.original
           var features: Feature[] = [];
@@ -365,21 +368,21 @@ export class OpenLayerMap implements CsMapController {
     return this.map.getView().getZoom();
   }
 
-  public showValue(pos: CsLatLong, value: number, int: boolean = false): void {
-    this.parent.getParent().getState().xyValue = value
+  public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
     if (Number.isNaN(value)) {
       this.value.setPosition(undefined)
       return;
     }
-    this.popupContent.textContent = this.formatPopupValue(pos, value, int);
+    this.parent.getParent().getState().xyValue = value
+    this.popupContent.innerHTML = this.formatPopupValue(pos, pixelIndex, portion, value, int);
     this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
     this.popupContent.style.visibility = 'visible';
     this.popup.hidden = false
   }
 
-  public formatPopupValue(pos: CsLatLong, value: number, int: boolean = false): string {
+  public formatPopupValue(pos: CsLatLong, pixelIndex: number, portion: string,  value: number, int: boolean = false): string {
     value = int ? Math.round(value) : value
-    return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', value);
+    return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', pixelIndex, portion, value);
   }
 
    public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
@@ -768,7 +771,6 @@ export class OpenLayerMap implements CsMapController {
 
     const self = this;
 
-    console.log('initilalize hoverInteraction')
     this.hoverInteraction = new Select({
       condition: pointerMove,
       style: null,
@@ -798,7 +800,6 @@ export class OpenLayerMap implements CsMapController {
       return !contourGeoLayer || layer !== contourGeoLayer;
     };
 
-    console.log('initilalize selectInteraction')
     this.selectInteraction = new Select({
       filter: layerFilter
     });
@@ -806,10 +807,6 @@ export class OpenLayerMap implements CsMapController {
     this.map.addInteraction(this.selectInteraction);
 
     this.selectableLayers = this.featureLayer ? [this.featureLayer] : [];
-
-    this.selectInteraction.on('select', (e) => {
-      console.log('Selected features:', e.target.getFeatures().getArray());
-    });
   }
 
 

@@ -349,9 +349,7 @@ export class MenuBar extends BaseFrame {
                 this.displayParamMb.hidden = false;
             }
             if (hasClimatology) {
-                console.log('hasClimatology is true, building extra displays. extraDisplays:', this.extraDisplays);
                 this.extraDisplays.forEach((dsp) => {
-                    console.log('Processing extraDisplay:', dsp);
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
                     addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
                     this.extraMenuItems.forEach((dpn) => {
@@ -362,11 +360,8 @@ export class MenuBar extends BaseFrame {
                         }
                     });
                     if (this.extraMenuInputs.length > 0) {
-                        console.log('Processing extraMenuInputs for dsp.role:', dsp.role);
                         this.extraMenuInputs.forEach((input) => {
-                            console.log('Checking input.id:', input.id, 'against dsp.role:', dsp.role);
                             if (input.id == dsp.role) {
-                                console.log('Building input:', input.id);
                                 let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
                                 addChild(container, input.render(this.parent.getState().selectionParam+''));
                                 input.build(container)
@@ -374,8 +369,6 @@ export class MenuBar extends BaseFrame {
                         })
                     }
                 });
-            } else {
-                console.log('hasClimatology is false - inputs will not be built');
             }
             if(this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
@@ -564,12 +557,10 @@ export class MenuBar extends BaseFrame {
                 break;
             case 2:
                 this.extraMenuInputs.push( new CsMenuInput(id, displayTitle, {
-                    valueChanged: (origin, newValue: number) => {  
-                        console.log('Input valueChanged called:', { id, origin, newValue });
+                    valueChanged: (origin, newValue: number) => {
                         listener.inputParamChanged(id, newValue);
-                    }, 
+                    },
                 }, +options[0], +options[1], +options[2]))
-                console.log('extraMenuInputs length after push:', this.extraMenuInputs.length);
                 break;
         }
         

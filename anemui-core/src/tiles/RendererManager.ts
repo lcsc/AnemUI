@@ -74,7 +74,6 @@ export class RendererManager {
         const renderer = this.renderers.find(r => r.id === id);
         if (renderer && renderer.state !== 'enabled') {
             renderer.state = 'enabled';
-            console.log(`Renderer '${renderer.name}' (ID: ${id}) habilitado.`);
         }
     }
 
@@ -86,7 +85,6 @@ export class RendererManager {
         const renderer = this.renderers.find(r => r.id === id);
         if (renderer && renderer.state !== 'disabled') {
             renderer.state = 'disabled';
-            console.log(`Renderer '${renderer.name}' (ID: ${id}) deshabilitado.`);
         }
     }
 
@@ -98,7 +96,6 @@ export class RendererManager {
         const renderer = this.renderers.find(r => r.id === id);
         if (renderer && renderer.state !== 'removed') {
             renderer.state = 'removed';
-            console.log(`Renderer '${renderer.name}' (ID: ${id}) marcado para eliminación.`);
         }
     }
 

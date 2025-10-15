@@ -124,6 +124,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return this.leftBar;
     }
 
+    public getRightBar(): RightBar {
+        return this.rightBar;
+    }
+
     public getMap(): CsMap {
         return this.csMap
     }
@@ -367,7 +371,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 // Verificar si los datos están disponibles
                 if (this.state.computedData && Object.keys(this.state.computedData).length > 1) {
                     clearInterval(checkInterval);
-                    console.log('Data loaded successfully');
                     resolve();
                     return;
                 }
@@ -410,7 +413,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 
                 if (currentHasAllData) {
                     clearInterval(checkInterval);
-                    console.log('All portion data loaded successfully');
                     resolve();
                     return;
                 }
@@ -448,7 +450,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         if (data.value == 0) return;
         this.lastLlData = data;
         this.csMap.showMarker(data.latlng);
-        this.rightBar.enableLatLng(data.latlng)
+        // this.rightBar.enableLatLng(data.latlng)
     }
 
     public hidePointButtons(): void {
@@ -819,7 +821,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return DEF_STYLE_STATIONS;
     }
 
-    public formatPopupValue(text: string, value: number): string {
+    public formatPopupValue(text: string, pixelIndex: number, portion: string, value: number): string {
         let formattedValue: string;
         if (value % 1 === 0) {
             formattedValue = value.toString(); // Convierte el número directamente a string sin decimales
