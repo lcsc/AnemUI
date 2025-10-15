@@ -36,7 +36,6 @@ export function downloadUrl(url: string, cb: DownloadDoneCB, errorCb?:DownloadEr
     //request.onload_ = onload_;
 
     let asynchronous = true;
-    console.log("downLoadUrl: " + url)
     request.open('GET', url, asynchronous);
     request.responseType = responseType;
 
