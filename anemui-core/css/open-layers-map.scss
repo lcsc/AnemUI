@@ -111,3 +111,19 @@
   visibility: hidden;
   pointer-events: none;
 }
+
+#popUp {
+  color: $title_color;
+  background-color: $title_bgcolor;
+  text-align: start;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+#popUp::after {
+  border-top-color: $title_bgcolor !important;
+}
+
+#popUp::before {
+  border-top-color: $title_bgcolor !important;
+}

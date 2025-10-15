@@ -249,16 +249,15 @@ export async function loadLatLongData(latLng:CsLatLong,appStatus:CsViewerData,ti
     return ret;
 }
 
-export async function loadLatLogValue(latLng:CsLatLong,appStatus:CsViewerData,timejs:CsTimesJsData,zoom:number):Promise<number> {
-    let ret = new Promise<number>((resolve, reject) => {
+export async function loadLatLogValue(latLng:CsLatLong,appStatus:CsViewerData,timejs:CsTimesJsData,zoom:number):Promise<number[]> {
+    let ret = new Promise<number[]>((resolve, reject) => {
         let done:TileArrayCB=(value:number,values:number[])=>{
-            resolve(value)
+            resolve([values[0], value, values[1]])
         }
         let fail:DownloadErrorCB=(status:number,error?:Error)=>{
             reject(status)
         }
 
-        //console.log("Test T-XY")
         extractValueChunkedFromXY(latLng, done, fail, appStatus,timejs, false);
     });
     return ret

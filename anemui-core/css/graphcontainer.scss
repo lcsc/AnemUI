@@ -94,5 +94,18 @@ div.GraphContainer {
         flex-wrap: wrap;
         justify-content: center;
     }
+
+    #graphTooltip{
+        position: absolute;
+        display: none;
+        background-color: $title_color;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        pointer-events: none;
+        font-size-adjust: 12px;
+        z-index: 1000;
+        white-space: nowrap
+    }
         
 }

@@ -545,11 +545,11 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
         // if (!computedDataTilesLayer || !status.climatology) {    
         if (status.computedLayer) {
             let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
-            return functionValue(value, []);
+            return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
         } else {
             let cb: ArrayDownloadDone = (data: number[]) => {
                 let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
-                return functionValue(value, []);
+                return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
             }
             downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
         }
