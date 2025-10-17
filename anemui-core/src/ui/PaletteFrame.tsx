@@ -118,6 +118,11 @@ export default class PaletteFrame  extends BaseFrame{
             return;
         }
 
+        if (!this.container) {
+            console.warn('PaletteFrame container not initialized, skipping palette update');
+            return;
+        }
+
         let values= [...legendValues].reverse();
         let texts=[...legendText].reverse();
         let ptr=PaletteManager.getInstance().getPainter();
@@ -125,7 +130,7 @@ export default class PaletteFrame  extends BaseFrame{
         let lmgr=LayerManager.getInstance();
         let min: number =  Math.min(...values);
         let max: number =  Math.max(...values);
-        let name:string; 
+        let name:string;
         let data=this.container.querySelector(".info")
         
         // if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
@@ -170,10 +175,15 @@ export default class PaletteFrame  extends BaseFrame{
         data.innerHTML += "<div id='legendBottom'></div>";
 
         let palettes=mgr.getPalettesNames();
-        if (palettes.length > 2) this.container.querySelector(".paletteSelect span[aria-label=paleta]").textContent= this.parent.getTranslation('paleta') +": "+mgr.getSelected();
+        if (palettes.length > 2) {
+            const paletteLabel = this.container.querySelector(".paletteSelect span[aria-label=paleta]");
+            if (paletteLabel) {
+                paletteLabel.textContent = this.parent.getTranslation('paleta') + ": " + mgr.getSelected();
+            }
+        }
     }
 
-    // Función para determinar si un color es claro u oscuro
+    // Función para determinar si un color de fondo es claro u oscuro
     private isLightColor(hexColor: string): boolean {
 
         if (hexColor == undefined) return false;

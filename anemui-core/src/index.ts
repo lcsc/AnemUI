@@ -13,7 +13,7 @@ export { tpRenderers } from "./tiles/tpSupport"
 export * from './data/CsDataTypes';
 
 // Graph public API
-export { CsGraph, type GraphType } from './ui/Graph';
+export { CsGraph, type GraphType } from '../../../../Graph_00';
 export { DateFrameMode } from "./ui/DateFrame";
 
 // Download utilities public API

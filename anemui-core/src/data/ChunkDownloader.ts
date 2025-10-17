@@ -542,6 +542,7 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     if (portion != '') {
         // Correlative index of the pixel (starts counting at 1)
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
+        if (chunkIndex== 68278) console.log("- ncCoords: " + ncCoords) 
         // if (!computedDataTilesLayer || !status.climatology) {    
         if (status.computedLayer) {
             let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));

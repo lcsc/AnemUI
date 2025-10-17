@@ -114,7 +114,9 @@ export class InfoFrame extends BaseFrame {
             }
         });
 
-        this.modal.setContent(this.parent.getInfoDiv().getDiv());
+        let infoDiv = this.parent.getInfoDiv().getDiv();
+        infoDiv.removeAttribute('hidden');
+        this.modal.setContent(infoDiv);
         let self=this
         this.modal.addFooterBtn('Cerrar', 'tingle-btn tingle-btn--muted tingle-btn--pull-right', function() {
             self.modal.close();
