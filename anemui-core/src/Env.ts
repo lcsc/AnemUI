@@ -36,6 +36,7 @@ export const hasSubVars:boolean = typeof ENV.hasSubVars !== 'undefined'? ENV.has
 export const hasTpSupport:boolean = typeof ENV.hasTpSupport !== 'undefined'? ENV.hasTpSupport:false;
 export const hasSelection:boolean = typeof ENV.hasSelection !== 'undefined'? ENV.hasSelection:false;
 export const hasSelectionParam:boolean = ENV.hasSelectionParam || false;
+export const hasUnits:boolean = ENV.hasUnits || false;
 export const varHasPopData:boolean = typeof ENV.varHasPopData !== 'undefined'? ENV.varHasPopData:false;
 export const sbVarHasPopData:boolean = typeof ENV.sbVarHasPopData !== 'undefined'? ENV.sbVarHasPopData:false;
 export const hasDownload:boolean = typeof ENV.hasDownload !== 'undefined'? ENV.hasDownload:true;

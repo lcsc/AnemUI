@@ -1,5 +1,5 @@
 import { createElement, addChild } from 'tsx-create-element';
-//import {DatepickerOptions} from 'bootstrap-datepicker'
+//import {DatepickerOptions} from 'bootstrap-datepicker'
 import 'bootstrap-datepicker'
 // import * as $ from "jquery";
 import $ from "jquery";
@@ -16,17 +16,14 @@ export interface DateFrameListener {
 }
 
 type dateHashMap = {
-    //year month day -> index
     [key: string]: { [key: string]: { [key: string]: number } }
 }
 
 type monthHashMap = {
-    //year month -> index
     [key: string]: { [key: string]:  number } 
 }
 
 type yearHashMap = {
-    //year -> index
     [key: string]: number  
 }
 
@@ -54,8 +51,6 @@ export class DateSelectorFrame extends BaseFrame {
     protected monthIndex: monthHashMap;
     protected seasonIndex: monthHashMap;
     protected yearIndex: yearHashMap;
-    // protected yearIndex: string[];
-    //protected slider: JQuery<HTMLInputElement>
     protected slider: Slider
     protected sliderFrame: HTMLElement 
     protected var: string;
@@ -77,25 +72,48 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     public setValidDates(_dates: string[], _varChanged: boolean = false): void {
-        // let years = [];
-        // let months = [];
-        this.dates = _dates;
+        console.log("Setting valid dates:", _dates);
+        
+        // Handle the case where _dates is actually a single string (annual data)
+        const times = this.parent.getState().times;
+        
+        // CRITICAL FIX: Convert single date string to array format for DateFrame compatibility
+        if (typeof times === 'string') {
+            console.log("Converting single date string to array for DateFrame:", times);
+            this.dates = [times]; // Convert single string to array
+        } else if (Array.isArray(_dates) && _dates.length > 0) {
+            this.dates = _dates;
+        } else {
+            console.log("No valid dates provided");
+            this.dates = [];
+        }
+
+        // Early exit for disabled mode or no dates
+        if (this.dates.length === 0 || this.mode === DateFrameMode.DateFrameDisabled) {
+            console.log("No dates to set or datepicker disabled");
+            return;
+        }
+
+        // Handle single date case specially
+        if (this.dates.length === 1) {
+            console.log("Handling single date case:", this.dates[0]);
+            this.handleSingleDateCase(_varChanged);
+            return;
+        }
+
+        // Original logic for multi-date arrays
         switch(this.mode) {
             case DateFrameMode.DateFrameDate:
                 if (_varChanged) {
-                this.dateIndex = {};
-                        for (let i = 0; i < this.dates.length; i++) {
-                    const [year, month, day] = this.dates[i].split('-');
-                    if (this.dateIndex[year] == undefined) this.dateIndex[year] = {}
-                    if (this.dateIndex[year][month] == undefined) this.dateIndex[year][month] = {}
-                    this.dateIndex[year][month][day] = i;
+                    this.dateIndex = {};
+                    for (let i = 0; i < this.dates.length; i++) {
+                        const [year, month, day] = this.dates[i].split('-');
+                        if (this.dateIndex[year] == undefined) this.dateIndex[year] = {}
+                        if (this.dateIndex[year][month] == undefined) this.dateIndex[year][month] = {}
+                        this.dateIndex[year][month][day] = i;
+                    }
                 }
-                }
-                if (this.datepicker != undefined) {
-                    this.datepicker.datepicker('setDate', this.dates[this.parent.getState().selectedTimeIndex]);
-                    this.datepicker.datepicker('setStartDate', this.dates[0]);
-                    this.datepicker.datepicker('setEndDate', this.dates[this.dates.length - 1]);
-                }
+                this.updateDatepicker();
                 break;
             case DateFrameMode.DateFrameMonth:
                 if (_varChanged) {
@@ -108,11 +126,7 @@ export class DateSelectorFrame extends BaseFrame {
                         this.monthIndex[year][month]= i;
                     }
                 }
-                if (this.datepicker != undefined) {
-                    this.datepicker.datepicker('setDate', this.months[this.parent.getState().selectedTimeIndex]);
-                    this.datepicker.datepicker('setStartDate', this.months[0]) ;
-                    this.datepicker.datepicker('setEndDate', this.months[this.months.length - 1]);
-                }
+                this.updateDatepicker();
                 break;
             case DateFrameMode.DateFrameSeason:
                 if (_varChanged) {
@@ -129,11 +143,9 @@ export class DateSelectorFrame extends BaseFrame {
                             } 
                     }
                 }
+                this.updateDatepicker();
                 if (this.datepicker != undefined) {
                     let [selectedYear, selectedMonth, ] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
-                    this.datepicker.datepicker('setDate', selectedYear);
-                    this.datepicker.datepicker('setStartDate', this.years[0]) ;
-                    this.datepicker.datepicker('setEndDate', this.years[this.years.length - 1]);
                     this.setSeason(selectedMonth)
                 }
                 break;
@@ -147,33 +159,101 @@ export class DateSelectorFrame extends BaseFrame {
                             this.yearIndex[year]= i;
                     }
                 }
-                if (this.datepicker != undefined) {
-                    this.datepicker.datepicker('setDate', this.years[this.parent.getState().selectedTimeIndex]);
-                    this.datepicker.datepicker('setStartDate', this.years[0]) ;
-                    this.datepicker.datepicker('setEndDate', this.years[this.years.length - 1]);
-                }
+                this.updateDatepicker();
                 break;
-            // case DateFrameMode.ClimFrameSeason:
-            //     break;
-            // case DateFrameMode.ClimFrameMonth:
-            //     break;
-            // case DateFrameMode.ClimFrameYear:
-            //     break;
-            // case DateFrameMode.DateFrameDisabled:
-            //     break;
             default: 
                 break;
         }
     }
 
+    private handleSingleDateCase(_varChanged: boolean): void {
+        console.log("Handling single date case - mode:", this.mode);
+        
+        // For single dates, set up minimal index structures
+        if (_varChanged) {
+            const [year, month, day] = this.dates[0].split('-');
+            
+            // Initialize all index structures for single date
+            this.dateIndex = { [year]: { [month]: { [day]: 0 } } };
+            this.monthIndex = { [year]: { [month]: 0 } };
+            this.yearIndex = { [year]: 0 };
+            this.years = [year];
+            this.months = [year + '-' + month];
+        }
+        
+        // Set the datepicker safely for single date
+        this.updateDatepicker();
+    }
+
+    private updateDatepicker(): void {
+        if (this.datepicker == undefined) {
+            console.log("Datepicker not initialized, skipping update");
+            return;
+        }
+
+        try {
+            const selectedIndex = this.parent.getState().selectedTimeIndex;
+            const safeIndex = Math.min(selectedIndex, this.dates.length - 1);
+            
+            switch(this.mode) {
+                case DateFrameMode.DateFrameDate:
+                    this.datepicker.datepicker('setDate', this.dates[safeIndex]);
+                    if (this.dates.length > 1) {
+                        this.datepicker.datepicker('setStartDate', this.dates[0]);
+                        this.datepicker.datepicker('setEndDate', this.dates[this.dates.length - 1]);
+                    }
+                    break;
+                case DateFrameMode.DateFrameMonth:
+                    if (this.months && this.months.length > 0) {
+                        this.datepicker.datepicker('setDate', this.months[safeIndex]);
+                        if (this.months.length > 1) {
+                            this.datepicker.datepicker('setStartDate', this.months[0]);
+                            this.datepicker.datepicker('setEndDate', this.months[this.months.length - 1]);
+                        }
+                    }
+                    break;
+                case DateFrameMode.DateFrameSeason:
+                    if (this.years && this.years.length > 0) {
+                        this.datepicker.datepicker('setDate', this.years[Math.min(safeIndex, this.years.length - 1)]);
+                        if (this.years.length > 1) {
+                            this.datepicker.datepicker('setStartDate', this.years[0]);
+                            this.datepicker.datepicker('setEndDate', this.years[this.years.length - 1]);
+                        }
+                    }
+                    break;
+                case DateFrameMode.DateFrameYear:
+                    if (this.years && this.years.length > 0) {
+                        const currentYear = this.years[Math.min(safeIndex, this.years.length - 1)];
+                        const startYear = this.years[0];
+                        const endYear = this.years[this.years.length - 1];
+                        
+                        console.log('Setting year datepicker:', { currentYear, startYear, endYear, safeIndex });
+                        
+                        // Crear fechas completas para el datepicker
+                        this.datepicker.datepicker('setDate', new Date(parseInt(currentYear), 0, 1));
+                        if (this.years.length > 1) {
+                            this.datepicker.datepicker('setStartDate', new Date(parseInt(startYear), 0, 1));
+                            this.datepicker.datepicker('setEndDate', new Date(parseInt(endYear), 11, 31));
+                        }
+                    }
+                    break;
+            }
+            
+            console.log("Datepicker updated successfully for mode:", this.mode);
+            
+        } catch (error) {
+            console.error("Error updating datepicker:", error);
+            // Don't throw - just log and continue
+        }
+    }
+
     private indexOfDate(date:Date):number{
-                if (date==undefined) return -1;
+        if (date==undefined) return -1;
         let year: string;
         let month: string;
         let season: string;
         let day: string;
         year = date.getFullYear() + ""
-        //  month = (date.getMonth() + 1) + ""
         month = ("0" + (date.getMonth() + 1)).slice(-2)
         season = month
         day = date.getDate() + "";
@@ -199,6 +279,7 @@ export class DateSelectorFrame extends BaseFrame {
                 return this.seasonIndex[year][season];
             case DateFrameMode.DateFrameYear:
                 if (this.yearIndex == undefined) return -1;
+                if (this.yearIndex[year] == undefined) return -1;
                 return this.yearIndex[year];
         }
     }
@@ -207,6 +288,7 @@ export class DateSelectorFrame extends BaseFrame {
         let index=this.indexOfDate(date)
         return index >= 0;
     }
+    
     private isMonthValid(date:Date):boolean{
         if (this.dateIndex == undefined) return false;
         let year: string;
@@ -220,6 +302,11 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     private isYearValid(date:Date):boolean{
+        if (this.mode === DateFrameMode.DateFrameYear) {
+            const year = date.getFullYear().toString();
+            return this.yearIndex && this.yearIndex[year] !== undefined;
+        }
+        
         if (this.dateIndex == undefined) return false;
         let year: string;
         year = date.getFullYear() + ""
@@ -301,7 +388,7 @@ export class DateSelectorFrame extends BaseFrame {
         if (this.datepickerFrame.children.length > 0) {
             while (this.datepickerFrame.firstChild) {
                 this.datepickerFrame.removeChild(this.datepickerFrame.firstChild);
-              }
+            }
         }
         let options: DatepickerOptions;
         let pickerId: string
@@ -347,7 +434,13 @@ export class DateSelectorFrame extends BaseFrame {
                     autoclose: true,
                     minViewMode: "years",
                     maxViewMode: "years",
-                    language: "es"
+                    language: "es",
+                    beforeShowYear: (date: Date) => {
+                        const year = date.getFullYear().toString();
+                        const isValid = this.yearIndex && this.yearIndex[year] !== undefined;
+                        console.log('beforeShowYear check:', year, isValid);
+                        return isValid;
+                    }
                 }
                 pickerId = 'yearPicker'
                 break;
@@ -362,7 +455,6 @@ export class DateSelectorFrame extends BaseFrame {
         this.datepicker = $(this.datepickerEl).datepicker(options) as JQuery<HTMLDivElement>;
 
         if (this.mode == DateFrameMode.DateFrameSeason) {
-            // -- Selector de años/estaciones (se cambiará por un selector único, sin dropdown) 
             this.seasonButton = document.getElementById("seasonButton") as HTMLElement;
             let self = this
             this.season = new CsDropdown("SeasonDD", "Estación", {
@@ -387,6 +479,7 @@ export class DateSelectorFrame extends BaseFrame {
             }
             //Set the action
             let index = this.indexOfDate(event.date)
+            console.log('changeDate event:', event.date, 'index:', index);
             if (index>=0 && index!=this.parent.getState().selectedTimeIndex) {
                 this.slider.setValue(index,false,false)
                 this.parent.getState().selectedTimeIndex=index;
@@ -401,7 +494,6 @@ export class DateSelectorFrame extends BaseFrame {
 
     public renderPicker(id:string):JSX.Element {
         if (this.mode == DateFrameMode.DateFrameSeason) {
-            // -- Selector de años/estaciones (sería preferible cambiarlo por un selector único, sin dropdown) 
             this.datepickerFrame.classList.remove("col-6")
             this.datepickerFrame.classList.add("col-8")
             return (
@@ -422,7 +514,6 @@ export class DateSelectorFrame extends BaseFrame {
                     <input type="text" className="form-control"></input>
                     <span className="input-group-addon input-group-text"><i className="bi bi-calendar4-week"></i></span>
                 </div>);
-        
     }
 
     public render(): JSX.Element {
@@ -480,12 +571,10 @@ export class DateSelectorFrame extends BaseFrame {
         const endDate = this.dates.length - 1;
         this.slider=new Slider(document.getElementById("datesSlider"),{
             natural_arrow_keys: true,
-            //tooltip: "always",
             min: 0,
             max: endDate,
             value: this.parent.getState().selectedTimeIndex
         })
-        // Overriding _setText function of the Tooltip class so that the tooltip is not displayed.
         // @ts-ignore
         this.slider._setText = function (element: any, text: any) {}
         this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[endDate]
@@ -493,7 +582,7 @@ export class DateSelectorFrame extends BaseFrame {
             if(val==this.parent.getState().selectedTimeIndex)return;
             this.parent.getState().selectedTimeIndex=val;
             this.datepicker.datepicker('setDate', this.dates[val])
-        if (this.mode == DateFrameMode.DateFrameSeason) {
+            if (this.mode == DateFrameMode.DateFrameSeason) {
                 let season = this.getSeason(this.dates[val]) 
             }
             this.parent.update();
@@ -515,7 +604,7 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     public update(): void {
-    let varChanged: boolean = false
+        let varChanged: boolean = false
         if(this.parent.getState().varId!=this.var){
             varChanged = true
             this.updateMode();
@@ -534,38 +623,63 @@ export class DateSelectorFrame extends BaseFrame {
 
     protected updateMode(){
         let time = this.getTime(this.parent.getState().times)
-        if (!this.parent.getState().climatology) {
+        let state = this.parent.getState();
+        
+        // Handle single date strings specially
+        if (typeof this.parent.getState().times === 'string') {
+            console.log('DEBUG: Single date string detected, using year mode');
             this.timeSeriesFrame.hidden = false;
             this.climatologyFrame.hidden = true;
-            this.sliderFrame.hidden = false
-            switch (time) {
-                case 1: 
-                    this.mode = DateFrameMode.DateFrameYear;
-                    break;
-                case 4:
-                    this.mode = DateFrameMode.DateFrameSeason;
-                    break;
-                case 12:
-                    this.mode = DateFrameMode.DateFrameMonth;
-                    break;
-                default:
-                    this.mode = DateFrameMode.DateFrameDate;
-                    break;
+            this.sliderFrame.hidden = true;
+            this.mode = DateFrameMode.DateFrameYear;
+            return;
+        }
+        
+        if (!this.parent.getState().climatology) {
+            const isScenarioAnnual = state.tpSupport === 'Escenarios futuros' && state.varName === 'Índice de aridez anual';
+            
+            if (isScenarioAnnual) {
+                console.log('DEBUG: Hiding datepicker for scenario annual (any spatial support)');
+                this.timeSeriesFrame.hidden = true;
+                this.climatologyFrame.hidden = true;
+                this.sliderFrame.hidden = true;
+                this.mode = DateFrameMode.DateFrameDisabled;
+            } else {
+                console.log('DEBUG: Showing datepicker for time series');
+                this.timeSeriesFrame.hidden = false;
+                this.climatologyFrame.hidden = true;
+                this.sliderFrame.hidden = false;
+                
+                switch (time) {
+                    case 1: 
+                        this.mode = DateFrameMode.DateFrameYear;
+                        this.sliderFrame.hidden = true;
+                        break;
+                    case 4:
+                        this.mode = DateFrameMode.DateFrameSeason;
+                        break;
+                    case 12:
+                        this.mode = DateFrameMode.DateFrameMonth;
+                        break;
+                    default:
+                        this.mode = DateFrameMode.DateFrameDate;
+                        break;
+                }
             }
         } else {
             this.timeSeriesFrame.hidden = true;
             switch (time) {
                 case 1: 
                     this.mode = DateFrameMode.ClimFrameYear;
-                    this.sliderFrame.hidden = true
-                    this.climatologyFrame.hidden = true
+                    this.sliderFrame.hidden = true;
+                    this.climatologyFrame.hidden = true;
                     break;
                 default:
                     this.mode = time==4? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
-                    let period = this.getPeriods(time)
-                    this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex]
-                    this.sliderFrame.hidden = false
-                    this.climatologyFrame.hidden = false
+                    let period = this.getPeriods(time);
+                    this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
+                    this.sliderFrame.hidden = false;
+                    this.climatologyFrame.hidden = false;
                     break;
             }
         }

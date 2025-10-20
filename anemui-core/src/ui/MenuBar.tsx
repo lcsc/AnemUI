@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuInput, CsMenuItemListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, varHasPopData, sbVarHasPopData}  from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData } from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -70,7 +70,7 @@ export class MenuBar extends BaseFrame {
     private extraMenuItems: CsMenuItem[];
     private extraMenuInputs: CsMenuInput[];
     private dropDownOrder: string[]
-    private logoMaps:string[]
+    private logoMaps: string[]
 
     private popData: any;
     private extraBtns: BaseUiElement[];
@@ -80,8 +80,12 @@ export class MenuBar extends BaseFrame {
 
     private listener: MenuBarListener;
 
-    private fetchingText : string = "Fetching data..."
+    private fetchingText: string = "Fetching data..."
     private errorText: string = "Could not retrieve data"
+
+    private displayUnits: HTMLDivElement;
+    private units: CsMenuItem;
+
 
     constructor(_parent: BaseApp, _listener: MenuBarListener) {
         super(_parent)
@@ -134,6 +138,13 @@ export class MenuBar extends BaseFrame {
                 },
             });
         }
+
+        this.units = new CsMenuItem("UnitsDD", "Unidades", {
+            valueSelected(origin, index, value, values) {
+                self.listener.subVarSelected(index, value, values) // Reutiliza el mismo listener
+            },
+        });
+
         this.extraMenuItems = []
         this.extraMenuInputs = []
         this.extraBtns = []
@@ -148,7 +159,7 @@ export class MenuBar extends BaseFrame {
 
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
         let divs = Array.from(document.getElementsByClassName("inputDiv") as HTMLCollectionOf<HTMLElement>)
-        let maxId = divs.reduce(function(a, b){
+        let maxId = divs.reduce(function (a, b) {
             return Math.max(a, parseInt(b.id))
         }, 0);
         let nextId = (maxId + 1).toString()
@@ -348,14 +359,26 @@ export class MenuBar extends BaseFrame {
                 this.displayParam.hidden = false;
                 this.displayParamMb.hidden = false;
             }
+
+            if (hasUnits) {
+                let dspUnits: simpleDiv = { role: 'units', title: 'Unidades', subTitle: '' }
+                addChild(this.inputsFrame, this.renderDisplay(dspUnits, 'basicBtn'));
+                this.displayUnits = this.container.querySelector("[role=units]")
+                addChild(this.displayUnits, this.units.render(this.parent.getState().subVarName, false));
+                this.units.build(this.displayUnits);
+            }
             if (hasClimatology) {
+                console.log('Building climatology dropdowns, extraDisplays:', this.extraDisplays.length);
+
                 this.extraDisplays.forEach((dsp) => {
+                    console.log('Processing display:', dsp.role, dsp.title, dsp.subTitle);
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
                     addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
                     this.extraMenuItems.forEach((dpn) => {
                         if (dpn.id == dsp.role) {
+                            console.log('  -> Rendering menu item:', dpn.id);
                             let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                            addChild(container, dpn.render(dsp.subTitle,false));
+                            addChild(container, dpn.render(dsp.subTitle, false));
                             dpn.build(container)
                         }
                     });
@@ -363,30 +386,38 @@ export class MenuBar extends BaseFrame {
                         this.extraMenuInputs.forEach((input) => {
                             if (input.id == dsp.role) {
                                 let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                                addChild(container, input.render(this.parent.getState().selectionParam+''));
+                                addChild(container, input.render(this.parent.getState().selectionParam + ''));
                                 input.build(container)
                             }
                         })
                     }
                 });
             }
-            if(this.dropDownOrder.length) {
+            if (this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
             }
             this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
-            this.climBtnArray.forEach((btn) =>{
+            this.climBtnArray.forEach((btn) => {
                 btn.hidden = true;
             })
 
             if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
 
-            if(this.inputOrder.length) {
+            if (this.inputOrder.length) {
                 this.changeInputOrder()
+            }
+
+            const currentState = this.parent.getState();
+            if (currentState.climatology === true || currentState.tpSupport === 'Climatología') {
+                // Usar setTimeout para asegurar que el DOM está listo
+                setTimeout(() => {
+                    this.showClimFrame();
+                }, 100);
             }
         }
         this.setupMobileDropdowns();
         this.buildLogoMaps();
-        
+
     }
 
     public desktopMenu() {
@@ -423,11 +454,11 @@ export class MenuBar extends BaseFrame {
         }
     }
 
-    public setLogoMaps(_logoMaps:string[]){
+    public setLogoMaps(_logoMaps: string[]) {
         this.logoMaps = _logoMaps
     }
 
-    public buildLogoMaps(){
+    public buildLogoMaps() {
         if (!this.logoMaps || this.logoMaps.length === 0 || !this.logoMap) {
             return;
         }
@@ -454,21 +485,21 @@ export class MenuBar extends BaseFrame {
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
-        if (this.loading) this.loading.hidden = false; 
+        if (this.loading) this.loading.hidden = false;
         if (this.loadingText) {
-            this.loadingText.hidden = false;          
-            this.loadingText.classList.add('blinking-text'); 
+            this.loadingText.hidden = false;
+            this.loadingText.classList.add('blinking-text');
         }
     }
-    
+
     public hideLoading(): void {
-        if (this.loading) this.loading.hidden = true; 
+        if (this.loading) this.loading.hidden = true;
         if (this.loadingText) {
-            this.loadingText.hidden = true;      
+            this.loadingText.hidden = true;
             this.loadingText.classList.add('display:none')
         }
     }
-    
+
     public hideSelection() {
         if (hasSelection) {
             this.displaySelection.hidden = true;
@@ -485,7 +516,7 @@ export class MenuBar extends BaseFrame {
         this.paramHidden = true;
     }
 
-    public hideVar():void {
+    public hideVar(): void {
         this.displayVar.classList.add('display:none')
     }
 
@@ -522,6 +553,42 @@ export class MenuBar extends BaseFrame {
             this.hideClimFrame()
         }
     }
+    public showMenusForClimatology(): void {
+        if (!this.climBtnArray || this.climBtnArray.length === 0) {
+            console.warn('climBtnArray not initialized yet, skipping showMenusForClimatology');
+            return;
+        }
+
+        this.climBtnArray.forEach((btn) => {
+            const role = btn.getAttribute('role');
+            if (role === 'variable' || role === 'escala') {
+                // Mostrar variable y escala para climatología
+                btn.hidden = false;
+            } else if (role === 'escenario') {
+                // Ocultar escenario para climatología
+                btn.hidden = true;
+            }
+        });
+    }
+
+    public showMenusForScenarios(): void {
+        if (!this.climBtnArray || this.climBtnArray.length === 0) {
+            console.warn('climBtnArray not initialized yet, skipping showMenusForScenarios');
+            return;
+        }
+
+        this.climBtnArray.forEach((btn) => {
+            const role = btn.getAttribute('role');
+            if (role === 'variable' || role === 'escala' || role === 'escenario') {
+                // Mostrar variable, escala y escenario para escenarios futuros
+                btn.hidden = false;
+            }
+        });
+    }
+
+    public isBuilt(): boolean {
+        return this.climBtnArray !== undefined && this.climBtnArray !== null;
+    }
 
     //Llamar en el configure antes del build
     public addButton(btn: BaseUiElement): void {
@@ -529,24 +596,42 @@ export class MenuBar extends BaseFrame {
     }
 
     public hideClimFrame(): void {
-        this.climBtnArray.forEach((btn) =>{
+        if (!this.climBtnArray || this.climBtnArray.length === 0) {
+            console.warn('climBtnArray not initialized yet, skipping hideClimFrame');
+            return;
+        }
+        this.climBtnArray.forEach((btn) => {
             btn.hidden = true;
         })
     }
-    
+
     public showClimFrame(): void {
-        this.climBtnArray.forEach((btn) =>{
-            btn.hidden = false;
-        })
+        if (!this.climBtnArray || this.climBtnArray.length === 0) {
+            console.warn('climBtnArray not initialized yet, skipping showClimFrame');
+            return;
+        }
+
+        const currentState = this.parent.getState();
+
+        if (currentState.tpSupport === 'Escenarios futuros') {
+            this.showMenusForScenarios();
+        } else if (currentState.climatology === true) {
+            this.showMenusForClimatology();
+        } else {
+            // Mostrar todos por defecto
+            this.climBtnArray.forEach((btn) => {
+                btn.hidden = false;
+            })
+        }
     }
 
-    public setExtraDisplay(type: number, id: string, displayTitle:string, options: string[]) { 
-        this.extraDisplays.push( { role: id, title: displayTitle, subTitle: options[0] })
+    public setExtraDisplay(type: number, id: string, displayTitle: string, options: string[]) {
+        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0] })
         let listener = this.listener
 
         switch (type) {
             case 1:
-                this.extraMenuItems.push( new CsMenuItem (id , displayTitle,  {
+                this.extraMenuItems.push(new CsMenuItem(id, displayTitle, {
                     valueSelected(origin, index, value, values) {
                         listener.dropdownSelected(id, index, value, values)
                     },
@@ -563,10 +648,24 @@ export class MenuBar extends BaseFrame {
                 }, +options[0], +options[1], +options[2]))
                 break;
         }
-        
+
     }
 
-    public updateExtraDisplay(type: number, dspRole: string, displayTitle:string, options: string[]) {
+    public hideExtraMenuItem(role: string): void {
+        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
+        if (element) {
+            element.hidden = true;
+        }
+    }
+
+    public showExtraMenuItem(role: string): void {
+        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
+        if (element) {
+            element.hidden = false;
+        }
+    }
+
+    public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[]) {
         switch (type) {
             case 1:
                 this.extraMenuItems.forEach((dpn) => {
@@ -583,7 +682,7 @@ export class MenuBar extends BaseFrame {
                         inp.setTitle(displayTitle)
                     }
                 });
-                break;    
+                break;
         }
     }
 
@@ -595,13 +694,13 @@ export class MenuBar extends BaseFrame {
         });
     }
 
-    public setInputOrder(order:string[]) {
+    public setInputOrder(order: string[]) {
         this.inputOrder = order
     }
 
     public changeInputOrder() {
         let k: number = 0
-        document.querySelectorAll('.inputDiv').forEach((elem:HTMLButtonElement)=>{
+        document.querySelectorAll('.inputDiv').forEach((elem: HTMLButtonElement) => {
             elem.style.order = this.inputOrder[k]
             k++
         })
@@ -665,7 +764,7 @@ export class MenuBar extends BaseFrame {
     public updateMenuItem(btnName: string, btnTitle: string, options: string[]) {
         for (let i = 0; i < this.extraMenuItems.length; i++) {
             if (this.extraMenuItems[i]['id'] == btnName) {
-                 this.extraMenuItems[i].setTitle(btnTitle, btnName)
+                this.extraMenuItems[i].setTitle(btnTitle, btnName)
             }
         }
     }
@@ -674,17 +773,52 @@ export class MenuBar extends BaseFrame {
         this.popData = popData
     }
 
-    public setMenuItemOrder(order:string[]) {
+    public setMenuItemOrder(order: string[]) {
         this.dropDownOrder = order
     }
 
     public changeMenuItemOrder() {
         let k: number = 0
-        document.querySelectorAll('.ordBtn').forEach((elem:HTMLButtonElement)=>{
+        document.querySelectorAll('.ordBtn').forEach((elem: HTMLButtonElement) => {
             elem.style.order = this.dropDownOrder[k]
             k++
         })
     }
+
+    public setUnits(_units: string[]) {
+    this.units.setValues(_units);
+}
+
+public updateUnitsDisplay(value: string) {
+    if (this.displayUnits) {
+        const subtitle = this.displayUnits.querySelector('.sub-title');
+        if (subtitle) {
+            subtitle.innerHTML = value;
+        }
+    }
+}
+
+public hideUnits() {
+    if (this.displayUnits) {
+        this.displayUnits.hidden = true;
+    }
+}
+
+public showUnits() {
+    if (this.displayUnits) {
+        this.displayUnits.hidden = false;
+    }
+}
+
+private getLegendTitleForUnit(unit: string): string {
+    switch(unit) {
+        case 'Km/h': return 'Km/h';
+        case 'm/s': return 'm/s';
+        case 'Nudos': return 'Nudos';
+        case 'Escala WMO/Beaufort': return 'Beaufort';
+        default: return unit;
+    }
+}
 
     // public selectFirstSpatialSupportValue(): void {
     //     this.spatialSupport.selectFirstValidValue();
