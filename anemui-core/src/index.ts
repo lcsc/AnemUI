@@ -11,12 +11,16 @@ export type { Element } from "./ElementManager";
 export { ElementManager } from "./ElementManager";
 export { tpRenderers } from "./tiles/tpSupport"
 export * from './data/CsDataTypes';
+export { hasSubVars } from './Env';
+export {enableRenderer } from './tiles/Support';
 
 // Graph public API
 export { CsGraph, type GraphType } from './ui/Graph';
 export { DateFrameMode } from "./ui/DateFrame";
 
+export { fromLonLat } from 'ol/proj';
+
 // Download utilities public API
 export type { CsvDownloadDone } from './data/ChunkDownloader';
 export { downloadUrl } from './data/UrlDownloader';
-export { downloadXYArrayChunked, downloadXYChunk, downloadTCSVChunked, getPortionForPoint, downloadXYbyRegion, downloadCSVbyRegion, downloadCSVbySt, downloadTimebyRegion } from './data/ChunkDownloader';
+export { downloadXYArrayChunked, downloadXYChunk, downloadTCSVChunked, getPortionForPoint, downloadXYbyRegion, downloadCSVbyRegion, downloadCSVbySt, downloadTimebyRegion, calcPixelIndex, downloadTArrayChunked } from './data/ChunkDownloader';

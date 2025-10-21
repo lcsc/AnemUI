@@ -41,6 +41,8 @@ export class CsMap{
     protected controller:CsMapController;
     protected listener:CsMapListener;
 
+     public lastClickedPoint?: CsLatLong;
+
     constructor(_parent:BaseApp,_controller:CsMapController, _listener:CsMapListener,){
         this.controller=_controller;
         this.listener=_listener;
@@ -67,8 +69,30 @@ export class CsMap{
         this.listener.onMapLoaded();
     }
 
-    public onMapClick(event: CsMapEvent): void {
-        if (this.parent.getState().support!= defaultRenderer) return
+public onMapClick(event: CsMapEvent): void {
+    const state = this.parent.getState();
+    
+    // Para serie temporal en rejilla, siempre mostrar gráfico
+    const isTimeSeries = !state.climatology && state.tpSupport !== 'Escenarios futuros';
+    const isGridSupport = state.support === defaultRenderer; // defaultRenderer es "Rejilla"
+    
+    if (isTimeSeries && isGridSupport) {
+        // En serie temporal + rejilla, siempre proceder con el gráfico
+        if (!event || !event.latLong) {
+            console.error("El objeto event o latLong no están definidos:", event);
+            return;
+        }
+        
+        this.listener.onClick(event);
+        
+        setTimeout(() => {
+            this.checkDataToShowGraph();
+        }, 500);
+    } else if (state.support != defaultRenderer) {
+        // Lógica original para otros soportes (estaciones, regiones)
+        return;
+    } else {
+        // Lógica original para otros casos
         if (!event || !event.latLong) {
             console.error("El objeto event o latLong no están definidos:", event);
             return;
@@ -80,10 +104,17 @@ export class CsMap{
             this.checkDataToShowGraph();
         }, 500);
     }
+}
 
     private checkDataToShowGraph(){
         if (this.parent.getLastLlData() && this.parent.getLastLlData().latlng !== undefined) {
-            this.parent.showGraph({type: 'point'});
+            this.parent.showGraph({
+                type: 'point',
+                stParams: {
+                    id: undefined,
+                    name: undefined
+                }
+            });
         } else {
             console.warn("lastLlData o latlng no están definidos:", this.parent.getLastLlData());
         }

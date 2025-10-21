@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./webpack.config": "./webpack.config.js",
-    "./csconfig": "./csconfig.js"
+    "./csconfig": "./csconfig.js",
+     "./Env": "./src/Env.ts"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

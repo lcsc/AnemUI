@@ -64,7 +64,8 @@ export class CsOptionsService {
 }
 
 export abstract class DataServiceApp extends BaseApp {
-    protected service: CsDataService
+
+    public service: CsDataService
     protected optionsService: CsOptionsService
 
     private updateOptions(): void {
