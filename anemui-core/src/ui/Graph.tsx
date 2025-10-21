@@ -2395,25 +2395,43 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             yRangePad: 10,
             // Controlar la altura del eje X
             xAxisHeight: 30,
-            series: {
-                'fit': {
-                    color: "#aa3311",
-                    strokeWidth: 2
-                },
-                'lwr': {
-                    color: "#454545",
-                    strokePattern: Dygraph.DASHED_LINE
-                },
-                'upr': {
-                    color: "#454545",
-                    strokePattern: Dygraph.DASHED_LINE
+            drawCallback: (dygraph, is_initial) => {
+                if (!is_initial) return;
+
+                // Configure series only after data is loaded
+                const labels = dygraph.getLabels();
+                const seriesConfig: any = {};
+
+                // Only add series config if the series exists in the data
+                if (labels.includes('fit')) {
+                    seriesConfig['fit'] = {
+                        color: "#aa3311",
+                        strokeWidth: 2
+                    };
                 }
-            },
+                if (labels.includes('lwr')) {
+                    seriesConfig['lwr'] = {
+                        color: "#454545",
+                        strokePattern: Dygraph.DASHED_LINE
+                    };
+                }
+                if (labels.includes('upr')) {
+                    seriesConfig['upr'] = {
+                        color: "#454545",
+                        strokePattern: Dygraph.DASHED_LINE
+                    };
+                }
+
+                // Update series configuration if we have any series
+                if (Object.keys(seriesConfig).length > 0) {
+                    dygraph.updateOptions({ series: seriesConfig });
+                }
+            }
         }
     );
 
       // this.addScaleSelectors(graph)
-      
+
       return graph;
   }
   

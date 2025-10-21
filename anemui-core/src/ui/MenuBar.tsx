@@ -748,6 +748,8 @@ export class MenuBar extends BaseFrame {
     public setSelection(_selections: string[]) {
         if (hasSelection) {
             this.selection.setValues(_selections);
+        } else {
+            console.warn("MenuBar.setSelection - hasSelection is false, but setSelection was called!");
         }
     }
 
