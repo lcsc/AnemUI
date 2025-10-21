@@ -161,14 +161,24 @@ export class NiceSteps {
     }
 }
 
-export class CategoryRangePainter implements Painter{
+// Debug helper - add this to CategoryRangePainter for better debugging
 
-    protected ranges:{a:number,b:number}[]
-    constructor(ranges:{a:number,b:number}[]){
-        this.ranges=ranges;
+export class CategoryRangePainter implements Painter {
+    protected ranges: {a:number,b:number}[]
+    
+    constructor(ranges: {a:number,b:number}[]) {
+        this.ranges = ranges;
+        console.log('CategoryRangePainter initialized');
+        console.log('Ranges count:', ranges.length);
+        console.log('Ranges:', ranges);
     }
 
-    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number,uncertaintyLayer:boolean): Promise<HTMLCanvasElement> {
+    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
+        console.log('=== CategoryRangePainter.paintValues ===');
+        console.log('Array length:', floatArray.length);
+        console.log('Canvas:', width, 'x', height);
+        console.log('Data range:', minArray, '-', maxArray);
+        
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');    
         canvas.width = width;
@@ -176,45 +186,113 @@ export class CategoryRangePainter implements Painter{
         let imgData: ImageData = context.getImageData(0, 0, width, height);
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
 
-        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
+        console.log('Gradient (colors) available:', gradient.length);
+        console.log('Ranges available:', this.ranges.length);
         
-        // colorize canvas
+        // VERIFICACIÓN CRÍTICA
+        if (gradient.length !== this.ranges.length) {
+            console.error('❌ CRITICAL: Gradient colors (' + gradient.length + ') != Ranges (' + this.ranges.length + ')');
+        }
+
+        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
+        
+        let stats = {
+            processed: 0,
+            colored: 0,
+            transparent: 0,
+            rangeHits: new Array(this.ranges.length).fill(0),
+            outOfRange: 0,
+            sampleValues: [] as number[]
+        };
+        
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
                 let pxIndex: number = x + ((height - 1) - y) * width;
-                if (!isNaN(value)) {
-                    value = Math.max(minArray, Math.min(value, maxArray));
-                    let index: number = uncertaintyLayer? value: this.getValIndex(value);
-                    bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
-                }else{
-                    bitmap[pxIndex]=pxTransparent;
+                
+                stats.processed++;
+                
+                if (!isNaN(value) && isFinite(value)) {
+                    // Guardar algunos valores de muestra
+                    if (stats.sampleValues.length < 10 && Math.random() < 0.01) {
+                        stats.sampleValues.push(value);
+                    }
+                    
+                    let index: number = this.getValIndex(value);
+                    
+                    if (index >= 0 && index < gradient.length) {
+                        bitmap[pxIndex] = gradient[index];
+                        stats.colored++;
+                        stats.rangeHits[index]++;
+                    } else {
+                        bitmap[pxIndex] = pxTransparent;
+                        stats.transparent++;
+                        stats.outOfRange++;
+                    }
+                } else {
+                    bitmap[pxIndex] = pxTransparent;
+                    stats.transparent++;
                 }
             }
         }
+        
+        console.log('Paint stats:', {
+            processed: stats.processed,
+            colored: stats.colored,
+            transparent: stats.transparent,
+            outOfRange: stats.outOfRange
+        });
+        
+        console.log('Sample values tested:', stats.sampleValues.map(v => v.toFixed(1)));
+        
+        console.log('Range hits:');
+        stats.rangeHits.forEach((count, i) => {
+            if (count > 0) {
+                const r = this.ranges[i];
+                console.log(`  Range ${i} [${r.a}-${r.b}): ${count} pixels`);
+            }
+        });
+        
         context.putImageData(imgData, 0, 0);
         return canvas;
     }
 
-    getValIndex(val:number):number{
-        for (let i =0;i<this.ranges.length;i++){
-            let range=this.ranges[i]
-            if(val>=range.a && val<range.b) return i;
-            if(range.a==undefined && val<range.b) return i;
-            if(range.b==undefined && val>=range.a) return i;
+    getValIndex(val: number): number {
+        // Buscar el rango apropiado
+        for (let i = 0; i < this.ranges.length; i++) {
+            let range = this.ranges[i];
+            
+            // Rango con límite inferior indefinido: val < b
+            if (range.a === undefined && val < range.b) {
+                return i;
+            }
+            // Rango con límite superior indefinido: val >= a
+            else if (range.b === undefined && val >= range.a) {
+                return i;
+            }
+            // Rango normal: a <= val < b
+            else if (range.a !== undefined && range.b !== undefined) {
+                if (val >= range.a && val < range.b) {
+                    return i;
+                }
+            }
         }
-        return -1
+        
+        return -1; // No encontrado
     }
 
     getColorString(val: number, min: number, max: number): string {
-        let mgr = PaletteManager.getInstance()
+        let mgr = PaletteManager.getInstance();
         let paletteStr: string[] = mgr.updatePaletteStrings();
-        let index = this.getValIndex(val)
-        if(index >=0) return paletteStr[index]
-        return "#000000"//black
+        let index = this.getValIndex(val);
+        
+        if (index >= 0 && index < paletteStr.length) {
+            return paletteStr[index];
+        }
+        
+        return "#000000";
     }
-
 }
 
 export class GradientPainter implements Painter{
@@ -281,6 +359,7 @@ export class GradientPainter implements Painter{
 }
 
 export class CsDynamicPainter implements Painter{
+    
     public getColorString(val: number, min: number, max: number): string {
         let mgr = PaletteManager.getInstance()
         let paletteStr: string[] = mgr.updatePaletteStrings()
@@ -483,6 +562,27 @@ export class PaletteManager {
             a: parseInt(result[4], 16)
         } : null;
     }
+
+    getContinuousColor(value: number, min: number, max: number, paletteColors: string[]): string {
+    if (value == null || isNaN(value)) return "#ccc";
+
+    const ratio = (value - min) / (max - min); // normalizar 0..1
+    const scaled = ratio * (paletteColors.length - 1);
+
+    const idx = Math.floor(scaled);
+    const nextIdx = Math.min(idx + 1, paletteColors.length - 1);
+
+    const localRatio = scaled - idx;
+
+    const c1 = this.hexToRgb(paletteColors[idx]);
+    const c2 = this.hexToRgb(paletteColors[nextIdx]);
+
+    const r = Math.round(c1.r + (c2.r - c1.r) * localRatio);
+    const g = Math.round(c1.g + (c2.g - c1.g) * localRatio);
+    const b = Math.round(c1.b + (c2.b - c1.b) * localRatio);
+
+    return `rgb(${r},${g},${b})`;
+}
 
     public getSelected():string{
         return this.selected;

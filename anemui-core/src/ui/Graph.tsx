@@ -8,14 +8,30 @@ import { CsLatLong } from '../CsMapTypes';
 
 require("dygraphs/dist/dygraph.css")
 
-export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose" | "Bar" | "StackedBar" | "LineWithTooltip"
+export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose" | "PercentileClock" | "ECDF" | "DailyEvolution" | "Bar" | "StackedBar" | "LineWithTooltip"
+
+interface MeanLineConfig {
+  show: boolean;
+  color: string;
+  lineWidth: number;
+  dashPattern: number[];
+  showLabel: boolean;
+  labelText: string;
+  shadowColor: string;
+  shadowBlur: number;
+  labelBackgroundColor: string;
+  labelTextColor: string;
+  labelBorderRadius: number;
+  labelPadding: number;
+}
+
 
 export class CsGraph extends BaseFrame {
   private graphTitle: string;
   private graphSubTitle: string;
   private yLabel: string;
   private xLabel: string;
-  private graphType: GraphType;
+  public graphType: GraphType;
   public byPoint: boolean;
   public scaleSelectors: boolean = false;
   public stationProps: any = []
@@ -41,6 +57,16 @@ export class CsGraph extends BaseFrame {
   // Year labels for band legends
   private firstYearLabel: string = 'firstYear';
   private lastYearLabel: string = 'lastYear';
+  private meanLineConfig = {
+    show: true,
+    color: '#FF4444',
+    lineWidth: 2,
+    dashPattern: [8, 4],
+    showLabel: true,
+    labelText: 'Media'
+  };
+
+  private currentMeanValue: number = 0;
 
   public constructor(_parent: BaseApp) {
     super(_parent)
@@ -181,16 +207,35 @@ export class CsGraph extends BaseFrame {
     this.featureButtonContainer.hidden = false
   }
 
-  public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station: any = []) {
-    this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E', 
-    this.container.hidden = false;
-    if (Object.keys(station).length != 0)  this.enableStationDwButton(station)
-    else this.disableStationDwButton()
+public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station: any = []) {
+    console.log('=== CsGraph.showGraph ===');
+    console.log('Graph type:', this.graphType);
+    console.log('Data type:', typeof data);
+    console.log('Has currentValue:', data?.currentValue !== undefined);
+    console.log('Has historicalData:', data?.historicalData !== undefined);
     
-    let graph: Dygraph
-    let url
+    this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E';
+    this.container.hidden = false;
+    
+    if (Object.keys(station).length != 0) this.enableStationDwButton(station);
+    else this.disableStationDwButton();
+
+    let graph: Dygraph;
+    let url: any;
 
     switch (this.graphType) {
+        case "PercentileClock":
+            if (typeof data === 'object' && data.currentValue !== undefined && data.historicalData !== undefined) {
+                this.drawPercentileClockGraph(data.currentValue, data.historicalData, latlng);
+            } else {
+                console.error('Invalid data for PercentileClock:', data);
+            }
+            return; 
+            case "ECDF":
+            if (typeof data === 'object' && data.currentValue !== undefined && data.historicalData !== undefined) {
+                this.drawECDFGraph(data.currentValue, data.historicalData, latlng);
+            }
+            return;
       case "Serial":
         graph = this.drawSerialGraph(data, latlng);
         break;
@@ -234,6 +279,12 @@ export class CsGraph extends BaseFrame {
       legendDiv.style.display = 'none';
     }
 
+    // Calcular y almacenar la media si los datos son una cadena
+    if (typeof url === 'string') {
+        this.currentMeanValue = this.calculateMean(url);
+        console.log('Media calculada en drawSerialGraph:', this.currentMeanValue);
+    }
+    
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -246,12 +297,11 @@ export class CsGraph extends BaseFrame {
         xlabel: dateText,
         showRangeSelector: true,
         xValueParser: function (str: any): number {
-
           let readTime: string
           if (typeof str == "string") {
             readTime = str;
           } else {
-            readTime = this.parent.getState().times[str - 1];
+            readTime = self.parent.getState().times[str - 1];
           }
           return parseDate(readTime);
         },
@@ -261,12 +311,24 @@ export class CsGraph extends BaseFrame {
               let fecha = new Date(millis);
               let value = self.formatDate(fecha)
               return value;
-
             },
             axisLabelFormatter(number, granularity, opts, dygraph) {
               var fecha = new Date(number);
-              let value = self.formatDate(fecha)
-              return value;
+              
+              const numRows = dygraph.numRows();
+              
+              if (numRows <= 12 && numRows > 4) {
+                const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 
+                                   'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                return monthNames[fecha.getMonth()];
+              } else if (numRows <= 4) {
+                const seasonNames = ['invierno', 'primavera', 'verano', 'otoño'];
+                const season = Math.floor(fecha.getMonth() / 3);
+                return seasonNames[season];
+              } else {
+                let value = self.formatDate(fecha);
+                return value;
+              }
             }
           },
           y: {
@@ -2026,6 +2088,167 @@ export class CsGraph extends BaseFrame {
     return graph;
   }
 
+  public setMeanLineConfig(config: Partial<MeanLineConfig>): void {
+    this.meanLineConfig = { ...this.meanLineConfig, ...config };
+  }
+
+  public getCurrentMeanValue(): number {
+    return this.currentMeanValue;
+  }
+
+  private calculateMean(data: string): number {
+    const lines = data.split('\n');
+    let sum = 0;
+    let count = 0;
+    
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.length > 0) {
+            const parts = line.split(';');
+            if (parts.length >= 2 && parts[1] !== '' && !isNaN(parseFloat(parts[1]))) {
+                sum += parseFloat(parts[1]);
+                count++;
+            }
+        }
+    }
+    
+    return count > 0 ? sum / count : 0;
+  }
+
+  public drawMeanLine(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph): void {
+    if (!this.meanLineConfig.show || this.currentMeanValue === 0) return;
+    
+    // Obtener el rango Y actual del gráfico
+    const yRange = dygraph.yAxisRange();
+    
+    // Verificar si la media está dentro del rango visible
+    if (this.currentMeanValue < yRange[0] || this.currentMeanValue > yRange[1]) return;
+    
+    // Convertir valor de media a coordenadas del canvas
+    const coords = dygraph.toDomCoords(0, this.currentMeanValue);
+    const y = coords[1];
+    
+    // Verificar que la línea esté dentro del área del gráfico
+    if (y < area.y || y > area.y + area.h) return;
+    
+    canvas.save();
+    
+    canvas.strokeStyle = 'rgba(46, 134, 171, 0.3)';
+    canvas.lineWidth = this.meanLineConfig.lineWidth + 2;
+    canvas.globalAlpha = 0.5;
+    canvas.setLineDash(this.meanLineConfig.dashPattern);
+    
+    canvas.beginPath();
+    canvas.moveTo(area.x, y + 2); // Desplazar la sombra ligeramente
+    canvas.lineTo(area.x + area.w, y + 2);
+    canvas.stroke();
+    
+    const gradient = canvas.createLinearGradient(area.x, 0, area.x + area.w, 0);
+    gradient.addColorStop(0, this.meanLineConfig.color);
+    gradient.addColorStop(0.3, this.adjustColorBrightness(this.meanLineConfig.color, 20));
+    gradient.addColorStop(0.7, this.adjustColorBrightness(this.meanLineConfig.color, -10));
+    gradient.addColorStop(1, this.meanLineConfig.color);
+    
+    canvas.strokeStyle = gradient;
+    canvas.lineWidth = this.meanLineConfig.lineWidth;
+    canvas.globalAlpha = 0.9;
+    canvas.setLineDash(this.meanLineConfig.dashPattern);
+    
+    canvas.beginPath();
+    canvas.moveTo(area.x, y);
+    canvas.lineTo(area.x + area.w, y);
+    canvas.stroke();
+    
+    canvas.setLineDash([]); // Resetear dash
+    canvas.fillStyle = this.meanLineConfig.color;
+    canvas.globalAlpha = 0.8;
+    
+    canvas.beginPath();
+    canvas.arc(area.x + 5, y, 3, 0, 2 * Math.PI);
+    canvas.fill();
+    
+    canvas.beginPath();
+    canvas.arc(area.x + area.w - 5, y, 3, 0, 2 * Math.PI);
+    canvas.fill();
+  
+
+    if (this.meanLineConfig.showLabel) {
+        const labelText = `📊 ${this.meanLineConfig.labelText}: ${this.currentMeanValue.toFixed(3)}`;
+        
+        // Configurar texto
+        canvas.font = 'bold 11px "Segoe UI", -apple-system, sans-serif';
+        canvas.textAlign = 'left';
+        
+        const textMetrics = canvas.measureText(labelText);
+        const padding = 8;
+        const borderRadius = 6;
+        
+        // Posición de la etiqueta
+        const labelX = area.x + 15;
+        const labelY = Math.max(area.y + 25, y - 15);
+        const labelWidth = textMetrics.width + (padding * 2);
+        const labelHeight = 20;
+        
+        canvas.globalAlpha = 0.15;
+        canvas.fillStyle = '#000000';
+        this.roundedRect(canvas, labelX + 2, labelY - 12, labelWidth, labelHeight, borderRadius);
+        canvas.fill();
+        
+        const labelGradient = canvas.createLinearGradient(labelX, labelY - 12, labelX, labelY + labelHeight - 12);
+        labelGradient.addColorStop(0, this.adjustColorBrightness(this.meanLineConfig.color, 15));
+        labelGradient.addColorStop(1, this.meanLineConfig.color);
+        
+        canvas.globalAlpha = 0.95;
+        canvas.fillStyle = labelGradient;
+        this.roundedRect(canvas, labelX, labelY - 12, labelWidth, labelHeight, borderRadius);
+        canvas.fill();
+ 
+        canvas.globalAlpha = 0.3;
+        canvas.strokeStyle = this.adjustColorBrightness(this.meanLineConfig.color, -30);
+        canvas.lineWidth = 1;
+        this.roundedRect(canvas, labelX, labelY - 12, labelWidth, labelHeight, borderRadius);
+        canvas.stroke();
+  
+        canvas.globalAlpha = 1;
+        canvas.fillStyle = '#FFFFFF';
+        canvas.fillText(labelText, labelX + padding, labelY);
+    }
+    
+    canvas.restore();
+  }
+
+  private roundedRect(canvas: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number): void {
+    canvas.beginPath();
+    canvas.moveTo(x + radius, y);
+    canvas.lineTo(x + width - radius, y);
+    canvas.quadraticCurveTo(x + width, y, x + width, y + radius);
+    canvas.lineTo(x + width, y + height - radius);
+    canvas.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    canvas.lineTo(x + radius, y + height);
+    canvas.quadraticCurveTo(x, y + height, x, y + height - radius);
+    canvas.lineTo(x, y + radius);
+    canvas.quadraticCurveTo(x, y, x + radius, y);
+    canvas.closePath();
+  }
+
+  // Método auxiliar para ajustar el brillo de un color
+  private adjustColorBrightness(color: string, percent: number): string {
+    // Convertir color hex a RGB
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Ajustar brillo
+    const newR = Math.min(255, Math.max(0, r + (r * percent / 100)));
+    const newG = Math.min(255, Math.max(0, g + (g * percent / 100)));
+    const newB = Math.min(255, Math.max(0, b + (b * percent / 100)));
+    
+    // Convertir de vuelta a hex
+    const toHex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
+    return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
+  }
+  
   public drawAreaGraph(url: any, latlng: CsLatLong): Dygraph {
     // Ocultar leyenda de colores (no se usa en Area)
     const legendDiv = document.getElementById('colorLegend');
@@ -2877,6 +3100,917 @@ export class CsGraph extends BaseFrame {
     this.firstYearLabel = firstYear.toString();
     this.lastYearLabel = lastYear.toString();
   }
+  public drawPercentileClockGraph(currentValue: number, historicalData: number[], latlng: CsLatLong): void {
+    const container = document.getElementById("popGraph");
+    if (!container) return;
+
+    // Calcular percentil
+    const percentile = this.calculatePercentile(currentValue, historicalData);
+    
+    // Limpiar contenedor
+    container.innerHTML = '';
+    
+    // Crear canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 450;
+    container.appendChild(canvas);
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Configuración del reloj
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2 + 20;
+    const radius = 150;
+    
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Clasificación Percentil', centerX, 40);
+    ctx.font = '12px Arial';
+    ctx.fillText(`${latlng.lat.toFixed(2)}N, ${latlng.lng.toFixed(2)}E`, centerX, 60);
+
+    // Dibujar arco de fondo con gradiente de colores (verde → amarillo → naranja → rojo)
+    this.drawColorGradientArc(ctx, centerX, centerY, radius);
+    
+    // Dibujar marcas de percentiles (0, 25, 50, 75, 100)
+    this.drawPercentileMarks(ctx, centerX, centerY, radius);
+    
+    // Dibujar aguja indicadora
+    this.drawNeedle(ctx, centerX, centerY, radius - 20, percentile);
+    
+    // Dibujar valor central
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`P${Math.round(percentile)}`, centerX, centerY + 10);
+    
+    // Valor actual
+    ctx.font = '14px Arial';
+    ctx.fillText(`${currentValue.toFixed(2)} ${this.parent.getState().legendTitle}`, centerX, centerY + 35);
+    
+    // Clasificación textual
+    const classification = this.getClassification(percentile);
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = classification.color;
+    ctx.fillText(classification.text, centerX, centerY + 60);
+}
+
+private calculatePercentile(value: number, data: number[]): number {
+  this.debugPercentileData(value, data);
+    const validData = data.filter(v => !isNaN(v) && isFinite(v)).sort((a, b) => a - b);
+    
+    console.log('=== Calculate Percentile ===');
+    console.log('Current value:', value);
+    console.log('Valid data length:', validData.length);
+    
+    if (validData.length === 0) return 50;
+    if (validData.length === 1) {
+        return value >= validData[0] ? 100 : 0;
+    }
+    
+    const minValue = validData[0];
+    const maxValue = validData[validData.length - 1];
+    
+    console.log('Min value:', minValue);
+    console.log('Max value:', maxValue);
+    
+    // Casos límite
+    if (value <= minValue) return 0;
+    if (value >= maxValue) return 100;
+    
+    // Encontrar la posición del valor en los datos ordenados
+    // usando interpolación lineal
+    let lowerIndex = -1;
+    let upperIndex = -1;
+    
+    for (let i = 0; i < validData.length - 1; i++) {
+        if (validData[i] <= value && value <= validData[i + 1]) {
+            lowerIndex = i;
+            upperIndex = i + 1;
+            break;
+        }
+    }
+    
+    // Si encontramos los índices, interpolar
+    if (lowerIndex >= 0 && upperIndex >= 0) {
+        const lowerValue = validData[lowerIndex];
+        const upperValue = validData[upperIndex];
+        
+        // Interpolación lineal entre los dos índices
+        const fraction = (value - lowerValue) / (upperValue - lowerValue);
+        const interpolatedPosition = lowerIndex + fraction;
+        
+        // Convertir a percentil (0-100)
+        const percentile = (interpolatedPosition / (validData.length - 1)) * 100;
+        
+        console.log('Interpolation:', {
+            lowerIndex,
+            upperIndex,
+            lowerValue,
+            upperValue,
+            fraction,
+            percentile
+        });
+        
+        return Math.max(0, Math.min(100, percentile));
+    }
+    
+    let position = 0;
+    for (let i = 0; i < validData.length; i++) {
+        if (validData[i] <= value) {
+            position = i;
+        }
+    }
+    
+    const percentile = (position / (validData.length - 1)) * 100;
+    console.log('Fallback percentile:', percentile);
+    
+    return Math.max(0, Math.min(100, percentile));
+}
+
+private debugPercentileData(value: number, data: number[]): void {
+    const validData = data.filter(v => !isNaN(v) && isFinite(v)).sort((a, b) => a - b);
+    
+    console.log('=== DEBUG PERCENTILE DATA ===');
+    console.log('Total values:', data.length);
+    console.log('Valid values:', validData.length);
+    console.log('Current value:', value);
+    console.log('Min:', Math.min(...validData));
+    console.log('Max:', Math.max(...validData));
+    console.log('Mean:', validData.reduce((a,b) => a+b, 0) / validData.length);
+    console.log('Median:', validData[Math.floor(validData.length / 2)]);
+    console.log('First 10:', validData.slice(0, 10));
+    console.log('Last 10:', validData.slice(-10));
+    
+    for (let i = 0; i <= 10; i++) {
+        const index = Math.floor((validData.length - 1) * i / 10);
+        console.log(`P${i * 10}: ${validData[index]?.toFixed(2)}`);
+    }
+}
+
+public showBothPercentileGraphs(data: any, latlng: CsLatLong): void {
+    console.log('=== Showing both percentile graphs ===');
+    
+    const container = document.getElementById("popGraph");
+    if (!container) return;
+
+    // Validar datos
+    if (typeof data !== 'object' || data.currentValue === undefined || data.historicalData === undefined) {
+        console.error('Invalid data for percentile graphs:', data);
+        return;
+    }
+
+    const { currentValue, historicalData } = data;
+    
+    this.container.hidden = false;
+    this.disableStationDwButton();
+    
+    container.innerHTML = '';
+    
+    const graphsContainer = document.createElement('div');
+    graphsContainer.style.display = 'flex';
+    graphsContainer.style.gap = '20px';
+    graphsContainer.style.justifyContent = 'center';
+    graphsContainer.style.alignItems = 'flex-start';
+    graphsContainer.style.padding = '20px';
+    container.appendChild(graphsContainer);
+    
+    const percentile = this.calculatePercentile(currentValue, historicalData);
+    
+    const clockCanvas = document.createElement('canvas');
+    clockCanvas.width = 400;
+    clockCanvas.height = 450;
+    graphsContainer.appendChild(clockCanvas);
+    
+    const clockCtx = clockCanvas.getContext('2d');
+    if (clockCtx) {
+        this.drawPercentileClockContent(clockCtx, clockCanvas, currentValue, historicalData, latlng, percentile);
+    }
+    
+    const ecdfCanvas = document.createElement('canvas');
+    ecdfCanvas.width = 600;
+    ecdfCanvas.height = 450;
+    graphsContainer.appendChild(ecdfCanvas);
+    
+    const ecdfCtx = ecdfCanvas.getContext('2d');
+    if (ecdfCtx) {
+        this.drawECDFContent(ecdfCtx, ecdfCanvas, currentValue, historicalData, latlng, percentile);
+    }
+}
+
+private drawPercentileClockContent(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    currentValue: number,
+    historicalData: number[],
+    latlng: CsLatLong,
+    percentile: number
+): void {
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2 + 20;
+    const radius = 150;
+    
+    // ... código de dibujado existente sin cambios ...
+    
+    // Título
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Clasificación Percentil', centerX, 30);
+    ctx.font = '11px Arial';
+    ctx.fillText(`${latlng.lat.toFixed(2)}N, ${latlng.lng.toFixed(2)}E`, centerX, 50);
+
+    this.drawColorGradientArc(ctx, centerX, centerY, radius);
+    this.drawPercentileMarks(ctx, centerX, centerY, radius);
+    this.drawNeedle(ctx, centerX, centerY, radius - 20, percentile);
+    
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`P${Math.round(percentile)}`, centerX, centerY + 10);
+    
+    ctx.font = '14px Arial';
+    ctx.fillText(`${currentValue.toFixed(2)} ${this.parent.getState().legendTitle}`, centerX, centerY + 35);
+    
+    const classification = this.getClassification(percentile);
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = classification.color;
+    ctx.fillText(classification.text, centerX, centerY + 60);
+    
+    // AÑADIR INTERACTIVIDAD
+    this.addClockInteractivity(canvas, centerX, centerY, radius, percentile, currentValue, historicalData);
+}
+
+private addClockInteractivity(
+    canvas: HTMLCanvasElement,
+    centerX: number,
+    centerY: number,
+    radius: number,
+    percentile: number,
+    currentValue: number,
+    historicalData: number[]
+): void {
+    // Crear tooltip
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'absolute';
+    tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '8px 12px';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.display = 'none';
+    tooltip.style.zIndex = '10000';
+    tooltip.style.whiteSpace = 'nowrap';
+    document.body.appendChild(tooltip);
+    
+    // Calcular estadísticas
+    const validData = historicalData.filter(v => !isNaN(v) && isFinite(v));
+    const min = Math.min(...validData);
+    const max = Math.max(...validData);
+    const mean = validData.reduce((a, b) => a + b, 0) / validData.length;
+    
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Calcular distancia al centro
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Verificar si está sobre el arco de colores
+        if (distance >= radius - 35 && distance <= radius + 15) {
+            // Calcular ángulo
+            let angle = Math.atan2(dy, dx);
+            if (angle < 0) angle += 2 * Math.PI;
+            
+            const startAngle = Math.PI * 0.75;
+            const endAngle = Math.PI * 2.25;
+            
+            // Normalizar ángulo para el arco
+            let normalizedAngle = angle;
+            if (angle < startAngle) normalizedAngle += 2 * Math.PI;
+            
+            if (normalizedAngle >= startAngle && normalizedAngle <= endAngle) {
+                // Calcular percentil en esta posición
+                const percentileAtPosition = ((normalizedAngle - startAngle) / (endAngle - startAngle)) * 100;
+                
+                // Obtener clasificación
+                const classification = this.getClassification(percentileAtPosition);
+                
+                // Mostrar tooltip
+                tooltip.innerHTML = `
+                    <strong>P${Math.round(percentileAtPosition)}</strong><br/>
+                    Clasificación: ${classification.text}<br/>
+                    Datos históricos: ${validData.length} valores
+                `;
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 10) + 'px';
+                tooltip.style.top = (e.clientY + 10) + 'px';
+                canvas.style.cursor = 'pointer';
+                return;
+            }
+        }
+        
+        // Verificar si está sobre el centro (estadísticas)
+        if (distance <= 60) {
+            tooltip.innerHTML = `
+                <strong>Estadísticas</strong><br/>
+                Mínimo: ${min.toFixed(2)}<br/>
+                Máximo: ${max.toFixed(2)}<br/>
+                Media: ${mean.toFixed(2)}<br/>
+                Actual: ${currentValue.toFixed(2)} (P${Math.round(percentile)})
+            `;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 10) + 'px';
+            tooltip.style.top = (e.clientY + 10) + 'px';
+            canvas.style.cursor = 'help';
+            return;
+        }
+        
+        tooltip.style.display = 'none';
+        canvas.style.cursor = 'default';
+    });
+    
+    canvas.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+        canvas.style.cursor = 'default';
+    });
+    
+    // Limpiar tooltip al cerrar
+    const closeButton = document.querySelector('.popup-close-button');
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            if (tooltip.parentNode) {
+                document.body.removeChild(tooltip);
+            }
+        });
+    }
+}
+
+private drawECDFContent(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    currentValue: number,
+    historicalData: number[],
+    latlng: CsLatLong,
+    percentile: number
+): void {
+    const ecdfData = this.calculateECDF(historicalData);
+    
+    const padding = { top: 60, right: 40, bottom: 60, left: 70 };
+    const plotWidth = canvas.width - padding.left - padding.right;
+    const plotHeight = canvas.height - padding.top - padding.bottom;
+    
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Curva ECDF', canvas.width / 2, 30);
+    ctx.font = '11px Arial';
+    ctx.fillText(`${latlng.lat.toFixed(2)}N, ${latlng.lng.toFixed(2)}E`, canvas.width / 2, 50);
+
+    this.drawECDFAxes(ctx, padding, plotWidth, plotHeight, ecdfData);
+    this.drawECDFCurve(ctx, padding, plotWidth, plotHeight, ecdfData);
+    this.drawCurrentPoint(ctx, padding, plotWidth, plotHeight, currentValue, percentile, ecdfData);
+    this.drawECDFLegend(ctx, canvas.width, currentValue, percentile);
+    
+    this.addECDFInteractivity(canvas, padding, plotWidth, plotHeight, ecdfData, currentValue);
+}
+
+private addECDFInteractivity(
+    canvas: HTMLCanvasElement,
+    padding: {top: number, right: number, bottom: number, left: number},
+    plotWidth: number,
+    plotHeight: number,
+    ecdfData: {value: number, percentile: number}[],
+    currentValue: number
+): void {
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'absolute';
+    tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '8px 12px';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.display = 'none';
+    tooltip.style.zIndex = '10000';
+    document.body.appendChild(tooltip);
+    
+    const minValue = Math.min(...ecdfData.map(d => d.value));
+    const maxValue = Math.max(...ecdfData.map(d => d.value));
+    const valueRange = maxValue - minValue;
+    
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // Verificar si está dentro del área del gráfico
+        if (mouseX >= padding.left && mouseX <= padding.left + plotWidth &&
+            mouseY >= padding.top && mouseY <= padding.top + plotHeight) {
+            
+            // Convertir coordenadas del mouse a valores del gráfico
+            const valueAtMouse = minValue + ((mouseX - padding.left) / plotWidth) * valueRange;
+            const percentileAtMouse = 100 - ((mouseY - padding.top) / plotHeight) * 100;
+            
+            // Encontrar el punto más cercano en la curva
+            let closestPoint = ecdfData[0];
+            let minDistance = Infinity;
+            
+            ecdfData.forEach(point => {
+                const px = padding.left + ((point.value - minValue) / valueRange) * plotWidth;
+                const py = padding.top + plotHeight - (point.percentile / 100) * plotHeight;
+                const distance = Math.sqrt(Math.pow(mouseX - px, 2) + Math.pow(mouseY - py, 2));
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPoint = point;
+                }
+            });
+            
+            if (minDistance < 20) {
+                const isCurrent = Math.abs(closestPoint.value - currentValue) < 0.01;
+                
+                tooltip.innerHTML = `
+                    <strong>${isCurrent ? 'Valor Actual' : 'Punto en Curva'}</strong><br/>
+                    Valor: ${closestPoint.value.toFixed(2)} ${this.parent.getState().legendTitle}<br/>
+                    Percentil: P${Math.round(closestPoint.percentile)}<br/>
+                    ${isCurrent ? '<em>Este es tu valor actual</em>' : ''}
+                `;
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 10) + 'px';
+                tooltip.style.top = (e.clientY + 10) + 'px';
+                canvas.style.cursor = 'crosshair';
+                return;
+            }
+            
+            tooltip.innerHTML = `
+                Valor: ${valueAtMouse.toFixed(2)}<br/>
+                Percentil: ~P${Math.round(percentileAtMouse)}
+            `;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 10) + 'px';
+            tooltip.style.top = (e.clientY + 10) + 'px';
+            canvas.style.cursor = 'crosshair';
+        } else {
+            tooltip.style.display = 'none';
+            canvas.style.cursor = 'default';
+        }
+    });
+    
+    canvas.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+        canvas.style.cursor = 'default';
+    });
+    
+    // Limpiar tooltip al cerrar
+    const closeButton = document.querySelector('.popup-close-button');
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            if (tooltip.parentNode) {
+                document.body.removeChild(tooltip);
+            }
+        });
+    }
+}
+
+public drawECDFGraph(currentValue: number, historicalData: number[], latlng: CsLatLong): void {
+    const container = document.getElementById("popGraph");
+    if (!container) return;
+
+    // Preparar datos para ECDF
+    const ecdfData = this.calculateECDF(historicalData);
+    const currentPercentile = this.calculatePercentile(currentValue, historicalData);
+    
+    // Limpiar contenedor
+    container.innerHTML = '';
+    
+    // Crear canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 500;
+    container.appendChild(canvas);
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const padding = { top: 60, right: 40, bottom: 60, left: 70 };
+    const plotWidth = canvas.width - padding.left - padding.right;
+    const plotHeight = canvas.height - padding.top - padding.bottom;
+    
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Función de Distribución Acumulada Empírica (ECDF)', canvas.width / 2, 30);
+    ctx.font = '12px Arial';
+    ctx.fillText(`${latlng.lat.toFixed(2)}N, ${latlng.lng.toFixed(2)}E`, canvas.width / 2, 50);
+
+    this.drawECDFAxes(ctx, padding, plotWidth, plotHeight, ecdfData);
+
+    this.drawECDFCurve(ctx, padding, plotWidth, plotHeight, ecdfData);
+    
+    this.drawCurrentPoint(ctx, padding, plotWidth, plotHeight, currentValue, currentPercentile, ecdfData);
+    
+    this.drawECDFLegend(ctx, canvas.width, currentValue, currentPercentile);
+}
+
+private calculateECDF(data: number[]): {value: number, percentile: number}[] {
+    // Filtrar y ordenar datos válidos
+    const validData = data.filter(v => !isNaN(v) && isFinite(v)).sort((a, b) => a - b);
+    
+    if (validData.length === 0) return [];
+    
+    // Calcular ECDF
+    const ecdfPoints: {value: number, percentile: number}[] = [];
+    
+    for (let i = 0; i < validData.length; i++) {
+        const percentile = ((i + 1) / validData.length) * 100;
+        ecdfPoints.push({
+            value: validData[i],
+            percentile: percentile
+        });
+    }
+    
+    return ecdfPoints;
+}
+
+private drawECDFAxes(
+    ctx: CanvasRenderingContext2D, 
+    padding: {top: number, right: number, bottom: number, left: number},
+    plotWidth: number, 
+    plotHeight: number,
+    ecdfData: {value: number, percentile: number}[]
+): void {
+    const minValue = Math.min(...ecdfData.map(d => d.value));
+    const maxValue = Math.max(...ecdfData.map(d => d.value));
+    
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    
+    // Eje X
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top + plotHeight);
+    ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+    ctx.stroke();
+    
+    // Eje Y
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top);
+    ctx.lineTo(padding.left, padding.top + plotHeight);
+    ctx.stroke();
+    
+    // Etiquetas eje X (valores)
+    ctx.fillStyle = '#666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    
+    const numXTicks = 5;
+    for (let i = 0; i <= numXTicks; i++) {
+        const value = minValue + (maxValue - minValue) * (i / numXTicks);
+        const x = padding.left + (plotWidth * i / numXTicks);
+        
+        ctx.fillText(value.toFixed(1), x, padding.top + plotHeight + 30);
+        
+        // Marca de tick
+        ctx.beginPath();
+        ctx.moveTo(x, padding.top + plotHeight);
+        ctx.lineTo(x, padding.top + plotHeight + 5);
+        ctx.stroke();
+    }
+
+      const canvas = ctx.canvas;
+    
+    // Label eje X
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText(
+        `${this.parent.getState().legendTitle}`,
+        padding.left + plotWidth / 2,
+        canvas.height - 10
+    );
+    
+    // Etiquetas eje Y (percentiles)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = '12px Arial';
+    
+    const numYTicks = 5;
+    for (let i = 0; i <= numYTicks; i++) {
+        const percentile = 100 * (i / numYTicks);
+        const y = padding.top + plotHeight - (plotHeight * i / numYTicks);
+        
+        ctx.fillText(percentile.toFixed(0), padding.left - 10, y);
+        
+        // Marca de tick
+        ctx.beginPath();
+        ctx.moveTo(padding.left - 5, y);
+        ctx.lineTo(padding.left, y);
+        ctx.stroke();
+        
+        // Línea de grid
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + plotWidth, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+    }
+    
+    // Label eje Y
+    ctx.save();
+    ctx.translate(20, padding.top + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Percentil (%)', 0, 0);
+    ctx.restore();
+}
+
+private drawECDFCurve(
+    ctx: CanvasRenderingContext2D,
+    padding: {top: number, right: number, bottom: number, left: number},
+    plotWidth: number,
+    plotHeight: number,
+    ecdfData: {value: number, percentile: number}[]
+): void {
+    if (ecdfData.length === 0) return;
+    
+    const minValue = Math.min(...ecdfData.map(d => d.value));
+    const maxValue = Math.max(...ecdfData.map(d => d.value));
+    const valueRange = maxValue - minValue;
+    
+    // Dibujar curva
+    ctx.strokeStyle = '#2196F3';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    
+    ecdfData.forEach((point, index) => {
+        const x = padding.left + ((point.value - minValue) / valueRange) * plotWidth;
+        const y = padding.top + plotHeight - (point.percentile / 100) * plotHeight;
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    
+    ctx.stroke();
+    
+    // Añadir puntos en la curva
+    ctx.fillStyle = '#2196F3';
+    ecdfData.forEach((point, index) => {
+        if (index % Math.max(1, Math.floor(ecdfData.length / 20)) === 0) {
+            const x = padding.left + ((point.value - minValue) / valueRange) * plotWidth;
+            const y = padding.top + plotHeight - (point.percentile / 100) * plotHeight;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    });
+}
+
+private drawCurrentPoint(
+    ctx: CanvasRenderingContext2D,
+    padding: {top: number, right: number, bottom: number, left: number},
+    plotWidth: number,
+    plotHeight: number,
+    currentValue: number,
+    currentPercentile: number,
+    ecdfData: {value: number, percentile: number}[]
+): void {
+    const minValue = Math.min(...ecdfData.map(d => d.value));
+    const maxValue = Math.max(...ecdfData.map(d => d.value));
+    const valueRange = maxValue - minValue;
+    
+    const x = padding.left + ((currentValue - minValue) / valueRange) * plotWidth;
+    const y = padding.top + plotHeight - (currentPercentile / 100) * plotHeight;
+    
+    // Líneas de guía
+    ctx.strokeStyle = '#FF5722';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    
+    // Línea vertical
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top + plotHeight);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    // Línea horizontal
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+    
+    // Punto actual 
+    ctx.fillStyle = '#FF5722';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Etiqueta del punto
+    ctx.fillStyle = '#FF5722';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(
+        `Actual: ${currentValue.toFixed(2)} (P${Math.round(currentPercentile)})`,
+        x + 15,
+        y - 5
+    );
+}
+
+private drawECDFLegend(
+    ctx: CanvasRenderingContext2D,
+    canvasWidth: number,
+    currentValue: number,
+    currentPercentile: number
+): void {
+    const legendX = canvasWidth - 200;
+    const legendY = 80;
+    
+    // Fondo de la leyenda
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.fillRect(legendX, legendY, 180, 80);
+    ctx.strokeRect(legendX, legendY, 180, 80);
+    
+    // Título
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Leyenda', legendX + 10, legendY + 20);
+    
+    // Curva ECDF
+    ctx.strokeStyle = '#2196F3';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(legendX + 10, legendY + 35);
+    ctx.lineTo(legendX + 30, legendY + 35);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#333';
+    ctx.font = '11px Arial';
+    ctx.fillText('Curva ECDF', legendX + 40, legendY + 38);
+    
+    // Punto actual
+    ctx.fillStyle = '#FF5722';
+    ctx.beginPath();
+    ctx.arc(legendX + 20, legendY + 55, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    ctx.fillStyle = '#333';
+    ctx.fillText('Valor actual', legendX + 40, legendY + 58);
+}
+
+private drawColorGradientArc(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
+    const startAngle = Math.PI * 0.75; // 135 grados
+    const endAngle = Math.PI * 2.25;   // 405 grados (270° de arco)
+    
+    // Dibujar segmentos de color
+    const segments = [
+        { start: 0, end: 0.20, color: '#4CAF50' },   
+        { start: 0.20, end: 0.40, color: '#8BC34A' }, 
+        { start: 0.40, end: 0.60, color: '#FFC107' }, 
+        { start: 0.60, end: 0.80, color: '#FF9800' }, 
+        { start: 0.80, end: 1.00, color: '#F44336' } 
+    ];
+    
+    segments.forEach(seg => {
+        const segStart = startAngle + (endAngle - startAngle) * seg.start;
+        const segEnd = startAngle + (endAngle - startAngle) * seg.end;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, radius, segStart, segEnd);
+        ctx.lineWidth = 30;
+        ctx.strokeStyle = seg.color;
+        ctx.stroke();
+    });
+    
+    // Borde externo
+    ctx.beginPath();
+    ctx.arc(x, y, radius + 15, startAngle, endAngle);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ddd';
+    ctx.stroke();
+    
+    // Borde interno
+    ctx.beginPath();
+    ctx.arc(x, y, radius - 15, startAngle, endAngle);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ddd';
+    ctx.stroke();
+}
+
+private drawPercentileMarks(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
+    const startAngle = Math.PI * 0.75;
+    const totalAngle = Math.PI * 1.5; // 270 grados
+    
+    const marks = [
+        { percentile: 0, label: 'P0' },
+        { percentile: 25, label: 'P25' },
+        { percentile: 50, label: 'P50' },
+        { percentile: 75, label: 'P75' },
+        { percentile: 100, label: 'P100' }
+    ];
+    
+    marks.forEach(mark => {
+        const angle = startAngle + (totalAngle * mark.percentile / 100);
+        
+        // Línea de marca
+        const innerR = radius - 20;
+        const outerR = radius + 20;
+        
+        ctx.beginPath();
+        ctx.moveTo(
+            x + Math.cos(angle) * innerR,
+            y + Math.sin(angle) * innerR
+        );
+        ctx.lineTo(
+            x + Math.cos(angle) * outerR,
+            y + Math.sin(angle) * outerR
+        );
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#666';
+        ctx.stroke();
+        
+        // Etiqueta
+        const labelR = radius + 40;
+        ctx.fillStyle = '#666';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(
+            mark.label,
+            x + Math.cos(angle) * labelR,
+            y + Math.sin(angle) * labelR
+        );
+    });
+}
+
+private drawNeedle(ctx: CanvasRenderingContext2D, x: number, y: number, length: number, percentile: number): void {
+    const startAngle = Math.PI * 0.75;
+    const totalAngle = Math.PI * 1.5;
+    const angle = startAngle + (totalAngle * percentile / 100);
+    
+    // Sombra de la aguja
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    
+    // Dibujar aguja
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(
+        x + Math.cos(angle) * length,
+        y + Math.sin(angle) * length
+    );
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#333';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    
+    ctx.restore();
+    
+    // Círculo central
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.fillStyle = '#333';
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+}
+
+private getClassification(percentile: number): {text: string, color: string} {
+    if (percentile < 10) return { text: 'Muy Bajo', color: '#4CAF50' };
+    if (percentile < 25) return { text: 'Bajo', color: '#8BC34A' };
+    if (percentile < 50) return { text: 'Medio-Bajo', color: '#FFC107' };
+    if (percentile < 75) return { text: 'Medio-Alto', color: '#FF9800' };
+    if (percentile < 90) return { text: 'Alto', color: '#FF5722' };
+    return { text: 'Muy Alto', color: '#F44336' };
+}
 }
 
 function parseDate(input: string) { //"28/10/50"
@@ -2903,7 +4037,11 @@ function parseDate(input: string) { //"28/10/50"
   } else {
     return null;
   }
+
+  
 }
+
+
 
 // Clase o módulo compartido para almacenar el estado del punto
 export class GraphPointManager {

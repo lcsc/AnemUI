@@ -7,12 +7,12 @@ import { MapOptions } from "ol/Map";
 import { TileWMS, XYZ, OSM, TileDebug, ImageStatic as Static } from "ol/source";
 import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
-import { fromLonLat } from "ol/proj";
+import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
@@ -114,13 +114,33 @@ export class OpenLayerMap implements CsMapController {
   protected hoverInteraction: Select;
   protected selectableLayers: CsOpenLayerGeoJsonLayer[]
 
-  protected setExtents(timesJs: CsTimesJsData, varId: string): void {
+protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     timesJs.portions[varId].forEach((portion: string, index, array) => {
-      let selector = varId + portion;
-      let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
-      this.ncExtents[portion] = [timesJs.lonMin[selector] - pxSize / 2, timesJs.latMin[selector] - pxSize / 2, timesJs.lonMax[selector] + pxSize / 2, timesJs.latMax[selector] + pxSize / 2];
+        let selector = varId + portion;
+        let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
+   
+        const dataExtent = [
+            timesJs.lonMin[selector] - pxSize / 2, 
+            timesJs.latMin[selector] - pxSize / 2, 
+            timesJs.lonMax[selector] + pxSize / 2, 
+            timesJs.latMax[selector] + pxSize / 2
+        ];
+        
+        // Si el mapa está en una proyección diferente, transformar
+        if (timesJs.projection !== olProjection) {
+            const transformedExtent = transformExtent(
+                dataExtent,
+                timesJs.projection,
+                olProjection
+            );
+            this.ncExtents[portion] = transformedExtent;
+            console.log(`Transformed extent to ${olProjection}:`, transformedExtent);
+        } else {
+            this.ncExtents[portion] = dataExtent;
+        }
     });
-  }
+}
+
 
   init(_parent: CsMap): void {
     this.parent = _parent;
@@ -230,6 +250,7 @@ export class OpenLayerMap implements CsMapController {
     if (isTileDebugEnabled)
       layers.push(new TileLayer({
         source: new TileDebug(),
+        zIndex: 10000
       }));
 
     return layers;
@@ -269,10 +290,13 @@ export class OpenLayerMap implements CsMapController {
     return ret;
   }
 
-  public onMouseMoveEnd(event: CsMapEvent): void {
-    let self = this
+public onMouseMoveEnd(event: CsMapEvent): void {
+    let self = this;
     const state = this.parent.getParent().getState();
     const timesJs = this.parent.getParent().getTimesJs();
+    
+    // ELIMINAR toda la lógica de shouldShowPercentileClock de aquí
+    // Solo mantener el flujo normal de hover
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
       .then(value => {
         if (state.support == this.defaultRenderer) {
@@ -286,23 +310,32 @@ export class OpenLayerMap implements CsMapController {
 
           let selectableFeatureIDS: string[] = []
 
-          if (features.length > 0) {
-            const selectableFeatures = self.featureLayer.getFeatures();
-            selectableFeatures.forEach(feature => {
-              selectableFeatureIDS.push(feature.properties['id'])
-            })
-            for (var i = 0; i < features.length; ++i) {
-              let featId = features[i].getProperties()['id']
-              if (selectableFeatureIDS.includes(features[i].getProperties()['id']))
-                self.featureLayer.showFeatureValue(self.featureLayer.indexData, features[i], evt.pixel, event.latLong)
+                if (features.length > 0) {
+                    const selectableFeatures = self.featureLayer.getFeatures();
+                    selectableFeatures.forEach(feature => {
+                        selectableFeatureIDS.push(feature.properties['id'])
+                    })
+                    for (var i = 0; i < features.length; ++i) {
+                        if (selectableFeatureIDS.includes(features[i].getProperties()['id']))
+                            self.featureLayer.showFeatureValue(self.featureLayer.indexData, features[i], event.original.pixel, event.latLong)
+                    }
+                }
             }
-          }
-        }
-      })
-      .catch(reason => {
-        console.log("error: " + reason)
-      })
-  }
+        })
+        .catch(reason => {
+            console.log("error: " + reason)
+        })
+}
+
+private shouldShowPercentileClock(state: CsViewerData): boolean {
+    console.log('Checking if should show percentile clock:', {
+        climatology: state.climatology,
+        escala: state.escala,
+        tpSupport: state.tpSupport
+    });
+    
+    return state.climatology && state.escala === 'Anual';
+}
 
   public onDragStart(event: MapEvent) {
     let tileQueue = event.frameState["tileQueue"] as TileQueue
@@ -389,9 +422,9 @@ export class OpenLayerMap implements CsMapController {
     let state = this.parent.getParent().getState()
     if(typeof state.times === 'string' && !computedDataTilesLayer) return 1
     if (feature) {
-        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'] };
+        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'], 'folder': folder };
         if (state.support== this.renderers[0])  this.parent.getParent().showGraph({ type: 'station', stParams })
-        this.parent.getParent().showGraph({ type: 'region', folder, stParams })
+        this.parent.getParent().showGraph({ type: 'region', stParams })
     }
   }
 
@@ -401,36 +434,35 @@ export class OpenLayerMap implements CsMapController {
     }
   }
 
-  // Add null checks and proper layer management
-  public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
+
+public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     let app = window.CsViewerApp;
 
-    // Safely remove all data layers with null checks
+ 
+
     this.safelyRemoveDataLayers();
 
-    // Add new data layers with proper initialization
     this.dataTilesLayer = [];
 
     if (!timesJs.portions[state.varId]) {
-      console.warn('No portions found for varId:', state.varId);
-      return;
+        console.warn('No portions found for varId:', state.varId);
+        return;
     }
 
     timesJs.portions[state.varId].forEach((portion: string, index, array) => {
-      // Create layer with proper initialization
-      let imageLayer: ImageLayer<Static> = new ImageLayer({
-        visible: true, // Explicitly set visible property
-        opacity: 1.0,  // Set opacity
-        source: null   // Initialize with null source, will be set later
-      });
+        let imageLayer: ImageLayer<Static> = new ImageLayer({
+            visible: true,
+            opacity: 1.0,
+            zIndex: 1,
+            source: null
+        });
 
-      // Ensure layer is properly initialized before adding
-      if (imageLayer) {
         this.dataTilesLayer.push(imageLayer);
-        // Insert at specific position to avoid conflicts
-        const insertIndex = Math.max(0, this.map.getLayers().getLength() - 1);
-        this.map.getLayers().insertAt(insertIndex, imageLayer);
-      }
+        
+        // Añadir al final del array de layers (encima de todo)
+        this.map.getLayers().push(imageLayer);
+        
+        console.log(`Layer ${index} created with zIndex:`, imageLayer.getZIndex());
     });
 
     let promises: Promise<number[]>[] = [];
@@ -441,16 +473,34 @@ export class OpenLayerMap implements CsMapController {
         promises.push(this.computeLayerData(state.selectedTimeIndex, state.varId, portion));
       });
     } else {
-      timesJs.portions[state.varId].forEach((portion: string, index, array) => {
-        promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
-      });
+        timesJs.portions[state.varId].forEach((portion: string, index, array) => {
+            promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
+        });
     }
 
-    // Only build images if we have valid layers
     if (this.dataTilesLayer.length > 0 && promises.length > 0) {
-      buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
+        buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false)
+            .then(() => {
+                console.log('=== BUILD DATA TILES COMPLETE ===');
+                
+                // FORZAR REFRESH COMPLETO
+                this.dataTilesLayer.forEach((layer, i) => {
+                    layer.setVisible(true);
+                    layer.changed();
+                    console.log(`Layer ${i} forced refresh, visible:`, layer.getVisible());
+                });
+                
+                // Renderizar el mapa
+                this.map.render();
+                this.map.renderSync();
+                
+                console.log('Map render forced');
+            })
+            .catch(error => {
+                console.error('Error building images:', error);
+            });
     }
-  }
+}
 
   // Safe layer removal method
   private safelyRemoveDataLayers(): void {
@@ -721,9 +771,9 @@ export class OpenLayerMap implements CsMapController {
     if (pLayer && this.politicalLayer !== pLayer) {
       if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
         this.map.removeLayer(this.politicalLayer);
-      }
-      this.map.addLayer(pLayer);
+         this.map.addLayer(pLayer);
       this.politicalLayer = pLayer;
+      }
     }
 
     let pSource = lmgr.getTopLayerSource();

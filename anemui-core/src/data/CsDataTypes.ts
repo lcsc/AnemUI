@@ -95,6 +95,7 @@ export type CsViewerData={
     season:string,
     month:string,
     xyValue:number,
+    escala?: string,
     timeSeriesData: ArrayData,
     computedLayer: boolean,
     computedData: Array4Portion
