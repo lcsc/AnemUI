@@ -29,7 +29,6 @@ export class CsMenuItem extends BaseUiElement {
   }
 
   public setValues(_values: string[], hasPopData: boolean = false) {
-    console.log("CsMenuItem.setValues - id:", this.id, "values:", _values);
     this.values = _values;
     let count = 0;
     for (let i = 0; i < this.values.length; i++) {
@@ -81,12 +80,6 @@ export class CsMenuItem extends BaseUiElement {
     for (let i = 0; i < elements.length; i++) {
       elements[i].classList.remove("show");
     }
-    console.log("CsMenuItem.select - id:", this.id, "index:", index, "value:", this.values[index], "all values:", JSON.stringify(this.values));
-
-    // Double check what we're reading from the DOM
-    const clickedElement = document.getElementById(this.id)?.querySelector(`li:nth-child(${index + 1}) a`);
-    console.log("CsMenuItem.select - DOM text:", clickedElement?.textContent?.trim());
-
     this.listener.valueSelected(this, index, this.values[index], this.values);
   }
 

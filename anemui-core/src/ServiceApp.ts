@@ -100,12 +100,10 @@ export abstract class DataServiceApp extends BaseApp {
     }
 
     public varSelected(index: number, value?: string, values?: string[]): void {
-        console.log("ServiceApp.varSelected - setting state.varName to:", value);
         this.state.varName = value;
         let varId = this.service.getVarId(this.state);
         let newIndex = this.searchNearestDate(this.state.times[this.state.selectedTimeIndex], this.timesJs.times[varId]);
         this.setTimesJs(this.timesJs, this.service.getVarId(this.state));
-        console.log("ServiceApp.varSelected - setting state.varName AGAIN to:", value);
         this.state.varName = value;
         this.state.selectedTimeIndex = newIndex;
         this.state.legendTitle = this.timesJs.legendTitle[this.state.varId];
@@ -125,9 +123,7 @@ export abstract class DataServiceApp extends BaseApp {
         let newIndex = this.searchNearestDate(this.state.times[this.state.selectedTimeIndex], this.timesJs.times[varId]);
         if (varId != this.state.varId) {
             let varName = this.state.varName;
-            console.log("ServiceApp.subVarSelected - backup varName:", varName);
             this.setTimesJs(this.timesJs, this.service.getVarId(this.state));
-            console.log("ServiceApp.subVarSelected - restoring varName to:", varName);
             this.state.varName = varName;
             this.state.subVarName = value;
             this.state.selectedTimeIndex = newIndex;
