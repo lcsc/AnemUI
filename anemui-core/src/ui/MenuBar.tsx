@@ -623,6 +623,8 @@ export class MenuBar extends BaseFrame {
     }
 
     public setVariables(_variables: string[]) {
+        console.log("MenuBar.setVariables called with:", _variables);
+        console.log("MenuBar.setVariables - this.variable:", this.variable);
         this.variable.setValues(_variables, varHasPopData);
     }
 
@@ -647,8 +649,18 @@ export class MenuBar extends BaseFrame {
     }
 
     public setSelection(_selections: string[]) {
+        console.log("MenuBar.setSelection called with:", _selections);
+        console.log("MenuBar.setSelection - array contents:", JSON.stringify(_selections));
+        console.log("MenuBar.setSelection - hasSelection:", hasSelection);
+        console.log("MenuBar.setSelection - this.selection:", this.selection);
+        console.log("MenuBar.setSelection - this.selection is undefined?:", this.selection === undefined);
+        console.log("MenuBar.setSelection - this.variable:", this.variable);
+        console.log("MenuBar.setSelection - are they the same?", this.selection === this.variable);
         if (hasSelection) {
+            console.log("MenuBar.setSelection - calling setValues on this.selection");
             this.selection.setValues(_selections);
+        } else {
+            console.warn("MenuBar.setSelection - hasSelection is false, but setSelection was called!");
         }
     }
 

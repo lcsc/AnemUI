@@ -551,6 +551,8 @@ input.selection-param-input {
 
 .inputDiv.cs-enabled {
     display: grid !important;
+    grid-template-columns: minmax(min-content, max-content);
+    width: auto;
 }
 
 .inputDiv .dpdown-menu li .dropdown-item {
