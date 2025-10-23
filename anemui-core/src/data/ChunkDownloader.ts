@@ -7,10 +7,10 @@ import { inflate } from 'pako';
 import { parse } from 'csv-parse/sync';
 import proj4 from 'proj4';
 import { fromLonLat } from "ol/proj";
-import { CategoryRangePainter, PaletteManager } from "../PaletteManager";
+import { PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, dataSource, computedDataTilesLayer, olProjection } from "../Env";
+import { ncSignif, dataSource, computedDataTilesLayer} from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestedArray, openArray, TypedArray } from 'zarr';
@@ -25,44 +25,60 @@ export const pxTransparent: number = 0x00FFFFFF;
 
 function getActualTimeIndex(requestedTimeIndex: number, varName: string, timesJs: CsTimesJsData): number {
     const availableTimes = timesJs.times[varName];
-
+    
     if (!availableTimes) {
         console.warn(`No time data available for variable ${varName}`);
         return 0;
     }
-
+    
     if (typeof availableTimes === 'string') {
         return 0;
     }
-
+    
     if (Array.isArray(availableTimes)) {
         if (availableTimes.length === 0) {
             console.warn(`Empty time array for variable ${varName}`);
             return 0;
         }
-
-        // For single time step data, always use index 0
+        
+        // Para datos de un solo paso temporal
         if (availableTimes.length === 1) {
             return 0;
         }
-
+        
+        const isUncertaintyVar = varName.includes('_uncertainty');
+        
+        // Para ai_serie_anu (pero NO para su versión _uncertainty)
         if (varName === 'ai_serie_anu' && requestedTimeIndex >= availableTimes.length - 3) {
             console.warn(`Adjusting time index for ${varName}: requested=${requestedTimeIndex}, using=${availableTimes.length - 4}`);
             return Math.max(0, availableTimes.length - 4);
         }
-
-        // For multi-time data, validate the requested index
+        
+        // Para variables de incertidumbre, validar que el índice esté dentro del rango
+        if (isUncertaintyVar) {
+            if (requestedTimeIndex >= availableTimes.length) {
+                console.warn(`Uncertainty var ${varName}: Requested index ${requestedTimeIndex} exceeds available data (max: ${availableTimes.length - 1}). Using last available index.`);
+                return availableTimes.length - 1;
+            }
+            
+            // LOG SOLO PARA DEBUG
+            console.log(`✅ Uncertainty index: requested=${requestedTimeIndex}, using=${requestedTimeIndex}, available=${availableTimes.length}`);
+            return Math.max(0, requestedTimeIndex);
+        }
+        
+        // Para el resto de variables
         if (requestedTimeIndex >= availableTimes.length) {
             console.warn(`Requested time index ${requestedTimeIndex} exceeds available data (max: ${availableTimes.length - 1}). Using last available index.`);
             return availableTimes.length - 1;
         }
-
+        
         return Math.max(0, requestedTimeIndex);
     }
-
+    
     console.warn(`Unexpected time data type for ${varName}, treating as single time`);
     return 0;
 }
+
 
 function isSingleTimeStep(varName: string, timesJs: CsTimesJsData): boolean {
     const availableTimes = timesJs.times[varName];
@@ -90,7 +106,7 @@ export function browserDownloadFile(data: any, filename: string, type: string) {
 async function rangeRequest(url: string, startByte: bigint, endByte: bigint): Promise<Uint8Array> {
     const headers = new Headers();
     headers.append('Range', 'bytes=' + startByte + '-' + endByte);
-
+    
     try {
         const response = await fetch(url, { headers: headers });
         if (response.status === 206) {
@@ -148,7 +164,8 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
     downloadTChunk(x, varName, portion, timesJs)
         .then((floatArray: number[]) => {
             let asciiResult = "date;" + varName + "\n";
-
+            
+            // VALIDACIÓN: Asegurar que times es un array
             let timesArray = timesJs.times[varName];
             if (typeof timesArray === 'string') {
                 // Si es un string, convertirlo a array de un elemento
@@ -157,9 +174,9 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
                 console.error('Times data is not an array or string for', varName);
                 return;
             }
-
+            
             let baseData = zip(timesArray, floatArray);
-
+            
             let download = false;
             baseData.forEach((value, index, array) => {
                 if (!isNaN(value[1])) download = true;
@@ -211,7 +228,7 @@ async function downloadTChunkNC(x: number, varName: string, portion: string, tim
             .then(chunkData => {
                 let chunkOffset: number, chunkSize: number;
                 [chunkOffset, chunkSize] = chunkDataStruct.unpack(chunkData.buffer);
-
+                
                 rangeRequest('./nc/' + varName + portion + '-t.nc', BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1))
                     .then(chunk => {
                         const uncompressedArray = inflate(chunk);
@@ -269,182 +286,125 @@ async function downloadTChunkZarr(x: number, varName: string, portion: string, t
 }
 
 export async function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
+   
     try {
         const floatArrays = await Promise.all(promises);
 
         const validFloatArrays = floatArrays.filter(arr => arr !== undefined && arr !== null);
         
         if (validFloatArrays.length === 0) {
+            console.error('No valid data arrays received in buildImages');
             return;
         }
 
-        const actualTimeIndex = getActualTimeIndex(status.selectedTimeIndex, status.varId, timesJs);
-
-       
-        if (!Array.isArray(timesJs.varMin[status.varId])) {
-            console.log('Converting varMin to array');
-            timesJs.varMin[status.varId] = [];
-        }
-        if (!Array.isArray(timesJs.varMax[status.varId])) {
-            console.log('Converting varMax to array');
-            timesJs.varMax[status.varId] = [];
-        }
-   
-        const filteredArrays: number[][] = [];
+        // Para incertidumbre, usar siempre el varId base para las estructuras
+        const varIdForData = uncertaintyLayer ? status.varId + '_uncertainty' : status.varId;
+        const varIdForStructures = status.varId; // Siempre usar el base para portions, lonNum, latNum
         
-        for (let i = 0; i < validFloatArrays.length; i++) {
-            const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
-            filteredArrays.push(filteredArray);
-        }
+        // Get the actual time index to use
+        const actualTimeIndex = getActualTimeIndex(status.selectedTimeIndex, varIdForData, timesJs);
 
-        let minArray: number = Number.MAX_VALUE;
-        let maxArray: number = Number.MIN_VALUE;
-
-        filteredArrays.forEach((filteredArray) => {
-            filteredArray.forEach((value) => {
-                if (!isNaN(value) && isFinite(value)) {
-                    minArray = Math.min(minArray, value);
-                    maxArray = Math.max(maxArray, value);
-                }
-            });
+        console.log('🎨 buildImages processing:', {
+            uncertaintyLayer,
+            varIdForData,
+            varIdForStructures,
+            selectedTimeIndex: status.selectedTimeIndex,
+            actualTimeIndex,
+            arrayCount: validFloatArrays.length
         });
 
-        if (minArray === Number.MAX_VALUE || maxArray === Number.MIN_VALUE) {
-            console.warn('No valid data found, using default ranges');
+        // CRÍTICO: Para incertidumbre, usar un rango fijo 0-1
+        let minArray: number;
+        let maxArray: number;
+        
+        if (uncertaintyLayer) {
+            // Para incertidumbre, el rango es siempre 0-1
             minArray = 0;
-            maxArray = 100;
-        }
-
-        try {
-            (timesJs.varMin[status.varId] as number[])[actualTimeIndex] = minArray;
-            (timesJs.varMax[status.varId] as number[])[actualTimeIndex] = maxArray;
-        } catch (assignError) {
-            console.error('Error assigning min/max values:', assignError);
-            timesJs.varMin[status.varId] = [];
-            timesJs.varMax[status.varId] = [];
-            (timesJs.varMin[status.varId] as number[])[actualTimeIndex] = minArray;
-            (timesJs.varMax[status.varId] as number[])[actualTimeIndex] = maxArray;
-        }
-
-        app.notifyMaxMinChanged();
-
-        let painterInstance = PaletteManager.getInstance().getPainter();
-
-
-        for (let i = 0; i < filteredArrays.length; i++) {
-            const filteredArray = filteredArrays[i];
+            maxArray = 1;
+            console.log('📊 Using fixed range for uncertainty: [0, 1]');
+        } else {
+            // Para datos normales, calcular el rango real
+            minArray = Number.MAX_VALUE;
+            maxArray = Number.MIN_VALUE;
             
-            console.log(`Layer ${i}:`, {
-                dataLength: filteredArray.length,
-                validCount: filteredArray.filter(v => !isNaN(v) && isFinite(v)).length
+            validFloatArrays.forEach((floatArray, index) => {
+                if (floatArray && Array.isArray(floatArray)) {
+                    floatArray.forEach((value) => {
+                        if (!isNaN(value) && isFinite(value)) {
+                            minArray = Math.min(minArray, value);
+                            maxArray = Math.max(maxArray, value);
+                        }
+                    });
+                }
             });
 
-            const width = timesJs.lonNum[status.varId + timesJs.portions[status.varId][i]];
-            const height = timesJs.latNum[status.varId + timesJs.portions[status.varId][i]];
+            // Asegurar que las estructuras min/max existen como arrays
+            if (!Array.isArray(timesJs.varMin[status.varId])) {
+                timesJs.varMin[status.varId] = [];
+            }
+            if (!Array.isArray(timesJs.varMax[status.varId])) {
+                timesJs.varMax[status.varId] = [];
+            }
+
+            // Set values at the actual time index
+            timesJs.varMin[status.varId][actualTimeIndex] = minArray;
+            timesJs.varMax[status.varId][actualTimeIndex] = maxArray;
             
-            console.log(`Canvas: ${width}x${height}`);
-
-            let canvas: HTMLCanvasElement | null = null;
-            try {
-                console.log('Calling paintValues...');
-                
-                canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
-                
-                if (canvas) {
-                    console.log('Canvas created successfully');
-                    
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                        const centerData = ctx.getImageData(Math.floor(width/2), Math.floor(height/2), 1, 1);
-                        const [r, g, b, a] = centerData.data;
-                        console.log(`Center pixel: RGBA(${r},${g},${b},${a})`);
-                        
-                        const cornerData = ctx.getImageData(0, 0, 1, 1);
-                        const [cr, cg, cb, ca] = cornerData.data;
-                        console.log(`Corner pixel: RGBA(${cr},${cg},${cb},${ca})`);
-                    }
-                    
-                    const extent = ncExtents[timesJs.portions[status.varId][i]];
-                    console.log('Image extent for layer', i, ':', extent);
-                    
-        
-                    const imageSource = new Static({
-                        url: canvas.toDataURL('image/png'),
-                        crossOrigin: '',
-                        projection: olProjection, 
-                        imageExtent: extent,
-                        interpolate: false
-                    });
-                    
-                    console.log('Created image source:', {
-                        hasUrl: imageSource.getUrl()?.length > 50,
-                        urlStart: imageSource.getUrl()?.substring(0, 50),
-                        projection: imageSource.getProjection()?.getCode?.(),
-                        extent: imageSource.getImageExtent()
-                    });
-
-                    dataTilesLayer[i].setSource(imageSource);
-
-                    dataTilesLayer[i].setZIndex(5000 + i);
-                    dataTilesLayer[i].setVisible(true);
-                    dataTilesLayer[i].setOpacity(1.0);
-
-                    dataTilesLayer[i].changed();
-
-                    await new Promise(resolve => setTimeout(resolve, 50));
-
-
-                    if (window.CsViewerApp && (window.CsViewerApp as any).csMap) {
-                        const map = (window.CsViewerApp as any).csMap.map;
-                        if (map) {
-                            const layers = map.getLayers();
-                            const layerInMap = layers.getArray().includes(dataTilesLayer[i]);
-                            console.log('Layer in map:', layerInMap);
-                            
-                            if (!layerInMap) {
-                                layers.push(dataTilesLayer[i]);
-                            }
-                        }
-                    }
-                                    
-                }
-                
-            } catch (error) {
-                console.error('paintValues failed:', error);
-                continue;
-            }
+            app.notifyMaxMinChanged();
+            
+            // Use the actual values we just set
+            minArray = timesJs.varMin[status.varId][actualTimeIndex];
+            maxArray = timesJs.varMax[status.varId][actualTimeIndex];
+            
+            console.log('📊 Calculated range for data:', { minArray, maxArray });
         }
 
-        try {
-            if (window.CsViewerApp && (window.CsViewerApp as any).csMap) {
-                const map = (window.CsViewerApp as any).csMap.map;
-                if (map) {
-        
-                    map.render();
-                    
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                    if (map.renderSync) {
-                        map.renderSync();
-                    }
-                                    } else {
-                    console.warn('Map not available');
-                }
-            }
-        } catch (renderError) {
-            console.error('Error forcing map render:', renderError);
-        }
+        let painter = PaletteManager.getInstance().getPainter();
 
+        // Now that we have the maximums and minimums, we paint the data layers.
+        for (let i = 0; i < floatArrays.length; i++) {
+            const floatArray = floatArrays[i];
+            const portionKey = varIdForStructures + timesJs.portions[varIdForStructures][i];
+            const width: number = timesJs.lonNum[portionKey];
+            const height: number = timesJs.latNum[portionKey];
+
+            console.log(`🖼️ Painting layer ${i}:`, { 
+                portion: timesJs.portions[varIdForStructures][i],
+                width, 
+                height,
+                dataPoints: floatArray.length,
+                uncertaintyLayer
+            });
+
+            // Use actual time index for filtering
+            const filteredArray = await app.filterValues(floatArray, actualTimeIndex, varIdForStructures, timesJs.portions[varIdForStructures][i]);
+
+            // Rendering the data layer
+            const canvas = await painter.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
+
+            dataTilesLayer[i].setSource(new Static({
+                url: canvas.toDataURL('image/png'),
+                crossOrigin: '',
+                projection: timesJs.projection,
+                imageExtent: ncExtents[timesJs.portions[varIdForStructures][i]],
+                interpolate: false
+            }));
+            
+            console.log(`✅ Layer ${i} painted successfully`);
+        }
+        
+        console.log('🎉 All layers painted successfully');
+        
     } catch (error) {
-        console.error('Error in buildImages:', error);
-        console.error('Stack trace:', error.stack);
+        console.error('❌ Error in buildImages:', error);
         throw error;
     }
 }
 
 export function downloadXYArrayChunked(requestedTimeIndex: number, varName: string, portion: string, doneCb: ArrayDownloadDone): void {
     let timesJs: CsTimesJsData = window.CsViewerApp.getTimesJs();
-
+    
+    // Use the actual time index for the download
     const actualTimeIndex = getActualTimeIndex(requestedTimeIndex, varName, timesJs);
 
     downloadXYChunk(actualTimeIndex, varName, portion, timesJs)
@@ -463,63 +423,92 @@ let xyCache: {
     data: number[]
 } = undefined
 
+
 async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-
     let app = window.CsViewerApp;
-    const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
-    console.log('Time index:', { requested: t, actual: actualTimeIndex });
 
-    if (xyCache && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == actualTimeIndex) {
-        console.log('Using cached data, length:', xyCache.data.length);
+    // Get the actual time index to use for this variable
+    const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
+    
+    const isUncertainty = varName.includes('_uncertainty');
+    
+    if (isUncertainty) {
+        console.log('🔍 downloadXYChunkNC (UNCERTAINTY):', {
+            varName,
+            portion,
+            requestedIndex: t,
+            actualIndex: actualTimeIndex
+        });
+    }
+    
+    // Check cache
+    if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == actualTimeIndex) {
+        if (isUncertainty) console.log('💾 Using cached data');
         let ret = [...xyCache.data];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
         return ret;
     }
 
     try {
-        if (!timesJs.offsetType || !timesJs.sizeType || !timesJs.varType) {
-            const error = `Missing required types: offset=${timesJs.offsetType}, size=${timesJs.sizeType}, var=${timesJs.varType}`;
-            console.error(error);
-            throw new Error(error);
-        }
-
         let chunkDataStruct = struct('<' + timesJs.offsetType + timesJs.sizeType);
         let chunkStruct = struct('<' + timesJs.varType);
 
-        const chunkDataSize = getTypeSize(timesJs.offsetType) + getTypeSize(timesJs.sizeType);
-        let chunkDataDir = BigInt(actualTimeIndex * chunkDataSize);
+        const chunkDataSize: number = getTypeSize(timesJs.offsetType) + getTypeSize(timesJs.sizeType);
+        let chunkDataDir: bigint = BigInt(actualTimeIndex * chunkDataSize);
 
-        const binUrl = `./nc/${varName}${portion}-xy.bin`;
-        const ncUrl = `./nc/${varName}${portion}-xy.nc`;
+        const binUrl = './nc/' + varName + portion + '-xy.bin';
+        if (isUncertainty) console.log('📡 Requesting:', binUrl);
 
         const chunkData = await rangeRequest(binUrl, chunkDataDir, chunkDataDir + BigInt(chunkDataSize - 1));
 
         let [chunkOffset, chunkSize] = chunkDataStruct.unpack(chunkData.buffer);
-
-        if (chunkSize <= 0 || chunkOffset < 0) {
-            throw new Error(`Invalid chunk metadata: offset=${chunkOffset}, size=${chunkSize}`);
+        
+        if (isUncertainty) {
+            console.log('📦 Chunk metadata:', { 
+                offset: chunkOffset, 
+                size: chunkSize 
+            });
         }
 
+        const ncUrl = './nc/' + varName + portion + '-xy.nc';
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
+
+        if (isUncertainty) console.log('📥 Downloaded', chunk.length, 'bytes (compressed)');
+
         const uncompressedArray = inflate(chunk);
-   
-      
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
-        if (!Array.isArray(floatArray) || floatArray.length === 0) {
-            throw new Error(`Invalid float array: length=${floatArray.length}, isArray=${Array.isArray(floatArray)}`);
+        if (isUncertainty) {
+            console.log('🔢 Float array stats:', {
+                length: floatArray.length,
+                sample: floatArray.slice(0, 10),
+                min: Math.min(...floatArray.filter(v => !isNaN(v) && isFinite(v))),
+                max: Math.max(...floatArray.filter(v => !isNaN(v) && isFinite(v))),
+                nanCount: floatArray.filter(v => isNaN(v)).length,
+                zeroCount: floatArray.filter(v => v === 0).length,
+                oneCount: floatArray.filter(v => v === 1).length
+            });
         }
 
-        xyCache = { t: actualTimeIndex, varName, portion, data: [...floatArray] };
+        // Update cache with actual time index used
+        if (xyCache == undefined) {
+            xyCache = { t: actualTimeIndex, varName, portion, data: floatArray };
+        } else {
+            xyCache.t = actualTimeIndex;
+            xyCache.varName = varName;
+            xyCache.portion = portion;
+            xyCache.data = floatArray;
+        }
 
         let ret = [...floatArray];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
-
-
         return ret;
-
     } catch (error) {
-        console.error('Context:', { varName, portion, actualTimeIndex });
+        console.error('❌ Error in downloadXYChunkNC:', {
+            varName,
+            portion,
+            error: error.message
+        });
         throw error;
     }
 }
@@ -550,6 +539,7 @@ async function downloadXYChunkZarr(t: number, varName: string, portion: string, 
             floatArray = [Number(data)];
         }
 
+        // Update cache
         if (xyCache == undefined) {
             xyCache = { t: actualTimeIndex, varName, portion, data: floatArray };
         } else {
@@ -628,14 +618,14 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
     if (portion != '') {
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
-
+        
         if (status.computedLayer) {
             let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));
-            return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
+            return functionValue(value, []);
         } else {
             let cb: ArrayDownloadDone = (data: number[]) => {
                 let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
-                return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
+                return functionValue(value, []);
             }
             // Use the original requested time index, downloadXYArrayChunked will handle the conversion
             downloadXYArrayChunked(status.selectedTimeIndex, status.varId, portion, cb);
@@ -660,6 +650,7 @@ export function getPortionForPoint(ncCoords: number[], timesJs: CsTimesJsData, v
     return result;
 }
 
+// Regional data functions remain unchanged
 export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDownloadDone): void {
     let csvData = '';
     downloadUrl("./stations/" + station + ".csv", (status: number, response) => {
@@ -670,9 +661,9 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
             } catch (e) {
                 rgResult = '';
             }
-            doneCb(rgResult, 'data', 'text/plain');
+            doneCb(rgResult, 'data', 'text/plain') ;
         }
-    }, undefined, 'text');
+    },undefined,'text');
 }
 
 export function downloadCSVbyRegion(folder: string, varName: string, doneCb: CsvDownloadDone): void {
@@ -687,35 +678,35 @@ export function downloadCSVbyRegion(folder: string, varName: string, doneCb: Csv
             } catch (e) {
                 result = '';
             }
-            doneCb(result, 'data', 'text/plain');
+            doneCb(result, 'data', 'text/plain') ;
         }
-    }, undefined, 'text');
+    },undefined,'text');
 }
 
 export function downloadTimebyRegion(folder: string, id: string, varName: string, doneCb: CsvDownloadDone): void {
     downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let rgResult: string[] = []
-            let rgCSV = 'date;' + varName + '\r\n';
+            let rgCSV = 'date;' + varName +'\r\n';
             try {
                 let result = parse(response as Buffer, {
                     columns: true,
                     skip_empty_lines: true
                 });
-                result.forEach((dataRow: any) => {
+                result.forEach( (dataRow: any) => {
                     rgResult[dataRow['times_mean']] = dataRow[id]
-                    rgCSV += dataRow['times_mean'] + ';' + dataRow[id] + '\r\n';
+                    rgCSV += dataRow['times_mean'] + ';' + dataRow[id] +'\r\n';
                 })
             } catch (e) {
                 rgCSV = '';
             }
-            doneCb(rgCSV, 'data', 'text/plain');
+            doneCb(rgCSV, 'data', 'text/plain') ;
         }
-    }, undefined, 'text');
+    },undefined,'text');
 }
 
 export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
-    downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
+    downloadUrl("./regData/" + folder +  "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let stResult: [];
             try {
@@ -741,23 +732,3 @@ export function downloadXYbyRegion(time: string, folder: string, varName: string
         }
     }, undefined, 'text');
 }
-
-export function downloadHistoricalDataForPercentile(
-    latlng: CsLatLong, 
-    varId: string,
-    portion: string,
-    timesJs: CsTimesJsData,
-    callback: (historicalData: number[]) => void
-): void {
-    const ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], timesJs.projection);
-    const chunkIndex: number = calcPixelIndex(ncCoords, portion);
-    
-    let cb: ArrayDownloadDone = (data: number[]) => {
-        // Filtrar valores válidos
-        const validData = data.filter(v => !isNaN(v) && isFinite(v));
-        callback(validData);
-    };
-    
-    downloadTArrayChunked(chunkIndex, varId, portion, cb);
-}
-

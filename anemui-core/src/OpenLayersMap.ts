@@ -12,7 +12,7 @@ import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, calcPixelIndex, downloadTArrayChunked } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';

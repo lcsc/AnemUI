@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuInput, CsMenuItemListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData } from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, varHasPopData, sbVarHasPopData}  from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -11,9 +11,8 @@ export interface MenuBarListener {
     varSelected(index: number, value?: string, values?: string[]): void;
     subVarSelected(index: number, value?: string, values?: string[]): void;
     selectionSelected(index: number, value?: string, values?: string[]): void;
-    selectionParamChanged(param: number): void;
     dropdownSelected(dp: string, index: number, value?: string, values?: string[]): void;
-    inputParamChanged(id: string, param: number): void;
+    selectionParamChanged(param: number): void;
 }
 
 export type simpleDiv = {
@@ -38,25 +37,16 @@ export class MenuBar extends BaseFrame {
     private titleDiv: HTMLElement
     private collapseMenu: HTMLElement
     private navMenu: HTMLElement
-    private collapseMenuMb: HTMLElement
-    private navMenuMb: HTMLElement
     private logoMap: HTMLElement
 
     private displaySpSupport: HTMLDivElement
-    private displaySpSupportMb: HTMLDivElement
     private displayTpSupport: HTMLDivElement
-    private displayTpSupportMb: HTMLDivElement
     private displayVar: HTMLDivElement
-    private displayVarMb: HTMLDivElement
     private displaySubVar: HTMLDivElement
-    private displaySubVarMb: HTMLDivElement
     private displaySelection: HTMLDivElement
-    private displaySelectionMb: HTMLDivElement
     private displayParam: HTMLInputElement
-    private displayParamMb: HTMLInputElement
-
+    
     private inputsFrame: HTMLDivElement
-    private inputsFrameMobile: HTMLDivElement
     private extraDisplays: simpleDiv[];
     private inputOrder: string[];
 
@@ -70,7 +60,7 @@ export class MenuBar extends BaseFrame {
     private extraMenuItems: CsMenuItem[];
     private extraMenuInputs: CsMenuInput[];
     private dropDownOrder: string[]
-    private logoMaps: string[]
+    private logoMaps:string[]
 
     private popData: any;
     private extraBtns: BaseUiElement[];
@@ -80,12 +70,8 @@ export class MenuBar extends BaseFrame {
 
     private listener: MenuBarListener;
 
-    private fetchingText: string = "Fetching data..."
+    private fetchingText : string = "Fetching data..."
     private errorText: string = "Could not retrieve data"
-
-    private displayUnits: HTMLDivElement;
-    private units: CsMenuItem;
-
 
     constructor(_parent: BaseApp, _listener: MenuBarListener) {
         super(_parent)
@@ -133,18 +119,11 @@ export class MenuBar extends BaseFrame {
         }
         if (hasSelectionParam) {
             this.selectionParam = new CsMenuInput("selectionParamInput", "Selección", {
-                valueChanged: (origin, newValue: number) => {  
-                    this.listener.selectionParamChanged(newValue);
+                valueChanged: (origin: CsMenuInput, newValue: number | null) => {  
+                    this.listener.selectionParamChanged(newValue ?? 0);
                 },
             });
         }
-
-        this.units = new CsMenuItem("UnitsDD", "Unidades", {
-            valueSelected(origin, index, value, values) {
-                self.listener.subVarSelected(index, value, values) // Reutiliza el mismo listener
-            },
-        });
-
         this.extraMenuItems = []
         this.extraMenuInputs = []
         this.extraBtns = []
@@ -159,7 +138,7 @@ export class MenuBar extends BaseFrame {
 
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
         let divs = Array.from(document.getElementsByClassName("inputDiv") as HTMLCollectionOf<HTMLElement>)
-        let maxId = divs.reduce(function (a, b) {
+        let maxId = divs.reduce(function(a, b){
             return Math.max(a, parseInt(b.id))
         }, 0);
         let nextId = (maxId + 1).toString()
@@ -173,97 +152,37 @@ export class MenuBar extends BaseFrame {
         this.inputsFrame.querySelector('[role=' + _id + ']').innerHTML = _title
     }
 
-    /**
-     * Helper method to add menu items to both desktop and mobile frames
-     */
-    private addMenuItemToBothFrames(
-        role: string,
-        btnType: string,
-        menuItem: CsMenuItem | CsMenuInput,
-        renderFunction: () => JSX.Element,
-        displayProperty: string
-    ): void {
-        // Desktop version
-        let dsp: simpleDiv = { role: role, title: '', subTitle: '' };
-        addChild(this.inputsFrame, this.renderDisplay(dsp, btnType));
-        const desktopContainer = this.container.querySelector(`[role=${role}]`) as HTMLDivElement;
-        addChild(desktopContainer, renderFunction());
-        (this as any)[displayProperty] = desktopContainer;
-        if (menuItem instanceof CsMenuItem) {
-            menuItem.build(desktopContainer);
-        } else if (menuItem instanceof CsMenuInput) {
-            menuItem.build(desktopContainer);
-        }
-
-        // Mobile version
-        let dspMb: simpleDiv = { role: role + 'Mb', title: '', subTitle: '' };
-        addChild(this.inputsFrameMobile, this.renderDisplay(dspMb, btnType));
-        const mobileContainer = this.container.querySelector(`[role=${role}Mb]`) as HTMLDivElement;
-        addChild(mobileContainer, renderFunction());
-        (this as any)[displayProperty + 'Mb'] = mobileContainer;
-    }
-
     public render(): JSX.Element {
         let self = this;
         let element =
             (
                 <div id="TopBar" className="fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
-                    {/* Desktop TopBar */}
-                    <div className="topbar-desktop">
-                        <div className={"navbar " + logoStyle}>
-                            <img src={'./images/'+logo} useMap="#LogoMap"></img>
-                            <map id="LogoMap">
-
-                            </map>
-                        </div>
-                        <div id="menu-title" className="menu-info text-left row mx-0">
-                            <div className="col-title">
-                                <h3 id="title">{this.title}</h3>
-                            </div>
-                            <div id="menu-central" className="col-info">
-                                <ul id="inputs" className="nav-menu">
-                                </ul>
-                                <div className="collapse-menu" onClick={() => { self.desktopMenu() }}>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-                            <div className="col menu-info d-flex flex-row-reverse" id="info">
-                            </div>
-                        </div>
+                    <div className={"navbar " + logoStyle}>
+                        <img src={'./images/'+logo} useMap="#LogoMap"></img>
+                        <map id="LogoMap">
+                            
+                        </map>
                     </div>
-
-                    {/* Mobile TopBar */}
-                    <div className="topbar-mobile">
-                        <div className="mobile-top-row">
-                            <div id="menu-central-mobile" className="mobile-menu-central">
-                                <ul id="inputs-mobile" className="nav-menu-mb">
-                                </ul>
-                                <div className="collapse-menu-mb" onClick={() => { self.mobileMenu() }}>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
+                    <div id="menu-title" className="menu-info text-left row mx-0git status">
+                        <div className="col-title">
+                            <h3 id="title">{this.title}</h3>
+                        </div>
+                        <div id="menu-central" className="col-info">
+                            <ul id="inputs" className="nav-menu">
+                            </ul>
+                            <div className="collapse-menu" onClick={() => { self.mobileMenu() }}>
+                                <span></span>
+                                <span></span>
+                                <span></span>
                             </div>
-                            <div className={"navbar " + logoStyle}>
-                                <img src={'./images/logo_aemet.svg'} useMap="#LogoMapMobile"></img> {/* incluir en env.js */}
-                                <map id="LogoMapMobile">
-
-                                </map>
-                            </div>
-                            <div className="mobile-menu-info d-flex flex-row-reverse" id="info-mobile">
+                            <div className="col-auto">
+                                <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
+                                <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
+                                <div className="spinner-grow text-info" role="status" hidden />
                             </div>
                         </div>
-                        <div className="mobile-title-row">
-                            <h3 id="title-mobile">{this.title}</h3>
+                        <div className="col menu-info  d-flex flex-row-reverse" id="info">
                         </div>
-                    </div>
-
-                    <div className="col-auto">
-                        <span className="ms-2" id="fetching-text" hidden>{ this.fetchingText }</span>
-                        <span className="data-error-text" id="nodata-text" hidden>{ this.errorText }  </span>
-                        <div className="spinner-grow text-info" role="status" hidden />
                     </div>
                 </div>
             );
@@ -278,13 +197,10 @@ export class MenuBar extends BaseFrame {
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
-        this.inputsFrameMobile = document.getElementById('inputs-mobile') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         // this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
         this.collapseMenu = document.querySelector(".collapse-menu");
         this.navMenu = document.querySelector(".nav-menu");
-        this.collapseMenuMb = document.querySelector(".collapse-menu-mb");
-        this.navMenuMb = document.querySelector(".nav-menu-mb");
         this.logoMap = document.getElementById('LogoMap') as HTMLElement;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
@@ -296,89 +212,60 @@ export class MenuBar extends BaseFrame {
 
         if (hasButtons) {
             if (hasSpSupport) {
-                this.addMenuItemToBothFrames(
-                    'spSupport',
-                    'basicBtn',
-                    this.spatialSupport,
-                    () => this.spatialSupport.render(this.parent.getState().support),
-                    'displaySpSupport'
-                );
+                let dsp: simpleDiv = {role:'spSupport', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displaySpSupport = this.container.querySelector("[role=spSupport]")
+                addChild(this.displaySpSupport, this.spatialSupport.render(this.parent.getState().support));
+                this.spatialSupport.build(this.displaySpSupport)
             }
             if (hasVars) {
-                this.addMenuItemToBothFrames(
-                    'var',
-                    'basicBtn',
-                    this.variable,
-                    () => this.variable.render(this.parent.getState().varName, varHasPopData),
-                    'displayVar'
-                );
-                if (varHasPopData) this.variable.configPopOver(this.popData);
+                let dsp: simpleDiv = {role:'var', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displayVar = this.container.querySelector("[role=var]")
+                addChild(this.displayVar, this.variable.render(this.parent.getState().varName,varHasPopData))
+                this.variable.build(this.displayVar)
+                if (varHasPopData) this.variable.configPopOver(this.popData)
             }
             if (hasSubVars) {
-                this.addMenuItemToBothFrames(
-                    'subVar',
-                    'basicBtn',
-                    this.subVariable,
-                    () => this.subVariable.render(this.parent.getState().subVarName, sbVarHasPopData),
-                    'displaySubVar'
-                );
+                let dsp: simpleDiv = {role:'subVar', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displaySubVar = this.container.querySelector("[role=subVar]")
                 this.displaySubVar.hidden = false;
-                this.displaySubVarMb.hidden = false;
+                addChild(this.displaySubVar, this.subVariable.render(this.parent.getState().subVarName,sbVarHasPopData));
+                this.subVariable.build(this.displaySubVar)
                 if (sbVarHasPopData) this.subVariable.configPopOver(this.popData);
             }
             if (hasTpSupport) {
-                this.addMenuItemToBothFrames(
-                    'tpSupport',
-                    'basicBtn',
-                    this.temporalSupport,
-                    () => this.temporalSupport.render(this.parent.getState().tpSupport),
-                    'displayTpSupport'
-                );
+                let dsp: simpleDiv = {role:'tpSupport', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displayTpSupport = this.container.querySelector("[role=tpSupport]")
                 this.displayTpSupport.hidden = false;
-                this.displayTpSupportMb.hidden = false;
+                addChild(this.displayTpSupport, this.temporalSupport.render(this.parent.getState().tpSupport));
+                this.temporalSupport.build(this.displayTpSupport);
             }
             if (hasSelection) {
-                this.addMenuItemToBothFrames(
-                    'selection',
-                    'basicBtn',
-                    this.selection,
-                    () => this.selection.render(this.parent.getState().selection),
-                    'displaySelection'
-                );
-                this.displaySelection.hidden = this.selectionHidden;
-                this.displaySelectionMb.hidden = this.selectionHidden;
+                let dsp: simpleDiv = {role:'selection', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+                this.displaySelection = this.container.querySelector("[role=selection]")
+                this.displaySelection.hidden = false;
+                addChild(this.displaySelection, this.selection.render(this.parent.getState().selection));
+                this.selection.build(this.displaySelection);
             }
             if (hasSelectionParam) {
-                this.addMenuItemToBothFrames(
-                    'selection-param',
-                    'basicInput',
-                    this.selectionParam,
-                    () => this.selectionParam.render(this.parent.getState().selectionParam + ''),
-                    'displayParam'
-                );
+                let dsp: simpleDiv = {role:'selection-param', title:'', subTitle:''}
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicInput'));
+                this.displayParam = this.container.querySelector("[role=selection-param]")
                 this.displayParam.hidden = false;
-                this.displayParamMb.hidden = false;
-            }
-
-            if (hasUnits) {
-                let dspUnits: simpleDiv = { role: 'units', title: 'Unidades', subTitle: '' }
-                addChild(this.inputsFrame, this.renderDisplay(dspUnits, 'basicBtn'));
-                this.displayUnits = this.container.querySelector("[role=units]")
-                addChild(this.displayUnits, this.units.render(this.parent.getState().subVarName, false));
-                this.units.build(this.displayUnits);
+                addChild(this.displayParam, this.selectionParam.render(this.parent.getState().selectionParam+''));
+                this.selectionParam.build(this.displayParam);
             }
             if (hasClimatology) {
-                console.log('Building climatology dropdowns, extraDisplays:', this.extraDisplays.length);
-
                 this.extraDisplays.forEach((dsp) => {
-                    console.log('Processing display:', dsp.role, dsp.title, dsp.subTitle);
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                    addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
                     this.extraMenuItems.forEach((dpn) => {
                         if (dpn.id == dsp.role) {
-                            console.log('  -> Rendering menu item:', dpn.id);
                             let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                            addChild(container, dpn.render(dsp.subTitle, false));
+                            addChild(container, dpn.render(dsp.subTitle,false));
                             dpn.build(container)
                         }
                     });
@@ -386,48 +273,35 @@ export class MenuBar extends BaseFrame {
                         this.extraMenuInputs.forEach((input) => {
                             if (input.id == dsp.role) {
                                 let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                                addChild(container, input.render(this.parent.getState().selectionParam + ''));
+                                addChild(container, input.render(this.parent.getState().selectionParam+''));
                                 input.build(container)
                             }
                         })
                     }
                 });
             }
-            if (this.dropDownOrder.length) {
+            if(this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
             }
             this.climBtnArray = Array.from(document.getElementsByClassName("climBtn") as HTMLCollectionOf<HTMLElement>);
-            this.climBtnArray.forEach((btn) => {
+            this.climBtnArray.forEach((btn) =>{
                 btn.hidden = true;
             })
 
             if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
 
-            if (this.inputOrder.length) {
+            if(this.inputOrder.length) {
                 this.changeInputOrder()
-            }
-
-            const currentState = this.parent.getState();
-            if (currentState.climatology === true || currentState.tpSupport === 'Climatología') {
-                // Usar setTimeout para asegurar que el DOM está listo
-                setTimeout(() => {
-                    this.showClimFrame();
-                }, 100);
             }
         }
         this.setupMobileDropdowns();
         this.buildLogoMaps();
-
-    }
-
-    public desktopMenu() {
-        this.collapseMenu.classList.toggle("active");
-        this.navMenu.classList.toggle("active");
+        
     }
 
     public mobileMenu() {
-        this.collapseMenuMb.classList.toggle("active");
-        this.navMenuMb.classList.toggle("active");
+        this.collapseMenu.classList.toggle("active");
+        this.navMenu.classList.toggle("active");
     }
 
     private setupMobileDropdowns(): void {
@@ -454,11 +328,11 @@ export class MenuBar extends BaseFrame {
         }
     }
 
-    public setLogoMaps(_logoMaps: string[]) {
+    public setLogoMaps(_logoMaps:string[]){
         this.logoMaps = _logoMaps
     }
 
-    public buildLogoMaps() {
+    public buildLogoMaps(){
         if (!this.logoMaps || this.logoMaps.length === 0 || !this.logoMap) {
             return;
         }
@@ -485,110 +359,84 @@ export class MenuBar extends BaseFrame {
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
-        if (this.loading) this.loading.hidden = false;
+        if (this.loading) this.loading.hidden = false; 
         if (this.loadingText) {
-            this.loadingText.hidden = false;
-            this.loadingText.classList.add('blinking-text');
+            this.loadingText.hidden = false;          
+            this.loadingText.classList.add('blinking-text'); 
         }
     }
-
+    
     public hideLoading(): void {
-        if (this.loading) this.loading.hidden = true;
+        if (this.loading) this.loading.hidden = true; 
         if (this.loadingText) {
-            this.loadingText.hidden = true;
+            this.loadingText.hidden = true;      
             this.loadingText.classList.add('display:none')
         }
     }
-
+    
     public hideSelection() {
-        if (hasSelection) {
-            this.displaySelection.hidden = true;
-        }
-    }
+        this.selectionHidden = true;
 
-    public showSelection() {
-        if (hasSelection) {
-            this.displaySelection.hidden = false;
-        }
     }
-
     public hideParam() {
         this.paramHidden = true;
     }
 
-    public hideVar(): void {
+    public hideVar():void {
         this.displayVar.classList.add('display:none')
     }
 
-    public update(): void {
-        if (!hasButtons) return
+public update(): void {
+  if (!hasButtons) return
 
-        if (hasSpSupport) {
-            this.displaySpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().support;
-            this.displaySpSupportMb.querySelector('.sub-title').innerHTML = this.parent.getState().support;
-        }
-        if (hasTpSupport) {
-            this.displayTpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().tpSupport;
-            this.displayTpSupportMb.querySelector('.sub-title').innerHTML = this.parent.getState().tpSupport;
-        }
-        if (hasVars) {
-            this.displayVar.querySelector('.sub-title').innerHTML = this.parent.getState().varName;
-            this.displayVarMb.querySelector('.sub-title').innerHTML = this.parent.getState().varName;
-        }
-        if (hasSubVars) {
-            this.displaySubVar.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
-            this.displaySubVarMb.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
-        } 
-        if (hasSelection) {
-            this.displaySelection.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
-            this.displaySelectionMb.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
-        }
-        if (hasSelectionParam) {
-            this.selectionParam.value = this.parent.getState().selectionParam;
-        }   
-        
-        if (this.parent.getState().climatology == true) {
-            this.showClimFrame()
-        } else {
-            this.hideClimFrame()
-        }
+    if (hasSpSupport) {
+        this.displaySpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().support;
     }
-    public showMenusForClimatology(): void {
-        if (!this.climBtnArray || this.climBtnArray.length === 0) {
-            console.warn('climBtnArray not initialized yet, skipping showMenusForClimatology');
-            return;
+    if (hasTpSupport) {
+        this.displayTpSupport.querySelector('.sub-title').innerHTML = this.parent.getState().tpSupport;
+    }
+    if (hasVars) {
+        this.displayVar.querySelector('.sub-title').innerHTML = this.parent.getState().varName;
+    }
+    if (hasSubVars) {
+        this.displaySubVar.querySelector('.sub-title').innerHTML = this.parent.getState().subVarName;
+    } 
+    if (hasSelection) {
+        this.displaySelection.querySelector('.sub-title').innerHTML = this.parent.getState().selection;
+    }
+    if (hasSelectionParam) {
+        this.selectionParam.value = this.parent.getState().selectionParam
+    } 
+    
+    const currentState = this.parent.getState();
+    if (currentState.climatology == true || currentState.tpSupport == 'Escenarios futuros') {
+        this.showClimFrame()
+    } else {
+        this.hideClimFrame()
+    }
+}
+public showMenusForClimatology(): void {
+    this.climBtnArray.forEach((btn) => {
+        const role = btn.getAttribute('role');
+        if (role === 'statistic' || role === 'period') {
+            // Mostrar estadístico y período para climatología
+            btn.hidden = false;
+        } else if (role === 'escenario') {
+            // Ocultar escenario para climatología
+            btn.hidden = true;
         }
+    });
+}
 
-        this.climBtnArray.forEach((btn) => {
-            const role = btn.getAttribute('role');
-            if (role === 'variable' || role === 'escala') {
-                // Mostrar variable y escala para climatología
-                btn.hidden = false;
-            } else if (role === 'escenario') {
-                // Ocultar escenario para climatología
-                btn.hidden = true;
-            }
-        });
-    }
-
-    public showMenusForScenarios(): void {
-        if (!this.climBtnArray || this.climBtnArray.length === 0) {
-            console.warn('climBtnArray not initialized yet, skipping showMenusForScenarios');
-            return;
+public showMenusForScenarios(): void {
+    this.climBtnArray.forEach((btn) => {
+        const role = btn.getAttribute('role');
+        if (role === 'statistic' || role === 'period' || role === 'escenario') {
+            // Mostrar estadístico, período y escenario para escenarios futuros
+            btn.hidden = false;
         }
-
-        this.climBtnArray.forEach((btn) => {
-            const role = btn.getAttribute('role');
-            if (role === 'variable' || role === 'escala' || role === 'escenario') {
-                // Mostrar variable, escala y escenario para escenarios futuros
-                btn.hidden = false;
-            }
-        });
-    }
-
-    public isBuilt(): boolean {
-        return this.climBtnArray !== undefined && this.climBtnArray !== null;
-    }
+    });
+}
 
     //Llamar en el configure antes del build
     public addButton(btn: BaseUiElement): void {
@@ -596,42 +444,33 @@ export class MenuBar extends BaseFrame {
     }
 
     public hideClimFrame(): void {
-        if (!this.climBtnArray || this.climBtnArray.length === 0) {
-            console.warn('climBtnArray not initialized yet, skipping hideClimFrame');
-            return;
-        }
-        this.climBtnArray.forEach((btn) => {
+        this.climBtnArray.forEach((btn) =>{
             btn.hidden = true;
         })
     }
-
-    public showClimFrame(): void {
-        if (!this.climBtnArray || this.climBtnArray.length === 0) {
-            console.warn('climBtnArray not initialized yet, skipping showClimFrame');
-            return;
-        }
-
-        const currentState = this.parent.getState();
-
-        if (currentState.tpSupport === 'Escenarios futuros') {
-            this.showMenusForScenarios();
-        } else if (currentState.climatology === true) {
-            this.showMenusForClimatology();
-        } else {
-            // Mostrar todos por defecto
-            this.climBtnArray.forEach((btn) => {
-                btn.hidden = false;
-            })
-        }
+    
+   public showClimFrame(): void {
+    const currentState = this.parent.getState();
+    
+    if (currentState.tpSupport === 'Escenarios futuros') {
+        this.showMenusForScenarios();
+    } else if (currentState.climatology === true) {
+        this.showMenusForClimatology();
+    } else {
+        // Mostrar todos por defecto
+        this.climBtnArray.forEach((btn) =>{
+            btn.hidden = false;
+        })
     }
+}
 
-    public setExtraDisplay(type: number, id: string, displayTitle: string, options: string[]) {
-        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0] })
+    public setExtraDisplay(type: number, id: string, displayTitle:string, options: string[]) { 
+        this.extraDisplays.push( { role: id, title: displayTitle, subTitle: options[0] })
         let listener = this.listener
 
         switch (type) {
             case 1:
-                this.extraMenuItems.push(new CsMenuItem(id, displayTitle, {
+                this.extraMenuItems.push( new CsMenuItem (id , displayTitle,  {
                     valueSelected(origin, index, value, values) {
                         listener.dropdownSelected(id, index, value, values)
                     },
@@ -642,16 +481,16 @@ export class MenuBar extends BaseFrame {
                 break;
             case 2:
                 this.extraMenuInputs.push( new CsMenuInput(id, displayTitle, {
-                    valueChanged: (origin, newValue: number) => {
-                        listener.inputParamChanged(id, newValue);
-                    },
-                }, +options[0], +options[1], +options[2]))
+                    valueChanged: (origin: CsMenuInput, newValue: number | null) => {  
+                        return listener.selectionParamChanged(newValue ?? 0);
+                    }, 
+                }, +options[0]))
                 break;
         }
-
+        
     }
 
-    public hideExtraMenuItem(role: string): void {
+        public hideExtraMenuItem(role: string): void {
         const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
         if (element) {
             element.hidden = true;
@@ -665,7 +504,7 @@ export class MenuBar extends BaseFrame {
         }
     }
 
-    public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[]) {
+    public updateExtraDisplay(type: number, dspRole: string, displayTitle:string, options: string[]) {
         switch (type) {
             case 1:
                 this.extraMenuItems.forEach((dpn) => {
@@ -682,7 +521,7 @@ export class MenuBar extends BaseFrame {
                         inp.setTitle(displayTitle)
                     }
                 });
-                break;
+                break;    
         }
     }
 
@@ -694,13 +533,13 @@ export class MenuBar extends BaseFrame {
         });
     }
 
-    public setInputOrder(order: string[]) {
+    public setInputOrder(order:string[]) {
         this.inputOrder = order
     }
 
     public changeInputOrder() {
         let k: number = 0
-        document.querySelectorAll('.inputDiv').forEach((elem: HTMLButtonElement) => {
+        document.querySelectorAll('.inputDiv').forEach((elem:HTMLButtonElement)=>{
             elem.style.order = this.inputOrder[k]
             k++
         })
@@ -764,7 +603,7 @@ export class MenuBar extends BaseFrame {
     public updateMenuItem(btnName: string, btnTitle: string, options: string[]) {
         for (let i = 0; i < this.extraMenuItems.length; i++) {
             if (this.extraMenuItems[i]['id'] == btnName) {
-                this.extraMenuItems[i].setTitle(btnTitle, btnName)
+                 this.extraMenuItems[i].setTitle(btnTitle, btnName)
             }
         }
     }
@@ -773,52 +612,17 @@ export class MenuBar extends BaseFrame {
         this.popData = popData
     }
 
-    public setMenuItemOrder(order: string[]) {
+    public setMenuItemOrder(order:string[]) {
         this.dropDownOrder = order
     }
 
     public changeMenuItemOrder() {
         let k: number = 0
-        document.querySelectorAll('.ordBtn').forEach((elem: HTMLButtonElement) => {
+        document.querySelectorAll('.ordBtn').forEach((elem:HTMLButtonElement)=>{
             elem.style.order = this.dropDownOrder[k]
             k++
         })
     }
-
-    public setUnits(_units: string[]) {
-    this.units.setValues(_units);
-}
-
-public updateUnitsDisplay(value: string) {
-    if (this.displayUnits) {
-        const subtitle = this.displayUnits.querySelector('.sub-title');
-        if (subtitle) {
-            subtitle.innerHTML = value;
-        }
-    }
-}
-
-public hideUnits() {
-    if (this.displayUnits) {
-        this.displayUnits.hidden = true;
-    }
-}
-
-public showUnits() {
-    if (this.displayUnits) {
-        this.displayUnits.hidden = false;
-    }
-}
-
-private getLegendTitleForUnit(unit: string): string {
-    switch(unit) {
-        case 'Km/h': return 'Km/h';
-        case 'm/s': return 'm/s';
-        case 'Nudos': return 'Nudos';
-        case 'Escala WMO/Beaufort': return 'Beaufort';
-        default: return unit;
-    }
-}
 
     // public selectFirstSpatialSupportValue(): void {
     //     this.spatialSupport.selectFirstValidValue();
