@@ -5,7 +5,7 @@ import { CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
 import LayerFrame from './ui/LayerFrame'
 import PaletteFrame from "./ui/PaletteFrame";  
-import { CsMapEvent, CsMapListener } from "./CsMapTypes";
+import { CsLatLong, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
@@ -52,11 +52,13 @@ const INITIAL_STATE: CsViewerData = {
     uncertaintyLayer: false,
     season: "",
     month: "",
-    xyValue: NaN,
     timeSeriesData: undefined,
     computedLayer: false,
-    computedData: {}
+    computedData: {},
+    xyValue: 0,
+    escala: "", 
 }
+
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
@@ -508,33 +510,34 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public downloadPointOptions(): void {
         this.downloadOptionsDiv.openModal();
     }
-
-    public showGraph(params?: { type: 'point' | 'station' | 'region', stParams?: any, folder?: string }) {
-        if (!params || params.type === 'point') {
-            // Graph for a point (pixel click)
-            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-                this.graph.showGraph(data, this.lastLlData.latlng);
-            };
-            let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
-            let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-            if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [], open);
-            else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
-        } else if (params.type === 'station') {  // --- Unificar con region ??
-            // Graph for a station
-            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-                this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, params.stParams);
-            };
-            downloadCSVbySt(params.stParams['id'], this.state.varId, open);
-        } else if (params.type === 'region') {
-            // Graph for a region
-            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-                this.state.timeSeriesData = data;
-                this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, params.stParams);
-            };
-            if (computedDataTilesLayer) this.computeGraphData(-1, '_all', params.stParams, open);
-            else downloadTimebyRegion(params.folder, params.stParams['id'], this.state.varId, open);
+    
+    // ------- UNIFICAR 
+    public showGraph(p0: { type: string; stParams: { id: any; name: any; }; }) { 
+        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            this.graph.showGraph(data, this.lastLlData.latlng)
         }
+        let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
+        let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
+        if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [], open);
+        else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
     }
+
+    public showGraphBySt(stParams: any) {
+        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
+        }
+        downloadCSVbySt(stParams['id'], this.state.varId, open);
+    }
+
+    public showGraphByRegion(folder: string, stParams: any) {
+        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            this.state.timeSeriesData = data
+            this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
+        }
+        if (computedDataTilesLayer) this.computeGraphData(-1, '_all', stParams, open);
+        else downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
+    }
+    // ------- UNIFICAR
 
     public getState(): CsViewerData {
         return this.state
@@ -887,5 +890,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             }
         }
         return folderIds;
+    }
+
+     public showPercentileClockForPoint(latlng: CsLatLong, currentValue: number, historicalData: number[]): void {
+       
     }
 }
