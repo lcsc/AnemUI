@@ -42,6 +42,12 @@ export class CsGraph extends BaseFrame {
   private firstYearLabel: string = 'firstYear';
   private lastYearLabel: string = 'lastYear';
 
+  // Configuración para etiquetas de punto personalizado
+  private pointYLabel: string = 'Valor'; // Etiqueta para eje Y (ej: "Temperatura", "Precipitación")
+  private pointYUnit: string = ''; // Unidad para eje Y (ej: "°C", "mm/día")
+  private pointXLabel: string = 'Período'; // Etiqueta para eje X
+  private pointXUnit: string = 'años'; // Unidad para eje X
+
   public constructor(_parent: BaseApp) {
     super(_parent)
   }
@@ -1851,8 +1857,8 @@ export class CsGraph extends BaseFrame {
         xAxisHeight: 20,
         showRangeSelector: false,
 
-        // Ocultar la serie surface, duration y event en la visualización, solo mostrar extreme
-        visibility: [true, false, false, false], // Mostrar extreme, ocultar surface, duration y event
+        // Ocultar las series mean, surface, duration y event en la visualización, solo mostrar extreme
+        visibility: [true, false, false, false, false], // Mostrar extreme, ocultar mean, surface, duration y event
 
         legend: 'never',
 
@@ -1866,11 +1872,13 @@ export class CsGraph extends BaseFrame {
           // Obtener el dygraph desde this (el contexto del callback)
           const dygraph = this;
 
-          // Obtener valores de extreme, surface, duration y event desde el dygraph directamente
+          // Obtener valores de extreme, mean, surface, duration y event desde el dygraph directamente
+          // Orden de columnas CSV: date,extreme,mean,surface,duration,event
           const extremeValue = dygraph.getValue(row, 1); // Columna 1 es extreme
-          const surfaceValue = dygraph.getValue(row, 2); // Columna 2 es surface
-          const duration = dygraph.getValue(row, 3); // Columna 3 es duration (ya calculada como total)
-          const eventId = dygraph.getValue(row, 4); // Columna 4 es event
+          const meanValue = dygraph.getValue(row, 2); // Columna 2 es mean 
+          const surfaceValue = dygraph.getValue(row, 3); // Columna 3 es surface
+          const duration = dygraph.getValue(row, 4); // Columna 4 es duration
+          const eventId = dygraph.getValue(row, 5); // Columna 5 es event
 
           // No mostrar tooltip si no hay datos (valores = 0 o nulos)
           if (!extremeValue || extremeValue === 0) {
@@ -1882,15 +1890,21 @@ export class CsGraph extends BaseFrame {
           const date = new Date(x);
           const dateStr = self.formatDate(date);
 
-          // Obtener literales traducidos
-          const tempLabel = self.parent.getTranslation('temperatura');
+          // Obtener literales traducidos según el tipo de ola
+          const tempLabel = self.waveType === 'cold'
+            ? self.parent.getTranslation('temperatura_min')
+            : self.parent.getTranslation('temperatura_max');
+          const tempMeanLabel = self.parent.getTranslation('media');
           const surfaceLabel = self.parent.getTranslation('superficie_afectada');
-          const durationLabel = self.waveType== 'cold'? self.parent.getTranslation('duracion_ola_frio'):self.parent.getTranslation('duracion_ola_calor');
+          const durationLabel = self.waveType === 'cold'
+            ? self.parent.getTranslation('duracion_ola_frio')
+            : self.parent.getTranslation('duracion_ola_calor');
 
           // Crear contenido del tooltip con todos los valores
           tooltip.innerHTML = `
             <div><strong>${dateStr}</strong></div>
             <div style="color: #ff6b6b;">● ${tempLabel}: ${extremeValue.toFixed(2)}</div>
+            <div style="color: #ff9933;">● ${tempMeanLabel}: ${meanValue ? meanValue.toFixed(2) : 'N/A'}</div>
             <div style="color: #4ecdc4;">● ${surfaceLabel}: ${surfaceValue.toFixed(2)}</div>
             <div style="color: #888;">● ${durationLabel}: ${duration}</div>
           `;
@@ -1965,8 +1979,8 @@ export class CsGraph extends BaseFrame {
           for (let i = 0; i < points.length; i++) {
             const point = points[i];
 
-            // Obtener el valor de superficie (columna 2) para este punto
-            const surfaceValue = e.dygraph.getValue(i, 2);
+            // Obtener el valor de superficie (columna 3) para este punto
+            const surfaceValue = e.dygraph.getValue(i, 3);
 
             // Obtener el color según la superficie
             const pointColor = getColorBySurface(surfaceValue);
@@ -2127,6 +2141,8 @@ export class CsGraph extends BaseFrame {
       legendDiv.style.display = 'none';
     }
 
+    let self = this;
+
     var graph = new Dygraph(
         document.getElementById("popGraph"),
         url,
@@ -2172,6 +2188,13 @@ export class CsGraph extends BaseFrame {
             yRangePad: 10,
             // Controlar la altura del eje X
             xAxisHeight: 30,
+            // Underlay callback para dibujar el punto personalizado
+            underlayCallback: function(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph) {
+              console.log('🖌️ underlayCallback llamado - customPointData:', self.customPointData);
+              if (self.customPointData) {
+                self.drawCustomPointWithTransformedData(canvas, area, dygraph, self.customPointData);
+              }
+            },
             drawCallback: (dygraph, is_initial) => {
                 if (!is_initial) return;
 
@@ -2543,6 +2566,9 @@ export class CsGraph extends BaseFrame {
    */
   private drawCustomPointWithTransformedData(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph, pointData: {x: number, y: number}): void {
     try {
+      console.log('🎨 drawCustomPointWithTransformedData - Dibujando punto:', pointData);
+      console.log('   Escala X log:', this.currentXLogScale, 'Escala Y log:', this.currentYLogScale);
+
       // Transformar las coordenadas del punto según la escala actual
       let transformedX = pointData.x;
       let transformedY = pointData.y;
@@ -2555,8 +2581,11 @@ export class CsGraph extends BaseFrame {
         transformedY = Math.log10(pointData.y);
       }
 
+      console.log('   Transformado - X:', transformedX, 'Y:', transformedY);
+
       // Usar las coordenadas transformadas con toDomCoords de Dygraph
       const domCoords = dygraph.toDomCoords(transformedX, transformedY);
+      console.log('   DOM coords:', domCoords);
 
       if (!domCoords || !isFinite(domCoords[0]) || !isFinite(domCoords[1])) {
         return;
@@ -2573,19 +2602,21 @@ export class CsGraph extends BaseFrame {
       // Dibujar punto AZUL para indicar que usa datos transformados
       canvas.save();
 
-      // Círculo AZUL BRILLANTE
+      // Círculo AZUL BRILLANTE más grande para mejor visibilidad
       canvas.fillStyle = '#0066CC';
       canvas.beginPath();
-      canvas.arc(domCoords[0], domCoords[1], 8, 0, 2 * Math.PI);
+      canvas.arc(domCoords[0], domCoords[1], 10, 0, 2 * Math.PI);
       canvas.fill();
 
-      // Borde blanco
+      // Borde blanco más grueso
       canvas.strokeStyle = '#FFFFFF';
-      canvas.lineWidth = 1;
+      canvas.lineWidth = 2;
       canvas.stroke();
 
-      // Etiqueta con valores originales
-      const labelText = `mm/día: ${pointData.y.toFixed(1)} - años: ${pointData.x.toFixed(2)}`;
+      // Etiqueta con valores originales usando configuración
+      const yValueText = this.pointYUnit ? `${pointData.y.toFixed(1)} ${this.pointYUnit}` : `${pointData.y.toFixed(1)}`;
+      const xValueText = this.pointXUnit ? `${pointData.x.toFixed(1)} ${this.pointXUnit}` : `${pointData.x.toFixed(1)}`;
+      const labelText = `${this.pointYLabel}: ${yValueText} - ${this.pointXLabel}: ${xValueText}`;
 
       canvas.font = 'bold 12px Arial';
       canvas.fillStyle = '#000000';
@@ -2710,23 +2741,55 @@ export class CsGraph extends BaseFrame {
    */
   public extractPointData(data: string): {x: number, y: number} | null {
     let lines = data.split('\n');
+    let header = lines[0].split(',');
+
+    console.log('🔍 extractPointData - Header:', header);
+
+    // Detectar el formato del CSV
+    // Formato climatología: ord,{year},{firstYear},{lastYear}
+    // Formato monitorización: ord,fit,point,return
+    const hasPointColumn = header.includes('point');
+    console.log('🔍 extractPointData - hasPointColumn:', hasPointColumn);
 
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim() !== '') {
         let parts = lines[i].split(',');
 
-        // Buscar la línea que tiene punto personalizado (columnas 5 y 6)
-        if (parts.length >= 6 && parts[4] && parts[5]) {
-          const x = parseFloat(parts[4]);
-          const y = parseFloat(parts[5]);
+        if (hasPointColumn) {
+          // Formato monitorización: ord,fit,point,return
+          // La fila del punto tiene: pointValue_x,,magnitude_y,magnitude_y
+          // Buscar línea donde la columna "fit" (índice 1) está vacía y "point" (índice 2) tiene valor
+          if (parts.length >= 4 && !parts[1] && parts[2] && parts[3]) {
+            const x = parseFloat(parts[0]); // ord (período de retorno en eje X)
+            const y = parseFloat(parts[2]); // point (temperatura en eje Y)
 
-          if (!isNaN(x) && !isNaN(y)) {
-            return { x, y };
+            console.log('✅ extractPointData - Punto encontrado!');
+            console.log('   Línea:', lines[i]);
+            console.log('   Parts:', parts);
+            console.log('   X (período):', x);
+            console.log('   Y (temperatura):', y);
+
+            if (!isNaN(x) && !isNaN(y)) {
+              return { x, y };
+            }
+          }
+        } else {
+          // Formato antiguo (climatología u otros): buscar en columnas 4 y 5
+          if (parts.length >= 6 && parts[4] && parts[5]) {
+            const x = parseFloat(parts[4]);
+            const y = parseFloat(parts[5]);
+
+            if (!isNaN(x) && !isNaN(y)) {
+              console.log('✅ extractPointData - Punto formato antiguo encontrado!');
+              console.log('   X:', x, 'Y:', y);
+              return { x, y };
+            }
           }
         }
       }
     }
 
+    console.log('❌ extractPointData - No se encontró punto');
     return null;
   }
 
@@ -2866,6 +2929,7 @@ export class CsGraph extends BaseFrame {
   }
 
   public setCustomPointData(point: {x: number, y: number} | null): void {
+    console.log('📍 setCustomPointData - Configurando punto:', point);
     this.customPointData = point;
   }
 
@@ -2876,6 +2940,20 @@ export class CsGraph extends BaseFrame {
   public setYearLabels(firstYear: number, lastYear: number): void {
     this.firstYearLabel = firstYear.toString();
     this.lastYearLabel = lastYear.toString();
+  }
+
+  /**
+   * Configura las etiquetas para el punto personalizado
+   * @param yLabel - Etiqueta del eje Y (ej: "Temperatura", "Precipitación")
+   * @param yUnit - Unidad del eje Y (ej: "°C", "mm/día")
+   * @param xLabel - Etiqueta del eje X (por defecto "Período")
+   * @param xUnit - Unidad del eje X (por defecto "años")
+   */
+  public setPointLabels(yLabel: string, yUnit: string, xLabel: string = 'Período', xUnit: string = 'años'): void {
+    this.pointYLabel = yLabel;
+    this.pointYUnit = yUnit;
+    this.pointXLabel = xLabel;
+    this.pointXUnit = xUnit;
   }
 }
 
