@@ -193,17 +193,29 @@ public render(): JSX.Element {
         this.container.classList.remove("paletteSmall")
     }
 
+    public async update(): Promise<void> {
+        const legendValues = await this.parent.getLegendValues();
+        const legendText = await this.parent.getLegendText();
 
-public async update(): Promise<void> {
-    let values = await this.parent.getLegendValues();
-    let texts = await this.parent.getLegendText();
-    let ptr = PaletteManager.getInstance().getPainter();
-    let mgr = PaletteManager.getInstance();
-    let lmgr = LayerManager.getInstance();
-    let min: number = Math.min(...values);
-    let max: number = Math.max(...values);
-    let name: string;
-    let data = this.container.querySelector(".info")
+        if (!legendValues || !legendText) {
+            console.warn('Legend values or text are undefined, skipping palette update');
+            return;
+        }
+
+        if (!this.container) {
+            console.warn('PaletteFrame container not initialized, skipping palette update');
+            return;
+        }
+
+        let values= [...legendValues].reverse();
+        let texts=[...legendText].reverse();
+        let ptr=PaletteManager.getInstance().getPainter();
+        let mgr=PaletteManager.getInstance();
+        let lmgr=LayerManager.getInstance();
+        let min: number =  Math.min(...values);
+        let max: number =  Math.max(...values);
+        let name:string;
+        let data=this.container.querySelector(".info")
 
     if (this.parent.getState().computedLayer) {
         name = this.parent.getState().legendTitle;
@@ -305,7 +317,7 @@ public async update(): Promise<void> {
     return `linear-gradient(to top, ${stops.join(", ")})`;
 }
 
-    // Función para determinar si un color es claro u oscuro
+    // Función para determinar si un color de fondo es claro u oscuro
     private isLightColor(hexColor: string): boolean {
 
         if (hexColor == undefined) return false;

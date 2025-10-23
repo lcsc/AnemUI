@@ -193,7 +193,7 @@ export class CsMenuInput extends BaseUiElement {
   private debounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onChange/onBlur
   private inputDebounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onInput
 
-  constructor(_id: string, _title: string, _listener: CsMenuIputListener, _minValue: number = 1, _value: number = undefined, _step: number = 1) {
+  constructor(_id: string, _title: string, _listener: CsMenuIputListener, _minValue: number = 1, _value: number = null, _step: number = 1) {
     super()
     this.title = _title;
     this.subTitle = ''
