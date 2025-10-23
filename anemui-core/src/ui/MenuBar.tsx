@@ -120,7 +120,7 @@ export class MenuBar extends BaseFrame {
         if (hasSelectionParam) {
             this.selectionParam = new CsMenuInput("selectionParamInput", "Selección", {
                 valueChanged: (origin: CsMenuInput, newValue: number | null) => {  
-                    this.listener.selectionParamChanged(newValue ?? 0);
+                    if (newValue != null) this.listener.selectionParamChanged(newValue);
                 },
             });
         }
@@ -482,7 +482,7 @@ public showMenusForScenarios(): void {
             case 2:
                 this.extraMenuInputs.push( new CsMenuInput(id, displayTitle, {
                     valueChanged: (origin: CsMenuInput, newValue: number | null) => {  
-                        return listener.selectionParamChanged(newValue ?? 0);
+                        if (newValue != null) listener.selectionParamChanged(newValue);
                     }, 
                 }, +options[0]))
                 break;
