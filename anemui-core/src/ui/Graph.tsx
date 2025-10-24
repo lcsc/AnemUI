@@ -67,6 +67,8 @@ export class CsGraph extends BaseFrame {
   };
 
   private currentMeanValue: number = 0;
+  private eventDataCSV: string = ''; // CSV data for event-based visualization
+  private drawnPoints: Array<{cx: number, cy: number, radius: number, row: number, dygraph: any}> = []; // Store drawn point positions
 
   // Configuración para etiquetas de punto personalizado
   private pointYLabel: string = 'Valor'; // Etiqueta para eje Y (ej: "Temperatura", "Precipitación")
@@ -113,6 +115,17 @@ export class CsGraph extends BaseFrame {
                   <option value="monthly">Por años</option>
                   <option value="full">Serie completa</option>
                 </select>
+              </div>
+              <div id="tempToggleContainer" style={{ display: "none", alignItems: "center", gap: "10px" }}>
+                <label htmlFor="tempToggle" style={{ fontWeight: "bold" }}>Mostrar:</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <label htmlFor="tempToggle" style={{ fontWeight: "normal", marginBottom: 0 }}>Temperatura media</label>
+                  <label className="switch">
+                    <input type="checkbox" id="tempToggle" onChange={() => { this.toggleTemperatureType() }} />
+                    <span className="slider round"></span>
+                  </label>
+                  <label htmlFor="tempToggle" style={{ fontWeight: "normal", marginBottom: 0 }}>Temperatura extrema</label>
+                </div>
               </div>
               <div id="yearPagination" className="year-pagination" style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                 <button type="button" id="prevYearBtn" className="btn navbar-btn" onClick={() => { this.previousYear() }}>← Año anterior</button>
@@ -545,6 +558,25 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     `;
   }
 
+  private updateDurationLegend(): void {
+    const legendDiv = document.getElementById('colorLegend');
+    if (!legendDiv) return;
+
+    const colors = this.waveType === "cold"
+      ? ['#B3D9FF', '#80BFFF', '#4DA6FF', '#1A8CFF', '#0073E6', '#004C99']
+      : ['#FFD699', '#FFAD33', '#FF8000', '#E60000', '#B30000', '#800000'];
+
+    legendDiv.innerHTML = `
+      <span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">Duración del evento:</span>
+      <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[0]};"></div><span style="white-space: nowrap;">1-3 días</span></div>
+      <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[1]};"></div><span style="white-space: nowrap;">4-5 días</span></div>
+      <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[2]};"></div><span style="white-space: nowrap;">6-7 días</span></div>
+      <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[3]};"></div><span style="white-space: nowrap;">8-10 días</span></div>
+      <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[4]};"></div><span style="white-space: nowrap;">11-15 días</span></div>
+      <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[5]};"></div><span style="white-space: nowrap;">> 15 días</span></div>
+    `;
+  }
+
   private changeViewMode(): void {
     const selector = document.getElementById('viewModeSelector') as HTMLSelectElement;
     if (!selector) return;
@@ -552,6 +584,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     const mode = selector.value;
     const paginationDiv = document.getElementById('yearPagination');
     const legendDiv = document.getElementById('colorLegend');
+    const tempToggleContainer = document.getElementById('tempToggleContainer');
 
     // Detectar tipo de gráfico por delimitador
     const delimiter = this.fullData.split('\n')[0].includes(';') ? ';' : ',';
@@ -577,6 +610,10 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       if (legendDiv) {
         legendDiv.style.display = isBarGraph ? 'none' : 'flex';
       }
+      // Mostrar toggle de temperatura solo en vista completa para gráficos de línea
+      if (tempToggleContainer) {
+        tempToggleContainer.style.display = isBarGraph ? 'none' : 'flex';
+      }
 
       if (isBarGraph) {
         this.recreateBarGraphFull();
@@ -591,6 +628,10 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       if (legendDiv) {
         legendDiv.style.display = isBarGraph ? 'none' : 'flex';
       }
+      // Ocultar toggle de temperatura en vista mensual
+      if (tempToggleContainer) {
+        tempToggleContainer.style.display = 'none';
+      }
 
       if (isBarGraph) {
         this.recreateBarGraphMonthly();
@@ -598,6 +639,11 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         this.recreateLineGraphMonthly();
       }
     }
+  }
+
+  private toggleTemperatureType(): void {
+    // Recrear el gráfico con la nueva configuración de temperatura
+    this.recreateLineGraphFull();
   }
 
   private recreateBarGraphFull(): void {
@@ -771,115 +817,152 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
   private recreateLineGraphFull(): void {
     const self = this;
 
-    const getColorBySurface = (surface: number): string => {
+    // Función para obtener color según duración del evento
+    const getColorByDuration = (duration: number): string => {
       if (self.waveType === "cold") {
-        if (surface < 10) return '#d9fff8';
-        else if (surface < 20) return '#bbdfe1';
-        else if (surface < 30) return '#9dbeca';
-        else if (surface < 40) return '#7f9eb3';
-        else if (surface < 50) return '#627e9d';
-        else if (surface < 60) return '#445e86';
-        else if (surface < 70) return '#263d6f';
-        else if (surface < 80) return '#1a2d58';
-        else if (surface < 90) return '#112542';
-        else return '#081D58';
+        // Escala de azules para duración (más oscuro = más largo)
+        if (duration <= 3) return '#B3D9FF';      // 1-3 días: azul muy claro
+        else if (duration <= 5) return '#80BFFF'; // 4-5 días: azul claro
+        else if (duration <= 7) return '#4DA6FF'; // 6-7 días: azul medio
+        else if (duration <= 10) return '#1A8CFF';// 8-10 días: azul
+        else if (duration <= 15) return '#0073E6';// 11-15 días: azul oscuro
+        else return '#004C99';                     // >15 días: azul muy oscuro
       } else {
-        if (surface < 10) return '#ffcccc';
-        else if (surface < 20) return '#ff9999';
-        else if (surface < 30) return '#ff6666';
-        else if (surface < 40) return '#ff3333';
-        else if (surface < 50) return '#ff0000';
-        else if (surface < 60) return '#cc0000';
-        else if (surface < 70) return '#990000';
-        else if (surface < 80) return '#660000';
-        else if (surface < 90) return '#4d0000';
-        else return '#330000';
+        // Escala de rojos/naranjas para duración (más oscuro = más largo)
+        if (duration <= 3) return '#FFD699';      // 1-3 días: naranja muy claro
+        else if (duration <= 5) return '#FFAD33'; // 4-5 días: naranja claro
+        else if (duration <= 7) return '#FF8000'; // 6-7 días: naranja
+        else if (duration <= 10) return '#E60000';// 8-10 días: rojo
+        else if (duration <= 15) return '#B30000';// 11-15 días: rojo oscuro
+        else return '#800000';                     // >15 días: rojo muy oscuro
       }
     };
 
-    const yAxisRange: [number, number] = self.waveType === "cold" ? [-20, 0] : [36, 50];
+    // Función para calcular tamaño del punto según superficie afectada
+    const getRadiusBySurface = (surface: number): number => {
+      // Superficie 0-100% -> radio 3-15 píxeles
+      return 3 + (surface / 100) * 12;
+    };
+
     const waveType: string = this.waveType === "cold"? "frío":"calor";
+
+    // Agrupar datos por evento (event column es la 5)
+    const eventData = this.groupDataByEvent(this.fullData, this.waveType);
+    this.eventDataCSV = eventData; // Store for use in callbacks
+
+    // Determinar qué columna usar para el eje Y
+    // Por defecto: temperatura media (mean), toggle permite cambiar a extreme
+    const useExtremeTemp = (document.getElementById('tempToggle') as HTMLInputElement)?.checked || false;
+    const yAxisLabel = useExtremeTemp
+      ? (self.waveType === 'cold' ? self.parent.getTranslation('temperatura_min') : self.parent.getTranslation('temperatura_max'))
+      : self.parent.getTranslation('media');
+
+    // Ajustar rango Y según temperatura media o extrema
+    let yAxisRange: [number, number];
+    if (useExtremeTemp) {
+      // Temperatura extrema: usar rango original
+      yAxisRange = self.waveType === "cold" ? [-24, -4] : [36, 50];
+    } else {
+      // Temperatura media: centrar verticalmente
+      yAxisRange = self.waveType === "cold" ? [-15, 5] : [34, 48];
+    }
+
+    // Cambiar visibility según qué temperatura mostrar
+    // Columnas: date, extreme, mean, surface, duration, event, lastDate
+    const visibility = useExtremeTemp
+      ? [false, true, false, false, false, false, false]  // Mostrar extreme, ocultar mean
+      : [false, false, true, false, false, false, false]; // Mostrar mean, ocultar extreme
+
+    // Calcular rango X: añadir 5 años antes y después
+    const lines = eventData.split('\n');
+    let minDate: Date | null = null;
+    let maxDate: Date | null = null;
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line === '') continue;
+
+      const parts = line.split(',');
+      if (parts.length < 1) continue;
+
+      const date = new Date(parts[0]);
+      if (!isNaN(date.getTime())) {
+        if (!minDate || date < minDate) minDate = date;
+        if (!maxDate || date > maxDate) maxDate = date;
+      }
+    }
+
+    // Configurar dateWindow con ±5 años
+    let dateWindow: [number, number] | undefined = undefined;
+    if (minDate && maxDate) {
+      const minYear = minDate.getFullYear() - 2;
+      const maxYear = maxDate.getFullYear() + 2;
+      dateWindow = [new Date(minYear, 0, 1).getTime(), new Date(maxYear, 11, 31).getTime()];
+    }
 
     this.currentGraph = new Dygraph(
       document.getElementById("popGraph"),
-      this.fullData,
+      eventData,
       {
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 2,
         delimiter: ",",
         title: "Características de las olas de " + waveType + " observadas en España",
-        ylabel: this.yLabel || "Valor",
+        ylabel: yAxisLabel,
         xlabel: "",
         xAxisHeight: 20,
         showRangeSelector: true,
-        visibility: [true, false, false, false],
+        dateWindow: dateWindow,
+        visibility: visibility,
         legend: 'never',
         valueRange: yAxisRange,
         drawPoints: false,
         strokeWidth: 0,
         fillGraph: false,
-        plotter: function(e: any) {
-          if (e.setName !== 'extreme') return;
+        highlightCircleSize: 0,
+        highlightSeriesOpts: null,
+        underlayCallback: function(canvas: CanvasRenderingContext2D, area: any, dygraph: any) {
+          // Limpiar array de puntos dibujados
+          self.drawnPoints = [];
 
-          const ctx = e.drawingContext;
-          const points = e.points;
-          const radius = 3;
+          // Determinar qué columna usar según el toggle
+          const colIndex = useExtremeTemp ? 1 : 2; // 1 = extreme, 2 = mean
 
-          ctx.save();
+          const numPoints = dygraph.numRows();
 
-          for (let i = 0; i < points.length; i++) {
-            const point = points[i];
-            const surfaceValue = e.dygraph.getValue(i, 2);
-            const pointColor = getColorBySurface(surfaceValue);
+          canvas.save();
 
-            ctx.beginPath();
-            ctx.fillStyle = pointColor;
-            ctx.arc(point.canvasx, point.canvasy, radius, 0, 2 * Math.PI, false);
-            ctx.fill();
+          for (let i = 0; i < numPoints; i++) {
+            const xVal = dygraph.getValue(i, 0);  // Fecha (columna 0)
+            const yVal = dygraph.getValue(i, colIndex); // Temperatura (columna 1 o 2)
+            const surfaceValue = dygraph.getValue(i, 3);  // Superficie (columna 3)
+            const durationValue = dygraph.getValue(i, 4); // Duración (columna 4)
+
+            if (!yVal || isNaN(yVal)) continue;
+
+            // Convertir coordenadas de datos a coordenadas de canvas
+            const cx = dygraph.toDomXCoord(xVal);
+            const cy = dygraph.toDomYCoord(yVal);
+
+            // Color según duración, tamaño según superficie
+            const pointColor = getColorByDuration(durationValue);
+            const pointRadius = getRadiusBySurface(surfaceValue);
+
+            // Guardar información del punto para detección de hover
+            self.drawnPoints.push({cx, cy, radius: pointRadius, row: i, dygraph});
+
+            canvas.beginPath();
+            canvas.fillStyle = pointColor;
+            canvas.arc(cx, cy, pointRadius, 0, 2 * Math.PI, false);
+            canvas.fill();
+
+            // Borde oscuro para mejor visibilidad
+            canvas.strokeStyle = '#333';
+            canvas.lineWidth = 0.5;
+            canvas.stroke();
           }
 
-          ctx.restore();
-        },
-        highlightCallback: function(event: any, x: any, points: any, row: any, seriesName: any) {
-          const tooltip = document.getElementById('graphTooltip');
-          if (!tooltip || !points || points.length === 0) return;
-
-          const dygraph = this;
-          const extremeValue = dygraph.getValue(row, 1);
-          const surfaceValue = dygraph.getValue(row, 2);
-          const duration = dygraph.getValue(row, 3);
-
-          if (!extremeValue || extremeValue === 0) {
-            tooltip.style.display = 'none';
-            return;
-          }
-
-          const date = new Date(x);
-          const dateStr = self.formatDate(date);
-          const tempLabel = self.parent.getTranslation('temperatura');
-          const surfaceLabel = self.parent.getTranslation('superficie_afectada');
-          const durationLabel = self.waveType== 'cold'? self.parent.getTranslation('duracion_ola_frio'):self.parent.getTranslation('duracion_ola_calor');
-
-          tooltip.innerHTML = `
-            <div><strong>${dateStr}</strong></div>
-            <div style="color: #ff6b6b;">● ${tempLabel}: ${extremeValue.toFixed(2)}</div>
-            <div style="color: #4ecdc4;">● ${surfaceLabel}: ${surfaceValue.toFixed(2)}</div>
-            <div style="color: #888;">● ${durationLabel}: ${duration}</div>
-          `;
-
-          const canvas = document.getElementById('popGraph');
-          if (canvas && event) {
-            const rect = canvas.getBoundingClientRect();
-            tooltip.style.left = (event.pageX - rect.left + 10) + 'px';
-            tooltip.style.top = (event.pageY - rect.top - 30) + 'px';
-            tooltip.style.display = 'block';
-          }
-        },
-        unhighlightCallback: function() {
-          const tooltip = document.getElementById('graphTooltip');
-          if (tooltip) {
-            tooltip.style.display = 'none';
-          }
+          canvas.restore();
         },
         axes: {
           x: {
@@ -901,6 +984,123 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         }
       }
     );
+
+    // Configurar detección precisa de hover sobre círculos
+    const graphContainer = document.getElementById('popGraph') as HTMLElement;
+    const graphCanvas = document.querySelector('#popGraph canvas') as HTMLCanvasElement;
+
+    if (graphContainer && graphCanvas) {
+      // Remover event listeners previos si existen
+      const oldListener = (graphContainer as any)._hoverListener;
+      if (oldListener) {
+        graphContainer.removeEventListener('mousemove', oldListener);
+      }
+
+      const hoverListener = (event: MouseEvent) => {
+        const tooltip = document.getElementById('graphTooltip');
+        if (!tooltip) return;
+
+        const rect = graphCanvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        // Buscar si el cursor está dentro de algún círculo
+        let hoveredPoint = null;
+        for (const point of self.drawnPoints) {
+          const distance = Math.sqrt(
+            Math.pow(mouseX - point.cx, 2) + Math.pow(mouseY - point.cy, 2)
+          );
+
+          if (distance <= point.radius) {
+            hoveredPoint = point;
+            break;
+          }
+        }
+
+        if (hoveredPoint) {
+          // Mostrar tooltip
+          const row = hoveredPoint.row;
+          const dygraph = hoveredPoint.dygraph;
+
+          const extremeValue = dygraph.getValue(row, 1);
+          const meanValue = dygraph.getValue(row, 2);
+          const surfaceValue = dygraph.getValue(row, 3);
+          const duration = dygraph.getValue(row, 4);
+
+          // Obtener fechas del CSV
+          const eventDataLines = self.eventDataCSV.split('\n');
+          let lastDateString = null;
+          if (row + 1 < eventDataLines.length) {
+            const csvLine = eventDataLines[row + 1];
+            const parts = csvLine.split(',');
+            if (parts.length > 6) {
+              lastDateString = parts[6];
+            }
+          }
+
+          const firstDate = new Date(dygraph.getValue(row, 0));
+          let lastDate: Date;
+
+          if (lastDateString && lastDateString.trim() !== '') {
+            lastDate = new Date(lastDateString);
+          } else {
+            lastDate = firstDate;
+          }
+
+          const firstDay = firstDate.getDate().toString().padStart(2, '0');
+          const firstMonth = (firstDate.getMonth() + 1).toString().padStart(2, '0');
+          const lastDay = lastDate.getDate().toString().padStart(2, '0');
+          const lastMonth = (lastDate.getMonth() + 1).toString().padStart(2, '0');
+          const year = lastDate.getFullYear();
+
+          const dateRangeStr = `Del ${firstDay}/${firstMonth} al ${lastDay}/${lastMonth} de ${year}`;
+
+          const tempLabel = self.waveType === 'cold'
+            ? self.parent.getTranslation('temperatura_min')
+            : self.parent.getTranslation('temperatura_max');
+          const tempMeanLabel = self.parent.getTranslation('media');
+          const surfaceLabel = self.parent.getTranslation('superficie_afectada');
+          const durationLabel = self.waveType === 'cold'
+            ? self.parent.getTranslation('duracion_ola_frio')
+            : self.parent.getTranslation('duracion_ola_calor');
+
+          tooltip.innerHTML = `
+            <div><strong>${dateRangeStr}</strong></div>
+            <div style="color: #d32f2f;">● ${tempLabel}: ${extremeValue.toFixed(2)} ºC</div>
+            <div style="color: #e65100;">● ${tempMeanLabel}: ${meanValue ? meanValue.toFixed(2) : 'N/A'} ºC</div>
+            <div style="color: #00796b;">● ${surfaceLabel}: ${surfaceValue.toFixed(2)} %</div>
+            <div style="color: #555;">● ${durationLabel}: ${duration} días</div>
+          `;
+
+          tooltip.style.left = (event.clientX - rect.left + 10) + 'px';
+          tooltip.style.top = (event.clientY - rect.top - 30) + 'px';
+          tooltip.style.display = 'block';
+
+          // Cambiar cursor a pointer
+          graphContainer.style.cursor = 'pointer';
+        } else {
+          // Ocultar tooltip y restaurar cursor
+          tooltip.style.display = 'none';
+          graphContainer.style.cursor = 'default';
+        }
+      };
+
+      // Guardar referencia al listener para poder removerlo después
+      (graphContainer as any)._hoverListener = hoverListener;
+      graphContainer.addEventListener('mousemove', hoverListener);
+
+      // Ocultar tooltip cuando el mouse salga del contenedor
+      graphContainer.addEventListener('mouseleave', () => {
+        const tooltip = document.getElementById('graphTooltip');
+        if (tooltip) {
+          tooltip.style.display = 'none';
+        }
+        graphContainer.style.cursor = 'default';
+      });
+    }
+
+    // Actualizar la leyenda para mostrar duración en lugar de superficie
+    this.updateDurationLegend();
   }
 
   private recreateLineGraphMonthly(): void {
@@ -949,7 +1149,15 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       }
     };
 
-    const yAxisRange: [number, number] = self.waveType === "cold" ? [-20, 0] : [36, 50];
+    let yAxisRange: [number, number]
+    const useExtremeTemp = (document.getElementById('tempToggle') as HTMLInputElement)?.checked || false;
+    if (useExtremeTemp) {
+      // Temperatura extrema: usar rango original
+      yAxisRange = self.waveType === "cold" ? [-24, -4] : [36, 50];
+    } else {
+      // Temperatura media: centrar verticalmente
+      yAxisRange = self.waveType === "cold" ? [-15, 5] : [34, 48];
+    }
     const waveType: string = this.waveType === "cold"? "frío":"calor";
 
     this.currentGraph = new Dygraph(
@@ -964,14 +1172,19 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         xlabel: "",
         xAxisHeight: 20,
         showRangeSelector: false,
-        visibility: [true, false, false, false],
+        visibility: [true, false, false, false, false],
         legend: 'never',
         valueRange: yAxisRange,
         drawPoints: false,
         strokeWidth: 0,
         fillGraph: false,
+        highlightCircleSize: 0,
+        highlightSeriesOpts: null,
         plotter: function(e: any) {
           if (e.setName !== 'extreme') return;
+
+          // Limpiar array de puntos dibujados
+          self.drawnPoints = [];
 
           const ctx = e.drawingContext;
           const points = e.points;
@@ -1005,8 +1218,19 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
 
           for (let i = 0; i < points.length; i++) {
             const point = points[i];
-            const surfaceValue = e.dygraph.getValue(i, 2);
+            const surfaceValue = e.dygraph.getValue(i, 3);
             const pointColor = getColorBySurface(surfaceValue);
+
+            // Guardar información del punto para detección de hover
+            if (point.canvasx && point.canvasy) {
+              self.drawnPoints.push({
+                cx: point.canvasx,
+                cy: point.canvasy,
+                radius: radius,
+                row: i,
+                dygraph: e.dygraph
+              });
+            }
 
             ctx.beginPath();
             ctx.fillStyle = pointColor;
@@ -1015,47 +1239,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
           }
 
           ctx.restore();
-        },
-        highlightCallback: function(event: any, x: any, points: any, row: any, seriesName: any) {
-          const tooltip = document.getElementById('graphTooltip');
-          if (!tooltip || !points || points.length === 0) return;
-
-          const dygraph = this;
-          const extremeValue = dygraph.getValue(row, 1);
-          const surfaceValue = dygraph.getValue(row, 2);
-          const duration = dygraph.getValue(row, 3);
-
-          if (!extremeValue || extremeValue === 0) {
-            tooltip.style.display = 'none';
-            return;
-          }
-
-          const date = new Date(x);
-          const dateStr = self.formatDate(date);
-          const tempLabel = self.parent.getTranslation('temperatura');
-          const surfaceLabel = self.parent.getTranslation('superficie_afectada');
-          const durationLabel = self.waveType== 'cold'? self.parent.getTranslation('duracion_ola_frio'):self.parent.getTranslation('duracion_ola_calor');
-
-          tooltip.innerHTML = `
-            <div><strong>${dateStr}</strong></div>
-            <div style="color: #ff6b6b;">● ${tempLabel}: ${extremeValue.toFixed(2)}</div>
-            <div style="color: #4ecdc4;">● ${surfaceLabel}: ${surfaceValue.toFixed(2)}</div>
-            <div style="color: #888;">● ${durationLabel}: ${duration}</div>
-          `;
-
-          const canvas = document.getElementById('popGraph');
-          if (canvas && event) {
-            const rect = canvas.getBoundingClientRect();
-            tooltip.style.left = (event.pageX - rect.left + 10) + 'px';
-            tooltip.style.top = (event.pageY - rect.top - 30) + 'px';
-            tooltip.style.display = 'block';
-          }
-        },
-        unhighlightCallback: function() {
-          const tooltip = document.getElementById('graphTooltip');
-          if (tooltip) {
-            tooltip.style.display = 'none';
-          }
         },
         axes: {
           x: {
@@ -1080,6 +1263,104 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         }
       }
     );
+
+    // Configurar detección precisa de hover sobre puntos
+    const graphContainer = document.getElementById('popGraph') as HTMLElement;
+    const graphCanvas = document.querySelector('#popGraph canvas') as HTMLCanvasElement;
+
+    if (graphContainer && graphCanvas) {
+      // Remover event listeners previos si existen
+      const oldListener = (graphContainer as any)._hoverListener;
+      if (oldListener) {
+        graphContainer.removeEventListener('mousemove', oldListener);
+      }
+
+      const hoverListener = (event: MouseEvent) => {
+        const tooltip = document.getElementById('graphTooltip');
+        if (!tooltip) return;
+
+        const rect = graphCanvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        // Buscar si el cursor está dentro de algún círculo
+        let hoveredPoint = null;
+        for (const point of self.drawnPoints) {
+          const distance = Math.sqrt(
+            Math.pow(mouseX - point.cx, 2) + Math.pow(mouseY - point.cy, 2)
+          );
+
+          if (distance <= point.radius) {
+            hoveredPoint = point;
+            break;
+          }
+        }
+
+        if (hoveredPoint) {
+          // Mostrar tooltip
+          const row = hoveredPoint.row;
+          const dygraph = hoveredPoint.dygraph;
+
+          const extremeValue = dygraph.getValue(row, 1);
+          const meanValue = dygraph.getValue(row, 2);
+          const surfaceValue = dygraph.getValue(row, 3);
+          const duration = dygraph.getValue(row, 4);
+
+          if (!extremeValue || extremeValue === 0) {
+            tooltip.style.display = 'none';
+            graphContainer.style.cursor = 'default';
+            return;
+          }
+
+          const date = new Date(dygraph.getValue(row, 0));
+          const dateStr = self.formatDate(date);
+
+          const tempLabel = self.waveType === 'cold'
+            ? self.parent.getTranslation('temperatura_min')
+            : self.parent.getTranslation('temperatura_max');
+          const tempMeanLabel = self.parent.getTranslation('media');
+          const surfaceLabel = self.parent.getTranslation('superficie_afectada');
+          const durationLabel = self.waveType === 'cold'
+            ? self.parent.getTranslation('duracion_ola_frio')
+            : self.parent.getTranslation('duracion_ola_calor');
+
+          tooltip.innerHTML = `
+            <div><strong>${dateStr}</strong></div>
+            <div style="color: #d32f2f;">● ${tempLabel}: ${extremeValue.toFixed(2)} ºC</div>
+            <div style="color: #e65100;">● ${tempMeanLabel}: ${meanValue ? meanValue.toFixed(2) : 'N/A'} ºC</div>
+            <div style="color: #00796b;">● ${surfaceLabel}: ${surfaceValue.toFixed(2)} %</div>
+            <div style="color: #555;">● ${durationLabel}: ${duration} días</div>
+          `;
+
+          tooltip.style.left = (event.clientX - rect.left + 10) + 'px';
+          tooltip.style.top = (event.clientY - rect.top - 30) + 'px';
+          tooltip.style.display = 'block';
+
+          // Cambiar cursor a pointer
+          graphContainer.style.cursor = 'pointer';
+        } else {
+          // Ocultar tooltip y restaurar cursor
+          tooltip.style.display = 'none';
+          graphContainer.style.cursor = 'default';
+        }
+      };
+
+      // Guardar referencia al listener para poder removerlo después
+      (graphContainer as any)._hoverListener = hoverListener;
+      graphContainer.addEventListener('mousemove', hoverListener);
+
+      // Ocultar tooltip cuando el mouse salga del contenedor
+      graphContainer.addEventListener('mouseleave', () => {
+        const tooltip = document.getElementById('graphTooltip');
+        if (tooltip) {
+          tooltip.style.display = 'none';
+        }
+        graphContainer.style.cursor = 'default';
+      });
+    }
+    
+    // Actualizar la leyenda para mostrar superficie en lugar de duración
+    this.updateColorLegend();
   }
 
   private showMonthlyViewBar(): void {
@@ -2413,7 +2694,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             xAxisHeight: 30,
             // Underlay callback para dibujar el punto personalizado
             underlayCallback: function(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph) {
-              console.log('🖌️ underlayCallback llamado - customPointData:', self.customPointData);
               if (self.customPointData) {
                 self.drawCustomPointWithTransformedData(canvas, area, dygraph, self.customPointData);
               }
@@ -2789,9 +3069,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
    */
   private drawCustomPointWithTransformedData(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph, pointData: {x: number, y: number}): void {
     try {
-      console.log('🎨 drawCustomPointWithTransformedData - Dibujando punto:', pointData);
-      console.log('   Escala X log:', this.currentXLogScale, 'Escala Y log:', this.currentYLogScale);
-
       // Transformar las coordenadas del punto según la escala actual
       let transformedX = pointData.x;
       let transformedY = pointData.y;
@@ -2804,11 +3081,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         transformedY = Math.log10(pointData.y);
       }
 
-      console.log('   Transformado - X:', transformedX, 'Y:', transformedY);
-
       // Usar las coordenadas transformadas con toDomCoords de Dygraph
       const domCoords = dygraph.toDomCoords(transformedX, transformedY);
-      console.log('   DOM coords:', domCoords);
 
       if (!domCoords || !isFinite(domCoords[0]) || !isFinite(domCoords[1])) {
         return;
@@ -2859,16 +3133,16 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       }
 
       // Fondo azul claro
-      canvas.fillStyle = 'rgba(173, 216, 230, 0.9)';
+      canvas.fillStyle = '#dcdcdc' /* 'rgba(173, 216, 230, 0.9)' */;
       canvas.fillRect(textX - 3, textY - textHeight/2 - 2, textWidth + 6, textHeight + 4);
 
       // Borde azul oscuro
-      canvas.strokeStyle = '#003d7a';
+      canvas.strokeStyle = '#064d87' /* '#003d7a' */;
       canvas.lineWidth = 1;
       canvas.strokeRect(textX - 3, textY - textHeight/2 - 2, textWidth + 6, textHeight + 4);
 
       // Texto negro
-      canvas.fillStyle = '#000000';
+      canvas.fillStyle = '#064d87'/* '#000000' */;
       canvas.textAlign = 'left';
       canvas.textBaseline = 'middle';
       canvas.fillText(labelText, textX, textY);
@@ -2960,19 +3234,102 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
   }
 
   /**
+   * Agrupa los datos por evento (una fila por evento en lugar de una fila por día)
+   * CSV de entrada: date,extreme,mean,surface,duration,event
+   * CSV de salida: date,extreme,mean,surface,duration,event,lastDate (con una fila por evento)
+   */
+  private groupDataByEvent(data: string, waveType: string): string {
+    const lines = data.split('\n');
+    const header = lines[0];
+
+    // Mapa para agrupar eventos: eventId -> array de filas
+    const eventMap = new Map<string, Array<{
+      date: string,
+      extreme: number,
+      mean: number,
+      surface: number,
+      duration: number
+    }>>();
+
+    // Procesar todas las filas y agrupar por evento
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line === '') continue;
+
+      const parts = line.split(',');
+      if (parts.length < 6) continue;
+
+      const date = parts[0];
+      const extreme = parseFloat(parts[1]);
+      const mean = parseFloat(parts[2]);
+      const surface = parseFloat(parts[3]);
+      const duration = parseFloat(parts[4]);
+      const eventId = parts[5];
+
+      // Validar que los valores sean números válidos
+      if (isNaN(extreme) || isNaN(mean) || isNaN(surface) || isNaN(duration)) continue;
+
+      if (!eventMap.has(eventId)) {
+        eventMap.set(eventId, []);
+      }
+
+      eventMap.get(eventId)!.push({
+        date,
+        extreme,
+        mean,
+        surface,
+        duration
+      });
+    }
+
+    // Crear CSV de salida con una fila por evento
+    // Añadimos lastDate como columna adicional
+    const outputLines = [header + ',lastDate'];
+
+    eventMap.forEach((rows, eventId) => {
+      if (rows.length === 0) return;
+
+      // Primera y última fecha del evento
+      const firstDate = rows[0].date;
+      const lastDate = rows[rows.length - 1].date;
+
+      // Para olas de calor: máximo de extreme y mean (temperaturas más altas)
+      // Para olas de frío: mínimo de extreme y mean (temperaturas más bajas)
+      const extremeValues = rows.map(r => r.extreme);
+      const meanValues = rows.map(r => r.mean);
+
+      const extremeValue = waveType === 'cold'
+        ? Math.min(...extremeValues)  // Mínimo para frío
+        : Math.max(...extremeValues); // Máximo para calor
+
+      const meanValue = waveType === 'cold'
+        ? Math.min(...meanValues)     // Mínimo para frío
+        : Math.max(...meanValues);    // Máximo para calor
+
+      // Usar el máximo de superficie afectada durante el evento
+      const maxSurface = Math.max(...rows.map(r => r.surface));
+
+      // La duración debería ser la misma para todas las filas del evento
+      const maxDuration = Math.max(...rows.map(r => r.duration));
+
+      // Crear la línea de salida con lastDate adicional
+      outputLines.push(`${firstDate},${extremeValue.toFixed(2)},${meanValue.toFixed(2)},${maxSurface.toFixed(2)},${maxDuration},${eventId},${lastDate}`);
+    });
+
+    return outputLines.join('\n');
+  }
+
+  /**
    * Extrae datos de punto personalizado
    */
   public extractPointData(data: string): {x: number, y: number} | null {
     let lines = data.split('\n');
     let header = lines[0].split(',');
 
-    console.log('🔍 extractPointData - Header:', header);
-
     // Detectar el formato del CSV
     // Formato climatología: ord,{year},{firstYear},{lastYear}
     // Formato monitorización: ord,fit,point,return
     const hasPointColumn = header.includes('point');
-    console.log('🔍 extractPointData - hasPointColumn:', hasPointColumn);
 
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim() !== '') {
@@ -2986,12 +3343,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             const x = parseFloat(parts[0]); // ord (período de retorno en eje X)
             const y = parseFloat(parts[2]); // point (temperatura en eje Y)
 
-            console.log('✅ extractPointData - Punto encontrado!');
-            console.log('   Línea:', lines[i]);
-            console.log('   Parts:', parts);
-            console.log('   X (período):', x);
-            console.log('   Y (temperatura):', y);
-
             if (!isNaN(x) && !isNaN(y)) {
               return { x, y };
             }
@@ -3003,8 +3354,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             const y = parseFloat(parts[5]);
 
             if (!isNaN(x) && !isNaN(y)) {
-              console.log('✅ extractPointData - Punto formato antiguo encontrado!');
-              console.log('   X:', x, 'Y:', y);
               return { x, y };
             }
           }
@@ -3012,7 +3361,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       }
     }
 
-    console.log('❌ extractPointData - No se encontró punto');
     return null;
   }
 
@@ -3152,7 +3500,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
   }
 
   public setCustomPointData(point: {x: number, y: number} | null): void {
-    console.log('📍 setCustomPointData - Configurando punto:', point);
     this.customPointData = point;
   }
 
@@ -3164,6 +3511,14 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     this.firstYearLabel = firstYear.toString();
     this.lastYearLabel = lastYear.toString();
   }
+
+  public setPointLabels(yLabel: string, yUnit: string, xLabel: string, xUnit: string): void {
+    this.pointYLabel = yLabel;
+    this.pointYUnit = yUnit;
+    this.pointXLabel = xLabel;
+    this.pointXUnit = xUnit;
+  }
+
   public drawPercentileClockGraph(currentValue: number, historicalData: number[], latlng: CsLatLong): void {
     const container = document.getElementById("popGraph");
     if (!container) return;

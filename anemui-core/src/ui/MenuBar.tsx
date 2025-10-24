@@ -561,7 +561,7 @@ export class MenuBar extends BaseFrame {
 
         this.climBtnArray.forEach((btn) => {
             const role = btn.getAttribute('role');
-            if (role === 'variable' || role === 'escala') {
+            if (role === 'variable' || role === 'escala' || role === 'year' || role === 'magnitude' || role === 'timeSpan' || role === 'period') {
                 // Mostrar variable y escala para climatología
                 btn.hidden = false;
             } else if (role === 'escenario') {
