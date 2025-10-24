@@ -149,8 +149,8 @@ export default class Language {
             'temperatura_min':'Temperatura mínima',
             'media':'Temperatura media',
             'superficie_afectada':'Superficie afectada',
-            'duracion_ola_frio':'Duración de la ola de frio (días)', 
-            'duracion_ola_calor':'Duración de la ola de calor (días)',   
+            'duracion_ola_frio':'Duración de la ola de frio', 
+            'duracion_ola_calor':'Duración de la ola de calor',   
             'month': {
                 0: "Enero",
                 1: "Febrero",

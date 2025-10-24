@@ -68,6 +68,7 @@ export class CsGraph extends BaseFrame {
 
   private currentMeanValue: number = 0;
   private eventDataCSV: string = ''; // CSV data for event-based visualization
+  private drawnPoints: Array<{cx: number, cy: number, radius: number, row: number, dygraph: any}> = []; // Store drawn point positions
 
   // Configuración para etiquetas de punto personalizado
   private pointYLabel: string = 'Valor'; // Etiqueta para eje Y (ej: "Temperatura", "Precipitación")
@@ -919,13 +920,13 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         strokeWidth: 0,
         fillGraph: false,
         underlayCallback: function(canvas: CanvasRenderingContext2D, area: any, dygraph: any) {
-          console.log('🟢 underlayCallback - Dibujando puntos');
+          // Limpiar array de puntos dibujados
+          self.drawnPoints = [];
 
           // Determinar qué columna usar según el toggle
           const colIndex = useExtremeTemp ? 1 : 2; // 1 = extreme, 2 = mean
 
           const numPoints = dygraph.numRows();
-          console.log('🟢 underlayCallback - Total puntos:', numPoints);
 
           canvas.save();
 
@@ -941,19 +942,12 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             const cx = dygraph.toDomXCoord(xVal);
             const cy = dygraph.toDomYCoord(yVal);
 
-            if (i < 3) {
-              console.log(`🟢 Punto ${i}:`, {
-                xVal: new Date(xVal),
-                yVal,
-                cx, cy,
-                surface: surfaceValue,
-                duration: durationValue
-              });
-            }
-
             // Color según duración, tamaño según superficie
             const pointColor = getColorByDuration(durationValue);
             const pointRadius = getRadiusBySurface(surfaceValue);
+
+            // Guardar información del punto para detección de hover
+            self.drawnPoints.push({cx, cy, radius: pointRadius, row: i, dygraph});
 
             canvas.beginPath();
             canvas.fillStyle = pointColor;
@@ -968,44 +962,86 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
 
           canvas.restore();
         },
-        highlightCallback: function(event: any, x: any, points: any, row: any, seriesName: any) {
-          const tooltip = document.getElementById('graphTooltip');
-          if (!tooltip || !points || points.length === 0) return;
-
-          const dygraph = this;
-          const extremeValue = dygraph.getValue(row, 1);    // Columna 1: extreme
-          const meanValue = dygraph.getValue(row, 2);       // Columna 2: mean
-          const surfaceValue = dygraph.getValue(row, 3);    // Columna 3: surface
-          const duration = dygraph.getValue(row, 4);        // Columna 4: duration
-
-          if (!extremeValue || extremeValue === 0) {
-            tooltip.style.display = 'none';
-            return;
+        axes: {
+          x: {
+            valueFormatter: (millis: number) => {
+              const fecha = new Date(millis);
+              return fecha.getFullYear().toString();
+            },
+            axisLabelFormatter: (number: number) => {
+              const fecha = new Date(number);
+              return fecha.getFullYear().toString();
+            },
+            pixelsPerLabel: 80
+          },
+          y: {
+            valueFormatter: function (val: any) {
+              return " " + (val < 0.01 ? val.toFixed(3) : val.toFixed(2));
+            }
           }
+        }
+      }
+    );
 
-          // Necesitamos acceder al CSV original para obtener lastDate como string
-          // Dygraph parsea las fechas y pierde el formato original
-          // Accedemos al CSV almacenado en la clase
+    // Configurar detección precisa de hover sobre círculos
+    const graphContainer = document.getElementById('popGraph') as HTMLElement;
+    const graphCanvas = document.querySelector('#popGraph canvas') as HTMLCanvasElement;
+
+    if (graphContainer && graphCanvas) {
+      // Remover event listeners previos si existen
+      const oldListener = (graphContainer as any)._hoverListener;
+      if (oldListener) {
+        graphContainer.removeEventListener('mousemove', oldListener);
+      }
+
+      const hoverListener = (event: MouseEvent) => {
+        const tooltip = document.getElementById('graphTooltip');
+        if (!tooltip) return;
+
+        const rect = graphCanvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        // Buscar si el cursor está dentro de algún círculo
+        let hoveredPoint = null;
+        for (const point of self.drawnPoints) {
+          const distance = Math.sqrt(
+            Math.pow(mouseX - point.cx, 2) + Math.pow(mouseY - point.cy, 2)
+          );
+
+          if (distance <= point.radius) {
+            hoveredPoint = point;
+            break;
+          }
+        }
+
+        if (hoveredPoint) {
+          // Mostrar tooltip
+          const row = hoveredPoint.row;
+          const dygraph = hoveredPoint.dygraph;
+
+          const extremeValue = dygraph.getValue(row, 1);
+          const meanValue = dygraph.getValue(row, 2);
+          const surfaceValue = dygraph.getValue(row, 3);
+          const duration = dygraph.getValue(row, 4);
+
+          // Obtener fechas del CSV
           const eventDataLines = self.eventDataCSV.split('\n');
-
-          // row + 1 porque la primera línea es el header
           let lastDateString = null;
           if (row + 1 < eventDataLines.length) {
             const csvLine = eventDataLines[row + 1];
             const parts = csvLine.split(',');
             if (parts.length > 6) {
-              lastDateString = parts[6]; // Columna 6: lastDate
+              lastDateString = parts[6];
             }
           }
 
-          // Formatear rango de fechas: "Del dd/mm al dd/mm de aaaa"
-          const firstDate = new Date(x); // x es el timestamp de la primera fecha
+          const firstDate = new Date(dygraph.getValue(row, 0));
           let lastDate: Date;
 
           if (lastDateString && lastDateString.trim() !== '') {
             lastDate = new Date(lastDateString);
           } else {
-            // Fallback: usar la primera fecha si no hay lastDate
             lastDate = firstDate;
           }
 
@@ -1034,40 +1070,32 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             <div style="color: #888;">● ${durationLabel}: ${duration} días</div>
           `;
 
-          const canvas = document.getElementById('popGraph');
-          if (canvas && event) {
-            const rect = canvas.getBoundingClientRect();
-            tooltip.style.left = (event.pageX - rect.left + 10) + 'px';
-            tooltip.style.top = (event.pageY - rect.top - 30) + 'px';
-            tooltip.style.display = 'block';
-          }
-        },
-        unhighlightCallback: function() {
-          const tooltip = document.getElementById('graphTooltip');
-          if (tooltip) {
-            tooltip.style.display = 'none';
-          }
-        },
-        axes: {
-          x: {
-            valueFormatter: (millis: number) => {
-              const fecha = new Date(millis);
-              return fecha.getFullYear().toString();
-            },
-            axisLabelFormatter: (number: number) => {
-              const fecha = new Date(number);
-              return fecha.getFullYear().toString();
-            },
-            pixelsPerLabel: 80
-          },
-          y: {
-            valueFormatter: function (val: any) {
-              return " " + (val < 0.01 ? val.toFixed(3) : val.toFixed(2));
-            }
-          }
+          tooltip.style.left = (event.clientX - rect.left + 10) + 'px';
+          tooltip.style.top = (event.clientY - rect.top - 30) + 'px';
+          tooltip.style.display = 'block';
+
+          // Cambiar cursor a pointer
+          graphContainer.style.cursor = 'pointer';
+        } else {
+          // Ocultar tooltip y restaurar cursor
+          tooltip.style.display = 'none';
+          graphContainer.style.cursor = 'default';
         }
-      }
-    );
+      };
+
+      // Guardar referencia al listener para poder removerlo después
+      (graphContainer as any)._hoverListener = hoverListener;
+      graphContainer.addEventListener('mousemove', hoverListener);
+
+      // Ocultar tooltip cuando el mouse salga del contenedor
+      graphContainer.addEventListener('mouseleave', () => {
+        const tooltip = document.getElementById('graphTooltip');
+        if (tooltip) {
+          tooltip.style.display = 'none';
+        }
+        graphContainer.style.cursor = 'default';
+      });
+    }
 
     // Actualizar la leyenda para mostrar duración en lugar de superficie
     this.updateDurationLegend();
@@ -2590,7 +2618,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             xAxisHeight: 30,
             // Underlay callback para dibujar el punto personalizado
             underlayCallback: function(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph) {
-              console.log('🖌️ underlayCallback llamado - customPointData:', self.customPointData);
               if (self.customPointData) {
                 self.drawCustomPointWithTransformedData(canvas, area, dygraph, self.customPointData);
               }
@@ -2966,9 +2993,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
    */
   private drawCustomPointWithTransformedData(canvas: CanvasRenderingContext2D, area: any, dygraph: Dygraph, pointData: {x: number, y: number}): void {
     try {
-      console.log('🎨 drawCustomPointWithTransformedData - Dibujando punto:', pointData);
-      console.log('   Escala X log:', this.currentXLogScale, 'Escala Y log:', this.currentYLogScale);
-
       // Transformar las coordenadas del punto según la escala actual
       let transformedX = pointData.x;
       let transformedY = pointData.y;
@@ -2981,11 +3005,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         transformedY = Math.log10(pointData.y);
       }
 
-      console.log('   Transformado - X:', transformedX, 'Y:', transformedY);
-
       // Usar las coordenadas transformadas con toDomCoords de Dygraph
       const domCoords = dygraph.toDomCoords(transformedX, transformedY);
-      console.log('   DOM coords:', domCoords);
 
       if (!domCoords || !isFinite(domCoords[0]) || !isFinite(domCoords[1])) {
         return;
@@ -3145,9 +3166,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     const lines = data.split('\n');
     const header = lines[0];
 
-    console.log('🔵 groupDataByEvent - Total líneas:', lines.length);
-    console.log('🔵 groupDataByEvent - Header:', header);
-
     // Mapa para agrupar eventos: eventId -> array de filas
     const eventMap = new Map<string, Array<{
       date: string,
@@ -3188,8 +3206,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       });
     }
 
-    console.log('🔵 groupDataByEvent - Total eventos únicos:', eventMap.size);
-
     // Crear CSV de salida con una fila por evento
     // Añadimos lastDate como columna adicional
     const outputLines = [header + ',lastDate'];
@@ -3224,11 +3240,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       outputLines.push(`${firstDate},${extremeValue.toFixed(2)},${meanValue.toFixed(2)},${maxSurface.toFixed(2)},${maxDuration},${eventId},${lastDate}`);
     });
 
-    const result = outputLines.join('\n');
-    console.log('🔵 groupDataByEvent - Primeras 3 líneas del resultado:');
-    console.log(result.split('\n').slice(0, 3).join('\n'));
-
-    return result;
+    return outputLines.join('\n');
   }
 
   /**
@@ -3238,13 +3250,10 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     let lines = data.split('\n');
     let header = lines[0].split(',');
 
-    console.log('🔍 extractPointData - Header:', header);
-
     // Detectar el formato del CSV
     // Formato climatología: ord,{year},{firstYear},{lastYear}
     // Formato monitorización: ord,fit,point,return
     const hasPointColumn = header.includes('point');
-    console.log('🔍 extractPointData - hasPointColumn:', hasPointColumn);
 
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim() !== '') {
@@ -3258,12 +3267,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             const x = parseFloat(parts[0]); // ord (período de retorno en eje X)
             const y = parseFloat(parts[2]); // point (temperatura en eje Y)
 
-            console.log('✅ extractPointData - Punto encontrado!');
-            console.log('   Línea:', lines[i]);
-            console.log('   Parts:', parts);
-            console.log('   X (período):', x);
-            console.log('   Y (temperatura):', y);
-
             if (!isNaN(x) && !isNaN(y)) {
               return { x, y };
             }
@@ -3275,8 +3278,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             const y = parseFloat(parts[5]);
 
             if (!isNaN(x) && !isNaN(y)) {
-              console.log('✅ extractPointData - Punto formato antiguo encontrado!');
-              console.log('   X:', x, 'Y:', y);
               return { x, y };
             }
           }
@@ -3284,7 +3285,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       }
     }
 
-    console.log('❌ extractPointData - No se encontró punto');
     return null;
   }
 
@@ -3424,7 +3424,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
   }
 
   public setCustomPointData(point: {x: number, y: number} | null): void {
-    console.log('📍 setCustomPointData - Configurando punto:', point);
     this.customPointData = point;
   }
 
