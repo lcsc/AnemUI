@@ -67,6 +67,7 @@ export class CsGraph extends BaseFrame {
   };
 
   private currentMeanValue: number = 0;
+  private eventDataCSV: string = ''; // CSV data for event-based visualization
 
   // Configuración para etiquetas de punto personalizado
   private pointYLabel: string = 'Valor'; // Etiqueta para eje Y (ej: "Temperatura", "Precipitación")
@@ -846,6 +847,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
 
     // Agrupar datos por evento (event column es la 5)
     const eventData = this.groupDataByEvent(this.fullData, this.waveType);
+    this.eventDataCSV = eventData; // Store for use in callbacks
 
     // Determinar qué columna usar para el eje Y
     // Por defecto: temperatura media (mean), toggle permite cambiar a extreme
@@ -892,8 +894,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     // Configurar dateWindow con ±5 años
     let dateWindow: [number, number] | undefined = undefined;
     if (minDate && maxDate) {
-      const minYear = minDate.getFullYear() - 5;
-      const maxYear = maxDate.getFullYear() + 5;
+      const minYear = minDate.getFullYear() - 2;
+      const maxYear = maxDate.getFullYear() + 2;
       dateWindow = [new Date(minYear, 0, 1).getTime(), new Date(maxYear, 11, 31).getTime()];
     }
 
@@ -975,16 +977,37 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
           const meanValue = dygraph.getValue(row, 2);       // Columna 2: mean
           const surfaceValue = dygraph.getValue(row, 3);    // Columna 3: surface
           const duration = dygraph.getValue(row, 4);        // Columna 4: duration
-          const lastDateTimestamp = dygraph.getValue(row, 6); // Columna 6: lastDate
 
           if (!extremeValue || extremeValue === 0) {
             tooltip.style.display = 'none';
             return;
           }
 
+          // Necesitamos acceder al CSV original para obtener lastDate como string
+          // Dygraph parsea las fechas y pierde el formato original
+          // Accedemos al CSV almacenado en la clase
+          const eventDataLines = self.eventDataCSV.split('\n');
+
+          // row + 1 porque la primera línea es el header
+          let lastDateString = null;
+          if (row + 1 < eventDataLines.length) {
+            const csvLine = eventDataLines[row + 1];
+            const parts = csvLine.split(',');
+            if (parts.length > 6) {
+              lastDateString = parts[6]; // Columna 6: lastDate
+            }
+          }
+
           // Formatear rango de fechas: "Del dd/mm al dd/mm de aaaa"
-          const firstDate = new Date(x);
-          const lastDate = new Date(lastDateTimestamp);
+          const firstDate = new Date(x); // x es el timestamp de la primera fecha
+          let lastDate: Date;
+
+          if (lastDateString && lastDateString.trim() !== '') {
+            lastDate = new Date(lastDateString);
+          } else {
+            // Fallback: usar la primera fecha si no hay lastDate
+            lastDate = firstDate;
+          }
 
           const firstDay = firstDate.getDate().toString().padStart(2, '0');
           const firstMonth = (firstDate.getMonth() + 1).toString().padStart(2, '0');
