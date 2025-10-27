@@ -240,6 +240,7 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     }
 
     let political = lmgr.getTopLayerOlLayer() as TileLayer;
+    political.setZIndex(5000);
     this.politicalLayer = political
 
     this.dataTilesLayer = [];
@@ -453,15 +454,21 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         let imageLayer: ImageLayer<Static> = new ImageLayer({
             visible: true,
             opacity: 1.0,
-            zIndex: 1,
+            zIndex: 100,
             source: null
         });
 
         this.dataTilesLayer.push(imageLayer);
-        
-        // Añadir al final del array de layers (encima de todo)
-        this.map.getLayers().push(imageLayer);
-        
+
+        // Insertar la capa antes de la capa política (no al final)
+        const layers = this.map.getLayers();
+        const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
+        if (politicalIndex !== -1) {
+            layers.insertAt(politicalIndex, imageLayer);
+        } else {
+            layers.push(imageLayer);
+        }
+
         console.log(`Layer ${index} created with zIndex:`, imageLayer.getZIndex());
     });
 
@@ -546,13 +553,21 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
       let imageLayer: ImageLayer<Static> = new ImageLayer({
         visible: true,
         opacity: 1.0,
+        zIndex: 100,
         source: null
       });
 
       if (imageLayer) {
         this.uncertaintyLayer.push(imageLayer);
-        const insertIndex = Math.max(0, this.map.getLayers().getLength() - 1);
-        this.map.getLayers().insertAt(insertIndex, imageLayer);
+        // Insertar antes de la capa política
+        const layers = this.map.getLayers();
+        const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
+        if (politicalIndex !== -1) {
+          layers.insertAt(politicalIndex, imageLayer);
+        } else {
+          const insertIndex = Math.max(0, layers.getLength() - 1);
+          layers.insertAt(insertIndex, imageLayer);
+        }
       }
     });
 
@@ -771,14 +786,16 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     if (pLayer && this.politicalLayer !== pLayer) {
       if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
         this.map.removeLayer(this.politicalLayer);
-         this.map.addLayer(pLayer);
-      this.politicalLayer = pLayer;
+        pLayer.setZIndex(5000);
+        this.map.addLayer(pLayer);
+        this.politicalLayer = pLayer;
       }
     }
 
     let pSource = lmgr.getTopLayerSource();
     if (this.politicalLayer && this.politicalLayer.getSource() !== pSource) {
       this.politicalLayer.setSource(pSource);
+      this.politicalLayer.setZIndex(5000);
     }
   }
 
