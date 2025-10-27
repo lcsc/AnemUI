@@ -909,9 +909,13 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       }
     }
 
-    // Ya no necesitamos configurar dateWindow manualmente porque los puntos de relleno
-    // en groupDataByEvent ya extienden el rango de datos con ±2 años
+    // Configurar dateWindow con ±2 años
     let dateWindow: [number, number] | undefined = undefined;
+    if (minDate && maxDate) {
+      const minYear = minDate.getFullYear() - 2;
+      const maxYear = maxDate.getFullYear() + 2;
+      dateWindow = [new Date(minYear, 0, 1).getTime(), new Date(maxYear, 11, 31).getTime()];
+    }
 
     this.currentGraph = new Dygraph(
       document.getElementById("popGraph"),
@@ -926,11 +930,10 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         xAxisHeight: 20,
         showRangeSelector: true,
         dateWindow: dateWindow,
-        rangeSelectorPlotStrokeColor: '',
-        rangeSelectorPlotFillColor: '',
         visibility: visibility,
         legend: 'never',
         valueRange: yAxisRange,
+        animatedZooms: true,
         drawPoints: false,
         strokeWidth: 0,
         fillGraph: false,
@@ -994,7 +997,9 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
           y: {
             valueFormatter: function (val: any) {
               return " " + (val < 0.01 ? val.toFixed(3) : val.toFixed(2));
-            }
+            },
+            valueRange: yAxisRange,
+            independentTicks: true
           }
         }
       }
@@ -3301,18 +3306,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     // Añadimos lastDate como columna adicional
     const outputLines = [header + ',lastDate'];
 
-    // Encontrar la fecha mínima y máxima de todos los eventos
-    let minDate: Date | null = null;
-    let maxDate: Date | null = null;
-
     eventMap.forEach((rows, eventId) => {
       if (rows.length === 0) return;
-
-      const firstDate = new Date(rows[0].date);
-      const lastDate = new Date(rows[rows.length - 1].date);
-
-      if (!minDate || firstDate < minDate) minDate = firstDate;
-      if (!maxDate || lastDate > maxDate) maxDate = lastDate;
 
       // Primera y última fecha del evento
       const firstDateStr = rows[0].date;
@@ -3340,23 +3335,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       // Crear la línea de salida con lastDate adicional
       outputLines.push(`${firstDateStr},${extremeValue.toFixed(2)},${meanValue.toFixed(2)},${maxSurface.toFixed(2)},${maxDuration},${eventId},${lastDateStr}`);
     });
-
-    // Añadir puntos de relleno al principio y al final con margen de 2 años
-    if (minDate && maxDate) {
-      const paddingYears = 2;
-      const startPaddingDate = new Date(minDate.getFullYear() - paddingYears, 0, 1);
-      const endPaddingDate = new Date(maxDate.getFullYear() + paddingYears, 11, 31);
-
-      // Formato ISO: YYYY-MM-DD
-      const startDateStr = startPaddingDate.toISOString().split('T')[0];
-      const endDateStr = endPaddingDate.toISOString().split('T')[0];
-
-      // Insertar punto de inicio con valores NaN al principio (después del header)
-      outputLines.splice(1, 0, `${startDateStr},NaN,NaN,NaN,NaN,padding_start,${startDateStr}`);
-
-      // Añadir punto final con valores NaN al final
-      outputLines.push(`${endDateStr},NaN,NaN,NaN,NaN,padding_end,${endDateStr}`);
-    }
 
     return outputLines.join('\n');
   }
