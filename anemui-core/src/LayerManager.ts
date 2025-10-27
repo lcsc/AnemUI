@@ -189,9 +189,11 @@ export class LayerManager {
             case AL_TYPE_OSM:
                 if(this.topLayerTile==undefined){
                     this.topLayerTile=new WebGLTile({
-                        source: this.getTopLayerSource() as DataTileSource
+                        source: this.getTopLayerSource() as DataTileSource,
+                        zIndex: 5000
                     })
                 }
+                this.topLayerTile.setZIndex(5000);
                 return this.topLayerTile;
 
             case AL_TYPE_GEO_JSON:
@@ -199,18 +201,22 @@ export class LayerManager {
                 if(this.topLayerVector==undefined){
                     this.topLayerVector= new VectorLayer({
                         source: this.getTopLayerSource() as VectorSource,
-                        style: (feature, resolution) => {return baseStyle}
+                        style: (feature, resolution) => {return baseStyle},
+                        zIndex: 5000
                     })
                 }
+                this.topLayerVector.setZIndex(5000);
                 return this.topLayerVector;
 
             case AL_TYPE_IMG_LAYER:
                 if(this.topLayerImage==undefined){
                     this.topLayerImage=new Image<ImageWMS>({
-                        source: this.getTopLayerSource() as ImageWMS
+                        source: this.getTopLayerSource() as ImageWMS,
+                        zIndex: 5000
                     })
                 }
-                return this.topLayerImage;    
+                this.topLayerImage.setZIndex(5000);
+                return this.topLayerImage;
         }
     }
 

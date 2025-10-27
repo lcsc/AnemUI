@@ -566,8 +566,25 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       ? ['#B3D9FF', '#80BFFF', '#4DA6FF', '#1A8CFF', '#0073E6', '#004C99']
       : ['#FFD699', '#FFAD33', '#FF8000', '#E60000', '#B30000', '#800000'];
 
+    const baseColor = this.waveType === "cold" ? '#4DA6FF' : '#FF8000';
+
     legendDiv.innerHTML = `
-      <span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">Duración del evento:</span>
+      <span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">Superficie afectada:</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <svg width="10" height="10" style="vertical-align: middle;">
+            <circle cx="5" cy="5" r="3" fill="${baseColor}" stroke="#333" stroke-width="0.5"/>
+          </svg>
+          <span style="white-space: nowrap;">menor</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <svg width="18" height="18" style="vertical-align: middle;">
+            <circle cx="9" cy="9" r="8" fill="${baseColor}" stroke="#333" stroke-width="0.5"/>
+          </svg>
+          <span style="white-space: nowrap;">mayor</span>
+        </div>
+      </div>
+      <span style="font-weight: bold; margin-right: 5px; margin-left: 10px; white-space: nowrap;">Duración del evento:</span>
       <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[0]};"></div><span style="white-space: nowrap;">1-3 días</span></div>
       <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[1]};"></div><span style="white-space: nowrap;">4-5 días</span></div>
       <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[2]};"></div><span style="white-space: nowrap;">6-7 días</span></div>
@@ -892,13 +909,9 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       }
     }
 
-    // Configurar dateWindow con ±5 años
+    // Ya no necesitamos configurar dateWindow manualmente porque los puntos de relleno
+    // en groupDataByEvent ya extienden el rango de datos con ±2 años
     let dateWindow: [number, number] | undefined = undefined;
-    if (minDate && maxDate) {
-      const minYear = minDate.getFullYear() - 2;
-      const maxYear = maxDate.getFullYear() + 2;
-      dateWindow = [new Date(minYear, 0, 1).getTime(), new Date(maxYear, 11, 31).getTime()];
-    }
 
     this.currentGraph = new Dygraph(
       document.getElementById("popGraph"),
@@ -913,6 +926,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         xAxisHeight: 20,
         showRangeSelector: true,
         dateWindow: dateWindow,
+        rangeSelectorPlotStrokeColor: '',
+        rangeSelectorPlotFillColor: '',
         visibility: visibility,
         legend: 'never',
         valueRange: yAxisRange,
@@ -3286,12 +3301,22 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     // Añadimos lastDate como columna adicional
     const outputLines = [header + ',lastDate'];
 
+    // Encontrar la fecha mínima y máxima de todos los eventos
+    let minDate: Date | null = null;
+    let maxDate: Date | null = null;
+
     eventMap.forEach((rows, eventId) => {
       if (rows.length === 0) return;
 
+      const firstDate = new Date(rows[0].date);
+      const lastDate = new Date(rows[rows.length - 1].date);
+
+      if (!minDate || firstDate < minDate) minDate = firstDate;
+      if (!maxDate || lastDate > maxDate) maxDate = lastDate;
+
       // Primera y última fecha del evento
-      const firstDate = rows[0].date;
-      const lastDate = rows[rows.length - 1].date;
+      const firstDateStr = rows[0].date;
+      const lastDateStr = rows[rows.length - 1].date;
 
       // Para olas de calor: máximo de extreme y mean (temperaturas más altas)
       // Para olas de frío: mínimo de extreme y mean (temperaturas más bajas)
@@ -3313,8 +3338,25 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       const maxDuration = Math.max(...rows.map(r => r.duration));
 
       // Crear la línea de salida con lastDate adicional
-      outputLines.push(`${firstDate},${extremeValue.toFixed(2)},${meanValue.toFixed(2)},${maxSurface.toFixed(2)},${maxDuration},${eventId},${lastDate}`);
+      outputLines.push(`${firstDateStr},${extremeValue.toFixed(2)},${meanValue.toFixed(2)},${maxSurface.toFixed(2)},${maxDuration},${eventId},${lastDateStr}`);
     });
+
+    // Añadir puntos de relleno al principio y al final con margen de 2 años
+    if (minDate && maxDate) {
+      const paddingYears = 2;
+      const startPaddingDate = new Date(minDate.getFullYear() - paddingYears, 0, 1);
+      const endPaddingDate = new Date(maxDate.getFullYear() + paddingYears, 11, 31);
+
+      // Formato ISO: YYYY-MM-DD
+      const startDateStr = startPaddingDate.toISOString().split('T')[0];
+      const endDateStr = endPaddingDate.toISOString().split('T')[0];
+
+      // Insertar punto de inicio con valores NaN al principio (después del header)
+      outputLines.splice(1, 0, `${startDateStr},NaN,NaN,NaN,NaN,padding_start,${startDateStr}`);
+
+      // Añadir punto final con valores NaN al final
+      outputLines.push(`${endDateStr},NaN,NaN,NaN,NaN,padding_end,${endDateStr}`);
+    }
 
     return outputLines.join('\n');
   }
