@@ -128,50 +128,50 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
         const latNum = timesJs.latNum[selector];
         
         let dataExtent: number[];
-        let sourceProjection: string;
-        let targetProjection: string;
         
         if (isUncertainty) {
-            // Para uncertainty: datos en EPSG:4326, transformar a EPSG:25830
-            sourceProjection = 'EPSG:4326';
-            targetProjection = 'EPSG:25830';
-            
-            // Calcular step size (pixel-as-point)
+            // UNCERTAINTY: Está en EPSG:4326, transformar a EPSG:25830
             const lonStep = (lonMax - lonMin) / (lonNum - 1);
             const latStep = (latMax - latMin) / (latNum - 1);
             
-            // Extent en coordenadas geográficas con extensión de medio pixel
-            dataExtent = [
-                lonMin - lonStep / 2, 
-                latMin - latStep / 2, 
-                lonMax + lonStep / 2, 
-                latMax + latStep / 2
-            ];
+            // Extent en coordenadas geográficas SIN extensión
+            const geoExtent = [lonMin, latMin, lonMax, latMax];
             
             console.log(`🌍 Uncertainty (${portion}) in EPSG:4326:`, {
-                lonMin, lonMax, lonNum, lonStep: lonStep.toFixed(6),
-                latMin, latMax, latNum, latStep: latStep.toFixed(6),
-                extent: dataExtent.map(v => v.toFixed(6))
+                extent: geoExtent.map(v => v.toFixed(6)),
+                dims: `${lonNum}x${latNum}`
             });
             
             // Transformar de EPSG:4326 a EPSG:25830
             const transformedExtent = transformExtent(
-                dataExtent,
-                sourceProjection,
-                targetProjection
+                geoExtent,
+                'EPSG:4326',
+                'EPSG:25830'
             );
             
+            // Después de transformar, calcular el pixel size en la proyección de destino
+            const projectedWidth = transformedExtent[2] - transformedExtent[0];
+            const projectedHeight = transformedExtent[3] - transformedExtent[1];
+            const projectedPixelX = projectedWidth / (lonNum - 1);
+            const projectedPixelY = projectedHeight / (latNum - 1);
+            
+            // Extender medio pixel en la proyección de destino
+            dataExtent = [
+                transformedExtent[0] - projectedPixelX / 2,
+                transformedExtent[1] - projectedPixelY / 2,
+                transformedExtent[2] + projectedPixelX / 2,
+                transformedExtent[3] + projectedPixelY / 2
+            ];
+            
             console.log(`🗺️  Uncertainty (${portion}) transformed to EPSG:25830:`, {
-                extent: transformedExtent.map(v => v.toFixed(2))
+                extent: dataExtent.map(v => v.toFixed(2)),
+                pixelSize: [projectedPixelX.toFixed(2), projectedPixelY.toFixed(2)]
             });
             
-            this.ncExtents[portion] = transformedExtent;
+            this.ncExtents[portion] = dataExtent;
             
         } else {
-            // Para datos normales: determinar la proyección de origen
-            sourceProjection = timesJs.projection || olProjection;
-            targetProjection = olProjection;
-            
+            // DATOS NORMALES: YA están en EPSG:25830, NO transformar
             const pxSize = (lonMax - lonMin) / (lonNum - 1);
             
             dataExtent = [
@@ -181,25 +181,15 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
                 latMax + pxSize / 2
             ];
             
-            console.log(`📊 Normal (${portion}) in ${sourceProjection}:`, {
-                lonMin: lonMin.toFixed(2), 
-                lonMax: lonMax.toFixed(2), 
-                lonNum,
-                extent: dataExtent.map(v => v.toFixed(2))
+            console.log(`📊 Normal (${portion}) - ALREADY in EPSG:25830:`, {
+                extent: dataExtent.map(v => v.toFixed(2)),
+                dims: `${lonNum}x${latNum}`,
+                pixelSize: pxSize.toFixed(2),
+                projection: timesJs.projection || 'default'
             });
             
-            // Transformar si es necesario
-            if (sourceProjection !== targetProjection) {
-                const transformedExtent = transformExtent(
-                    dataExtent,
-                    sourceProjection,
-                    targetProjection
-                );
-                this.ncExtents[portion] = transformedExtent;
-                console.log(`   Transformed to ${targetProjection}:`, transformedExtent.map(v => v.toFixed(2)));
-            } else {
-                this.ncExtents[portion] = dataExtent;
-            }
+            // NO TRANSFORMAR - los datos ya están en EPSG:25830
+            this.ncExtents[portion] = dataExtent;
         }
     });
 }
@@ -604,7 +594,7 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
     }
 
     // Usar setExtents que ahora detecta automáticamente uncertainty
-    this.setExtents(timesJs, uncertaintyVarId);
+    //this.setExtents(timesJs, uncertaintyVarId);
 
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
       let imageLayer: ImageLayer<Static> = new ImageLayer({
