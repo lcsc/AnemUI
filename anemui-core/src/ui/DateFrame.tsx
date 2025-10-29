@@ -438,7 +438,6 @@ export class DateSelectorFrame extends BaseFrame {
                     beforeShowYear: (date: Date) => {
                         const year = date.getFullYear().toString();
                         const isValid = this.yearIndex && this.yearIndex[year] !== undefined;
-                        console.log('beforeShowYear check:', year, isValid);
                         return isValid;
                     }
                 }

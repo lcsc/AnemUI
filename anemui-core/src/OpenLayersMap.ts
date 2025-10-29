@@ -115,28 +115,91 @@ export class OpenLayerMap implements CsMapController {
   protected selectableLayers: CsOpenLayerGeoJsonLayer[]
 
 protected setExtents(timesJs: CsTimesJsData, varId: string): void {
+    const isUncertainty = varId.includes('_uncertainty');
+    
     timesJs.portions[varId].forEach((portion: string, index, array) => {
         let selector = varId + portion;
-        let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
-   
-        const dataExtent = [
-            timesJs.lonMin[selector] - pxSize / 2, 
-            timesJs.latMin[selector] - pxSize / 2, 
-            timesJs.lonMax[selector] + pxSize / 2, 
-            timesJs.latMax[selector] + pxSize / 2
-        ];
         
-        // Si el mapa está en una proyección diferente, transformar
-        if (timesJs.projection !== olProjection) {
+        const lonMin = timesJs.lonMin[selector];
+        const lonMax = timesJs.lonMax[selector];
+        const latMin = timesJs.latMin[selector];
+        const latMax = timesJs.latMax[selector];
+        const lonNum = timesJs.lonNum[selector];
+        const latNum = timesJs.latNum[selector];
+        
+        let dataExtent: number[];
+        let sourceProjection: string;
+        let targetProjection: string;
+        
+        if (isUncertainty) {
+            // Para uncertainty: datos en EPSG:4326, transformar a EPSG:25830
+            sourceProjection = 'EPSG:4326';
+            targetProjection = 'EPSG:25830';
+            
+            // Calcular step size (pixel-as-point)
+            const lonStep = (lonMax - lonMin) / (lonNum - 1);
+            const latStep = (latMax - latMin) / (latNum - 1);
+            
+            // Extent en coordenadas geográficas con extensión de medio pixel
+            dataExtent = [
+                lonMin - lonStep / 2, 
+                latMin - latStep / 2, 
+                lonMax + lonStep / 2, 
+                latMax + latStep / 2
+            ];
+            
+            console.log(`🌍 Uncertainty (${portion}) in EPSG:4326:`, {
+                lonMin, lonMax, lonNum, lonStep: lonStep.toFixed(6),
+                latMin, latMax, latNum, latStep: latStep.toFixed(6),
+                extent: dataExtent.map(v => v.toFixed(6))
+            });
+            
+            // Transformar de EPSG:4326 a EPSG:25830
             const transformedExtent = transformExtent(
                 dataExtent,
-                timesJs.projection,
-                olProjection
+                sourceProjection,
+                targetProjection
             );
+            
+            console.log(`🗺️  Uncertainty (${portion}) transformed to EPSG:25830:`, {
+                extent: transformedExtent.map(v => v.toFixed(2))
+            });
+            
             this.ncExtents[portion] = transformedExtent;
-            console.log(`Transformed extent to ${olProjection}:`, transformedExtent);
+            
         } else {
-            this.ncExtents[portion] = dataExtent;
+            // Para datos normales: determinar la proyección de origen
+            sourceProjection = timesJs.projection || olProjection;
+            targetProjection = olProjection;
+            
+            const pxSize = (lonMax - lonMin) / (lonNum - 1);
+            
+            dataExtent = [
+                lonMin - pxSize / 2, 
+                latMin - pxSize / 2, 
+                lonMax + pxSize / 2, 
+                latMax + pxSize / 2
+            ];
+            
+            console.log(`📊 Normal (${portion}) in ${sourceProjection}:`, {
+                lonMin: lonMin.toFixed(2), 
+                lonMax: lonMax.toFixed(2), 
+                lonNum,
+                extent: dataExtent.map(v => v.toFixed(2))
+            });
+            
+            // Transformar si es necesario
+            if (sourceProjection !== targetProjection) {
+                const transformedExtent = transformExtent(
+                    dataExtent,
+                    sourceProjection,
+                    targetProjection
+                );
+                this.ncExtents[portion] = transformedExtent;
+                console.log(`   Transformed to ${targetProjection}:`, transformedExtent.map(v => v.toFixed(2)));
+            } else {
+                this.ncExtents[portion] = dataExtent;
+            }
         }
     });
 }
@@ -197,7 +260,6 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
       url: '/geoserver/lcsc/wms',
       params: { 'LAYERS': 'lcsc:value', 'FORMAT': 'image/png', 'TRANSPARENT': true, "TILED": true, time: state.times[state.selectedTimeIndex] },
       serverType: 'geoserver',
-      // Countries have transparency, so do not fade tiles:
       transition: 0,
     });
     this.dataWMSLayer.updateParams({ STYLES: undefined, SLD_BODY: this.getSld() });
@@ -295,8 +357,6 @@ public onMouseMoveEnd(event: CsMapEvent): void {
     const state = this.parent.getParent().getState();
     const timesJs = this.parent.getParent().getTimesJs();
     
-    // ELIMINAR toda la lógica de shouldShowPercentileClock de aquí
-    // Solo mantener el flujo normal de hover
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
       .then(value => {
         if (state.support == this.defaultRenderer) {
@@ -526,48 +586,60 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     this.dataTilesLayer = [];
   }
 
-  // Fix for uncertainty layer with proper initialization
-  public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
+public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
-    // Safely remove existing uncertainty layers
-    this.safelyRemoveUncertaintyLayers();
+    console.log('=== BUILDING UNCERTAINTY LAYER ===');
 
-    this.uncertaintyLayer = lmgr.getUncertaintyLayer() || [];
+    this.safelyRemoveUncertaintyLayers();
+    this.uncertaintyLayer = [];
 
     const uncertaintyVarId = state.varId + '_uncertainty';
+
     if (!timesJs.portions[uncertaintyVarId]) {
       console.warn('No uncertainty portions found for varId:', uncertaintyVarId);
+      lmgr.clearUncertaintyLayer();
       return;
     }
 
+    // Usar setExtents que ahora detecta automáticamente uncertainty
+    this.setExtents(timesJs, uncertaintyVarId);
+
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
       let imageLayer: ImageLayer<Static> = new ImageLayer({
-        visible: true,
+        visible: false,
         opacity: 1.0,
+        zIndex: 1000 + index,
         source: null
       });
 
       if (imageLayer) {
         this.uncertaintyLayer.push(imageLayer);
-        const insertIndex = Math.max(0, this.map.getLayers().getLength() - 1);
-        this.map.getLayers().insertAt(insertIndex, imageLayer);
+        this.map.addLayer(imageLayer);
+        console.log(`Uncertainty layer ${index} created`);
       }
     });
 
     let promises: Promise<number[]>[] = [];
-    this.setExtents(timesJs, uncertaintyVarId);
 
-    timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
+    timesJs.portions[uncertaintyVarId].forEach((portion: string) => {
       promises.push(downloadXYChunk(state.selectedTimeIndex, uncertaintyVarId, portion, timesJs));
     });
 
     if (this.uncertaintyLayer.length > 0 && promises.length > 0) {
-      buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
-      lmgr.showUncertaintyLayer(false);
+      buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true)
+        .then(() => {
+          console.log('=== UNCERTAINTY LAYER BUILD COMPLETE ===');
+          lmgr.setUncertaintyLayer(this.uncertaintyLayer);
+          lmgr.showUncertaintyLayer(false);
+          this.map.render();
+        })
+        .catch(error => {
+          console.error('Error building uncertainty images:', error);
+        });
     }
-  }
+}
 
   private safelyRemoveUncertaintyLayers(): void {
     if (this.uncertaintyLayer && Array.isArray(this.uncertaintyLayer)) {

@@ -174,10 +174,6 @@ export class CategoryRangePainter implements Painter {
     }
 
     public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
-        console.log('=== CategoryRangePainter.paintValues ===');
-        console.log('Array length:', floatArray.length);
-        console.log('Canvas:', width, 'x', height);
-        console.log('Data range:', minArray, '-', maxArray);
         
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');    
@@ -185,14 +181,6 @@ export class CategoryRangePainter implements Painter {
         canvas.height = height;
         let imgData: ImageData = context.getImageData(0, 0, width, height);
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
-
-        console.log('Gradient (colors) available:', gradient.length);
-        console.log('Ranges available:', this.ranges.length);
-        
-        // VERIFICACIÓN CRÍTICA
-        if (gradient.length !== this.ranges.length) {
-            console.error('❌ CRITICAL: Gradient colors (' + gradient.length + ') != Ranges (' + this.ranges.length + ')');
-        }
 
         const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
         
