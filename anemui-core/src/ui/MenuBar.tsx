@@ -561,7 +561,7 @@ export class MenuBar extends BaseFrame {
 
         this.climBtnArray.forEach((btn) => {
             const role = btn.getAttribute('role');
-            if (role === 'variable' || role === 'escala' || role === 'year' || role === 'magnitude' || role === 'timeSpan' || role === 'period') {
+            if (role === 'variable' || role === 'escala' || role === 'size' || role === 'year' || role === 'magnitude' || role === 'timeSpan' || role === 'period') {
                 // Mostrar variable y escala para climatología
                 btn.hidden = false;
             } else if (role === 'escenario') {
@@ -680,6 +680,13 @@ export class MenuBar extends BaseFrame {
                 this.extraMenuInputs.forEach((inp) => {
                     if (inp.id == dspRole) {
                         inp.setTitle(displayTitle)
+                        // Si options[0] está definido, actualizar el valor del input
+                        if (options && options.length > 0 && options[0] !== undefined && options[0] !== '') {
+                            const newValue = parseFloat(options[0]);
+                            if (!isNaN(newValue)) {
+                                inp.value = newValue;
+                            }
+                        }
                     }
                 });
                 break;
@@ -761,6 +768,16 @@ export class MenuBar extends BaseFrame {
     public configSelectionParam(visible: boolean, newText?: string) {
         if (!hasButtons || !hasSelectionParam) return;
         this.selectionParam.config(visible, newText);
+    }
+
+    public setSelectionParamMinValue(minValue: number) {
+        if (!hasButtons || !hasSelectionParam) return;
+        this.selectionParam.setMinValue(minValue);
+    }
+
+    public setSelectionParamMaxValue(maxValue: number) {
+        if (!hasButtons || !hasSelectionParam) return;
+        this.selectionParam.setMaxValue(maxValue);
     }
 
     public updateMenuItem(btnName: string, btnTitle: string, options: string[]) {
