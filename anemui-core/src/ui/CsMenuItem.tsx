@@ -189,6 +189,7 @@ export class CsMenuInput extends BaseUiElement {
   public value: number | null
   private listener: CsMenuIputListener;
   private minValue: number;
+  private maxValue: number;
   private step: number;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onChange/onBlur
   private inputDebounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onInput
@@ -202,6 +203,7 @@ export class CsMenuInput extends BaseUiElement {
     this.id = _id;
     this.listener = _listener
     this.minValue = _minValue;
+    this.maxValue = undefined; // Sin límite por defecto
     this.step = _step;
   }
 
@@ -229,6 +231,18 @@ export class CsMenuInput extends BaseUiElement {
 
   public getMinValue(): number {
     return this.minValue;
+  }
+
+  public setMaxValue(_maxValue: number) {
+    this.maxValue = _maxValue;
+    if (this.value !== null && _maxValue !== undefined && this.value > this.maxValue) {
+      this.value = this.maxValue;
+      this.listener.valueChanged(this, this.value);
+    }
+  }
+
+  public getMaxValue(): number {
+    return this.maxValue;
   }
 
   public getText(): string {
@@ -260,6 +274,7 @@ export class CsMenuInput extends BaseUiElement {
           id= {this.id}
           type="number"
           min={this.minValue}
+          max={this.maxValue !== undefined ? this.maxValue : undefined}
           step={this.step}
           className="form-control form-control-sm selection-param-input"
           placeholder={`Mín: ${this.minValue}`}
