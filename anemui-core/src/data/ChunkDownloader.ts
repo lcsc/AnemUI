@@ -282,11 +282,9 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
        
         if (!Array.isArray(timesJs.varMin[status.varId])) {
-            console.log('Converting varMin to array');
             timesJs.varMin[status.varId] = [];
         }
         if (!Array.isArray(timesJs.varMax[status.varId])) {
-            console.log('Converting varMax to array');
             timesJs.varMax[status.varId] = [];
         }
    
@@ -333,54 +331,23 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
         for (let i = 0; i < filteredArrays.length; i++) {
             const filteredArray = filteredArrays[i];
-            
-            console.log(`Layer ${i}:`, {
-                dataLength: filteredArray.length,
-                validCount: filteredArray.filter(v => !isNaN(v) && isFinite(v)).length
-            });
 
             const width = timesJs.lonNum[status.varId + timesJs.portions[status.varId][i]];
             const height = timesJs.latNum[status.varId + timesJs.portions[status.varId][i]];
-            
-            console.log(`Canvas: ${width}x${height}`);
 
             let canvas: HTMLCanvasElement | null = null;
             try {
-                console.log('Calling paintValues...');
-                
                 canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
-                
+
                 if (canvas) {
-                    console.log('Canvas created successfully');
-                    
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                        const centerData = ctx.getImageData(Math.floor(width/2), Math.floor(height/2), 1, 1);
-                        const [r, g, b, a] = centerData.data;
-                        console.log(`Center pixel: RGBA(${r},${g},${b},${a})`);
-                        
-                        const cornerData = ctx.getImageData(0, 0, 1, 1);
-                        const [cr, cg, cb, ca] = cornerData.data;
-                        console.log(`Corner pixel: RGBA(${cr},${cg},${cb},${ca})`);
-                    }
-                    
                     const extent = ncExtents[timesJs.portions[status.varId][i]];
-                    console.log('Image extent for layer', i, ':', extent);
-                    
-        
+
                     const imageSource = new Static({
                         url: canvas.toDataURL('image/png'),
                         crossOrigin: '',
-                        projection: olProjection, 
+                        projection: olProjection,
                         imageExtent: extent,
                         interpolate: false
-                    });
-                    
-                    console.log('Created image source:', {
-                        hasUrl: imageSource.getUrl()?.length > 50,
-                        urlStart: imageSource.getUrl()?.substring(0, 50),
-                        projection: imageSource.getProjection()?.getCode?.(),
-                        extent: imageSource.getImageExtent()
                     });
 
                     dataTilesLayer[i].setSource(imageSource);
@@ -393,14 +360,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
                     await new Promise(resolve => setTimeout(resolve, 50));
 
-
                     if (window.CsViewerApp && (window.CsViewerApp as any).csMap) {
                         const map = (window.CsViewerApp as any).csMap.map;
                         if (map) {
                             const layers = map.getLayers();
                             const layerInMap = layers.getArray().includes(dataTilesLayer[i]);
-                            console.log('Layer in map:', layerInMap);
-                            
+
                             if (!layerInMap) {
                                 layers.push(dataTilesLayer[i]);
                             }
@@ -467,10 +432,8 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
 
     let app = window.CsViewerApp;
     const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
-    console.log('Time index:', { requested: t, actual: actualTimeIndex });
 
     if (xyCache && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == actualTimeIndex) {
-        console.log('Using cached data, length:', xyCache.data.length);
         let ret = [...xyCache.data];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
         return ret;
@@ -714,22 +677,29 @@ export function downloadTimebyRegion(folder: string, id: string, varName: string
     }, undefined, 'text');
 }
 
-export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
+export function downloadXYbyRegion(time: string, timeIndex: number, folder: string, varName: string, doneCb: CsvDownloadDone) {
     downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let stResult: [];
+            let stResultTmInx: [] = [];
+            let stResult: [] = [];
             try {
                 const records = parse(response as Buffer, {
                     columns: true,
                     skip_empty_lines: true
                 });
-                if (records.length == 1) stResult = records[0];
-                else {
-                    records.forEach((record: any) => {
-                        if (record['times_mean'] == time)
-                            stResult = record;
-                    });
+                console.log(`[downloadXYbyRegion] varName="${varName}", timeIndex=${timeIndex}, records.length=${records.length}`);
+                console.log(`[downloadXYbyRegion] records[${timeIndex}]['times_mean'] =`, records[timeIndex] ? records[timeIndex]['times_mean'] : 'undefined');
+                if (varName.includes('beta_b0') && records[timeIndex]) {
+                    console.log(`[downloadXYbyRegion] beta_b0 for province '1' (Araba):`, records[timeIndex]['1']);
                 }
+                stResult = records[timeIndex]
+                // if (records.length == 1) stResult = records[0];
+                // else {
+                //     records.forEach((record: any) => {
+                //         if (record['times_mean'] == time)
+                //             stResult = record;
+                //     });
+                // }
             } catch (e) {
                 console.error("Error parsing CSV:", e);
                 stResult = [];

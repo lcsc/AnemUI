@@ -60,7 +60,15 @@ export class CsOptionsService {
     public getDateFrameMode(state:CsViewerData):DateFrameMode{
         return DateFrameMode.DateFrameDate;
     }
-    
+
+    public getSelectionParamMinValue(state: CsViewerData): number {
+        return 0; // Valor por defecto
+    }
+
+    public getSelectionParamMaxValue(state: CsViewerData): number {
+        return undefined; // Sin límite por defecto
+    }
+
 }
 
 export abstract class DataServiceApp extends BaseApp {
@@ -80,6 +88,10 @@ export abstract class DataServiceApp extends BaseApp {
         mb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
         mb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
         mb.configSelectionParam(svc.isSelectionVisible(state), svc.selectionParamText(state))
+
+        // Actualizar el minValue y maxValue del selector según el tipo de extremo
+        mb.setSelectionParamMinValue(svc.getSelectionParamMinValue(state))
+        mb.setSelectionParamMaxValue(svc.getSelectionParamMaxValue(state))
 
         this.getDateSelectorFrame().showAdvanceButtons(svc.showDateEventsButtons(state))
         this.getDateSelectorFrame().setMode(svc.getDateFrameMode(state))

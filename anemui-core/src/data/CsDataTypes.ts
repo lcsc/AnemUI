@@ -88,6 +88,7 @@ export type CsViewerData={
     selectionParam:number,
     selectionParamEnable:boolean,
     times:string[],
+    timeSpan: CsTimeSpan,
     selectedTimeIndex:number,
     legendTitle:string,
     climatology:boolean,
@@ -116,4 +117,11 @@ export type CsGeoJsonData={
     type: string,
     features: GeoJSON.Feature[],
     crs: any
+}
+
+export enum CsTimeSpan{
+    Date,
+    Month,
+    Season,
+    Year
 }
