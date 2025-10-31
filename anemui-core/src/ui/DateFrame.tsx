@@ -72,31 +72,25 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     public setValidDates(_dates: string[], _varChanged: boolean = false): void {
-        console.log("Setting valid dates:", _dates);
-        
         // Handle the case where _dates is actually a single string (annual data)
         const times = this.parent.getState().times;
-        
+
         // CRITICAL FIX: Convert single date string to array format for DateFrame compatibility
         if (typeof times === 'string') {
-            console.log("Converting single date string to array for DateFrame:", times);
             this.dates = [times]; // Convert single string to array
         } else if (Array.isArray(_dates) && _dates.length > 0) {
             this.dates = _dates;
         } else {
-            console.log("No valid dates provided");
             this.dates = [];
         }
 
         // Early exit for disabled mode or no dates
         if (this.dates.length === 0 || this.mode === DateFrameMode.DateFrameDisabled) {
-            console.log("No dates to set or datepicker disabled");
             return;
         }
 
         // Handle single date case specially
         if (this.dates.length === 1) {
-            console.log("Handling single date case:", this.dates[0]);
             this.handleSingleDateCase(_varChanged);
             return;
         }
@@ -167,8 +161,6 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     private handleSingleDateCase(_varChanged: boolean): void {
-        console.log("Handling single date case - mode:", this.mode);
-        
         // For single dates, set up minimal index structures
         if (_varChanged) {
             const [year, month, day] = this.dates[0].split('-');
@@ -187,14 +179,13 @@ export class DateSelectorFrame extends BaseFrame {
 
     private updateDatepicker(): void {
         if (this.datepicker == undefined) {
-            console.log("Datepicker not initialized, skipping update");
             return;
         }
 
         try {
             const selectedIndex = this.parent.getState().selectedTimeIndex;
             const safeIndex = Math.min(selectedIndex, this.dates.length - 1);
-            
+
             switch(this.mode) {
                 case DateFrameMode.DateFrameDate:
                     this.datepicker.datepicker('setDate', this.dates[safeIndex]);
@@ -226,9 +217,7 @@ export class DateSelectorFrame extends BaseFrame {
                         const currentYear = this.years[Math.min(safeIndex, this.years.length - 1)];
                         const startYear = this.years[0];
                         const endYear = this.years[this.years.length - 1];
-                        
-                        console.log('Setting year datepicker:', { currentYear, startYear, endYear, safeIndex });
-                        
+
                         // Crear fechas completas para el datepicker
                         this.datepicker.datepicker('setDate', new Date(parseInt(currentYear), 0, 1));
                         if (this.years.length > 1) {
@@ -238,9 +227,7 @@ export class DateSelectorFrame extends BaseFrame {
                     }
                     break;
             }
-            
-            console.log("Datepicker updated successfully for mode:", this.mode);
-            
+
         } catch (error) {
             console.error("Error updating datepicker:", error);
             // Don't throw - just log and continue
@@ -438,7 +425,6 @@ export class DateSelectorFrame extends BaseFrame {
                     beforeShowYear: (date: Date) => {
                         const year = date.getFullYear().toString();
                         const isValid = this.yearIndex && this.yearIndex[year] !== undefined;
-                        console.log('beforeShowYear check:', year, isValid);
                         return isValid;
                     }
                 }
@@ -464,7 +450,7 @@ export class DateSelectorFrame extends BaseFrame {
             });
             addChild(this.seasonButton, this.season.render());
             this.season.build()
-            let periods = this.getPeriods(this.periods[1]);
+            let periods = this.getPeriods();
             this.season.setValues(periods);
             document.getElementById("SeasonDD").classList.remove("navbar-btn-title");
         }
@@ -479,7 +465,6 @@ export class DateSelectorFrame extends BaseFrame {
             }
             //Set the action
             let index = this.indexOfDate(event.date)
-            console.log('changeDate event:', event.date, 'index:', index);
             if (index>=0 && index!=this.parent.getState().selectedTimeIndex) {
                 this.slider.setValue(index,false,false)
                 this.parent.getState().selectedTimeIndex=index;
@@ -622,35 +607,49 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     protected updateMode(){
-        let time = this.getTime(this.parent.getState().times)
+        // let time = this.getTime(this.parent.getState().times)
+        let timeSpan = this.getTimeSpan()
         let state = this.parent.getState();
         
         // Handle single date strings specially
-        if (typeof this.parent.getState().times === 'string') {
-            console.log('DEBUG: Single date string detected, using year mode');
+        /* if (typeof this.parent.getState().times === 'string') {
             this.timeSeriesFrame.hidden = false;
             this.climatologyFrame.hidden = true;
             this.sliderFrame.hidden = true;
             this.mode = DateFrameMode.DateFrameYear;
             return;
-        }
+        } */
         
-        if (!this.parent.getState().climatology) {
+            if (!this.parent.getState().climatology) {
             const isScenarioAnnual = state.tpSupport === 'Escenarios futuros' && state.varName === 'Índice de aridez anual';
-            
+
             if (isScenarioAnnual) {
-                console.log('DEBUG: Hiding datepicker for scenario annual (any spatial support)');
                 this.timeSeriesFrame.hidden = true;
                 this.climatologyFrame.hidden = true;
                 this.sliderFrame.hidden = true;
                 this.mode = DateFrameMode.DateFrameDisabled;
             } else {
-                console.log('DEBUG: Showing datepicker for time series');
                 this.timeSeriesFrame.hidden = false;
                 this.climatologyFrame.hidden = true;
                 this.sliderFrame.hidden = false;
                 
-                switch (time) {
+                switch (timeSpan) {
+                    case 3: 
+                        this.mode = DateFrameMode.DateFrameYear;
+                        this.sliderFrame.hidden = true;
+                        break;
+                    case 2:
+                        this.mode = DateFrameMode.DateFrameSeason;
+                        break;
+                    case 1:
+                        this.mode = DateFrameMode.DateFrameMonth;
+                        break;
+                    default:
+                        this.mode = DateFrameMode.DateFrameDate;
+                        break;
+                }
+
+                /* switch (time) {
                     case 1: 
                         this.mode = DateFrameMode.DateFrameYear;
                         this.sliderFrame.hidden = true;
@@ -664,11 +663,26 @@ export class DateSelectorFrame extends BaseFrame {
                     default:
                         this.mode = DateFrameMode.DateFrameDate;
                         break;
-                }
+                } */
             }
         } else {
             this.timeSeriesFrame.hidden = true;
-            switch (time) {
+
+            switch (timeSpan) {
+                case 3: 
+                    this.mode = DateFrameMode.ClimFrameYear;
+                    this.sliderFrame.hidden = true;
+                    this.climatologyFrame.hidden = true;
+                    break;
+                default:
+                    this.mode = timeSpan == 2? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
+                    let period = this.getPeriods();
+                    this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
+                    this.sliderFrame.hidden = false;
+                    this.climatologyFrame.hidden = false;
+                    break;
+            }
+            /* switch (time) {
                 case 1: 
                     this.mode = DateFrameMode.ClimFrameYear;
                     this.sliderFrame.hidden = true;
@@ -681,7 +695,7 @@ export class DateSelectorFrame extends BaseFrame {
                     this.sliderFrame.hidden = false;
                     this.climatologyFrame.hidden = false;
                     break;
-            }
+            } */
         }
     }
 
@@ -698,8 +712,9 @@ export class DateSelectorFrame extends BaseFrame {
         return this.mode;
     }
 
-    public getPeriods(time: number): string[] {
-        let period = time==4? this.parent.getTranslation('season'):this.parent.getTranslation('month')
+    public getPeriods(): string[] {
+        const timeSpan = this.getTimeSpan()
+        let period = timeSpan==2? this.parent.getTranslation('season'):this.parent.getTranslation('month')
         return Object.values(period);       
     }
 
@@ -714,5 +729,9 @@ export class DateSelectorFrame extends BaseFrame {
             return acc;
         }, []);
         return time.length / result.length;
+    }
+
+    public getTimeSpan (): number {
+        return this.parent.getState().timeSpan
     }
 }

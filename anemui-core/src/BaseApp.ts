@@ -8,7 +8,7 @@ import PaletteFrame from "./ui/PaletteFrame";
 import { CsLatLong, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData } from "./data/CsDataLoader";
-import { CsLatLongData, CsTimesJsData, CsViewerData } from "./data/CsDataTypes";
+import { CsLatLongData, CsTimesJsData, CsViewerData, CsTimeSpan } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer } from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
@@ -43,6 +43,7 @@ const INITIAL_STATE: CsViewerData = {
     varId: "",
     varName: "",
     times: undefined,
+    timeSpan: CsTimeSpan.Date,
     selectedTimeIndex: 0,
     legendTitle: "",
     selection: "",
@@ -511,33 +512,32 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadOptionsDiv.openModal();
     }
     
-    // ------- UNIFICAR 
-    public showGraph(p0: { type: string; stParams: { id: any; name: any; }; }) { 
-        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            this.graph.showGraph(data, this.lastLlData.latlng)
+    public showGraph(params?: { type: 'point' | 'station' | 'region', stParams?: any, folder?: string }) {
+        if (!params || params.type === 'point') {
+            // Graph for a point (pixel click)
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.graph.showGraph(data, this.lastLlData.latlng);
+            };
+            let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
+            let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
+            if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [], open);
+            else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
+        } else if (params.type === 'station') {  // --- Unificar con region ??
+            // Graph for a station
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, params.stParams);
+            };
+            downloadCSVbySt(params.stParams['id'], this.state.varId, open);
+        } else if (params.type === 'region') {
+            // Graph for a region
+            let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
+                this.state.timeSeriesData = data;
+                this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, params.stParams);
+            };
+            if (computedDataTilesLayer) this.computeGraphData(-1, '_all', params.stParams, open);
+            else downloadTimebyRegion(params.folder, params.stParams['id'], this.state.varId, open);
         }
-        let ncCoords: number[] = fromLonLat([this.lastLlData.latlng.lng, this.lastLlData.latlng.lat], this.timesJs.projection);
-        let portion: string = getPortionForPoint(ncCoords, this.timesJs, this.state.varId);
-        if (computedDataTilesLayer) this.computeGraphData(this.lastLlData.value, portion, [], open);
-        else downloadTCSVChunked(this.lastLlData.value, this.state.varId, portion, open, true);
     }
-
-    public showGraphBySt(stParams: any) {
-        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
-        }
-        downloadCSVbySt(stParams['id'], this.state.varId, open);
-    }
-
-    public showGraphByRegion(folder: string, stParams: any) {
-        let open: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            this.state.timeSeriesData = data
-            this.graph.showGraph(data, { lat: 0.0, lng: 0.0 }, stParams)
-        }
-        if (computedDataTilesLayer) this.computeGraphData(-1, '_all', stParams, open);
-        else downloadTimebyRegion(folder, stParams['id'], this.state.varId, open);
-    }
-    // ------- UNIFICAR
 
     public getState(): CsViewerData {
         return this.state
@@ -546,7 +546,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected setTimesJs(_timesJs: CsTimesJsData, varId: string) {
         this.timesJs = _timesJs;
         //TODO on change
-        let timeIndex = typeof _timesJs.times[varId] === 'string'? 0:_timesJs.times[varId].length - 1
+        let timeSpan = this.getTimeSpan(_timesJs.times[varId])
+        // let timeIndex = typeof _timesJs.times[varId] === 'string'? 0:_timesJs.times[varId].length - 1
+        let timeIndex = timeSpan == CsTimeSpan.Year? 0:_timesJs.times[varId].length - 1
         let legendTitle: string;
         if (_timesJs.legendTitle[varId] != undefined) {
             legendTitle = _timesJs.legendTitle[varId]
@@ -568,6 +570,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             varId: varId,
             varName: varName,
             times: _timesJs.times[varId],
+            timeSpan: timeSpan,
             selectedTimeIndex: timeIndex,
             legendTitle: legendTitle,
             selection: "",
@@ -578,6 +581,32 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
     public getTimesJs(): CsTimesJsData {
         return this.timesJs
+    }
+
+    public getTimeSpan (time:string[]): CsTimeSpan {
+        if(typeof time === 'string') return CsTimeSpan.Year
+        let number
+        if (time.length<=12) number = time.length
+        else {
+            const result = time.reduce((acc, curr) => {
+                const year = curr.split('-')[0];
+                if (!acc.includes(year)) {
+                acc.push(year);
+                }
+                return acc;
+            }, []);
+            number = time.length / result.length;
+        }
+        switch (number) {
+            case 1: 
+                return CsTimeSpan.Year;
+            case 4:
+                return CsTimeSpan.Season;
+            case 12:
+                return CsTimeSpan.Month;
+            default:
+                return CsTimeSpan.Date;
+        }
     }
 
     public changeUrl(): void {

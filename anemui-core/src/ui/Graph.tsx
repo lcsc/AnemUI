@@ -544,7 +544,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       : ['#ffcccc', '#ff9999', '#ff6666', '#ff3333', '#ff0000', '#cc0000', '#990000', '#660000', '#4d0000', '#330000'];
 
     legendDiv.innerHTML = `
-      <span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">Superficie afectada:</span>
+      <span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">${this.parent.getTranslation('superficie_afectada')}:</span>
       <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[0]};"></div><span style="white-space: nowrap;">0-10%</span></div>
       <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[1]};"></div><span style="white-space: nowrap;">10-20%</span></div>
       <div style="display: flex; align-items: center; gap: 2px;"><div style="width: 18px; height: 12px; background-color: ${colors[2]};"></div><span style="white-space: nowrap;">20-30%</span></div>
@@ -569,19 +569,19 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     const baseColor = this.waveType === "cold" ? '#4DA6FF' : '#FF8000';
 
     legendDiv.innerHTML = `
-      <span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">Superficie afectada:</span>
+      <span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">${this.parent.getTranslation('superficie_afectada')}:</span>
       <div style="display: flex; align-items: center; gap: 8px;">
         <div style="display: flex; align-items: center; gap: 4px;">
           <svg width="10" height="10" style="vertical-align: middle;">
             <circle cx="5" cy="5" r="3" fill="${baseColor}" stroke="#333" stroke-width="0.5"/>
           </svg>
-          <span style="white-space: nowrap;">menor</span>
+          <span style="white-space: nowrap;">10%</span>
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">
-          <svg width="18" height="18" style="vertical-align: middle;">
-            <circle cx="9" cy="9" r="8" fill="${baseColor}" stroke="#333" stroke-width="0.5"/>
+          <svg width="26" height="26" style="vertical-align: middle;">
+            <circle cx="13" cy="13" r="12" fill="${baseColor}" stroke="#333" stroke-width="0.5"/>
           </svg>
-          <span style="white-space: nowrap;">mayor</span>
+          <span style="white-space: nowrap;">90%</span>
         </div>
       </div>
       <span style="font-weight: bold; margin-right: 5px; margin-left: 10px; white-space: nowrap;">Duración del evento:</span>
@@ -2667,6 +2667,13 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
 
     let self = this;
 
+    // Debug: ver las primeras líneas del CSV
+    if (typeof url === 'string') {
+      const lines = url.split('\n').slice(0, 5);
+      console.log('[drawLinearGraph] First 5 lines of CSV:');
+      lines.forEach((line, i) => console.log(`  Line ${i}: "${line}"`));
+    }
+
     var graph = new Dygraph(
         document.getElementById("popGraph"),
         url,
@@ -2684,7 +2691,14 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
                     // Formatear números del eje Y
                     axisLabelFormatter: (y: number | Date) => {
                         if (typeof y === 'number') {
-                            return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+                            // Para duración (días), mostrar enteros. Para temperatura, mostrar decimales
+                            const isDuration = this.yLabel.includes('Duración') || this.yLabel.includes('días');
+                            if (isDuration) {
+                                // Forzar entero, sin decimales
+                                return Math.round(y).toString();
+                            } else {
+                                return parseFloat(y.toFixed(1)).toString().replace('.', ',');
+                            }
                         }
                         return (y as Date).toLocaleDateString();
                     }
@@ -2694,16 +2708,25 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
                     // Formatear números del eje X
                     axisLabelFormatter: (x: number | Date) => {
                         if (typeof x === 'number') {
-                            return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+                            // Para duración, el eje X son años (periodo de retorno), mostrar enteros
+                            const isDuration = this.yLabel.includes('Duración') || this.yLabel.includes('días');
+                            if (isDuration) {
+                                return Math.round(x).toString();
+                            } else {
+                                return parseFloat(x.toFixed(1)).toString().replace('.', ',');
+                            }
                         }
                         return (x as Date).toLocaleDateString();
                     }
                 }
             },
-            // Formatear valores en general
+            // Formatear valores en general (tooltips)
             valueFormatter: (y: number | Date) => {
                 if (typeof y === 'number') {
-                    return parseFloat(y.toFixed(3)).toString().replace('.', ',');
+                    // Para duración, mostrar enteros. Para temperatura, mostrar 3 decimales
+                    const isDuration = this.yLabel.includes('Duración') || this.yLabel.includes('días');
+                    const decimals = isDuration ? 0 : 3;
+                    return parseFloat(y.toFixed(decimals)).toString().replace('.', ',');
                 }
                 return (y as Date).toLocaleDateString();
             },
@@ -2723,6 +2746,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
 
                 // Configure series only after data is loaded
                 const labels = dygraph.getLabels();
+                console.log('[drawLinearGraph] Detected labels:', labels);
                 const seriesConfig: any = {};
 
                 // Only add series config if the series exists in the data
@@ -2745,8 +2769,22 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
                     };
                 }
 
+                // Configurar series de años (para duración)
+                // Si hay columnas que son años (números de 4 dígitos), configurarlas
+                for (const label of labels) {
+                    if (label !== 'ord' && /^\d{4}$/.test(label)) {
+                        // Es un año, configurar como serie visible
+                        seriesConfig[label] = {
+                            color: label === labels[1] ? "#aa3311" : "#1166aa", // Primer año en rojo, segundo en azul
+                            strokeWidth: 2
+                        };
+                        console.log(`[drawLinearGraph] Configured series for year: ${label}`);
+                    }
+                }
+
                 // Update series configuration if we have any series
                 if (Object.keys(seriesConfig).length > 0) {
+                    console.log('[drawLinearGraph] Applying series config:', seriesConfig);
                     dygraph.updateOptions({ series: seriesConfig });
                 }
             }
@@ -2883,11 +2921,26 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             }
           }
 
-          // Manejar datos con 2 o 4 columnas
+          // Manejar datos con 2, 3 o 4 columnas
           let transformedLine = `${x},${y}`;
 
-          // Si hay más columnas (firstYear y lastYear), transformarlas también
-          if (parts.length >= 4) {
+          // Si hay 3 columnas (duración: ord, año1, año2)
+          if (parts.length === 3) {
+            let year2 = parseFloat(parts[2]);
+
+            // Transformar year2 si es necesario
+            if (yLog) {
+              if (year2 > 0) {
+                year2 = Math.log10(year2);
+              } else {
+                continue;
+              }
+            }
+
+            transformedLine += `,${year2}`;
+          }
+          // Si hay 4 columnas (temperatura: ord, fit, firstYear, lastYear)
+          else if (parts.length >= 4) {
             let firstYear = parseFloat(parts[2]);
             let lastYear = parseFloat(parts[3]);
 
@@ -2927,18 +2980,25 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
   private createAxisFormatter(isLogScale: boolean) {
     return (value: number | Date) => {
       if (typeof value === 'number') {
+        // Detectar si es duración
+        const isDuration = this.yLabel.includes('Duración') || this.yLabel.includes('días');
+
         if (isLogScale) {
           // Convertir de vuelta a escala real
           const realValue = Math.pow(10, value);
-          if (realValue >= 1000) {
-            return realValue.toFixed(0);
+          if (isDuration || realValue >= 1000) {
+            return Math.round(realValue).toString();
           } else if (realValue >= 1) {
             return realValue.toFixed(1);
           } else {
             return realValue.toFixed(2);
           }
         } else {
-          return parseFloat(value.toFixed(1)).toString();
+          if (isDuration) {
+            return Math.round(value).toString();
+          } else {
+            return parseFloat(value.toFixed(1)).toString();
+          }
         }
       }
       return (value as Date).toLocaleDateString();
@@ -2961,17 +3021,17 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
 
     const self = this;
 
-    // Detectar si tenemos tres bandas
+    // Detectar el número de columnas
     const firstLine = (this.originalGraphData || '').split('\n')[0];
     const headerParts = firstLine.split(',');
-    const hasThreeBands = headerParts.length === 4;
+    const numColumns = headerParts.length;
 
-    // Configurar las series según el número de bandas
+    // Configurar las series según el número de columnas
     let seriesConfig: any;
     let labelsConfig: string[] | undefined;
-    if (hasThreeBands) {
-      // Tenemos 4 columnas: ord, año_seleccionado, año_inicial, año_final
-      // Los nombres de las series deben coincidir con los nombres en el header
+
+    if (numColumns === 4) {
+      // Tenemos 4 columnas: ord, año_seleccionado, año_inicial, año_final (temperatura)
       const col1Name = headerParts[1].trim();
       const col2Name = headerParts[2].trim();
       const col3Name = headerParts[3].trim();
@@ -2981,7 +3041,16 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         [col2Name]: { color: "#87CEEB", strokeWidth: 1.5, strokePattern: [5, 3] },  // Azul claro, línea discontinua
         [col3Name]: { color: "#4169E1", strokeWidth: 1.5, strokePattern: [5, 3] }    // Azul oscuro, línea discontinua
       };
-      // Los labels ya vienen en el header, no necesitamos sobrescribirlos
+      labelsConfig = undefined;
+    } else if (numColumns === 3) {
+      // Tenemos 3 columnas: ord, año1, año2 (duración)
+      const col1Name = headerParts[1].trim();
+      const col2Name = headerParts[2].trim();
+
+      seriesConfig = {
+        [col1Name]: { color: "#aa3311", strokeWidth: 2, strokePattern: null },      // Rojo para año seleccionado
+        [col2Name]: { color: "#1166aa", strokeWidth: 2, strokePattern: null }       // Azul para primer año
+      };
       labelsConfig = undefined;
     } else {
       // Una sola banda (2 columnas)
@@ -4476,8 +4545,6 @@ function parseDate(input: string) { //"28/10/50"
   } else {
     return null;
   }
-
-  
 }
 
 
