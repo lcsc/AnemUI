@@ -7,6 +7,7 @@ const DEFAULT_CHARACTERS: string[] = ["·", " "];
 const NUM_BREAKS: number = 10
 const MAX_DISPLAY_VALUE:number = 1000
 
+
 type CS_RGBA_Info = {
     r: number,
     g: number,
@@ -441,6 +442,8 @@ export class CsDynamicPainter implements Painter{
 
 export class PaletteManager {
     private static instance: PaletteManager;
+    protected uncertaintyOpacity: number = 0;
+
 
     public static getInstance(): PaletteManager {
         if (!PaletteManager.instance) {
@@ -607,5 +610,15 @@ export class PaletteManager {
 
     public getUncertaintyLayerChecked():string{
         return this.uncertaintyLayerChecked;
+    }
+
+    public getUncertaintyOpacity(): number {
+        return this.uncertaintyOpacity;
+    }
+
+    public setUncertaintyOpacity(opacity: number): void {
+        if (opacity < 0) opacity = 0;
+        if (opacity > 100) opacity = 100;
+        this.uncertaintyOpacity = opacity;
     }
 }

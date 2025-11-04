@@ -165,6 +165,7 @@ export class LayerManager {
         }
         return this.baseLayers[this.baseSelected[layer]].source
     }
+
     //TopLayer
     public addTopLayer(layer: AnemuiLayer) {
         this.topLayers[layer.name] = layer;
@@ -242,7 +243,6 @@ export class LayerManager {
         return this.topLayers[this.topSelected].source
     }
 
-
     public setUncertaintyLayer(layers: (Image<ImageStatic> | WebGLTile)[]): void {
         console.log('Setting uncertainty layers in LayerManager:', layers);
         this.uncertaintyLayer = layers;
@@ -252,7 +252,6 @@ export class LayerManager {
         return this.uncertaintyLayer;
     }
 
-
     public hasUncertaintyLayer(): boolean {
         return this.uncertaintyLayer && this.uncertaintyLayer.length > 0;
     }
@@ -260,19 +259,54 @@ export class LayerManager {
 
     public showUncertaintyLayer(show: boolean): void {
         console.log('showUncertaintyLayer called with:', show);
-        console.log('uncertaintyLayer array:', this.uncertaintyLayer);
+        console.log('uncertaintyLayer count:', this.uncertaintyLayer.length);
 
         if (this.hasUncertaintyLayer()) {
-            this.uncertaintyLayer.forEach(layer => {
+            this.uncertaintyLayer.forEach((layer, index) => {
                 if (layer) {
                     layer.setVisible(show);
+                    layer.changed();
+                    console.log(`Uncertainty layer ${index} visibility set to: ${show}`);
                 }
             });
-            console.log('Uncertainty layer visibility set to:', show);
         } else {
             console.warn('Uncertainty layer not initialized or not available');
         }
     }
+
+    public setUncertaintyOpacity(opacity: number): void {
+        if (!this.hasUncertaintyLayer()) {
+            console.warn('Cannot set opacity - uncertainty layers not initialized');
+            return;
+        }
+
+        // Convertir de 0-100 a 0-1 para OpenLayers
+        const olOpacity = opacity / 100;
+
+        console.log(`Setting uncertainty opacity to ${opacity}% (${olOpacity})`);
+
+        this.uncertaintyLayer.forEach((layer, index) => {
+            if (layer) {
+                // Si la opacidad es 0, ocultar la capa
+                if (opacity === 0) {
+                    layer.setVisible(false);
+                } else {
+                    layer.setVisible(true);
+                    layer.setOpacity(olOpacity);
+                }
+                layer.changed();
+                console.log(`Layer ${index}: visible=${layer.getVisible()}, opacity=${layer.getOpacity()}`);
+            }
+        });
+    }
+
+    public getUncertaintyOpacity(): number {
+        if (!this.hasUncertaintyLayer() || !this.uncertaintyLayer[0]) {
+            return 0;
+        }
+        return Math.round(this.uncertaintyLayer[0].getOpacity() * 100);
+    }
+
 
     public clearUncertaintyLayer(): void {
         this.uncertaintyLayer = [];

@@ -578,14 +578,24 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
 
 public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
     let lmgr = LayerManager.getInstance();
+    let ptMgr = PaletteManager.getInstance();
     let app = window.CsViewerApp;
 
     console.log('=== BUILDING UNCERTAINTY LAYER ===');
+    console.log('state.varId:', state.varId);
 
+    // GUARDAR la opacidad actual antes de remover las capas
+    const currentOpacity = ptMgr.getUncertaintyOpacity();
+    console.log('Saving current opacity:', currentOpacity);
+
+    // Safely remove existing uncertainty layers
     this.safelyRemoveUncertaintyLayers();
+
+    // Inicializar el array local
     this.uncertaintyLayer = [];
 
     const uncertaintyVarId = state.varId + '_uncertainty';
+    console.log('Looking for uncertaintyVarId:', uncertaintyVarId);
 
     if (!timesJs.portions[uncertaintyVarId]) {
       console.warn('No uncertainty portions found for varId:', uncertaintyVarId);
@@ -593,13 +603,12 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
       return;
     }
 
-    // Usar setExtents que ahora detecta automáticamente uncertainty
-    //this.setExtents(timesJs, uncertaintyVarId);
-
+    console.log('Found uncertainty portions:', timesJs.portions[uncertaintyVarId]);
+    
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
       let imageLayer: ImageLayer<Static> = new ImageLayer({
-        visible: false,
-        opacity: 1.0,
+        visible: currentOpacity > 0, 
+        opacity: currentOpacity / 100, 
         zIndex: 1000 + index,
         source: null
       });
@@ -607,7 +616,7 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
       if (imageLayer) {
         this.uncertaintyLayer.push(imageLayer);
         this.map.addLayer(imageLayer);
-        console.log(`Uncertainty layer ${index} created`);
+        console.log(`Uncertainty layer ${index} created with opacity ${currentOpacity}%`);
       }
     });
 
@@ -618,12 +627,24 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
     });
 
     if (this.uncertaintyLayer.length > 0 && promises.length > 0) {
+      console.log('Building uncertainty images with', promises.length, 'promises');
+      
       buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true)
         .then(() => {
           console.log('=== UNCERTAINTY LAYER BUILD COMPLETE ===');
+          console.log('Uncertainty layers count:', this.uncertaintyLayer.length);
+          
           lmgr.setUncertaintyLayer(this.uncertaintyLayer);
-          lmgr.showUncertaintyLayer(false);
+          
+          // RESTAURAR la opacidad guardada
+          lmgr.setUncertaintyOpacity(currentOpacity);
+          console.log('Restored opacity to:', currentOpacity);
+          
+          // Forzar renderizado
+          this.uncertaintyLayer.forEach(layer => layer.changed());
           this.map.render();
+          
+          console.log('Uncertainty layers registered and ready');
         })
         .catch(error => {
           console.error('Error building uncertainty images:', error);
@@ -1289,12 +1310,3 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     return rgb;
   }
 }
-
-
-// interface FeatureManagerOptions {
-//   map: Map;
-//   maxFeatures?: number;
-//   loadThreshold?: number;
-//   source: VectorSource;
-//   geoJSONData: any; // Your GeoJSON data
-// }
