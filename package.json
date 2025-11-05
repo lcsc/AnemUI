@@ -4,7 +4,7 @@
   "description": "Climatic Services Viewer",
   "scripts": {
     "test": "mocha --timeout 10000",
-    "setVersion": "npm version -ws --include-workspace-root --no-git-tag-version $(sed -e \"s/SNAPSHOT/$(date +\"%Y%m%d%H%M\")/g\" version)",
+    "setVersion": "npm version -ws --include-workspace-root --no-git-tag-version $(sed -e \"s/SNAPSHOT/$(date +\"%Y%m%d%H%M\")/g\" version.${BRANCH_NAME:dev})",
     "setVersionFile": "npm version --ws --include-workspace-root --no-git-tag-version $(cat version)"
   },
   "repository": {
