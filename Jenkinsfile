@@ -28,6 +28,9 @@ pipeline {
         stage('Configure Build') {
             steps {
 //                checkout scm
+        
+                sh 'printenv'
+            
                 sh 'npm run setVersion'
             }
         }
