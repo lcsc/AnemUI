@@ -33,9 +33,9 @@ export class DownloadFrame extends BaseFrame {
         let oneOption = this.downloadNcOptions.length == 1? true:false;
         let self = this;
         let element =
-            (<div id="DownloadFrame" className='rightbar-item downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
+            (<div id="DownloadFrame" className='leftbar-item downloadFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                 <div className='downlad-buttons'>
-                    <div className='btnSelect right mx-auto'>
+                    <div className='btnSelect left mx-auto'>
                         { !oneOption &&
                             <div id="dropNc" role="dropNc" className='dropdown-item'>
                                 <div className="buttonDiv dataDiv visible" onClick={()=>this.toggleSelect('dataDiv')}>

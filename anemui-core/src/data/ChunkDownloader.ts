@@ -61,8 +61,6 @@ function getActualTimeIndex(requestedTimeIndex: number, varName: string, timesJs
                 return availableTimes.length - 1;
             }
             
-            // LOG SOLO PARA DEBUG
-            console.log(`✅ Uncertainty index: requested=${requestedTimeIndex}, using=${requestedTimeIndex}, available=${availableTimes.length}`);
             return Math.max(0, requestedTimeIndex);
         }
         
@@ -164,11 +162,10 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
     downloadTChunk(x, varName, portion, timesJs)
         .then((floatArray: number[]) => {
             let asciiResult = "date;" + varName + "\n";
-            
-            // VALIDACIÓN: Asegurar que times es un array
+           
             let timesArray = timesJs.times[varName];
             if (typeof timesArray === 'string') {
-                // Si es un string, convertirlo a array de un elemento
+                
                 timesArray = [timesArray];
             } else if (!Array.isArray(timesArray)) {
                 console.error('Times data is not an array or string for', varName);
@@ -297,33 +294,20 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             return;
         }
 
-        // Para incertidumbre, usar siempre el varId base para las estructuras
         const varIdForData = uncertaintyLayer ? status.varId + '_uncertainty' : status.varId;
-        const varIdForStructures = status.varId; // Siempre usar el base para portions, lonNum, latNum
+        const varIdForStructures = status.varId;
         
-        // Get the actual time index to use
         const actualTimeIndex = getActualTimeIndex(status.selectedTimeIndex, varIdForData, timesJs);
 
-        console.log('🎨 buildImages processing:', {
-            uncertaintyLayer,
-            varIdForData,
-            varIdForStructures,
-            selectedTimeIndex: status.selectedTimeIndex,
-            actualTimeIndex,
-            arrayCount: validFloatArrays.length
-        });
-
-        // CRÍTICO: Para incertidumbre, usar un rango fijo 0-1
+        
         let minArray: number;
         let maxArray: number;
         
         if (uncertaintyLayer) {
-            // Para incertidumbre, el rango es siempre 0-1
             minArray = 0;
             maxArray = 1;
-            console.log('📊 Using fixed range for uncertainty: [0, 1]');
+            
         } else {
-            // Para datos normales, calcular el rango real
             minArray = Number.MAX_VALUE;
             maxArray = Number.MIN_VALUE;
             
@@ -338,7 +322,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                 }
             });
 
-            // Asegurar que las estructuras min/max existen como arrays
             if (!Array.isArray(timesJs.varMin[status.varId])) {
                 timesJs.varMin[status.varId] = [];
             }
@@ -346,65 +329,104 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                 timesJs.varMax[status.varId] = [];
             }
 
-            // Set values at the actual time index
             timesJs.varMin[status.varId][actualTimeIndex] = minArray;
             timesJs.varMax[status.varId][actualTimeIndex] = maxArray;
             
             app.notifyMaxMinChanged();
             
-            // Use the actual values we just set
             minArray = timesJs.varMin[status.varId][actualTimeIndex];
             maxArray = timesJs.varMax[status.varId][actualTimeIndex];
-            
-            console.log('📊 Calculated range for data:', { minArray, maxArray });
         }
 
         let painter = PaletteManager.getInstance().getPainter();
 
-        // Now that we have the maximums and minimums, we paint the data layers.
         for (let i = 0; i < floatArrays.length; i++) {
             const floatArray = floatArrays[i];
             const portionKey = varIdForStructures + timesJs.portions[varIdForStructures][i];
             const width: number = timesJs.lonNum[portionKey];
             const height: number = timesJs.latNum[portionKey];
 
-            console.log(`🖼️ Painting layer ${i}:`, { 
-                portion: timesJs.portions[varIdForStructures][i],
-                width, 
-                height,
-                dataPoints: floatArray.length,
-                uncertaintyLayer
-            });
-
-            // Use actual time index for filtering
             const filteredArray = await app.filterValues(floatArray, actualTimeIndex, varIdForStructures, timesJs.portions[varIdForStructures][i]);
+    
+            if (uncertaintyLayer) {
+             
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) throw new Error('2D context not available');
 
-            // Rendering the data layer
-            const canvas = await painter.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
-
-            dataTilesLayer[i].setSource(new Static({
-                url: canvas.toDataURL('image/png'),
-                crossOrigin: '',
-                projection: timesJs.projection,
-                imageExtent: ncExtents[timesJs.portions[varIdForStructures][i]],
-                interpolate: false
-            }));
+                    const imgData = ctx.createImageData(width, height);
+                 
+                    const totalPixels = width * height;
+                    for (let p = 0; p < totalPixels; p++) {
+                        const v = filteredArray && filteredArray[p] !== undefined ? filteredArray[p] : NaN;
+                        
+                        const x = p % width;
+                        const y = Math.floor(p / width);
+                        const flippedY = height - 1 - y;
+                        const flippedIdx = (flippedY * width + x) * 4;
             
-            console.log(`✅ Layer ${i} painted successfully`);
+                        const isOne = (v === 1) || (typeof v === 'number' && Math.abs(v - 1) < 1e-9);
+                        if (isOne) {
+                            imgData.data[flippedIdx] = 128;     
+                            imgData.data[flippedIdx + 1] = 128;
+                            imgData.data[flippedIdx + 2] = 128; 
+                            imgData.data[flippedIdx + 3] = 255; 
+                        } else {
+                            imgData.data[flippedIdx] = 0;
+                            imgData.data[flippedIdx + 1] = 0;
+                            imgData.data[flippedIdx + 2] = 0;
+                            imgData.data[flippedIdx + 3] = 0; 
+                        }
+                    }
+                    ctx.putImageData(imgData, 0, 0);
+                    
+                    dataTilesLayer[i].setSource(new Static({
+                        url: canvas.toDataURL('image/png'),
+                        crossOrigin: '',
+                        projection: timesJs.projection,
+                        imageExtent: ncExtents[timesJs.portions[varIdForStructures][i]],
+                        interpolate: false
+                    }));
+
+                } catch (err) {
+                    console.error('Error painting uncertainty canvas:', err);
+                    // Fallback to painter if something fails
+                    const canvas = await painter.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, true);
+                    dataTilesLayer[i].setSource(new Static({
+                        url: canvas.toDataURL('image/png'),
+                        crossOrigin: '',
+                        projection: timesJs.projection,
+                        imageExtent: ncExtents[timesJs.portions[varIdForStructures][i]],
+                        interpolate: false
+                    }));
+                }
+            } else {
+                const canvas = await painter.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
+
+                dataTilesLayer[i].setSource(new Static({
+                    url: canvas.toDataURL('image/png'),
+                    crossOrigin: '',
+                    projection: timesJs.projection,
+                    imageExtent: ncExtents[timesJs.portions[varIdForStructures][i]],
+                    interpolate: false
+                }));
+            }
         }
         
-        console.log('🎉 All layers painted successfully');
+        
         
     } catch (error) {
-        console.error('❌ Error in buildImages:', error);
+        console.error('Error in buildImages:', error);
         throw error;
     }
 }
 
 export function downloadXYArrayChunked(requestedTimeIndex: number, varName: string, portion: string, doneCb: ArrayDownloadDone): void {
     let timesJs: CsTimesJsData = window.CsViewerApp.getTimesJs();
-    
-    // Use the actual time index for the download
+
     const actualTimeIndex = getActualTimeIndex(requestedTimeIndex, varName, timesJs);
 
     downloadXYChunk(actualTimeIndex, varName, portion, timesJs)
@@ -432,18 +454,8 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
     
     const isUncertainty = varName.includes('_uncertainty');
     
-    if (isUncertainty) {
-        console.log('🔍 downloadXYChunkNC (UNCERTAINTY):', {
-            varName,
-            portion,
-            requestedIndex: t,
-            actualIndex: actualTimeIndex
-        });
-    }
     
-    // Check cache
     if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == actualTimeIndex) {
-        if (isUncertainty) console.log('💾 Using cached data');
         let ret = [...xyCache.data];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
         return ret;
@@ -457,38 +469,18 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         let chunkDataDir: bigint = BigInt(actualTimeIndex * chunkDataSize);
 
         const binUrl = './nc/' + varName + portion + '-xy.bin';
-        if (isUncertainty) console.log('📡 Requesting:', binUrl);
 
         const chunkData = await rangeRequest(binUrl, chunkDataDir, chunkDataDir + BigInt(chunkDataSize - 1));
 
         let [chunkOffset, chunkSize] = chunkDataStruct.unpack(chunkData.buffer);
-        
-        if (isUncertainty) {
-            console.log('📦 Chunk metadata:', { 
-                offset: chunkOffset, 
-                size: chunkSize 
-            });
-        }
 
         const ncUrl = './nc/' + varName + portion + '-xy.nc';
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
 
-        if (isUncertainty) console.log('📥 Downloaded', chunk.length, 'bytes (compressed)');
 
         const uncompressedArray = inflate(chunk);
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
-        if (isUncertainty) {
-            console.log('🔢 Float array stats:', {
-                length: floatArray.length,
-                sample: floatArray.slice(0, 10),
-                min: Math.min(...floatArray.filter(v => !isNaN(v) && isFinite(v))),
-                max: Math.max(...floatArray.filter(v => !isNaN(v) && isFinite(v))),
-                nanCount: floatArray.filter(v => isNaN(v)).length,
-                zeroCount: floatArray.filter(v => v === 0).length,
-                oneCount: floatArray.filter(v => v === 1).length
-            });
-        }
 
         // Update cache with actual time index used
         if (xyCache == undefined) {
@@ -504,7 +496,7 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
         return ret;
     } catch (error) {
-        console.error('❌ Error in downloadXYChunkNC:', {
+        console.error('Error in downloadXYChunkNC:', {
             varName,
             portion,
             error: error.message

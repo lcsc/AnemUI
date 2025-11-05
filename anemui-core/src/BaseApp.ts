@@ -260,6 +260,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         if (leftBarElement) {
             addChild(leftBarElement, this.layerFrame.render());
             this.layerFrame.build();
+
+             // Download Frame
+            if (hasDownload) {
+                addChild(leftBarElement, this.downloadFrame.render());
+                this.downloadFrame.build();
+                this.downloadFrame.update();
+            }
         }
         
         // Right Bar
@@ -329,12 +336,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             addChild(rightBarElement, this.paletteFrame.render());
             this.paletteFrame.build();
             
-            // Download Frame
-            if (hasDownload) {
-                addChild(rightBarElement, this.downloadFrame.render());
-                this.downloadFrame.build();
-                this.downloadFrame.update();
-            }
         }
     }
     
@@ -432,7 +433,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         if (avoidMinimize) return;
         this.menuBar.minimize();
         this.leftBar.minimize();
-        this.downloadFrame.minimize();
         this.paletteFrame.minimize();
         this.dateSelectorFrame.minimize();
         this.infoFrame.minimize();

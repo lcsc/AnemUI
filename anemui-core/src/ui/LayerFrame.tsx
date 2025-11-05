@@ -9,11 +9,9 @@ import { showLayers, initialZoom }  from "../Env";
 export default class LayerFrame  extends BaseFrame {
 
     protected slider: Slider
-    protected uncertaintySlider: Slider
     private baseDiv: HTMLElement
     private polDiv: HTMLElement
     private trpDiv: HTMLElement
-    private uncertaintyFrame: HTMLElement; 
 
     public render():JSX.Element{
         let self=this;
@@ -21,7 +19,6 @@ export default class LayerFrame  extends BaseFrame {
         let lmgr = LayerManager.getInstance();
         let baseLayers=lmgr.getBaseLayerNames();
         let topLayers=lmgr.getTopLayerNames();
-        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"];
         let i: number = 0;
         
@@ -103,26 +100,6 @@ export default class LayerFrame  extends BaseFrame {
                         </div>
                     </div>
                 </div>
-                <div id="unc-div">
-                    {uncertaintyLayer &&
-                        <div>
-                            <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
-                                <span className="icon"><i className="bi bi-question-circle"></i></span>
-                                <span className="text" id='uncertainty-text' aria-label='uncertainty'>
-                                    {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyOpacity()}%
-                                </span>
-                            </div>
-                            <div className='row selectDiv uncDiv hidden'>
-                                <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
-                                    <span className="icon"><i className="bi bi-x"></i></span>
-                                </div>
-                                <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
-                                    <input className="selectDiv uncDiv" id="uncertaintySlider" data-slider-id='uncertaintySlider' type="text" data-slider-step="1"/>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
             </div>
         );
         return element;
@@ -152,51 +129,6 @@ export default class LayerFrame  extends BaseFrame {
         this.parent.update();
     }
 
-    public changeUncertaintyOpacity(opacity: number): void {
-        console.log('=== CHANGE UNCERTAINTY OPACITY ===');
-        console.log('Opacity:', opacity);
-        
-        let ptMgr = PaletteManager.getInstance();
-        ptMgr.setUncertaintyOpacity(opacity);
-        
-        // Actualizar el texto del botón
-        let uncertaintyText = document.querySelector("#uncertainty-text");
-        if (uncertaintyText) {
-            uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + opacity + '%';
-        }
-        
-        let lmgr = LayerManager.getInstance();
-        
-        if (lmgr.hasUncertaintyLayer()) {
-            lmgr.setUncertaintyOpacity(opacity);
-            console.log('Uncertainty opacity changed successfully');
-        } else {
-            console.warn('Uncertainty layer not available');
-        }
-    }
-
-    public renderUncertaintyFrame(): JSX.Element {
-        let mgr = PaletteManager.getInstance();
-        return (
-            <div>
-                <div className="buttonDiv uncDiv visible" onClick={() => this.toggleSelect('uncDiv')}>
-                    <span className="icon"><i className="bi bi-question-circle"></i></span>
-                    <span className="text" id='uncertainty-text' aria-label='uncertainty'>
-                        {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyOpacity()}%
-                    </span>
-                </div>
-                <div className='row selectDiv uncDiv hidden'>
-                    <div className='col closeDiv p-0' onClick={() => this.toggleSelect('uncDiv')}>
-                        <span className="icon"><i className="bi bi-x"></i></span>
-                    </div>
-                    <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
-                        <input className="selectDiv uncDiv" id="uncertaintySlider" data-slider-id='uncertaintySlider' type="text" data-slider-step="1"/>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     public build(){
         this.container = document.getElementById("layer-frame") as HTMLDivElement
         this.baseDiv = document.getElementById('base-div') as HTMLElement;
@@ -216,20 +148,6 @@ export default class LayerFrame  extends BaseFrame {
             mgr.setTransparency(val)
             this.parent.update();
         })
-
-        
-        const uncertaintySliderElement = document.getElementById("uncertaintySlider");
-        if (uncertaintySliderElement) {
-            this.uncertaintySlider = new Slider(uncertaintySliderElement, {
-                natural_arrow_keys: true,
-                min: 0,
-                max: 100,
-                value: 0,
-            })
-            this.uncertaintySlider.on('slideStop', (val:number) => {
-                this.changeUncertaintyOpacity(val);
-            })
-        }
 
         if (!showLayers){
             this.baseDiv.hidden = true;
@@ -260,42 +178,5 @@ export default class LayerFrame  extends BaseFrame {
         this.container.querySelector(".layerFrame span[aria-label=base]").textContent = this.parent.getTranslation('base_layer') + ": " + lmgr.getBaseSelected();
         this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent = this.parent.getTranslation('transparency') + ": " + mgr.getTransparency();
         this.container.querySelector(".layerFrame span[aria-label=top]").textContent = this.parent.getTranslation('top_layer') + ": " + lmgr.getTopSelected();
-        
-        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
-        
-        this.uncertaintyFrame = this.container.querySelector("#unc-div");
-        if (uncertaintyLayer) {
-            this.uncertaintyFrame.hidden = false;
-            if (this.uncertaintyFrame.children.length == 0) {
-                addChild(this.uncertaintyFrame, this.renderUncertaintyFrame());
-                
-                setTimeout(() => {
-                    const uncertaintySliderElement = document.getElementById("uncertaintySlider");
-                    if (uncertaintySliderElement && !this.uncertaintySlider) {
-                        this.uncertaintySlider = new Slider(uncertaintySliderElement, {
-                            natural_arrow_keys: true,
-                            min: 0,
-                            max: 100,
-                            value: mgr.getUncertaintyOpacity(),
-                        });
-                        this.uncertaintySlider.on('slideStop', (val: number) => {
-                            this.changeUncertaintyOpacity(val);
-                        });
-                    }
-                }, 100);
-            } else {
-                const uncertaintyText = this.uncertaintyFrame.querySelector("#uncertainty-text");
-                if (uncertaintyText) {
-                    uncertaintyText.textContent = this.parent.getTranslation('uncertainty') + ': ' + mgr.getUncertaintyOpacity() + '%';
-                }
-            }
-        } else {
-            this.uncertaintyFrame.hidden = true;
-            if (this.uncertaintyFrame.children.length > 0) {
-                while (this.uncertaintyFrame.firstChild) {
-                    this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
-                }
-            }
-        }
     }
 }
