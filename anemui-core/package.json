@@ -1,6 +1,6 @@
 {
   "name": "@lcsc/anemui-core",
-  "version": "0.1.0-SNAPSHOT",
+  "version": "0.2.1-SNAPSHOT",
   "description": "Climatic Services Viewer Core",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -8,7 +8,7 @@
     ".": "./src/index.ts",
     "./webpack.config": "./webpack.config.js",
     "./csconfig": "./csconfig.js",
-     "./Env": "./src/Env.ts"
+    "./Env": "./src/Env.ts"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
