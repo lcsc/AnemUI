@@ -275,12 +275,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         const validFloatArrays = floatArrays.filter(arr => arr !== undefined && arr !== null);
         
         if (validFloatArrays.length === 0) {
+            console.warn('No valid float arrays received');
             return;
         }
 
         const actualTimeIndex = getActualTimeIndex(status.selectedTimeIndex, status.varId, timesJs);
 
-       
         if (!Array.isArray(timesJs.varMin[status.varId])) {
             timesJs.varMin[status.varId] = [];
         }
@@ -291,7 +291,9 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         const filteredArrays: number[][] = [];
         
         for (let i = 0; i < validFloatArrays.length; i++) {
-            const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
+           
+            const filteredArray = validFloatArrays[i]; 
+
             filteredArrays.push(filteredArray);
         }
 
@@ -313,6 +315,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             maxArray = 100;
         }
 
+
         try {
             (timesJs.varMin[status.varId] as number[])[actualTimeIndex] = minArray;
             (timesJs.varMax[status.varId] as number[])[actualTimeIndex] = maxArray;
@@ -327,7 +330,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         app.notifyMaxMinChanged();
 
         let painterInstance = PaletteManager.getInstance().getPainter();
-
 
         for (let i = 0; i < filteredArrays.length; i++) {
             const filteredArray = filteredArrays[i];
@@ -351,11 +353,9 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     });
 
                     dataTilesLayer[i].setSource(imageSource);
-
                     dataTilesLayer[i].setZIndex(5000 + i);
                     dataTilesLayer[i].setVisible(true);
                     dataTilesLayer[i].setOpacity(1.0);
-
                     dataTilesLayer[i].changed();
 
                     await new Promise(resolve => setTimeout(resolve, 50));
@@ -371,7 +371,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                             }
                         }
                     }
-                                    
                 }
                 
             } catch (error) {
@@ -384,15 +383,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             if (window.CsViewerApp && (window.CsViewerApp as any).csMap) {
                 const map = (window.CsViewerApp as any).csMap.map;
                 if (map) {
-        
                     map.render();
-                    
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    
                     if (map.renderSync) {
                         map.renderSync();
                     }
-                                    } else {
+                } else {
                     console.warn('Map not available');
                 }
             }
@@ -429,7 +425,6 @@ let xyCache: {
 } = undefined
 
 async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-
     let app = window.CsViewerApp;
     const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
 
@@ -466,18 +461,40 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
         const uncompressedArray = inflate(chunk);
    
-      
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
         if (!Array.isArray(floatArray) || floatArray.length === 0) {
             throw new Error(`Invalid float array: length=${floatArray.length}, isArray=${Array.isArray(floatArray)}`);
         }
 
+        // 🔍 DEBUG: Verificar calidad de datos descargados
+        const validCount = floatArray.filter(v => !isNaN(v) && isFinite(v)).length;
+        console.log('🔍 downloadXYChunkNC OUTPUT:', {
+            varName,
+            portion,
+            actualTimeIndex,
+            total: floatArray.length,
+            valid: validCount,
+            validPercent: (validCount / floatArray.length * 100).toFixed(2) + '%',
+            samples: floatArray.slice(0, 20),
+            min: Math.min(...floatArray.filter(v => !isNaN(v) && isFinite(v))),
+            max: Math.max(...floatArray.filter(v => !isNaN(v) && isFinite(v)))
+        });
+
         xyCache = { t: actualTimeIndex, varName, portion, data: [...floatArray] };
 
         let ret = [...floatArray];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
 
+        // 🔍 DEBUG: Verificar datos después de transformDataXY
+        const validAfterTransform = ret.filter(v => !isNaN(v) && isFinite(v)).length;
+        console.log('🔍 After transformDataXY:', {
+            varName,
+            portion,
+            valid: validAfterTransform,
+            validPercent: (validAfterTransform / ret.length * 100).toFixed(2) + '%',
+            samples: ret.slice(0, 20)
+        });
 
         return ret;
 

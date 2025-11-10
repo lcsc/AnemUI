@@ -170,78 +170,150 @@ export class CategoryRangePainter implements Painter {
         this.ranges = ranges;
     }
 
-    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
-        // Validar y asegurar que width y height sean enteros positivos válidos
-        width = Math.max(1, Math.floor(width));
-        height = Math.max(1, Math.floor(height));
+public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
+    // Validar dimensiones
+    width = Math.max(1, Math.floor(width));
+    height = Math.max(1, Math.floor(height));
 
-        if (!isFinite(width) || !isFinite(height)) {
-            console.error('Invalid canvas dimensions:', width, height);
-            width = 1;
-            height = 1;
+    if (!isFinite(width) || !isFinite(height)) {
+        console.error('Invalid canvas dimensions:', width, height);
+        width = 1;
+        height = 1;
+    }
+
+    // 🔍 DIAGNÓSTICO 1: Calidad de datos de entrada
+    let dataQuality = {
+        total: floatArray.length,
+        nan: 0,
+        infinite: 0,
+        valid: 0,
+        samples: [] as number[]
+    };
+
+    for (let i = 0; i < floatArray.length; i++) {
+        const val = floatArray[i];
+        if (isNaN(val)) {
+            dataQuality.nan++;
+        } else if (!isFinite(val)) {
+            dataQuality.infinite++;
+        } else {
+            dataQuality.valid++;
+            // Guardar algunos samples
+            if (dataQuality.samples.length < 20) {
+                dataQuality.samples.push(val);
+            }
         }
+    }
 
-        let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');
-        canvas.width = width;
-        canvas.height = height;
-        let imgData: ImageData = context.getImageData(0, 0, width, height);
-        let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
+    console.log('📊 Data Quality Check:', {
+        total: dataQuality.total,
+        valid: dataQuality.valid + ` (${(dataQuality.valid / dataQuality.total * 100).toFixed(2)}%)`,
+        nan: dataQuality.nan,
+        infinite: dataQuality.infinite,
+        firstSamples: dataQuality.samples.slice(0, 10)
+    });
 
-        // VERIFICACIÓN CRÍTICA
-        if (gradient.length !== this.ranges.length) {
-            console.error('❌ CRITICAL: Gradient colors (' + gradient.length + ') != Ranges (' + this.ranges.length + ')');
-        }
+    let canvas: HTMLCanvasElement = document.createElement('canvas');
+    let context: CanvasRenderingContext2D = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+    let imgData: ImageData = context.getImageData(0, 0, width, height);
+    let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
 
-        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
+    // VERIFICACIÓN
+    if (gradient.length !== this.ranges.length) {
+        console.error('❌ CRITICAL: Gradient colors (' + gradient.length + ') != Ranges (' + this.ranges.length + ')');
+    }
 
-        for (let y: number = 0; y < height; y++) {
-            for (let x: number = 0; x < width; x++) {
-                let ncIndex: number = x + y * width;
-                let value: number = floatArray[ncIndex];
-                let pxIndex: number = x + ((height - 1) - y) * width;
+    console.log('🎨 Ranges:', this.ranges);
+    console.log('🎨 Gradient length:', gradient.length);
 
-                if (!isNaN(value) && isFinite(value)) {
-                    let index: number = this.getValIndex(value);
+    const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
 
-                    if (index >= 0 && index < gradient.length) {
-                        bitmap[pxIndex] = gradient[index];
-                    } else {
-                        bitmap[pxIndex] = pxTransparent;
-                    }
+    // Debug stats
+    let debugStats = {
+        transparent: 0,
+        byRange: Array(this.ranges.length).fill(0),
+        minValue: Infinity,
+        maxValue: -Infinity,
+        indexReturned: {} as Record<number, number>, // Contar qué índices retorna getValIndex
+        valuesOutOfRange: [] as number[] // Valores que no caen en ningún rango
+    };
+    
+    // PINTAR Y RECOPILAR ESTADÍSTICAS
+    for (let y: number = 0; y < height; y++) {
+        for (let x: number = 0; x < width; x++) {
+            let ncIndex: number = x + y * width;
+            let value: number = floatArray[ncIndex];
+            let pxIndex: number = x + ((height - 1) - y) * width;
+
+            if (!isNaN(value) && isFinite(value)) {
+                // Actualizar estadísticas
+                debugStats.minValue = Math.min(debugStats.minValue, value);
+                debugStats.maxValue = Math.max(debugStats.maxValue, value);
+                
+                let index: number = this.getValIndex(value);
+                
+                // 🔍 DIAGNÓSTICO 2: Registrar qué índices se están retornando
+                if (!debugStats.indexReturned[index]) {
+                    debugStats.indexReturned[index] = 0;
+                }
+                debugStats.indexReturned[index]++;
+
+                if (index >= 0 && index < gradient.length) {
+                    debugStats.byRange[index]++;
+                    bitmap[pxIndex] = gradient[index];
                 } else {
+                    debugStats.transparent++;
                     bitmap[pxIndex] = pxTransparent;
+                    
+                    // 🔍 DIAGNÓSTICO 3: Guardar valores que caen fuera de rango
+                    if (debugStats.valuesOutOfRange.length < 20) {
+                        debugStats.valuesOutOfRange.push(value);
+                    }
                 }
+            } else {
+                bitmap[pxIndex] = pxTransparent;
+                debugStats.transparent++;
             }
         }
-
-        context.putImageData(imgData, 0, 0);
-        return canvas;
     }
+    
+    // Mostrar estadísticas completas
+    console.log('🎨 Paint Stats:', {
+        dataRange: [debugStats.minValue, debugStats.maxValue],
+        totalPixels: width * height,
+        transparent: debugStats.transparent + ` (${(debugStats.transparent / (width * height) * 100).toFixed(2)}%)`,
+        pixelsByRange: debugStats.byRange,
+        indexReturned: debugStats.indexReturned,
+        valuesOutOfRange: debugStats.valuesOutOfRange.length > 0 ? debugStats.valuesOutOfRange : 'None'
+    });
+    
+    context.putImageData(imgData, 0, 0);
+    return canvas;
+}
 
-    getValIndex(val: number): number {
-        // Buscar el rango apropiado
-        for (let i = 0; i < this.ranges.length; i++) {
-            let range = this.ranges[i];
-            
-            // Rango con límite inferior indefinido: val < b
-            if (range.a === undefined && val < range.b) {
-                return i;
-            }
-            // Rango con límite superior indefinido: val >= a
-            else if (range.b === undefined && val >= range.a) {
-                return i;
-            }
-            // Rango normal: a <= val < b
-            else if (range.a !== undefined && range.b !== undefined) {
-                if (val >= range.a && val < range.b) {
-                    return i;
-                }
-            }
-        }
+getValIndex(val: number): number {
+    if (isNaN(val) || !isFinite(val)) {
+        return -1;
+    }
+    
+    for (let i = 0; i < this.ranges.length; i++) {
+        let range = this.ranges[i];
         
-        return -1; // No encontrado
+        const a = (typeof range.a === 'number') ? range.a : -Infinity;
+        const b = (typeof range.b === 'number') ? range.b : Infinity;
+        
+        const isLastRange = (i === this.ranges.length - 1);
+        
+        if (val >= a && (val < b || (isLastRange && val <= b))) {
+            return i;
+        }
     }
+    
+    // Si llegamos aquí, el valor no cayó en ningún rango
+    return -1;
+}
 
     getColorString(val: number, min: number, max: number): string {
         let mgr = PaletteManager.getInstance();
@@ -254,6 +326,8 @@ export class CategoryRangePainter implements Painter {
         
         return "#000000";
     }
+
+    
 }
 
 export class GradientPainter implements Painter{

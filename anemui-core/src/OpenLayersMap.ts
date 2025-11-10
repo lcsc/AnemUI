@@ -126,7 +126,6 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
             timesJs.latMax[selector] + pxSize / 2
         ];
         
-        // Si el mapa está en una proyección diferente, transformar
         if (timesJs.projection !== olProjection) {
             const transformedExtent = transformExtent(
                 dataExtent,
@@ -141,7 +140,7 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
 }
 
 
-  init(_parent: CsMap): void {
+init(_parent: CsMap): void {
     this.parent = _parent;
     const state = this.parent.getParent().getState();
     const timesJs = this.parent.getParent().getTimesJs();
@@ -149,25 +148,34 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     this.setExtents(timesJs, state.varId);
     this.defaultRenderer = this.parent.getParent().getDefaultRenderer()
     this.renderers = this.parent.getParent().getRenderers()
+    
     let layers: (ImageLayer<Static> | TileLayer)[] = isWmsEnabled ? this.buildWmsLayers(state) : this.buildChunkLayers(state);
 
     let options: MapOptions = {
-      target: 'map',
-      layers: layers,
-      view: new View({
-        center: center,
-        zoom: initialZoom,
-        projection: olProjection
-      })
+        target: 'map',
+        layers: layers,
+        view: new View({
+            center: center,
+            zoom: initialZoom,
+            projection: olProjection
+        }),
+        controls: []  
     };
 
     this.map = new Map(options);
+    
+    
+    setTimeout(() => {
+        this.map.getControls().clear();
+    }, 100);
+    
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
     this.map.on('click', (event) => { self.onClick(event) })
     this.map.on('moveend', self.handleMapMove.bind(this));
-    this.marker = new Overlay({
+
+     this.marker = new Overlay({
       positioning: 'center-center',
       element: document.createElement('div'),
       stopEvent: false,
@@ -184,13 +192,13 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     this.buildPopUp()
     this.map.on('pointermove', (event) => self.onMouseMove(event))
     this.lastSupport = this.parent.getParent().getDefaultRenderer()
+        
     this.buildFeatureLayers();
     if (!isWmsEnabled) {
-      this.buildDataTilesLayers(state, timesJs);
-      if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
+        this.buildDataTilesLayers(state, timesJs);
+        if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
     }
-  }
-
+}
   private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
     this.dataWMSLayer = new TileWMS({
       url: '/geoserver/lcsc/wms',
@@ -432,8 +440,6 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     let app = window.CsViewerApp;
 
- 
-
     this.safelyRemoveDataLayers();
 
     this.dataTilesLayer = [];
@@ -445,15 +451,18 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
 
     timesJs.portions[state.varId].forEach((portion: string, index, array) => {
         let imageLayer: ImageLayer<Static> = new ImageLayer({
-            visible: true,
+            visible: true,  
             opacity: 1.0,
-            zIndex: 100,
-            source: null
+            zIndex: 5000 + index,
+            source: null,
+            properties: {
+                'name': `data-layer-${index}`,
+                'portion': portion
+            }
         });
 
         this.dataTilesLayer.push(imageLayer);
 
-        // Insertar la capa antes de la capa política (no al final)
         const layers = this.map.getLayers();
         const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
         if (politicalIndex !== -1) {
@@ -461,16 +470,15 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         } else {
             layers.push(imageLayer);
         }
-
     });
 
     let promises: Promise<number[]>[] = [];
     this.setExtents(timesJs, state.varId);
 
     if (computedDataTilesLayer) {
-      timesJs.portions[state.varId].forEach((portion: string) => {
-        promises.push(this.computeLayerData(state.selectedTimeIndex, state.varId, portion));
-      });
+        timesJs.portions[state.varId].forEach((portion: string) => {
+            promises.push(this.computeLayerData(state.selectedTimeIndex, state.varId, portion));
+        });
     } else {
         timesJs.portions[state.varId].forEach((portion: string, index, array) => {
             promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
@@ -480,7 +488,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     if (this.dataTilesLayer.length > 0 && promises.length > 0) {
         buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false)
             .then(() => {
-                // FORZAR REFRESH COMPLETO
+                // Asegurar que las capas están visibles
                 this.dataTilesLayer.forEach((layer, i) => {
                     layer.setVisible(true);
                     layer.changed();
@@ -496,7 +504,6 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     }
 }
 
-  // Safe layer removal method
   private safelyRemoveDataLayers(): void {
     if (this.dataTilesLayer && Array.isArray(this.dataTilesLayer)) {
       this.dataTilesLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
@@ -520,12 +527,10 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     this.dataTilesLayer = [];
   }
 
-  // Fix for uncertainty layer with proper initialization
   public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
-    // Safely remove existing uncertainty layers
     this.safelyRemoveUncertaintyLayers();
 
     this.uncertaintyLayer = lmgr.getUncertaintyLayer() || [];

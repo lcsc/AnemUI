@@ -367,32 +367,32 @@ export class MenuBar extends BaseFrame {
                 addChild(this.displayUnits, this.units.render(this.parent.getState().subVarName, false));
                 this.units.build(this.displayUnits);
             }
-            if (hasClimatology) {
-                console.log('Building climatology dropdowns, extraDisplays:', this.extraDisplays.length);
+          if (hasClimatology) {
+   
 
-                this.extraDisplays.forEach((dsp) => {
-                    console.log('Processing display:', dsp.role, dsp.title, dsp.subTitle);
-                    addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                    addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
-                    this.extraMenuItems.forEach((dpn) => {
-                        if (dpn.id == dsp.role) {
-                            console.log('  -> Rendering menu item:', dpn.id);
-                            let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                            addChild(container, dpn.render(dsp.subTitle, false));
-                            dpn.build(container)
-                        }
-                    });
-                    if (this.extraMenuInputs.length > 0) {
-                        this.extraMenuInputs.forEach((input) => {
-                            if (input.id == dsp.role) {
-                                let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                                addChild(container, input.render(this.parent.getState().selectionParam + ''));
-                                input.build(container)
-                            }
-                        })
-                    }
-                });
+    this.extraDisplays.forEach((dsp) => {
+        addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
+        addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'basicBtn'));
+        
+        this.extraMenuItems.forEach((dpn) => {
+            if (dpn.id == dsp.role) {
+                console.log('  -> Rendering menu item:', dpn.id);
+                let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
+                addChild(container, dpn.render(dsp.subTitle, false));
+                dpn.build(container)
             }
+        });
+        if (this.extraMenuInputs.length > 0) {
+            this.extraMenuInputs.forEach((input) => {
+                if (input.id == dsp.role) {
+                    let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
+                    addChild(container, input.render(this.parent.getState().selectionParam + ''));
+                    input.build(container)
+                }
+            })
+        }
+    });
+}
             if (this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
             }
