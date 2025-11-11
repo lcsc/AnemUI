@@ -29,6 +29,7 @@ async function loadTimesJson(): Promise<CsTimesJsData> {
         //Text data for variables
         varTitle: parsedJson.varTitle,
         legendTitle: parsedJson.legendTitle,
+        descriptionRules: parsedJson.descriptionRules,
 
         //Data of variables
         times: parsedJson.times,

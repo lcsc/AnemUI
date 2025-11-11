@@ -46,6 +46,7 @@ export interface CsTimesJsData{
     //Text data for variables
     varTitle:CsTimesJsNames // To adjust the var info
     legendTitle:CsTimesJsNames // To change the Legend tittle
+    descriptionRules:string // Description rules that may vary with time
 
     //Data of variables
     times: CsTimesJsVarData<string> // Dates with data

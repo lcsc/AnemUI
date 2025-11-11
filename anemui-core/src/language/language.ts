@@ -100,7 +100,7 @@ export default class Language {
             }
         },
         es: {
-            "descargar_nc": "Descargar Archivo",
+            "descargar_nc": "Descargar Datos",
             "descargar_peninsula": "Descargar Península",
             "descargar_baleares": "Descargar Baleares",
             "descargar_canarias": "Descargar Canarias",
