@@ -10,7 +10,7 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData, CsTimeSpan } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer } from "./Env";
+import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods } from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked } from "./data/ChunkDownloader";
@@ -95,20 +95,19 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected cookies: CsCookies;
 
     protected constructor() {
-        this.menuBar = new MenuBar(this, this);
-        // this.leftBar = new LeftBar(this, this) // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        this.leftBar = new LeftBar(this) // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
-        this.rightBar = new RightBar(this)
-
-        this.csMap = new CsMap(this, new OpenLayerMap(), this);
+        this.menuBar = useFactoryMethods.menuBar ? this.createMenuBar() : new MenuBar(this, this);
+        this.leftBar = useFactoryMethods.leftBar ? this.createLeftBar() : new LeftBar(this);
+        this.rightBar = useFactoryMethods.rightBar ? this.createRightBar() : new RightBar(this);
 
         this.mainFrame = new MainFrame(this);
-        this.downloadFrame = new DownloadFrame(this);
-        this.layerFrame = new LayerFrame(this) 
-        this.paletteFrame = new PaletteFrame(this);
-        this.dateSelectorFrame = new DateSelectorFrame(this, this);
-        this.graph = new CsGraph(this);
+        this.downloadFrame = useFactoryMethods.downloadFrame ? this.createDownloadFrame() : new DownloadFrame(this);
+        this.layerFrame = useFactoryMethods.layerFrame ? this.createLayerFrame() : new LayerFrame(this);
+        this.paletteFrame = useFactoryMethods.paletteFrame ? this.createPaletteFrame() : new PaletteFrame(this);
+        this.dateSelectorFrame = useFactoryMethods.dateSelectorFrame ? this.createDateSelectorFrame() : new DateSelectorFrame(this, this);
+        this.graph = useFactoryMethods.graph ? this.createGraph() : new CsGraph(this);
         this.infoFrame = new InfoFrame(this);
+
+        this.csMap = new CsMap(this, new OpenLayerMap(), this);
 
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
@@ -117,6 +116,39 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         
         if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);
         if (hasCookies) this.cookies = new CsCookies(this);
+    }
+
+    // Factory Methods: permite a las subclases personalizar la creación de los componentes
+    protected createGraph(): CsGraph {
+        return new CsGraph(this);
+    }
+
+    protected createMenuBar(): MenuBar {
+        return  new MenuBar(this, this);
+    }
+
+    protected createLeftBar(): LeftBar {
+        return new LeftBar(this);
+    }
+
+    protected createRightBar(): RightBar {
+        return new RightBar(this);
+    }
+
+    protected createDownloadFrame(): DownloadFrame {
+        return new DownloadFrame(this);
+    }
+
+    protected createLayerFrame(): LayerFrame {
+        return new LayerFrame(this);
+    }
+
+    protected createPaletteFrame(): PaletteFrame {
+        return new PaletteFrame(this);
+    }
+
+    protected createDateSelectorFrame(): DateSelectorFrame {
+        return new DateSelectorFrame(this, this);
     }
 
     public getMenuBar(): MenuBar {
@@ -854,6 +886,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public formatPopupValue(text: string, pixelIndex: number, portion: string, value: number): string {
+        // Añadidos los parámetros pixelIndex y portion para personalización de la info para datos calculados en App.ts de visor (Ej: EPM, ETM) - NO ELIMINAR
         let formattedValue: string;
         if (value % 1 === 0) {
             formattedValue = value.toString(); // Convierte el número directamente a string sin decimales
