@@ -60,15 +60,15 @@ export class MenuBar extends BaseFrame {
     private extraDisplays: simpleDiv[];
     private inputOrder: string[];
 
-    private climBtnArray: HTMLElement[]
+    protected climBtnArray: HTMLElement[]
     private spatialSupport: CsMenuItem;
     private temporalSupport: CsMenuItem;
     private variable: CsMenuItem;
     private subVariable: CsMenuItem;
     private selection: CsMenuItem;
     private selectionParam: CsMenuInput;
-    private extraMenuItems: CsMenuItem[];
-    private extraMenuInputs: CsMenuInput[];
+    protected extraMenuItems: CsMenuItem[];
+    protected extraMenuInputs: CsMenuInput[];
     private dropDownOrder: string[]
     private logoMaps: string[]
 
@@ -561,8 +561,8 @@ export class MenuBar extends BaseFrame {
 
         this.climBtnArray.forEach((btn) => {
             const role = btn.getAttribute('role');
-            if (role === 'variable' || role === 'escala' || role === 'size' || role === 'year' || role === 'magnitude' || role === 'timeSpan' || role === 'period') {
-                // Mostrar variable y escala para climatología
+            if (role === 'variable' || role === 'escala' || role === 'size' || role === 'magnitude' || role === 'timeSpan' || role === 'period' || role === 'year') {
+                // Mostrar estos elementos para climatología
                 btn.hidden = false;
             } else if (role === 'escenario') {
                 // Ocultar escenario para climatología
@@ -665,7 +665,7 @@ export class MenuBar extends BaseFrame {
         }
     }
 
-    public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[]) {
+    public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[], hidden: boolean = false) {
         switch (type) {
             case 1:
                 this.extraMenuItems.forEach((dpn) => {
@@ -673,6 +673,8 @@ export class MenuBar extends BaseFrame {
                         dpn.setTitle(displayTitle)
                         dpn.setSubTitle(options[0])
                         dpn.setValues(options)
+                        // Controlar visibilidad usando el método config
+                        // dpn.config(hidden, displayTitle);
                     }
                 });
                 break;
@@ -687,6 +689,8 @@ export class MenuBar extends BaseFrame {
                                 inp.value = newValue;
                             }
                         }
+                        // Controlar visibilidad usando el método config
+                        inp.config(hidden, displayTitle);
                     }
                 });
                 break;

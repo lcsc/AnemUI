@@ -14,8 +14,9 @@ export * from './data/CsDataTypes';
 export { hasSubVars } from './Env';
 export {enableRenderer } from './tiles/Support';
 
-// Graph public API
+// public APIs
 export { CsGraph, type GraphType } from './ui/Graph';
+export { MenuBar, MenuBarListener } from './ui/MenuBar';
 export { DateFrameMode } from "./ui/DateFrame";
 
 export { fromLonLat } from 'ol/proj';

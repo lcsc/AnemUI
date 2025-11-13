@@ -83,11 +83,11 @@ export abstract class DataServiceApp extends BaseApp {
         let state = this.state
 
         // let oneOption = mb..values.length == 1? true:false;
-        mb.configVariables(svc.isVarVisible(state), undefined, svc.varText(state))
-        mb.configSubVariables(svc.isSubVarVisible(state), undefined, svc.subVarText(state))
-        mb.configTpSupport(svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
-        mb.configSelection(svc.isSelectionVisible(state), undefined, svc.selectionText(state))
-        mb.configSelectionParam(svc.isSelectionVisible(state), svc.selectionParamText(state))
+        mb.configVariables(!svc.isVarVisible(state), undefined, svc.varText(state))
+        mb.configSubVariables(!svc.isSubVarVisible(state), undefined, svc.subVarText(state))
+        mb.configTpSupport(!svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
+        mb.configSelection(!svc.isSelectionVisible(state), undefined, svc.selectionText(state))
+        mb.configSelectionParam(!svc.isSelectionVisible(state), svc.selectionParamText(state))
 
         // Actualizar el minValue y maxValue del selector según el tipo de extremo
         mb.setSelectionParamMinValue(svc.getSelectionParamMinValue(state))
