@@ -397,6 +397,7 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
     if (Number.isNaN(value)) {
+      this.parent.getParent().getState().xyValue = NaN
       this.value.setPosition(undefined)
       return;
     }
