@@ -368,15 +368,11 @@ export class MenuBar extends BaseFrame {
                 this.units.build(this.displayUnits);
             }
             if (hasClimatology) {
-                console.log('Building climatology dropdowns, extraDisplays:', this.extraDisplays.length);
-
                 this.extraDisplays.forEach((dsp) => {
-                    console.log('Processing display:', dsp.role, dsp.title, dsp.subTitle);
                     addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
                     addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
                     this.extraMenuItems.forEach((dpn) => {
                         if (dpn.id == dsp.role) {
-                            console.log('  -> Rendering menu item:', dpn.id);
                             let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
                             addChild(container, dpn.render(dsp.subTitle, false));
                             dpn.build(container)
