@@ -14,13 +14,15 @@ export * from './data/CsDataTypes';
 export { hasSubVars } from './Env';
 export {enableRenderer } from './tiles/Support';
 
-// Graph public API
+// public APIs
 export { CsGraph, type GraphType } from './ui/Graph';
+export { MenuBar, MenuBarListener } from './ui/MenuBar';
 export { DateFrameMode } from "./ui/DateFrame";
 
 export { fromLonLat } from 'ol/proj';
 
 // Download utilities public API
 export type { CsvDownloadDone } from './data/ChunkDownloader';
+export { CsLatLong } from './CsMapTypes';
 export { downloadUrl } from './data/UrlDownloader';
 export { downloadXYArrayChunked, downloadXYChunk, downloadTCSVChunked, getPortionForPoint, downloadXYbyRegion, downloadCSVbyRegion, downloadCSVbySt, downloadTimebyRegion, calcPixelIndex, downloadTArrayChunked } from './data/ChunkDownloader';

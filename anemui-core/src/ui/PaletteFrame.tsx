@@ -199,8 +199,8 @@ public render(): JSX.Element {
             return;
         }
 
-        let values= [...legendValues].reverse();
-        let texts=[...legendText].reverse();
+        let values= [...legendValues];
+        let texts=[...legendText];
         let ptr=PaletteManager.getInstance().getPainter();
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();

@@ -313,6 +313,13 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             maxArray = 100;
         }
 
+        // Para datos computados con rango muy pequeño (ej: probabilidades todas iguales),
+        // forzar un rango fijo 0-1 para permitir el pintado
+        if (status.computedLayer && (maxArray - minArray) < 0.01) {
+            minArray = 0;
+            maxArray = 1;
+        }
+
         try {
             (timesJs.varMin[status.varId] as number[])[actualTimeIndex] = minArray;
             (timesJs.varMax[status.varId] as number[])[actualTimeIndex] = maxArray;
@@ -371,9 +378,8 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                             }
                         }
                     }
-                                    
                 }
-                
+
             } catch (error) {
                 console.error('paintValues failed:', error);
                 continue;

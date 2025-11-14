@@ -137,9 +137,9 @@ export class CsMenuItem extends BaseUiElement {
     this.drop = new Dropdown(this.container);
   }
 
-  public config(visible: boolean, newText?: string) {
+  public config(hidden: boolean, newText?: string) {
     if (this.container.querySelector(".single-button")) return
-    this.container.hidden = !visible;
+    this.container.hidden = hidden;
     if (newText != undefined) {
       this.container.querySelector(".title").innerHTML = newText +':';
     }
@@ -317,9 +317,10 @@ export class CsMenuInput extends BaseUiElement {
     this.container = _container;
   }
 
-  public config(visible: boolean, newText?: string) {
+  public config(hidden: boolean, newText?: string) {
     if (this.container.querySelector(".single-button")) return
-    this.container.hidden = !visible;
+    this.container.hidden = hidden;
+    // this.container.style.visibility = hidden? 'hidden':'inline-block';
     if (newText != undefined) {
       this.container.querySelector(".title").innerHTML = newText + ':';
     }
