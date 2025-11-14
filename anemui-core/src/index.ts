@@ -23,5 +23,6 @@ export { fromLonLat } from 'ol/proj';
 
 // Download utilities public API
 export type { CsvDownloadDone } from './data/ChunkDownloader';
+export { CsLatLong } from './CsMapTypes';
 export { downloadUrl } from './data/UrlDownloader';
 export { downloadXYArrayChunked, downloadXYChunk, downloadTCSVChunked, getPortionForPoint, downloadXYbyRegion, downloadCSVbyRegion, downloadCSVbySt, downloadTimebyRegion, calcPixelIndex, downloadTArrayChunked } from './data/ChunkDownloader';

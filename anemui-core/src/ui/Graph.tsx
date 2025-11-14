@@ -165,22 +165,6 @@ export class CsGraph extends BaseFrame {
     this.container = document.getElementById("GraphContainer") as HTMLDivElement
     this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
     this.featureButtonContainer = this.container.querySelector("[role=dropFeatureBtn]");
-    switch (this.graphType) {
-      case "Serial":
-      case "Area":
-        this.graphTitle += ": " + this.parent.getTranslation('serie_temporal');
-        break;
-      case "Cummulative":
-        this.graphTitle += ": " + this.parent.getTranslation('modelo_lineal');
-        break;
-      case "Linear":
-      case "MgFr":
-        this.graphTitle += ": " + this.parent.getTranslation('modelo_mg_fr');
-        break;
-      case "Bar":
-        this.graphTitle += ": " + this.parent.getTranslation('grafico_barras');
-        break;
-    }
   }
 
   public setParams(_title: string = '', _type: GraphType, _byPoint: boolean, _scaleSelectors?: boolean, _xLabel: string = '', _yLabel: string = '') {
