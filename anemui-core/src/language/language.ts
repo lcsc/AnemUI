@@ -17,7 +17,7 @@ export default class Language {
             "descargar_peninsula": "Download Peninsula",
             "descargar_baleares": "Download Baleares",
             "descargar_canarias": "Download Canarias",
-            "descargar_pixel": "Download data",
+            "descargar_pixel": "Download Data",
             "opciones_avanzadas": "Advanced Options",
             "grafico_pixel": "Point Graph",
             "paleta": "Palette",
@@ -100,11 +100,11 @@ export default class Language {
             }
         },
         es: {
-            "descargar_nc": "Descargar Archivo",
+            "descargar_nc": "Descargar Datos",
             "descargar_peninsula": "Descargar Península",
             "descargar_baleares": "Descargar Baleares",
             "descargar_canarias": "Descargar Canarias",
-            "descargar_pixel": "Descargar datos",
+            "descargar_pixel": "Descargar Datos",
             "opciones_avanzadas": "Opciones Avanzandas",
             "grafico_pixel": "Gráfico de Píxel",
             "paleta": "Paleta",

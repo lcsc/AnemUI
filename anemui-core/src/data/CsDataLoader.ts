@@ -52,7 +52,7 @@ async function loadTimesJson(): Promise<CsTimesJsData> {
         offsetType: parsedJson.offsetType,
         sizeType: parsedJson.sizeType,
         projection: parsedJson.projection,
-    };
+        descriptionRules: parsedJson.descriptionRules};
 }
 
 export function isNestedArray(value: number | NestedArray<TypedArray>): value is NestedArray<TypedArray> {

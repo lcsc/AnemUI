@@ -69,6 +69,7 @@ export interface CsTimesJsData{
     offsetType: string // Type of offset as struct definition (e.g. "i" for "int") https://docs.python.org/3/library/struct.html#format-characters
     sizeType: string // Type of size as struct definition (e.g. "i" for "int") https://docs.python.org/3/library/struct.html#format-characters
     projection: string // Projection of the data
+    descriptionRules: string 
 }
 
 export type CsLatLongData={
