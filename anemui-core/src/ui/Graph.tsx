@@ -8,7 +8,7 @@ import { CsLatLong } from '../CsMapTypes';
 
 require("dygraphs/dist/dygraph.css")
 
-export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose" | "PercentileClock" | "ECDF" | "DailyEvolution" | "Bar" | "StackedBar" | "LineWithTooltip"
+export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose" | "PercentileClock" | "ECDF" | "DailyEvolution" | "Bar" | "StackedBar" | "LineWithTooltip" | "DualMonitoring"
 
 interface MeanLineConfig {
   show: boolean;
@@ -4579,4 +4579,5 @@ export class GraphPointManager {
       this.customPoint = null;
       this.drawCallback = null;
   }
+  
 }
