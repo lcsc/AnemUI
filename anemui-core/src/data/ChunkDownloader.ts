@@ -359,7 +359,8 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
                     dataTilesLayer[i].setSource(imageSource);
 
-                    dataTilesLayer[i].setZIndex(5000 + i);
+                    // zIndex menor que 5000 para que los labels queden por encima
+                    dataTilesLayer[i].setZIndex(4000 + i);
                     dataTilesLayer[i].setVisible(true);
                     dataTilesLayer[i].setOpacity(1.0);
 
