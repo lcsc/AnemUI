@@ -168,92 +168,53 @@ export class CategoryRangePainter implements Painter {
     
     constructor(ranges: {a:number,b:number}[]) {
         this.ranges = ranges;
-        console.log('CategoryRangePainter initialized');
-        console.log('Ranges count:', ranges.length);
-        console.log('Ranges:', ranges);
     }
 
     public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
-        console.log('=== CategoryRangePainter.paintValues ===');
-        console.log('Array length:', floatArray.length);
-        console.log('Canvas:', width, 'x', height);
-        console.log('Data range:', minArray, '-', maxArray);
-        
+        // Validar y asegurar que width y height sean enteros positivos válidos
+        width = Math.max(1, Math.floor(width));
+        height = Math.max(1, Math.floor(height));
+
+        if (!isFinite(width) || !isFinite(height)) {
+            console.error('Invalid canvas dimensions:', width, height);
+            width = 1;
+            height = 1;
+        }
+
         let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
         let imgData: ImageData = context.getImageData(0, 0, width, height);
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
 
-        console.log('Gradient (colors) available:', gradient.length);
-        console.log('Ranges available:', this.ranges.length);
-        
         // VERIFICACIÓN CRÍTICA
         if (gradient.length !== this.ranges.length) {
             console.error('❌ CRITICAL: Gradient colors (' + gradient.length + ') != Ranges (' + this.ranges.length + ')');
         }
 
         const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
-        
-        let stats = {
-            processed: 0,
-            colored: 0,
-            transparent: 0,
-            rangeHits: new Array(this.ranges.length).fill(0),
-            outOfRange: 0,
-            sampleValues: [] as number[]
-        };
-        
+
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
                 let pxIndex: number = x + ((height - 1) - y) * width;
-                
-                stats.processed++;
-                
+
                 if (!isNaN(value) && isFinite(value)) {
-                    // Guardar algunos valores de muestra
-                    if (stats.sampleValues.length < 10 && Math.random() < 0.01) {
-                        stats.sampleValues.push(value);
-                    }
-                    
                     let index: number = this.getValIndex(value);
-                    
+
                     if (index >= 0 && index < gradient.length) {
                         bitmap[pxIndex] = gradient[index];
-                        stats.colored++;
-                        stats.rangeHits[index]++;
                     } else {
                         bitmap[pxIndex] = pxTransparent;
-                        stats.transparent++;
-                        stats.outOfRange++;
                     }
                 } else {
                     bitmap[pxIndex] = pxTransparent;
-                    stats.transparent++;
                 }
             }
         }
-        
-        console.log('Paint stats:', {
-            processed: stats.processed,
-            colored: stats.colored,
-            transparent: stats.transparent,
-            outOfRange: stats.outOfRange
-        });
-        
-        console.log('Sample values tested:', stats.sampleValues.map(v => v.toFixed(1)));
-        
-        console.log('Range hits:');
-        stats.rangeHits.forEach((count, i) => {
-            if (count > 0) {
-                const r = this.ranges[i];
-                console.log(`  Range ${i} [${r.a}-${r.b}): ${count} pixels`);
-            }
-        });
-        
+
         context.putImageData(imgData, 0, 0);
         return canvas;
     }

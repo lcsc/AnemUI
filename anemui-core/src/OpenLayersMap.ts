@@ -134,7 +134,6 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
                 olProjection
             );
             this.ncExtents[portion] = transformedExtent;
-            console.log(`Transformed extent to ${olProjection}:`, transformedExtent);
         } else {
             this.ncExtents[portion] = dataExtent;
         }
@@ -240,6 +239,7 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     }
 
     let political = lmgr.getTopLayerOlLayer() as TileLayer;
+    political.setZIndex(5000);
     this.politicalLayer = political
 
     this.dataTilesLayer = [];
@@ -328,12 +328,6 @@ public onMouseMoveEnd(event: CsMapEvent): void {
 }
 
 private shouldShowPercentileClock(state: CsViewerData): boolean {
-    console.log('Checking if should show percentile clock:', {
-        climatology: state.climatology,
-        escala: state.escala,
-        tpSupport: state.tpSupport
-    });
-    
     return state.climatology && state.escala === 'Anual';
 }
 
@@ -453,16 +447,21 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         let imageLayer: ImageLayer<Static> = new ImageLayer({
             visible: true,
             opacity: 1.0,
-            zIndex: 1,
+            zIndex: 100,
             source: null
         });
 
         this.dataTilesLayer.push(imageLayer);
-        
-        // Añadir al final del array de layers (encima de todo)
-        this.map.getLayers().push(imageLayer);
-        
-        console.log(`Layer ${index} created with zIndex:`, imageLayer.getZIndex());
+
+        // Insertar la capa antes de la capa política (no al final)
+        const layers = this.map.getLayers();
+        const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
+        if (politicalIndex !== -1) {
+            layers.insertAt(politicalIndex, imageLayer);
+        } else {
+            layers.push(imageLayer);
+        }
+
     });
 
     let promises: Promise<number[]>[] = [];
@@ -481,20 +480,15 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     if (this.dataTilesLayer.length > 0 && promises.length > 0) {
         buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false)
             .then(() => {
-                console.log('=== BUILD DATA TILES COMPLETE ===');
-                
                 // FORZAR REFRESH COMPLETO
                 this.dataTilesLayer.forEach((layer, i) => {
                     layer.setVisible(true);
                     layer.changed();
-                    console.log(`Layer ${i} forced refresh, visible:`, layer.getVisible());
                 });
-                
+
                 // Renderizar el mapa
                 this.map.render();
                 this.map.renderSync();
-                
-                console.log('Map render forced');
             })
             .catch(error => {
                 console.error('Error building images:', error);
@@ -546,13 +540,21 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
       let imageLayer: ImageLayer<Static> = new ImageLayer({
         visible: true,
         opacity: 1.0,
+        zIndex: 100,
         source: null
       });
 
       if (imageLayer) {
         this.uncertaintyLayer.push(imageLayer);
-        const insertIndex = Math.max(0, this.map.getLayers().getLength() - 1);
-        this.map.getLayers().insertAt(insertIndex, imageLayer);
+        // Insertar antes de la capa política
+        const layers = this.map.getLayers();
+        const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
+        if (politicalIndex !== -1) {
+          layers.insertAt(politicalIndex, imageLayer);
+        } else {
+          const insertIndex = Math.max(0, layers.getLength() - 1);
+          layers.insertAt(insertIndex, imageLayer);
+        }
       }
     });
 
@@ -709,7 +711,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         }
       };
 
-      downloadXYbyRegion(state.times[state.selectedTimeIndex], folders[0], state.varId, openSt);
+      downloadXYbyRegion(state.times[state.selectedTimeIndex], state.selectedTimeIndex, folders[0], state.varId, openSt);
     });
   }
 
@@ -728,7 +730,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     if (this.featureLayer) {
       this.featureLayer.indexData = null;
       let times = typeof (state.times) === 'string' ? state.times : state.times[state.selectedTimeIndex];
-      await this.initializeFeatureLayer(times, dataFolder, state.varId);
+      await this.initializeFeatureLayer(times, state.selectedTimeIndex, dataFolder, state.varId);
       this.setupInteractions();
     } else {
       console.warn("featureLayer is undefined for dataFolder:", dataFolder);
@@ -771,18 +773,20 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     if (pLayer && this.politicalLayer !== pLayer) {
       if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
         this.map.removeLayer(this.politicalLayer);
-         this.map.addLayer(pLayer);
-      this.politicalLayer = pLayer;
+        pLayer.setZIndex(5000);
+        this.map.addLayer(pLayer);
+        this.politicalLayer = pLayer;
       }
     }
 
     let pSource = lmgr.getTopLayerSource();
     if (this.politicalLayer && this.politicalLayer.getSource() !== pSource) {
       this.politicalLayer.setSource(pSource);
+      this.politicalLayer.setZIndex(5000);
     }
   }
 
-  async initializeFeatureLayer(time: string, folder: string, varName: string): Promise<void> {
+  async initializeFeatureLayer(time: string, timeIndex: number, folder: string, varName: string): Promise<void> {
     return new Promise((resolve, reject) => {
       let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
         if (this.featureLayer) {
@@ -802,7 +806,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         this.computeFeatureLayerData(time, folder, varName, openSt);
       } else {
         // Download and build new data layers
-        downloadXYbyRegion(time, folder, varName, openSt);
+        downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
       }
 
     });
@@ -1151,13 +1155,19 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
 
     let color: string = '#fff';
     let id = feature.getProperties()['id'];
+    let id_ant = feature.getProperties()['id_ant'];
     let ptr = PaletteManager.getInstance().getPainter();
 
-    Object.keys(this.indexData).forEach(key => {
-      if (key.includes(id)) {
-        color = ptr.getColorString(this.indexData[key], min, max);
-      }
-    });
+    // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
+    // Try with new id first, fallback to old id_ant if not found
+    let dataValue = this.indexData[id];
+    if (dataValue === undefined && id_ant !== undefined) {
+      dataValue = this.indexData[id_ant];
+    }
+
+    if (dataValue !== undefined) {
+      color = ptr.getColorString(dataValue, min, max);
+    }
 
     const isHovered = feature.get('hover');
 
@@ -1192,11 +1202,13 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       this.csMap.popup.hidden = false
       if (feature !== this.currentFeature) {
         let id = feature.getProperties()['id']
-        Object.keys(data).forEach(key => {
-          if (key.includes(id)) {
-            value = data[key]
-          }
-        });
+        let id_ant = feature.getProperties()['id_ant']
+        // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
+        // Try with new id first, fallback to old id_ant if not found
+        value = data[id];
+        if (value === undefined && id_ant !== undefined) {
+          value = data[id_ant];
+        }
         this.csMap.popupContent.style.visibility = 'visible';
         this.csMap.popupContent.innerText = feature.get('name') + ': ' + parseFloat(value).toFixed(2);
         this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))

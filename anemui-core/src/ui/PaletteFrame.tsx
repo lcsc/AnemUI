@@ -27,14 +27,6 @@ public render(): JSX.Element {
     const currentPalette = mgr.getSelected();
     const isContinuousPalette = currentPalette === 'continua' || currentPalette === 'cambio-continuo' || currentPalette === 'gradiente';
 
-    console.log('PaletteFrame.render:', { 
-        palette: currentPalette, 
-        valuesCount: values.length, 
-        textsCount: texts.length,
-        firstText: texts[0],
-        lastText: texts[texts.length - 1]
-    });
-
     let element = (
         <div id="PaletteFrame" className='rightbar-item paletteFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
             <div className="info legend">
@@ -233,15 +225,6 @@ public render(): JSX.Element {
     const isContinuousPalette = currentPalette === 'continua' || currentPalette === 'cambio-continuo' || currentPalette === 'gradiente';
     const isWindPalette = currentPalette === 'wind-kmh';
 
-    console.log('PaletteFrame.update:', { 
-        currentPalette, 
-        isWindPalette, 
-        valuesLength: values.length, 
-        textsLength: texts.length,
-        firstText: texts[0],
-        lastText: texts[texts.length - 1]
-    });
-
     if (isContinuousPalette) {
         const gradientDiv = document.createElement('div');
         gradientDiv.className = 'gradient-legend-container';
@@ -257,11 +240,8 @@ public render(): JSX.Element {
         `;
         data.appendChild(gradientDiv);
     } else if (isWindPalette) {
-        console.log('Rendering wind palette legend in update');
-        
         const windColors = mgr.updatePaletteStrings();
-        console.log('Wind colors for legend:', windColors);
-        
+
         // Mapear colores directamente a textos en el orden correcto
         texts.forEach((text, index) => {
             // Los textos ya vienen en orden correcto (reversed en App.ts)
@@ -269,15 +249,13 @@ public render(): JSX.Element {
             const colorIndex = windColors.length - 1 - index;
             const backgroundColor = windColors[colorIndex];
             const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
-            
+
             const legendItem = document.createElement('div');
             legendItem.style.background = backgroundColor;
             legendItem.style.color = textColor;
             legendItem.innerHTML = `<span class="legendText smallText"> ${text}</span><br/>`;
-            
+
             data.appendChild(legendItem);
-            
-            console.log(`Wind legend item ${index}:`, { text, color: backgroundColor, colorIndex });
         });
     } else {
         values.map((val, index) => {

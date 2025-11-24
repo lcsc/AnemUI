@@ -93,10 +93,10 @@ export default class Language {
                 11: "Dec"
             },
             'season': {
-                1: 'Jan - Mar',
-                2: 'Apr - Jun',
-                3: 'Jul - Sep',
-                4: 'Oct - Dec'
+                1: 'Dec - Feb',
+                2: 'Mar - May',
+                3: 'Jun - Aug',
+                4:' Sep - Nov'
             }
         },
         es: {
@@ -149,8 +149,8 @@ export default class Language {
             'temperatura_min':'Temperatura mínima',
             'media':'Temperatura media',
             'superficie_afectada':'Superficie afectada',
-            'duracion_ola_frio':'Duración de la ola de frio (días)', 
-            'duracion_ola_calor':'Duración de la ola de calor (días)',   
+            'duracion_ola_frio':'Duración de la ola de frio', 
+            'duracion_ola_calor':'Duración de la ola de calor',   
             'month': {
                 0: "Enero",
                 1: "Febrero",
@@ -180,10 +180,10 @@ export default class Language {
                 11: "Dic"
             },
             'season': {
-                1: 'Ene - Mar',
-                2: 'Abr - Jun',
-                3: 'Jul - Sep',
-                4:' Oct - Dic'
+                1: 'Dic - Feb',
+                2: 'Mar - May',
+                3: 'Jun - Aug',
+                4:' Sep - Nov'
             }
         }
     }
