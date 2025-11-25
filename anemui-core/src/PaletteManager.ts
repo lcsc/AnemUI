@@ -50,55 +50,62 @@ export class NiceSteps {
         data = data.filter(v => !isNaN(v))
                   .map(v => isFinite(v) ? v : maxDisplayVal)
                   .sort((a, b) => a - b);
-        
+
+        if (data.length === 0) return [];
+
         // Calculamos percentiles
         const p05 = this.percentile(data, 5);
         const p95 = this.percentile(data, 95);
-        
+        // Máximo real de los datos
+        const dataMax = data[data.length - 1];
+
         // Si el p05 ya excede maxDisplayVal, usamos un rango desde 0 hasta maxDisplayVal
         let effectiveMin = p05;
-        let effectiveMax = Math.min(p95, maxDisplayVal);
-        
+        // Usamos el máximo real (limitado por maxDisplayVal) para calcular el step
+        let effectiveMax = Math.min(dataMax, maxDisplayVal);
+
         if (effectiveMin >= maxDisplayVal) {
             effectiveMin = 0;
             effectiveMax = maxDisplayVal;
         }
-        
-        // Calculamos el paso inicial usando el rango efectivo
+
+        // Calculamos el paso inicial usando el rango completo de los datos
         const rawStep = (effectiveMax - effectiveMin) / numBreaks;
         // Si rawStep es muy pequeño o negativo, usar un paso mínimo
         const minStep = (effectiveMax - effectiveMin) / 100; // 1% del rango
         const safeRawStep = Math.max(rawStep, minStep);
-        
+
         const step = this.niceStep(safeRawStep);
-        
-        
+
         // Ajustamos los límites para que sean múltiplos del paso
         const start = Math.floor(effectiveMin / step) * step;
         const end = Math.ceil(effectiveMax / step) * step;
-        
+
         // Generamos los puntos de corte asegurándonos de que no sean duplicados
         const breaks: number[] = [];
-        
-        // Generamos exactamente numBreaks + 1 breaks
-        for (let i = 0; i <= numBreaks; i++) {
-            const val = start + (i * step);
-            
+
+        // Generamos breaks desde start hasta end, sin exceder numBreaks+1 valores
+        let val = start;
+        let count = 0;
+        while (val <= end && count <= numBreaks) {
             // Si el valor excede maxDisplayVal, lo limitamos
             const limitedVal = Math.min(val, maxDisplayVal);
-            
+
             // Redondeamos a 2 decimales para preservar más precisión
             const roundedValue = Math.round(limitedVal * 100) / 100;
-        
+
             // Evitamos valores duplicados
             if (!breaks.includes(roundedValue)) {
                 breaks.push(roundedValue);
             }
-            
-            // Si hemos alcanzado maxDisplayVal, no generamos más breaks
+
+            // Si hemos alcanzado maxDisplayVal, paramos
             if (limitedVal >= maxDisplayVal) {
                 break;
             }
+
+            val += step;
+            count++;
         }
         return breaks;
     }
