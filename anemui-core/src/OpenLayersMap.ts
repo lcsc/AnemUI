@@ -397,6 +397,7 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
     if (Number.isNaN(value)) {
+      this.parent.getParent().getState().xyValue = NaN
       this.value.setPosition(undefined)
       return;
     }
@@ -502,11 +503,18 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
       this.dataTilesLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
         if (layer && this.map) {
           try {
+            // Set layer invisible and source to null before removing
+            layer.setVisible(false);
+            if (layer.setSource) {
+              layer.setSource(null);
+            }
+
             // Check if layer exists in map before removing
             const layers = this.map.getLayers();
             if (layers && layers.getArray().includes(layer)) {
               layers.remove(layer);
             }
+
             // Dispose of layer resources if method exists
             if (typeof layer.dispose === 'function') {
               layer.dispose();
@@ -516,6 +524,9 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
           }
         }
       });
+
+      // Clear the array
+      this.dataTilesLayer = [];
     }
     this.dataTilesLayer = [];
   }
@@ -1210,7 +1221,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
           value = data[id_ant];
         }
         this.csMap.popupContent.style.visibility = 'visible';
-        this.csMap.popupContent.innerText = feature.get('name') + ': ' + parseFloat(value).toFixed(2);
+        this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(feature.get('name'), id, parseFloat(value));
         this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
       }
     } else {
@@ -1223,6 +1234,10 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     }
     this.currentFeature = feature;
   };
+
+  public formatFeaturePopupValue(featureName: string, featureId: any, value: number): string {
+    return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
+  }
 
   public highLightColor(hex: string, lum: number): string {
     hex = String(hex).replace(/[^0-9a-f]/gi, '');

@@ -63,7 +63,8 @@ export default class Language {
             'media':'Average temperature',
             'superficie_afectada':'Affected area %',
             'duracion_ola_frio':'Cold wave duration', 
-            'duracion_ola_calor':'Heat wave duration',   
+            'duracion_ola_calor':'Heat wave duration',
+            'precipitacion_24':'Precipitation in 24 hours',   
             'month': {
                 1: "January",
                 2: "February",
@@ -151,6 +152,7 @@ export default class Language {
             'superficie_afectada':'Superficie afectada',
             'duracion_ola_frio':'Duración de la ola de frio', 
             'duracion_ola_calor':'Duración de la ola de calor',   
+            'precipitacion_24':'Precipitación en 24h',
             'month': {
                 0: "Enero",
                 1: "Febrero",
