@@ -714,7 +714,9 @@ export class MenuBar extends BaseFrame {
     }
 
     public setSupportValues(_supportValues: string[]) {
+          if (hasSpSupport) {
         this.spatialSupport.setValues(_supportValues)
+        }
     }
 
     public setTpSupportValues(_tpSupportValues: string[]) {
