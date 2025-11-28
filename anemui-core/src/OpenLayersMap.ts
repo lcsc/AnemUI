@@ -12,7 +12,7 @@ import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
@@ -23,6 +23,7 @@ import { LayerManager } from "./LayerManager";
 import { loadLatLogValue, loadGeoJsonData } from "./data/CsDataLoader";
 import DataTileSource from "ol/source/DataTile";
 import { Geometry } from 'ol/geom';
+import { DataServiceApp } from "./ServiceApp";
 // import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
 
 // Define alternative projections
@@ -195,8 +196,8 @@ init(_parent: CsMap): void {
         
     this.buildFeatureLayers();
     if (!isWmsEnabled) {
-        this.buildDataTilesLayers(state, timesJs);
-        if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
+      this.buildDataTilesLayers(state, timesJs);
+      if (this.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
     }
 }
   private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
@@ -527,54 +528,84 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     this.dataTilesLayer = [];
   }
 
-  public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
+public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
+    // Safely remove existing uncertainty layers
     this.safelyRemoveUncertaintyLayers();
 
-    this.uncertaintyLayer = lmgr.getUncertaintyLayer() || [];
-
     const uncertaintyVarId = state.varId + '_uncertainty';
+    
+    console.log('🔍 Building uncertainty layer for:', uncertaintyVarId);
+    console.log('Available portions:', timesJs.portions[uncertaintyVarId]);
+    
     if (!timesJs.portions[uncertaintyVarId]) {
-      console.warn('No uncertainty portions found for varId:', uncertaintyVarId);
-      return;
+        console.warn('No uncertainty portions found for varId:', uncertaintyVarId);
+        return;
     }
 
-    timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
-      let imageLayer: ImageLayer<Static> = new ImageLayer({
-        visible: true,
-        opacity: 1.0,
-        zIndex: 100,
-        source: null
-      });
+    this.uncertaintyLayer = [];
 
-      if (imageLayer) {
+    timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
+        console.log(`Creating uncertainty layer for portion: ${portion}`);
+        
+        let imageLayer: ImageLayer<Static> = new ImageLayer({
+            visible: true,
+            opacity: 1.0,
+            zIndex: 5001 + index, // IMPORTANTE: zIndex mayor que las capas de datos
+            source: null,
+            properties: {
+                'name': `uncertainty-layer-${index}`,
+                'portion': portion
+            }
+        });
+
         this.uncertaintyLayer.push(imageLayer);
-        // Insertar antes de la capa política
+        
+        // Insertar DESPUÉS de las capas de datos
         const layers = this.map.getLayers();
-        const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
-        if (politicalIndex !== -1) {
-          layers.insertAt(politicalIndex, imageLayer);
+        const dataLayerIndex = layers.getArray().findIndex(l => 
+            l.getProperties()['name']?.startsWith('data-layer')
+        );
+        
+        if (dataLayerIndex !== -1) {
+            // Insertar justo después de las capas de datos
+            layers.insertAt(dataLayerIndex + 1 + index, imageLayer);
         } else {
-          const insertIndex = Math.max(0, layers.getLength() - 1);
-          layers.insertAt(insertIndex, imageLayer);
+            layers.push(imageLayer);
         }
-      }
     });
 
     let promises: Promise<number[]>[] = [];
     this.setExtents(timesJs, uncertaintyVarId);
 
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
-      promises.push(downloadXYChunk(state.selectedTimeIndex, uncertaintyVarId, portion, timesJs));
+        console.log(`Downloading uncertainty data for portion: ${portion}`);
+        promises.push(downloadXYChunk(state.selectedTimeIndex, uncertaintyVarId, portion, timesJs));
     });
 
     if (this.uncertaintyLayer.length > 0 && promises.length > 0) {
-      buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
-      lmgr.showUncertaintyLayer(false);
+        console.log('Building uncertainty images...');
+        buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true)
+            .then(() => {
+                console.log('✅ Uncertainty layers built successfully');
+                // Asegurar visibilidad
+                this.uncertaintyLayer.forEach((layer, i) => {
+                    layer.setVisible(true);
+                    layer.changed();
+                    console.log(`Uncertainty layer ${i} visible:`, layer.getVisible());
+                });
+                
+                // Forzar render
+                this.map.render();
+                this.map.renderSync();
+            })
+            .catch(error => {
+                console.error('❌ Error building uncertainty images:', error);
+            });
     }
-  }
+}
 
   private safelyRemoveUncertaintyLayers(): void {
     if (this.uncertaintyLayer && Array.isArray(this.uncertaintyLayer)) {
@@ -635,7 +666,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         // Safely remove uncertainty layers
         this.safelyRemoveUncertaintyLayers();
 
-        if (state.uncertaintyLayer) {
+        if (this.uncertaintyLayer) {
           this.buildUncertaintyLayer(state, this.parent.getParent().getTimesJs());
         }
       }
@@ -644,49 +675,51 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     }
   }
 
-  // Enhanced updateRender with better error handling
-  async updateRender(support: string): Promise<void> {
+async updateRender(support: string): Promise<void> {
     try {
-      let state = this.parent.getParent().getState();
+        
+        let state = this.parent.getParent().getState();
 
-      // Safely hide existing layers
-      if (this.featureLayer && typeof this.featureLayer.hide === 'function') {
-        this.featureLayer.hide();
-        this.featureLayer = null;
-      }
+        // Ocultar capas existentes
+        if (this.featureLayer && typeof this.featureLayer.hide === 'function') {
+            this.featureLayer.hide();
+            this.featureLayer = null;
+        }
 
-      if (this.contourLayer && typeof this.contourLayer.hide === 'function') {
-        this.contourLayer.hide();
-        this.contourLayer = null;
-      }
+        if (this.contourLayer && typeof this.contourLayer.hide === 'function') {
+            this.contourLayer.hide();
+            this.contourLayer = null;
+        }
 
-      switch (support) {
-        case this.renderers[1]:
-          break;
+        // Normalizar el nombre del renderer
+        const normalizedSupport = support.toLowerCase();
 
-        case this.renderers[0]:
-          await this.setupStationRenderer(state, support);
-          break;
+        // Determinar el tipo de renderer
+        if (normalizedSupport.includes('rejilla')) {
+            console.log("Setting up Rejilla (grid) renderer");
+            // Ya está cargada la rejilla
+        } 
+        else if (normalizedSupport.includes('provincia')) {
+            await this.setupRegionRenderer(state, support);
+        } 
+        else if (normalizedSupport.includes('ccaa') || normalizedSupport.includes('autonomia')) {
+            await this.setupRegionRenderer(state, support);
+        }
+        else if (normalizedSupport.includes('puntual') || normalizedSupport.includes('estacion')) {
+            await this.setupStationRenderer(state, support);
+        }
+        else {
+            console.error("Available renderers:", this.renderers);
+            return;
+        }
 
-        case this.renderers[2]:
-        case this.renderers[3]:
-        case this.renderers[4]:
-        case this.renderers[5]:
-          await this.setupRegionRenderer(state, support);
-          break;
-
-        default:
-          console.error("Render " + support + " not supported");
-          return;
-      }
-
-      this.lastSupport = support;
-      await this.finalizeRenderUpdate();
+        this.lastSupport = support;
+        await this.finalizeRenderUpdate();
 
     } catch (error) {
-      console.error('Error in updateRender:', error);
+        console.error('Stack:', error.stack);
     }
-  }
+}
 
   private async setupStationRenderer(state: CsViewerData, support: string): Promise<void> {
     this.safelyRemoveDataLayers();
@@ -720,12 +753,14 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     });
   }
 
-  private async setupRegionRenderer(state: CsViewerData, support: string): Promise<void> {
+ private async setupRegionRenderer(state: CsViewerData, support: string): Promise<void> {
+    
     this.safelyRemoveDataLayers();
 
     let folders = this.parent.getParent().getFolders(support);
+    
     if (!folders || folders.length === 0) {
-      throw new Error(`No folders found for support: ${support}`);
+        throw new Error(`No folders found for support: ${support}`);
     }
 
     let dataFolder = this.selectDataFolder(folders);
@@ -733,14 +768,46 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     this.featureLayer = this.glmgr.getGeoLayer(dataFolder);
 
     if (this.featureLayer) {
-      this.featureLayer.indexData = null;
-      let times = typeof (state.times) === 'string' ? state.times : state.times[state.selectedTimeIndex];
-      await this.initializeFeatureLayer(times, state.selectedTimeIndex, dataFolder, state.varId);
-      this.setupInteractions();
+        this.featureLayer.indexData = null;
+        let times = typeof (state.times) === 'string' ? state.times : state.times[state.selectedTimeIndex];
+        
+        await this.initializeFeatureLayerMultiPortion(times, state.selectedTimeIndex, dataFolder, state.varId);
+        this.setupInteractions();
     } else {
-      console.warn("featureLayer is undefined for dataFolder:", dataFolder);
+        console.error("Available geoLayers:", Object.keys(this.glmgr['geoLayers']));
     }
-  }
+}
+
+async initializeFeatureLayerMultiPortion(
+    time: string, 
+    timeIndex: number, 
+    folder: string, 
+    varName: string
+): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const portions = ["_pen", "_can"];
+        
+
+        let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            if (this.featureLayer) {
+                this.featureLayer.indexData = data;
+                
+                if (this.featureLayer.show) {
+                    this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+                }
+                resolve();
+            } else {
+                reject("featureLayer is undefined");
+            }
+        };
+
+        if (computedDataTilesLayer) {
+            this.computeFeatureLayerData(time, folder, varName, openSt);
+        } else {
+            downloadXYbyRegionMultiPortion(time, timeIndex, folder, varName, portions, openSt);
+        }
+    });
+}
 
   private selectDataFolder(folders: string[]): string {
     if (folders.length <= 1) {
@@ -1147,15 +1214,15 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     return new Style({ image: imgStation, })
   }
 
-  public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
+public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
     let min: number = Number.MAX_VALUE;
     let max: number = Number.MIN_VALUE;
 
     Object.values(this.indexData).forEach((value) => {
-      if (!isNaN(value)) {
-        min = Math.min(min, value);
-        max = Math.max(max, value);
-      }
+        if (!isNaN(value)) {
+            min = Math.min(min, value);
+            max = Math.max(max, value);
+        }
     });
 
     let color: string = '#fff';
@@ -1163,28 +1230,43 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     let id_ant = feature.getProperties()['id_ant'];
     let ptr = PaletteManager.getInstance().getPainter();
 
-    // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
-    // Try with new id first, fallback to old id_ant if not found
-    let dataValue = this.indexData[id];
+    let mappedId = id;
+    if (id && id.length > 5) {
+        const match = id.match(/^34(\d{2})0000000$/);
+        if (match) {
+            mappedId = parseInt(match[1]).toString();
+            console.log('🔄 Mapped ID:', id, '→', mappedId);
+        }
+    }
+
+    let dataValue = this.indexData[mappedId];
+    
+    if (dataValue === undefined) {
+        dataValue = this.indexData[id];
+    }
+    
     if (dataValue === undefined && id_ant !== undefined) {
-      dataValue = this.indexData[id_ant];
+        dataValue = this.indexData[id_ant];
     }
 
     if (dataValue !== undefined) {
-      color = ptr.getColorString(dataValue, min, max);
+        color = ptr.getColorString(dataValue, min, max);
+    } else {
+        console.warn(' No data found for IDs:', id, mappedId, id_ant);
     }
 
     const isHovered = feature.get('hover');
 
     if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
     else this.map.getTargetElement().style.cursor = '';
+    
     return new Style({
-      fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
-      stroke: new Stroke({
-        color: '#999',
-      }),
+        fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+        stroke: new Stroke({
+            color: '#999',
+        }),
     });
-  }
+}
 
   private intersectsExtent(featureExtent: number[], viewExtent: number[]): boolean {
     return !(
@@ -1195,39 +1277,67 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     );
   }
 
-  public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
+public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
     let value: string;
+    
     if (feature) {
-      if (state.support == this.csMap.renderers[0]) feature.setStyle(this.setStationStyle(state, feature, timesJs))
-      else feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
-      this.csMap.popupContent.style.left = pixel[0] + 'px';
-      this.csMap.popupContent.style.top = pixel[1] + 'px';
-      this.csMap.popup.hidden = false
-      if (feature !== this.currentFeature) {
-        let id = feature.getProperties()['id']
-        let id_ant = feature.getProperties()['id_ant']
-        // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
-        // Try with new id first, fallback to old id_ant if not found
-        value = data[id];
-        if (value === undefined && id_ant !== undefined) {
-          value = data[id_ant];
+        if (state.support == this.csMap.renderers[0]) {
+            feature.setStyle(this.setStationStyle(state, feature, timesJs));
+        } else {
+            feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
         }
-        this.csMap.popupContent.style.visibility = 'visible';
-        this.csMap.popupContent.innerText = feature.get('name') + ': ' + parseFloat(value).toFixed(2);
-        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
-      }
+        
+        this.csMap.popupContent.style.left = pixel[0] + 'px';
+        this.csMap.popupContent.style.top = pixel[1] + 'px';
+        this.csMap.popup.hidden = false;
+        
+        if (feature !== this.currentFeature) {
+            let id = feature.getProperties()['id'];
+            let id_ant = feature.getProperties()['id_ant'];
+            
+            let mappedId = id;
+            if (id && id.length > 5) {
+                const match = id.match(/^34(\d{2})0000000$/);
+                if (match) {
+                    mappedId = parseInt(match[1]).toString();
+                }
+            }
+            
+            value = data[mappedId];
+          
+            if (value === undefined) {
+                value = data[id];
+            }
+            
+            if (value === undefined && id_ant !== undefined) {
+                value = data[id_ant];
+            }
+            
+            if (value !== undefined && !isNaN(parseFloat(value))) {
+                this.csMap.popupContent.style.visibility = 'visible';
+                this.csMap.popupContent.innerText = feature.get('name') + ': ' + parseFloat(value).toFixed(2);
+                this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]));
+            } else {
+                console.warn('No valid value for tooltip. ID:', id, 'mappedId:', mappedId, 'value:', value);
+                this.csMap.popupContent.style.visibility = 'hidden';
+            }
+        }
     } else {
-      this.csMap.popupContent.style.visibility = 'hidden';
-      this.csMap.popup.hidden = true
+        this.csMap.popupContent.style.visibility = 'hidden';
+        this.csMap.popup.hidden = true;
     }
+    
     if (this.currentFeature instanceof Feature) {
-      if (state.support == this.csMap.renderers[0]) this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs))
-      else this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+        if (state.support == this.csMap.renderers[0]) {
+            this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs));
+        } else {
+            this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+        }
     }
     this.currentFeature = feature;
-  };
+}
 
   public highLightColor(hex: string, lum: number): string {
     hex = String(hex).replace(/[^0-9a-f]/gi, '');

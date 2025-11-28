@@ -220,13 +220,9 @@ public async paintValues(floatArray: number[], width: number, height: number, mi
     let imgData: ImageData = context.getImageData(0, 0, width, height);
     let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
 
-    // VERIFICACIÓN
-    if (gradient.length !== this.ranges.length) {
-        console.error('❌ CRITICAL: Gradient colors (' + gradient.length + ') != Ranges (' + this.ranges.length + ')');
-    }
-
-    console.log('🎨 Ranges:', this.ranges);
-    console.log('🎨 Gradient length:', gradient.length);
+        console.log('Gradient (colors) available:', gradient.length);
+        console.log('Ranges available:', this.ranges.length);
+    
 
     const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
 

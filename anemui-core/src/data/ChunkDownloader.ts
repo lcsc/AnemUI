@@ -467,7 +467,6 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
             throw new Error(`Invalid float array: length=${floatArray.length}, isArray=${Array.isArray(floatArray)}`);
         }
 
-        // 🔍 DEBUG: Verificar calidad de datos descargados
         const validCount = floatArray.filter(v => !isNaN(v) && isFinite(v)).length;
         console.log('🔍 downloadXYChunkNC OUTPUT:', {
             varName,
@@ -485,16 +484,6 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
 
         let ret = [...floatArray];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
-
-        // 🔍 DEBUG: Verificar datos después de transformDataXY
-        const validAfterTransform = ret.filter(v => !isNaN(v) && isFinite(v)).length;
-        console.log('🔍 After transformDataXY:', {
-            varName,
-            portion,
-            valid: validAfterTransform,
-            validPercent: (validAfterTransform / ret.length * 100).toFixed(2) + '%',
-            samples: ret.slice(0, 20)
-        });
 
         return ret;
 
@@ -727,6 +716,62 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
             doneCb([], varName, 'text/plain');
         }
     }, undefined, 'text');
+}
+
+export function downloadXYbyRegionMultiPortion(
+    time: string, 
+    timeIndex: number, 
+    folder: string, 
+    varName: string, 
+    portions: string[],
+    doneCb: (mergedData: any, filename: string, type: string) => void
+) {
+    
+    const promises = portions.map(portion => {
+        return new Promise((resolve, reject) => {
+            const csvPath = `./regData/${folder}/${varName}${portion}.csv`;
+            console.log("  📥 Downloading:", csvPath);
+            
+            downloadUrl(csvPath, (status: number, response) => {
+                if (status == 200) {
+                    try {
+                        const records = parse(response as Buffer, {
+                            columns: true,
+                            skip_empty_lines: true
+                        });
+                        resolve({ portion, data: records[timeIndex] || {} });
+                    } catch (e) {
+                        console.error(`Error parsing CSV ${varName}${portion}:`, e);
+                        reject(e);
+                    }
+                } else {
+                    console.error(`HTTP ${status} for ${csvPath}`);
+                    reject(new Error(`HTTP ${status}`));
+                }
+            }, undefined, 'text');
+        });
+    });
+
+    Promise.all(promises)
+        .then((results: any[]) => {
+            
+            const mergedData: any = {};
+            results.forEach(({ portion, data }) => {
+                Object.keys(data).forEach(key => {
+                    if (key !== 'times_ini' && key !== 'times_end' && key !== 'times_mean') {
+                        if (!mergedData[key] || isNaN(mergedData[key])) {
+                            mergedData[key] = data[key];
+                        }
+                    }
+                });
+            });
+            
+            doneCb(mergedData, varName, 'text/plain');
+        })
+        .catch(error => {
+            console.error("Error loading region portions:", error);
+            doneCb({}, varName, 'text/plain');
+        });
 }
 
 export function downloadHistoricalDataForPercentile(
