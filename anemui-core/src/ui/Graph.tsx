@@ -2995,4 +2995,5 @@ export class GraphPointManager {
       this.customPoint = null;
       this.drawCallback = null;
   }
+  
 }
