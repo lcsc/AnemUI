@@ -249,6 +249,17 @@ export class CsMenuInput extends BaseUiElement {
     return this.title
   }
 
+  public setValue(_value: number) {
+    this.value = _value;
+    // Actualizar también el valor del input HTML renderizado
+    if (this.container) {
+      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.value = _value.toString();
+      }
+    }
+  }
+
   private validateValue(inputValue: number): number | null {
     /* if (isNaN(inputValue)) {
       return null; // Permitir campo vacío
