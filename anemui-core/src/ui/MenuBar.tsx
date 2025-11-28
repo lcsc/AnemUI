@@ -682,7 +682,7 @@ export class MenuBar extends BaseFrame {
                         if (options && options.length > 0 && options[0] !== undefined && options[0] !== '') {
                             const newValue = parseFloat(options[0]);
                             if (!isNaN(newValue)) {
-                                inp.value = newValue;
+                                inp.setValue(newValue);
                             }
                         }
                         // Controlar visibilidad usando el método config
