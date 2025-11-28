@@ -273,10 +273,10 @@ export class GradientPainter implements Painter{
         .setMidpoint(points)
         .getColors();
     }
-    
-    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number,uncertaintyLayer:boolean): Promise<HTMLCanvasElement> {
+
+    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
         let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
         let imgData: ImageData = context.getImageData(0, 0, width, height);
@@ -327,7 +327,25 @@ export class GradientPainter implements Painter{
 }
 
 export class CsDynamicPainter implements Painter{
-    
+    // Variable privada para almacenar breaks precalculados
+    private precalculatedBreaks: number[] | null = null;
+
+    /**
+     * Método para establecer breaks precalculados (usado cuando se necesita calcular breaks
+     * con datos combinados de múltiples porciones)
+     */
+    public setPrecalculatedBreaks(dataForBreaks: number[]): void {
+        let niceSteps = new NiceSteps();
+        this.precalculatedBreaks = niceSteps.getRegularSteps(dataForBreaks.filter(v => !isNaN(v)), maxPaletteSteps, maxPaletteValue);
+    }
+
+    /**
+     * Método para limpiar los breaks precalculados
+     */
+    public clearPrecalculatedBreaks(): void {
+        this.precalculatedBreaks = null;
+    }
+
     public getColorString(val: number, min: number, max: number): string {
         let mgr = PaletteManager.getInstance()
         let paletteStr: string[] = mgr.updatePaletteStrings()
@@ -351,9 +369,14 @@ export class CsDynamicPainter implements Painter{
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
         let gradientLength = gradient.length - 1;
 
-        // Obtener los breaks de NiceSteps
-        let niceSteps = new NiceSteps();
-        let breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), maxPaletteSteps, maxPaletteValue);
+        // Usar breaks precalculados si existen, si no calcularlos con floatArray
+        let breaks: number[];
+        if (this.precalculatedBreaks !== null) {
+            breaks = this.precalculatedBreaks;
+        } else {
+            let niceSteps = new NiceSteps();
+            breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), maxPaletteSteps, maxPaletteValue);
+        }
         
         const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
 
