@@ -532,8 +532,8 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
-    // Safely remove existing uncertainty layers
     this.safelyRemoveUncertaintyLayers();
+    lmgr.clearUncertaintyLayers();
 
     const uncertaintyVarId = state.varId + '_uncertainty';
     
@@ -551,9 +551,9 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
         console.log(`Creating uncertainty layer for portion: ${portion}`);
         
         let imageLayer: ImageLayer<Static> = new ImageLayer({
-            visible: true,
+            visible: true,  // Construir visible temporalmente
             opacity: 1.0,
-            zIndex: 5001 + index, // IMPORTANTE: zIndex mayor que las capas de datos
+            zIndex: 5001 + index,
             source: null,
             properties: {
                 'name': `uncertainty-layer-${index}`,
@@ -563,14 +563,12 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
 
         this.uncertaintyLayer.push(imageLayer);
         
-        // Insertar DESPUÉS de las capas de datos
         const layers = this.map.getLayers();
         const dataLayerIndex = layers.getArray().findIndex(l => 
             l.getProperties()['name']?.startsWith('data-layer')
         );
         
         if (dataLayerIndex !== -1) {
-            // Insertar justo después de las capas de datos
             layers.insertAt(dataLayerIndex + 1 + index, imageLayer);
         } else {
             layers.push(imageLayer);
@@ -589,24 +587,17 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
         console.log('Building uncertainty images...');
         buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true)
             .then(() => {
-                console.log('✅ Uncertainty layers built successfully');
-                // Asegurar visibilidad
-                this.uncertaintyLayer.forEach((layer, i) => {
-                    layer.setVisible(true);
-                    layer.changed();
-                    console.log(`Uncertainty layer ${i} visible:`, layer.getVisible());
-                });
+                console.log('✅ Uncertainty images built successfully.');
                 
-                // Forzar render
+                
+                lmgr.setUncertaintyLayers(this.uncertaintyLayer);
                 this.map.render();
-                this.map.renderSync();
             })
             .catch(error => {
                 console.error('❌ Error building uncertainty images:', error);
             });
     }
 }
-
   private safelyRemoveUncertaintyLayers(): void {
     if (this.uncertaintyLayer && Array.isArray(this.uncertaintyLayer)) {
       this.uncertaintyLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {

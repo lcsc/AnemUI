@@ -69,6 +69,7 @@ export class LayerManager {
     private topLayerVector:Layer;
     private topLayerImage:Image<ImageWMS>;
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
+     private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
         // CAPAS BASE
@@ -98,6 +99,7 @@ export class LayerManager {
         
         this.topSelected="mapbox";
         this.uncertaintyLayer = [];
+         this.uncertaintyLayerVisible = false; 
     }
 
     // Base Layer
@@ -248,12 +250,43 @@ export class LayerManager {
         return this.topLayers[this.topSelected].source
     }
 
-    public getUncertaintyLayer():(Image<ImageStatic> | WebGLTile)[] {
-        this.uncertaintyLayer = [];
+   public setUncertaintyLayers(layers: (Image<ImageStatic> | WebGLTile)[]): void {
+        this.uncertaintyLayer = layers;
+        this.showUncertaintyLayer(this.uncertaintyLayerVisible);
+    }
+
+
+    public getUncertaintyLayer(): (Image<ImageStatic> | WebGLTile)[] {
         return this.uncertaintyLayer;
     }
 
-    public showUncertaintyLayer(show: boolean) {
-        this.uncertaintyLayer[0].setVisible(show);
+    public showUncertaintyLayer(show: boolean): void {
+        
+        this.uncertaintyLayerVisible = show;
+        
+        if (!this.uncertaintyLayer || this.uncertaintyLayer.length === 0) {
+            console.warn('No uncertainty layers available to toggle (state saved for later)');
+            return;
+        }
+
+        this.uncertaintyLayer.forEach((layer, index) => {
+            if (layer && typeof layer.setVisible === 'function') {
+                layer.setVisible(show);
+                layer.changed();
+                console.log(`${index} visibility set to:`, show);
+            } else {
+                console.error(`${index} is undefined or missing setVisible method`);
+            }
+        });
+    }
+
+
+    public isUncertaintyLayerVisible(): boolean {
+        return this.uncertaintyLayerVisible;
+    }
+
+ 
+    public clearUncertaintyLayers(): void {
+        this.uncertaintyLayer = [];
     }
 }

@@ -249,5 +249,12 @@ export default class LayerFrame  extends BaseFrame {
                 }
             }
         }
+         const checkbox = document.getElementById('uncertaintySwitch') as HTMLInputElement;
+    if (checkbox) {
+        const shouldBeChecked = lmgr.isUncertaintyLayerVisible();
+        if (checkbox.checked !== shouldBeChecked) {
+            checkbox.checked = shouldBeChecked;
+        }
+    }
     }
 }

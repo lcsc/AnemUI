@@ -181,62 +181,23 @@ public async paintValues(floatArray: number[], width: number, height: number, mi
         height = 1;
     }
 
-    // 🔍 DIAGNÓSTICO 1: Calidad de datos de entrada
-    let dataQuality = {
-        total: floatArray.length,
-        nan: 0,
-        infinite: 0,
-        valid: 0,
-        samples: [] as number[]
-    };
-
-    for (let i = 0; i < floatArray.length; i++) {
-        const val = floatArray[i];
-        if (isNaN(val)) {
-            dataQuality.nan++;
-        } else if (!isFinite(val)) {
-            dataQuality.infinite++;
-        } else {
-            dataQuality.valid++;
-            // Guardar algunos samples
-            if (dataQuality.samples.length < 20) {
-                dataQuality.samples.push(val);
-            }
-        }
-    }
-
-    console.log('📊 Data Quality Check:', {
-        total: dataQuality.total,
-        valid: dataQuality.valid + ` (${(dataQuality.valid / dataQuality.total * 100).toFixed(2)}%)`,
-        nan: dataQuality.nan,
-        infinite: dataQuality.infinite,
-        firstSamples: dataQuality.samples.slice(0, 10)
-    });
-
     let canvas: HTMLCanvasElement = document.createElement('canvas');
     let context: CanvasRenderingContext2D = canvas.getContext('2d');
     canvas.width = width;
     canvas.height = height;
     let imgData: ImageData = context.getImageData(0, 0, width, height);
+
     let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
-
-        console.log('Gradient (colors) available:', gradient.length);
-        console.log('Ranges available:', this.ranges.length);
-    
-
     const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
 
-    // Debug stats
     let debugStats = {
         transparent: 0,
-        byRange: Array(this.ranges.length).fill(0),
-        minValue: Infinity,
-        maxValue: -Infinity,
-        indexReturned: {} as Record<number, number>, // Contar qué índices retorna getValIndex
-        valuesOutOfRange: [] as number[] // Valores que no caen en ningún rango
+        painted: 0,
+        byValue: {} as Record<number, number>,
+        sampleValues: [] as number[]
     };
     
-    // PINTAR Y RECOPILAR ESTADÍSTICAS
+   
     for (let y: number = 0; y < height; y++) {
         for (let x: number = 0; x < width; x++) {
             let ncIndex: number = x + y * width;
@@ -244,28 +205,34 @@ public async paintValues(floatArray: number[], width: number, height: number, mi
             let pxIndex: number = x + ((height - 1) - y) * width;
 
             if (!isNaN(value) && isFinite(value)) {
-                // Actualizar estadísticas
-                debugStats.minValue = Math.min(debugStats.minValue, value);
-                debugStats.maxValue = Math.max(debugStats.maxValue, value);
-                
-                let index: number = this.getValIndex(value);
-                
-                // 🔍 DIAGNÓSTICO 2: Registrar qué índices se están retornando
-                if (!debugStats.indexReturned[index]) {
-                    debugStats.indexReturned[index] = 0;
-                }
-                debugStats.indexReturned[index]++;
-
-                if (index >= 0 && index < gradient.length) {
-                    debugStats.byRange[index]++;
-                    bitmap[pxIndex] = gradient[index];
-                } else {
-                    debugStats.transparent++;
-                    bitmap[pxIndex] = pxTransparent;
+                if (uncertaintyLayer) {
+                    if (value > 0) {
+                        // Hay incertidumbre, pintar gris (índice 0 de la paleta)
+                        bitmap[pxIndex] = gradient[0];
+                        debugStats.painted++;
+                        
+                        if (debugStats.sampleValues.length < 20) {
+                            debugStats.sampleValues.push(value);
+                        }
+                    } else {
+                        // Sin incertidumbre, transparente
+                        bitmap[pxIndex] = pxTransparent;
+                        debugStats.transparent++;
+                    }
                     
-                    // 🔍 DIAGNÓSTICO 3: Guardar valores que caen fuera de rango
-                    if (debugStats.valuesOutOfRange.length < 20) {
-                        debugStats.valuesOutOfRange.push(value);
+                    // Contar distribución de valores
+                    const roundedVal = Math.round(value * 10) / 10;
+                    debugStats.byValue[roundedVal] = (debugStats.byValue[roundedVal] || 0) + 1;
+                    
+                } else {
+                    let index: number = this.getValIndex(value);
+
+                    if (index >= 0 && index < gradient.length) {
+                        bitmap[pxIndex] = gradient[index];
+                        debugStats.painted++;
+                    } else {
+                        bitmap[pxIndex] = pxTransparent;
+                        debugStats.transparent++;
                     }
                 }
             } else {
@@ -274,16 +241,6 @@ public async paintValues(floatArray: number[], width: number, height: number, mi
             }
         }
     }
-    
-    // Mostrar estadísticas completas
-    console.log('🎨 Paint Stats:', {
-        dataRange: [debugStats.minValue, debugStats.maxValue],
-        totalPixels: width * height,
-        transparent: debugStats.transparent + ` (${(debugStats.transparent / (width * height) * 100).toFixed(2)}%)`,
-        pixelsByRange: debugStats.byRange,
-        indexReturned: debugStats.indexReturned,
-        valuesOutOfRange: debugStats.valuesOutOfRange.length > 0 ? debugStats.valuesOutOfRange : 'None'
-    });
     
     context.putImageData(imgData, 0, 0);
     return canvas;
