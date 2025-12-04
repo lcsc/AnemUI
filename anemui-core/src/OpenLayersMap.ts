@@ -549,7 +549,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
 
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
       let imageLayer: ImageLayer<Static> = new ImageLayer({
-        visible: true,
+        visible: false,
         opacity: 1.0,
         zIndex: 100,
         source: null

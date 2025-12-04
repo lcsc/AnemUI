@@ -777,14 +777,37 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.csMap.refreshFeatureLayer()
     }
 
+    /**
+     * Verifica si estamos en modo climatología con ciclo temporal (mensual o estacional)
+     */
+    protected isClimatologyCyclicMode(): boolean {
+        return this.state.climatology &&
+               (this.state.timeSpan === CsTimeSpan.Month || this.state.timeSpan === CsTimeSpan.Season);
+    }
+
     public dateDateBack(): void {
-        if (this.state.selectedTimeIndex == 0) return;
-        this.state.selectedTimeIndex--;
+        if (this.state.selectedTimeIndex == 0) {
+            if (this.isClimatologyCyclicMode()) {
+                this.state.selectedTimeIndex = this.state.times.length - 1;
+            } else {
+                return;
+            }
+        } else {
+            this.state.selectedTimeIndex--;
+        }
         this.update()
     }
+
     public dateDateForward(): void {
-        if (this.state.selectedTimeIndex == this.state.times.length - 1) return;
-        this.state.selectedTimeIndex++;
+        if (this.state.selectedTimeIndex == this.state.times.length - 1) {
+            if (this.isClimatologyCyclicMode()) {
+                this.state.selectedTimeIndex = 0;
+            } else {
+                return;
+            }
+        } else {
+            this.state.selectedTimeIndex++;
+        }
         this.update()
     }
 

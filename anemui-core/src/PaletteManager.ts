@@ -473,10 +473,21 @@ export class PaletteManager {
         this.addPalette("blue", () => {
             return ["#FFFFFF", "#FFFFFD", "#FFFFFC", "#FFFFFA", "#FFFFF9", "#FFFFF8", "#FFFFF6", "#FFFFF5", "#FFFFF4", "#FFFFF2", "#FFFFF1", "#FFFFF0", "#FFFFEE", "#FFFFED", "#FFFFEC", "#FFFFEA", "#FFFFE9", "#FFFFE8", "#FFFFE6", "#FFFFE5", "#FFFFE4", "#FFFFE2", "#FFFFE1", "#FFFFE0", "#FFFFDE", "#FFFFDD", "#FFFFDC", "#FFFFDA", "#FFFFD9", "#FEFED8", "#FDFED6", "#FDFED5", "#FCFED3", "#FCFDD2", "#FBFDD1", "#FAFDCF", "#FAFDCE", "#F9FCCC", "#F8FCCB", "#F8FCC9", "#F7FCC8", "#F6FBC7", "#F6FBC5", "#F5FBC4", "#F5FBC2", "#F4FAC1", "#F3FAC0", "#F3FABE", "#F2FABD", "#F1F9BB", "#F1F9BA", "#F0F9B9", "#EFF9B7", "#EFF8B6", "#EEF8B4", "#EEF8B3", "#EDF8B1", "#ECF7B1", "#EBF7B1", "#E9F6B1", "#E8F6B1", "#E7F5B1", "#E5F5B1", "#E4F4B1", "#E3F4B1", "#E1F3B1", "#E0F3B1", "#DFF2B2", "#DDF2B2", "#DCF1B2", "#DBF0B2", "#D9F0B2", "#D8EFB2", "#D7EFB2", "#D5EEB2", "#D4EEB2", "#D3EDB3", "#D1EDB3", "#D0ECB3", "#CFECB3", "#CDEBB3", "#CCEBB3", "#CBEAB3", "#C9EAB3", "#C8E9B3", "#C7E9B4", "#C4E8B4", "#C1E7B4", "#BFE6B4", "#BCE5B4", "#BAE4B5", "#B7E3B5", "#B5E2B5", "#B2E1B5", "#B0E0B6", "#ADDFB6", "#ABDEB6", "#A8DDB6", "#A5DCB7", "#A3DBB7", "#A0DAB7", "#9ED9B7", "#9BD8B8", "#99D7B8", "#96D6B8", "#94D5B8", "#91D4B9", "#8FD3B9", "#8CD2B9", "#8AD1B9", "#87D0BA", "#84CFBA", "#82CEBA", "#7FCDBA", "#7DCCBB", "#7BCBBB", "#79CABB", "#76CABC", "#74C9BC", "#72C8BC", "#70C7BD", "#6EC6BD", "#6CC5BD", "#69C5BE", "#67C4BE", "#65C3BE", "#63C2BF", "#61C1BF", "#5EC1BF", "#5CC0BF", "#5ABFC0", "#58BEC0", "#56BDC0", "#53BDC1", "#51BCC1", "#4FBBC1", "#4DBAC2", "#4BB9C2", "#49B8C2", "#46B8C3", "#44B7C3", "#42B6C3", "#40B5C3", "#3FB4C3", "#3EB2C3", "#3CB1C3", "#3BB0C3", "#3AAFC3", "#38ADC3", "#37ACC2", "#36ABC2", "#35A9C2", "#33A8C2", "#32A7C2", "#31A5C2", "#30A4C2", "#2EA3C1", "#2DA1C1", "#2CA0C1", "#2A9FC1", "#299EC1", "#289CC1", "#279BC1", "#259AC0", "#2498C0", "#2397C0", "#2296C0", "#2094C0", "#1F93C0", "#1E92C0", "#1D91C0", "#1D8FBF", "#1D8DBE", "#1D8BBD", "#1D89BC", "#1D87BB", "#1E86BA", "#1E84BA", "#1E82B9", "#1E80B8", "#1E7FB7", "#1E7DB6", "#1F7BB5", "#1F79B4", "#1F77B4", "#1F75B3", "#1F74B2", "#2072B1", "#2070B0", "#206EAF", "#206CAF", "#206BAE", "#2069AD", "#2167AC", "#2165AB", "#2163AA", "#2162A9", "#2160A9", "#215EA8", "#225DA7", "#225BA6", "#225AA6", "#2258A5", "#2257A4", "#2255A3", "#2254A3", "#2252A2", "#2251A1", "#234FA1", "#234EA0", "#234C9F", "#234B9F", "#23499E", "#23489D", "#23469C", "#23459C", "#23439B", "#23429A", "#24409A", "#243F99", "#243D98", "#243C98", "#243A97", "#243996", "#243795", "#243695", "#243494", "#243393", "#233291", "#22328F", "#21318C", "#20308A", "#1F2F88", "#1E2E86", "#1D2E84", "#1C2D82", "#1B2C80", "#1A2B7E", "#192A7B", "#182979", "#172977", "#162875", "#152773", "#142671", "#13256F", "#12256D", "#11246B", "#102368", "#0F2266", "#0E2164", "#0D2162", "#0C2060", "#0B1F5E", "#0A1E5C", "#091D5A", "#081D58"];
         })
+        // Paleta de incertidumbre con puntos (nueva)
         this.addPalette("uncertainty", ()=> {
             return ['#65656580', '#00000000']
+        }, new DotPatternPainter(1, '#656565', 0.8))
+
+        // Paleta de incertidumbre con tramado (alternativa con líneas)
+        this.addPalette("uncertainty_hatch", ()=> {
+            return ['#65656580', '#00000000']
+        }, new HatchPatternPainter(4, 45, '#656565', 0.5))
+
+        // Paleta de incertidumbre sólida (backup - comportamiento antiguo)
+        this.addPalette("uncertainty_solid", ()=> {
+            return ['#65656580', '#00000000']
         })
-        
+
         this.paletteBuffer = new ArrayBuffer(256 * 4);
         this.palette = new Uint8Array(this.paletteBuffer);
         this.painter = new CsDynamicPainter();
@@ -610,5 +621,248 @@ export class PaletteManager {
 
     public getUncertaintyLayerChecked():string{
         return this.uncertaintyLayerChecked;
+    }
+}
+
+/**
+ * DotPatternPainter - Painter especializado para capa de incertidumbre con puntos
+ * Aplica un patrón de puntos centrados en cada píxel
+ */
+export class DotPatternPainter implements Painter {
+    private dotRadius: number = 1; // Radio del punto en píxeles
+    private dotColor: string = '#656565'; // Color del punto
+    private dotOpacity: number = 0.8; // Opacidad del punto
+
+    constructor(radius: number = 1, color: string = '#656565', opacity: number = 0.8) {
+        this.dotRadius = radius;
+        this.dotColor = color;
+        this.dotOpacity = opacity;
+    }
+
+    public async paintValues(
+        floatArray: number[],
+        width: number,
+        height: number,
+        minArray: number,
+        maxArray: number,
+        pxTransparent: number,
+        uncertaintyLayer: boolean
+    ): Promise<HTMLCanvasElement> {
+        // Validar dimensiones
+        width = Math.max(1, Math.floor(width));
+        height = Math.max(1, Math.floor(height));
+
+        if (!isFinite(width) || !isFinite(height)) {
+            console.error('Invalid canvas dimensions:', width, height);
+            width = 1;
+            height = 1;
+        }
+
+        let canvas: HTMLCanvasElement = document.createElement('canvas');
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
+        canvas.width = width;
+        canvas.height = height;
+
+        // Calcular el tamaño adaptativo del punto basado en las dimensiones del canvas
+        // A menor resolución (menos píxeles), puntos más grandes
+        // A mayor resolución (más píxeles), puntos más pequeños pero visibles
+        const minDimension = Math.min(width, height);
+        let adaptiveRadius: number;
+
+        if (minDimension < 100) {
+            // Rejillas muy pequeñas: puntos grandes (30-40% del píxel)
+            adaptiveRadius = this.dotRadius * 3;
+        } else if (minDimension < 300) {
+            // Rejillas medianas: puntos medianos (20-30% del píxel)
+            adaptiveRadius = this.dotRadius * 2;
+        } else if (minDimension < 600) {
+            // Rejillas grandes: puntos pequeños pero visibles
+            adaptiveRadius = this.dotRadius * 1.5;
+        } else {
+            // Rejillas muy grandes: mantener el tamaño base
+            adaptiveRadius = this.dotRadius;
+        }
+
+        // Asegurar un mínimo visible
+        adaptiveRadius = Math.max(adaptiveRadius, 0.5);
+
+        // Configurar estilo del punto
+        const rgbaMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(this.dotColor);
+        if (rgbaMatch) {
+            const r = parseInt(rgbaMatch[1], 16);
+            const g = parseInt(rgbaMatch[2], 16);
+            const b = parseInt(rgbaMatch[3], 16);
+            context.fillStyle = `rgba(${r},${g},${b},${this.dotOpacity})`;
+        } else {
+            context.fillStyle = this.dotColor;
+        }
+
+        // Dibujar puntos centrados en cada píxel con datos válidos
+        for (let y: number = 0; y < height; y++) {
+            for (let x: number = 0; x < width; x++) {
+                let ncIndex: number = x + y * width;
+                let value: number = floatArray[ncIndex];
+
+                // Si el valor es válido (no NaN y finito), dibujar punto
+                if (!isNaN(value) && isFinite(value)) {
+                    // Invertir Y para mantener consistencia con otros painters
+                    let canvasY = (height - 1) - y;
+
+                    // Dibujar punto centrado en el píxel con tamaño adaptativo
+                    context.beginPath();
+                    context.arc(x + 0.5, canvasY + 0.5, adaptiveRadius, 0, 2 * Math.PI);
+                    context.fill();
+                }
+            }
+        }
+
+        return canvas;
+    }
+
+    public getColorString(val: number, min: number, max: number): string {
+        // Para compatibilidad con la interfaz Painter
+        return this.dotColor;
+    }
+
+    public getValIndex(val: number): number {
+        // Para compatibilidad con la interfaz Painter
+        return 0;
+    }
+}
+
+/**
+ * HatchPatternPainter - Painter especializado para capa de incertidumbre
+ * Aplica un patrón de líneas diagonales que se adapta al nivel de zoom
+ */
+export class HatchPatternPainter implements Painter {
+    private hatchSpacing: number = 4; // Espaciado base entre líneas
+    private hatchAngle: number = 45;  // Ángulo del tramado en grados
+    private hatchColor: string = '#656565'; // Color del tramado
+    private hatchOpacity: number = 0.5; // Opacidad del tramado
+
+    constructor(spacing: number = 4, angle: number = 45, color: string = '#656565', opacity: number = 0.5) {
+        this.hatchSpacing = spacing;
+        this.hatchAngle = angle;
+        this.hatchColor = color;
+        this.hatchOpacity = opacity;
+    }
+
+    public async paintValues(
+        floatArray: number[],
+        width: number,
+        height: number,
+        minArray: number,
+        maxArray: number,
+        pxTransparent: number,
+        uncertaintyLayer: boolean
+    ): Promise<HTMLCanvasElement> {
+        // Validar dimensiones
+        width = Math.max(1, Math.floor(width));
+        height = Math.max(1, Math.floor(height));
+
+        if (!isFinite(width) || !isFinite(height)) {
+            console.error('Invalid canvas dimensions:', width, height);
+            width = 1;
+            height = 1;
+        }
+
+        let canvas: HTMLCanvasElement = document.createElement('canvas');
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
+        canvas.width = width;
+        canvas.height = height;
+
+        // Crear una máscara con los datos válidos
+        let maskCanvas: HTMLCanvasElement = document.createElement('canvas');
+        let maskContext: CanvasRenderingContext2D = maskCanvas.getContext('2d');
+        maskCanvas.width = width;
+        maskCanvas.height = height;
+
+        let maskData: ImageData = maskContext.getImageData(0, 0, width, height);
+        let maskBitmap: Uint32Array = new Uint32Array(maskData.data.buffer);
+
+        // Crear máscara: blanco donde hay datos válidos, transparente donde no
+        for (let y: number = 0; y < height; y++) {
+            for (let x: number = 0; x < width; x++) {
+                let ncIndex: number = x + y * width;
+                let value: number = floatArray[ncIndex];
+                let pxIndex: number = x + ((height - 1) - y) * width;
+
+                // Si el valor es válido (no NaN y finito), marcarlo en la máscara
+                if (!isNaN(value) && isFinite(value)) {
+                    maskBitmap[pxIndex] = 0xFFFFFFFF; // Blanco opaco
+                } else {
+                    maskBitmap[pxIndex] = 0x00000000; // Transparente
+                }
+            }
+        }
+
+        maskContext.putImageData(maskData, 0, 0);
+
+        // Ajustar el espaciado según el tamaño del canvas (más detalle a mayor zoom)
+        // A mayor tamaño de canvas, mayor zoom, más espaciado entre líneas
+        let adaptiveSpacing = Math.max(2, Math.floor(this.hatchSpacing * (width / 500)));
+
+        // Dibujar el patrón de tramado
+        context.strokeStyle = this.hatchColor;
+        context.globalAlpha = this.hatchOpacity;
+        context.lineWidth = 1;
+
+        // Guardar el contexto para restaurar después
+        context.save();
+
+        // Aplicar la máscara usando globalCompositeOperation
+        // Primero dibujamos el patrón, luego aplicamos la máscara
+
+        // Dibujar líneas diagonales
+        const angleRad = (this.hatchAngle * Math.PI) / 180;
+        const diagonal = Math.sqrt(width * width + height * height);
+
+        context.beginPath();
+
+        // Calcular número de líneas necesarias
+        const numLines = Math.ceil(diagonal / adaptiveSpacing);
+
+        for (let i = -numLines; i <= numLines; i++) {
+            const offset = i * adaptiveSpacing;
+
+            // Calcular puntos de inicio y fin de la línea diagonal
+            const x1 = -diagonal;
+            const y1 = offset;
+            const x2 = diagonal;
+            const y2 = offset;
+
+            // Rotar y trasladar
+            const cos = Math.cos(angleRad);
+            const sin = Math.sin(angleRad);
+
+            const rx1 = x1 * cos - y1 * sin + width / 2;
+            const ry1 = x1 * sin + y1 * cos + height / 2;
+            const rx2 = x2 * cos - y2 * sin + width / 2;
+            const ry2 = x2 * sin + y2 * cos + height / 2;
+
+            context.moveTo(rx1, ry1);
+            context.lineTo(rx2, ry2);
+        }
+
+        context.stroke();
+
+        // Aplicar la máscara: solo mantener el tramado donde hay datos válidos
+        context.globalCompositeOperation = 'destination-in';
+        context.globalAlpha = 1.0;
+        context.drawImage(maskCanvas, 0, 0);
+
+        context.restore();
+
+        return canvas;
+    }
+
+    public getColorString(val: number, min: number, max: number): string {
+        // Para compatibilidad con la interfaz Painter
+        return this.hatchColor;
+    }
+
+    public getValIndex(val: number): number {
+        // Para compatibilidad con la interfaz Painter
+        return 0;
     }
 }

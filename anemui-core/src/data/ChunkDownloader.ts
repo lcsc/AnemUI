@@ -362,7 +362,10 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
         app.notifyMaxMinChanged();
 
-        let painterInstance = PaletteManager.getInstance().getPainter();
+        // Si es capa de incertidumbre, usar el painter específico de uncertainty
+        let painterInstance = uncertaintyLayer
+            ? PaletteManager.getInstance()['painters']['uncertainty'] || PaletteManager.getInstance().getPainter()
+            : PaletteManager.getInstance().getPainter();
 
         // Para datos computados, precalcular breaks con todos los datos combinados
         if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
@@ -394,7 +397,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
                     // zIndex menor que 5000 para que los labels queden por encima
                     dataTilesLayer[i].setZIndex(4000 + i);
-                    dataTilesLayer[i].setVisible(true);
+                    dataTilesLayer[i].setVisible(uncertaintyLayer ? false : true);
                     dataTilesLayer[i].setOpacity(1.0);
 
                     dataTilesLayer[i].changed();
