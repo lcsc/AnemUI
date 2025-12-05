@@ -17,7 +17,7 @@ export {enableRenderer } from './tiles/Support';
 // public APIs
 export { CsGraph, type GraphType } from './ui/Graph';
 export { MenuBar, MenuBarListener, simpleDiv } from './ui/MenuBar';
-export { DateFrameMode } from "./ui/DateFrame";
+export { DateSelectorFrame, DateFrameListener, DateFrameMode } from "./ui/DateFrame";
 
 export { fromLonLat } from 'ol/proj';
 

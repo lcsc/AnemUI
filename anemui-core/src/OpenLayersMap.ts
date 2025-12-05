@@ -118,14 +118,14 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     timesJs.portions[varId].forEach((portion: string, index, array) => {
         let selector = varId + portion;
         let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
-   
+
         const dataExtent = [
-            timesJs.lonMin[selector] - pxSize / 2, 
-            timesJs.latMin[selector] - pxSize / 2, 
-            timesJs.lonMax[selector] + pxSize / 2, 
+            timesJs.lonMin[selector] - pxSize / 2,
+            timesJs.latMin[selector] - pxSize / 2,
+            timesJs.lonMax[selector] + pxSize / 2,
             timesJs.latMax[selector] + pxSize / 2
         ];
-        
+
         // Si el mapa está en una proyección diferente, transformar
         if (timesJs.projection !== olProjection) {
             const transformedExtent = transformExtent(
@@ -138,6 +138,38 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
             this.ncExtents[portion] = dataExtent;
         }
     });
+}
+
+/**
+ * Ajusta la vista inicial del mapa para mostrar todo el territorio español
+ * (Península, Baleares y Canarias) adaptándose al tamaño de la pantalla
+ */
+protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
+    // Calcular el extent combinado de todas las porciones
+    let combinedExtent: [number, number, number, number] | null = null;
+
+    timesJs.portions[varId].forEach((portion: string) => {
+        const extent = this.ncExtents[portion];
+        if (extent) {
+            if (!combinedExtent) {
+                combinedExtent = [...extent] as [number, number, number, number];
+            } else {
+                // Expandir el extent para incluir esta porción
+                combinedExtent[0] = Math.min(combinedExtent[0], extent[0]); // minX
+                combinedExtent[1] = Math.min(combinedExtent[1], extent[1]); // minY
+                combinedExtent[2] = Math.max(combinedExtent[2], extent[2]); // maxX
+                combinedExtent[3] = Math.max(combinedExtent[3], extent[3]); // maxY
+            }
+        }
+    });
+
+    // Ajustar la vista para mostrar el extent combinado
+    if (combinedExtent && this.map) {
+        this.map.getView().fit(combinedExtent, {
+            padding: [50, 50, 50, 50], // Padding en píxeles alrededor del extent
+            duration: 0 // Sin animación en la carga inicial
+        });
+    }
 }
 
 
@@ -162,6 +194,9 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     };
 
     this.map = new Map(options);
+
+    // Ajustar la vista inicial para mostrar todo el territorio español
+    this.fitInitialView(timesJs, state.varId);
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
@@ -552,7 +587,8 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         visible: false,
         opacity: 1.0,
         zIndex: 100,
-        source: null
+        source: null,
+        className: 'uncertainty-layer' // Agregar clase CSS para la capa de incertidumbre
       });
 
       if (imageLayer) {

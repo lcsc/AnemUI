@@ -372,6 +372,9 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             (painterInstance as any).setPrecalculatedBreaks(allValidNumbers);
         }
 
+        // Obtener el nivel de zoom actual del mapa
+        const currentZoom = app.getMap()?.getZoom() || 6;
+
         for (let i = 0; i < filteredArrays.length; i++) {
             const filteredArray = filteredArrays[i];
 
@@ -380,7 +383,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
             let canvas: HTMLCanvasElement | null = null;
             try {
-                canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
+                canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer, currentZoom);
 
                 if (canvas) {
                     const extent = ncExtents[timesJs.portions[status.varId][i]];
