@@ -86,7 +86,7 @@ export class CsMenuItem extends BaseUiElement {
   public render(_subTitle?: string, hasPopData: boolean = false): JSX.Element {
     let count = 0;
     for (let i = 0; i < this.values.length; i++) {
-        if (!this.values[i].startsWith("-")) {
+        if (!this.values[i].startsWith("~") && !this.values[i].startsWith("-")) {
             count++;
         }
     }

@@ -362,12 +362,18 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
         app.notifyMaxMinChanged();
 
-        let painterInstance = PaletteManager.getInstance().getPainter();
+        // Si es capa de incertidumbre, usar el painter específico de uncertainty
+        let painterInstance = uncertaintyLayer
+            ? PaletteManager.getInstance()['painters']['uncertainty'] || PaletteManager.getInstance().getPainter()
+            : PaletteManager.getInstance().getPainter();
 
         // Para datos computados, precalcular breaks con todos los datos combinados
         if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
             (painterInstance as any).setPrecalculatedBreaks(allValidNumbers);
         }
+
+        // Obtener el nivel de zoom actual del mapa
+        const currentZoom = app.getMap()?.getZoom() || 6;
 
         for (let i = 0; i < filteredArrays.length; i++) {
             const filteredArray = filteredArrays[i];
@@ -377,7 +383,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
             let canvas: HTMLCanvasElement | null = null;
             try {
-                canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
+                canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer, currentZoom);
 
                 if (canvas) {
                     const extent = ncExtents[timesJs.portions[status.varId][i]];
@@ -394,7 +400,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
                     // zIndex menor que 5000 para que los labels queden por encima
                     dataTilesLayer[i].setZIndex(4000 + i);
-                    dataTilesLayer[i].setVisible(true);
+                    dataTilesLayer[i].setVisible(uncertaintyLayer ? false : true);
                     dataTilesLayer[i].setOpacity(1.0);
 
                     dataTilesLayer[i].changed();

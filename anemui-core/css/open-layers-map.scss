@@ -1,5 +1,12 @@
 @import "~ol/ol.css";
 
+// Desactivar suavizado solo para la capa de incertidumbre
+.uncertainty-layer canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
 // .marker {
 //   width: 20px;
 //   height: 20px;

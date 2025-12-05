@@ -187,16 +187,22 @@
         @include desktop {
             width: 45%;
             #title {
-                font-size: 1.2em;
+                font-size: 0.95em;
                 padding: 0.7rem 1rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
         }
 
         @include md-desktop {
             width: 40%;
             #title {
-                font-size: 1.5em;
+                font-size: 1.1em;
                 font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
         }
     }

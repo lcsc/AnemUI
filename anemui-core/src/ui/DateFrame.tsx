@@ -44,9 +44,9 @@ export class DateSelectorFrame extends BaseFrame {
     protected datepicker: JQuery<HTMLDivElement>
     protected seasonButton: HTMLElement;
     protected monthButton: HTMLElement;
-    private climatologyFrame: HTMLElement
-    private climTitle: HTMLElement
-    private timeSeriesFrame: HTMLElement
+    protected climatologyFrame: HTMLElement
+    protected climTitle: HTMLElement
+    protected timeSeriesFrame: HTMLElement
     protected dateIndex: dateHashMap;
     protected monthIndex: monthHashMap;
     protected seasonIndex: monthHashMap;
