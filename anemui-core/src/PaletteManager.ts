@@ -628,12 +628,14 @@ export class DotPatternPainter implements Painter {
     private dotRadius: number = 1; // Radio del punto en píxeles
     private dotColor: string = '#656565'; // Color del punto
     private dotOpacity: number = 0.8; // Opacidad del punto
+    private dotSpacing: number = 3; // Espaciado entre puntos (cada N píxeles)
 
-    constructor(radius: number = 1, color: string = '#656565', opacity: number = 0.8) {
+    constructor(radius: number = 1, color: string = '#656565', opacity: number = 0.8, spacing: number = 3) {
         this.dotRadius = radius;
         this.dotColor = color;
         this.dotOpacity = opacity;
-        console.log('🟢 DotPatternPainter creado con:', { radius, color, opacity });
+        this.dotSpacing = spacing;
+        console.log('🟢 DotPatternPainter creado con:', { radius, color, opacity, spacing });
     }
 
     public async paintValues(
@@ -666,52 +668,92 @@ export class DotPatternPainter implements Painter {
         // Desactivar el suavizado de imágenes para mantener píxeles nítidos
         context.imageSmoothingEnabled = false;
 
-        // Calcular el tamaño del punto como porcentaje del píxel
-        // Usar puntos pequeños pero visibles (25-30% del píxel)
-        const dotSize = 0.3; // 30% del píxel
-
-        // Configurar estilo del punto
+        // Parsear el color a valores RGB
         const rgbaMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(this.dotColor);
+        let r = 101, g = 101, b = 101; // Valores por defecto para #656565
         if (rgbaMatch) {
-            const r = parseInt(rgbaMatch[1], 16);
-            const g = parseInt(rgbaMatch[2], 16);
-            const b = parseInt(rgbaMatch[3], 16);
-            context.fillStyle = `rgba(${r},${g},${b},${this.dotOpacity})`;
-        } else {
-            context.fillStyle = this.dotColor;
+            r = parseInt(rgbaMatch[1], 16);
+            g = parseInt(rgbaMatch[2], 16);
+            b = parseInt(rgbaMatch[3], 16);
         }
 
-        // Dibujar puntos como pequeños rectángulos/círculos centrados
+        // Convertir opacidad (0-1) a alpha (0-255)
+        const alpha = Math.round(this.dotOpacity * 255);
+
+        // Crear ImageData para manipular píxeles directamente
+        const imageData = context.createImageData(width, height);
+        const data = imageData.data;
+
+        // Analizar los valores para debug
+        let validValues = 0;
+        let zeroValues = 0;
+        let nanValues = 0;
+        let minVal = Infinity;
+        let maxVal = -Infinity;
+        let sampleValues: number[] = [];
+
+        for (let i = 0; i < Math.min(floatArray.length, 100); i++) {
+            const val = floatArray[i];
+            if (!isNaN(val) && isFinite(val)) {
+                validValues++;
+                if (val === 0) zeroValues++;
+                if (val < minVal) minVal = val;
+                if (val > maxVal) maxVal = val;
+                if (sampleValues.length < 10) sampleValues.push(val);
+            } else {
+                nanValues++;
+            }
+        }
+
+        console.log('📊 Análisis de valores (primeros 100):', {
+            validValues, zeroValues, nanValues, minVal, maxVal, sampleValues
+        });
+
+        // Pintar puntos cuadrados con espaciado solo donde hay incertidumbre
         let dotsDrawn = 0;
+        let skippedDots = 0;
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
+                // Aplicar patrón de espaciado: solo pintar cada N píxeles
+                if ((x % this.dotSpacing !== 0) || (y % this.dotSpacing !== 0)) {
+                    continue;
+                }
+
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
 
-                // Si el valor es válido (no NaN y finito), dibujar punto
-                if (!isNaN(value) && isFinite(value)) {
+                // Solo pintar si el valor indica incertidumbre (valor > 0)
+                if (!isNaN(value) && isFinite(value) && value > 0) {
                     // Invertir Y para mantener consistencia con otros painters
                     let canvasY = (height - 1) - y;
 
-                    // Calcular la posición del punto centrado en el píxel
-                    // El punto será un pequeño rectángulo de dotSize x dotSize
-                    const pointX = x + (1 - dotSize) / 2;
-                    const pointY = canvasY + (1 - dotSize) / 2;
+                    // Calcular índice en el array de ImageData
+                    let pixelIndex = (canvasY * width + x) * 4;
 
-                    // Dibujar punto como rectángulo pequeño
-                    context.fillRect(pointX, pointY, dotSize, dotSize);
+                    // Establecer valores RGBA (píxel cuadrado)
+                    data[pixelIndex] = r;         // Red
+                    data[pixelIndex + 1] = g;     // Green
+                    data[pixelIndex + 2] = b;     // Blue
+                    data[pixelIndex + 3] = alpha; // Alpha
+
                     dotsDrawn++;
+                } else if (!isNaN(value) && isFinite(value)) {
+                    skippedDots++;
                 }
             }
         }
 
-        console.log('✅ DotPatternPainter terminado:', { dotsDrawn, dotSize, totalPixels: width * height });
+        console.log('🎯 Puntos dibujados vs saltados:', { dotsDrawn, skippedDots });
+
+        // Escribir los datos de píxeles al canvas
+        context.putImageData(imageData, 0, 0);
+
+        console.log('✅ DotPatternPainter terminado:', { dotsDrawn, totalPixels: width * height, alpha });
 
         // Debug: Verificar que el canvas tiene contenido
-        const imageData = context.getImageData(0, 0, width, height);
         let nonTransparentPixels = 0;
-        for (let i = 3; i < imageData.data.length; i += 4) {
-            if (imageData.data[i] > 0) nonTransparentPixels++;
+        for (let i = 3; i < data.length; i += 4) {
+            if (data[i] > 0) nonTransparentPixels++;
         }
         console.log('🎨 Píxeles no transparentes en canvas:', nonTransparentPixels);
 
