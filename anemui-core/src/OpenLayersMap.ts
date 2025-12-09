@@ -468,11 +468,20 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     let app = window.CsViewerApp;
 
- 
+
 
     this.safelyRemoveDataLayers();
 
     this.dataTilesLayer = [];
+
+    // Si la capa de incertidumbre está activa, reconstruirla con el nuevo varId
+    if (state.uncertaintyLayer) {
+        this.safelyRemoveUncertaintyLayers();
+        this.buildUncertaintyLayer(state, timesJs);
+        // Mostrar las capas después de construirlas
+        const lmgr = LayerManager.getInstance();
+        lmgr.showUncertaintyLayer(true);
+    }
 
     if (!timesJs.portions[state.varId]) {
         console.warn('No portions found for varId:', state.varId);
