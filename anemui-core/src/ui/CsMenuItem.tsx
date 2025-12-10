@@ -32,28 +32,30 @@ export class CsMenuItem extends BaseUiElement {
     this.values = _values;
     let count = 0;
     for (let i = 0; i < this.values.length; i++) {
-        if (!this.values[i].startsWith("~")) {
+        if (!this.values[i].startsWith("-")) {
             count++;
         }
     }
     if (this.container != undefined) {
       //alert("needs Update")
       let ul = this.container.getElementsByTagName("ul")[0]
-      ul.innerHTML = "";
-      this.values.map((val, index) => {
-        var popOverAttrs = {
-          id: val.startsWith("~") ? val.substring(1) : val,
-          'data-toggle': 'popover'
-        };
-        if (!val.startsWith("-") && !val.startsWith("~")) {
-      /*     if (val.startsWith("~")) {
-            addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
-          } else { */
-            addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>))
-          // }
-        }
-      });
-      this.drop.update()
+      if (ul) {
+        ul.innerHTML = "";
+        this.values.map((val, index) => {
+          var popOverAttrs = {
+            id: val.startsWith("~") ? val.substring(1) : val,
+            'data-toggle': 'popover'
+          };
+          if (!val.startsWith("-") && !val.startsWith("~")) {
+        /*     if (val.startsWith("~")) {
+              addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
+            } else { */
+              addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>))
+            // }
+          }
+        });
+        this.drop.update()
+      }
     }
   }
   
@@ -86,7 +88,7 @@ export class CsMenuItem extends BaseUiElement {
   public render(_subTitle?: string, hasPopData: boolean = false): JSX.Element {
     let count = 0;
     for (let i = 0; i < this.values.length; i++) {
-        if (!this.values[i].startsWith("~") && !this.values[i].startsWith("-")) {
+        if (!this.values[i].startsWith("-")) {
             count++;
         }
     }
