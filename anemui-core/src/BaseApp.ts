@@ -1,10 +1,10 @@
 import { addChild, mount } from "tsx-create-element";
 import { MainFrame } from "./ui/MainFrame";
-import { MenuBar, MenuBarListener } from './ui/MenuBar'; 
+import { MenuBar, MenuBarListener } from './ui/MenuBar';
 import { CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
 import LayerFrame from './ui/LayerFrame'
-import PaletteFrame from "./ui/PaletteFrame";  
+import PaletteFrame from "./ui/PaletteFrame";
 import { CsLatLong, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData } from "./data/CsDataLoader";
@@ -22,8 +22,8 @@ import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-import LeftBar from "./ui/LeftBar"; 
-import RightBar from "./ui/RightBar"; 
+import LeftBar from "./ui/LeftBar";
+import RightBar from "./ui/RightBar";
 import Language from "./language/language";
 import { renderers, folders, defaultRenderer } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
@@ -594,8 +594,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             varName = varId
         }
         
-        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined 
-        
+        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined
+
         if (this.state == undefined) this.state = INITIAL_STATE;
         this.state = {
             ...this.state,
@@ -681,19 +681,19 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         try {
             this.menuBar.update();
             this.leftBar.update();
-            this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
+            await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
             this.csMap.updateRender(this.state.support);
-            
+
             // Wait for data only if we have computed data tiles layer
-            if (computedDataTilesLayer && this.state.computedLayer) {        
+            if (computedDataTilesLayer && this.state.computedLayer) {
                 await this.waitForDataLoad();
             }
-            
+
             if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
-            
+
         } catch (error) {
             console.error('Error during update:', error);
             // Continue with update even if there's an error
@@ -947,12 +947,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 renderers[i]=renderers[i].substring(1)
             }
         } )
+        console.log('enable renderer - renderers: ' + renderers)
     }
 
     public disableRenderer(i:number){
         if(! renderers[i].startsWith("~")){
             renderers[i]="~"+renderers[i];
         }
+        console.log('disable renderer - renderers: ' + renderers)
     }
 
     public removeRenderer(i:number){
@@ -978,6 +980,22 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
      public showPercentileClockForPoint(latlng: CsLatLong, currentValue: number, historicalData: number[]): void {
-       
+
+    }
+
+    /**
+     * Resetea la capa de incertidumbre: la oculta y desactiva el checkbox
+     * Útil cuando se cambia de contexto (ej: cambiar horizonte de predicción)
+     * Usa el método toggleUncertaintyLayer del LayerFrame para mantener consistencia
+     */
+    public resetUncertaintyLayer(): void {
+        // Llamar al método del LayerFrame que ya coordina todo el comportamiento
+        this.layerFrame.toggleUncertaintyLayer(false);
+
+        // Asegurar que el checkbox en el DOM esté desactivado
+        const checkbox = document.getElementById('flexSwitchCheckChecked') as HTMLInputElement;
+        if (checkbox) {
+            checkbox.checked = false;
+        }
     }
 }

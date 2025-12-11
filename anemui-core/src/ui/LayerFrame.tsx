@@ -156,10 +156,25 @@ export default class LayerFrame  extends BaseFrame {
     public toggleUncertaintyLayer (checked: boolean) {
         let ptMgr=PaletteManager.getInstance();
         ptMgr.setUncertaintyLayerChecked(checked)
+
+        // Verificar si el elemento existe antes de modificarlo
         let uncertaintyText = document.querySelector("#uncertainty-text")
-        uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + ptMgr.getUncertaintyLayerChecked() 
+        if (uncertaintyText) {
+            uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + ptMgr.getUncertaintyLayerChecked()
+        }
+
         let mgr=LayerManager.getInstance();
-        mgr.showUncertaintyLayer(checked)
+        // Solo intentar mostrar/ocultar la capa si existe
+        const uncertaintyLayer = mgr.getUncertaintyLayer();
+        if (uncertaintyLayer && uncertaintyLayer.length > 0) {
+            mgr.showUncertaintyLayer(checked)
+
+            // Forzar renderizado completo del mapa
+            const csMap = this.parent.getMap();
+            if (csMap && (csMap as any).controller && (csMap as any).controller.map) {
+                (csMap as any).controller.map.render();
+            }
+        }
     }
 
     public renderUncertaintyFrame():JSX.Element {
