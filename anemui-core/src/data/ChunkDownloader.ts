@@ -375,18 +375,22 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         // Obtener el nivel de zoom actual del mapa
         const currentZoom = app.getMap()?.getZoom() || 6;
 
+        // Para capas de incertidumbre, usar el varId con sufijo '_uncertainty'
+        const uncertaintyVarId = uncertaintyLayer ? status.varId + '_uncertainty' : status.varId;
+
         for (let i = 0; i < filteredArrays.length; i++) {
             const filteredArray = filteredArrays[i];
 
-            const width = timesJs.lonNum[status.varId + timesJs.portions[status.varId][i]];
-            const height = timesJs.latNum[status.varId + timesJs.portions[status.varId][i]];
+            const width = timesJs.lonNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
+            const height = timesJs.latNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
 
             let canvas: HTMLCanvasElement | null = null;
             try {
                 canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer, currentZoom);
 
                 if (canvas) {
-                    const extent = ncExtents[timesJs.portions[status.varId][i]];
+                    const portionName = timesJs.portions[uncertaintyVarId][i];
+                    const extent = ncExtents[portionName];
 
                     const imageSource = new Static({
                         url: canvas.toDataURL('image/png'),
@@ -398,8 +402,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
                     dataTilesLayer[i].setSource(imageSource);
 
-                    // zIndex menor que 5000 para que los labels queden por encima
-                    dataTilesLayer[i].setZIndex(4000 + i);
+                    // zIndex diferenciado: incertidumbre (2000) por encima de datos (100) pero debajo de política (5000)
+                    if (uncertaintyLayer) {
+                        dataTilesLayer[i].setZIndex(2000 + i); // Capas de incertidumbre
+                    } else {
+                        dataTilesLayer[i].setZIndex(100 + i); // Capas de datos
+                    }
                     dataTilesLayer[i].setVisible(uncertaintyLayer ? false : true);
                     dataTilesLayer[i].setOpacity(1.0);
 

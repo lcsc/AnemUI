@@ -222,7 +222,6 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     this.buildFeatureLayers();
     if (!isWmsEnabled) {
       this.buildDataTilesLayers(state, timesJs);
-      if (state.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
     }
   }
 
@@ -465,7 +464,7 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
   }
 
 
-public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
+public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let app = window.CsViewerApp;
 
 
@@ -477,10 +476,8 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     // Si la capa de incertidumbre está activa, reconstruirla con el nuevo varId
     if (state.uncertaintyLayer) {
         this.safelyRemoveUncertaintyLayers();
-        this.buildUncertaintyLayer(state, timesJs);
-        // Mostrar las capas después de construirlas
-        const lmgr = LayerManager.getInstance();
-        lmgr.showUncertaintyLayer(true);
+        // Esperar a que se construyan las capas de incertidumbre
+        await this.buildUncertaintyLayer(state, timesJs);
     }
 
     if (!timesJs.portions[state.varId]) {
@@ -576,14 +573,15 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
   }
 
   // Fix for uncertainty layer with proper initialization
-  public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
+  public async buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
     // Safely remove existing uncertainty layers
     this.safelyRemoveUncertaintyLayers();
 
-    this.uncertaintyLayer = lmgr.getUncertaintyLayer() || [];
+    // Siempre empezar con un array limpio
+    this.uncertaintyLayer = [];
 
     const uncertaintyVarId = state.varId + '_uncertainty';
     if (!timesJs.portions[uncertaintyVarId]) {
@@ -595,7 +593,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
       let imageLayer: ImageLayer<Static> = new ImageLayer({
         visible: false,
         opacity: 1.0,
-        zIndex: 100,
+        zIndex: 2000, // Entre capas de datos (100) y capa política (5000)
         source: null,
         className: 'uncertainty-layer' // Agregar clase CSS para la capa de incertidumbre
       });
@@ -622,7 +620,11 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
     });
 
     if (this.uncertaintyLayer.length > 0 && promises.length > 0) {
-      buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
+      // Esperar a que se construyan las imágenes antes de registrar las capas
+      await buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
+
+      // Registrar las capas en LayerManager después de construirlas
+      lmgr.setUncertaintyLayer(this.uncertaintyLayer);
       lmgr.showUncertaintyLayer(false);
     }
   }
@@ -646,6 +648,8 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
       });
     }
     this.uncertaintyLayer = [];
+    // Limpiar también el array en LayerManager
+    LayerManager.getInstance().setUncertaintyLayer([]);
   }
 
   public buildFeatureLayers () {
@@ -668,8 +672,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
         } )
       }
 
-  // Fix for setDate method
-  public setDate(dateIndex: number, state: CsViewerData): void {
+  public async setDate(dateIndex: number, state: CsViewerData): Promise<void> {
     try {
       if (isWmsEnabled) {
         if (this.dataWMSLayer) {
@@ -681,14 +684,7 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
           this.dataWMSLayer.refresh();
         }
       } else {
-        this.buildDataTilesLayers(state, this.parent.getParent().getTimesJs());
-
-        // Safely remove uncertainty layers
-        this.safelyRemoveUncertaintyLayers();
-
-        if (state.uncertaintyLayer) {
-          this.buildUncertaintyLayer(state, this.parent.getParent().getTimesJs());
-        }
+        await this.buildDataTilesLayers(state, this.parent.getParent().getTimesJs());
       }
     } catch (error) {
       console.error('Error in setDate:', error);
