@@ -109,7 +109,7 @@ export default class PaletteFrame extends BaseFrame {
                                     <span className="icon"><i className="bi bi-x"></i></span>
                                 </div>
                                 <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
-                                    <input className="selectDiv uncDiv" id="uncertaintySlider" data-slider-id='uncertaintySlider' type="text" data-slider-step="1"/>
+                                    <input className="selectDiv uncDiv" id="uncertaintySlider" data-slider-id='uncertaintySlider' type="text" data-slider-step="1" readOnly={true}/>
                                 </div>
                             </div>
                         </div>
@@ -238,7 +238,7 @@ export default class PaletteFrame extends BaseFrame {
                         <span className="icon"><i className="bi bi-x"></i></span>
                     </div>
                     <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
-                        <input className="selectDiv uncDiv" id="uncertaintySlider" data-slider-id='uncertaintySlider' type="text" data-slider-step="1"/>
+                        <input className="selectDiv uncDiv" id="uncertaintySlider" data-slider-id='uncertaintySlider' type="text" data-slider-step="1" readOnly={true}/>
                     </div>
                 </div>
             </div>
@@ -251,6 +251,19 @@ export default class PaletteFrame extends BaseFrame {
     private initializeUncertaintySlider(initialValue: number): void {
         const uncertaintySliderElement = document.getElementById("uncertaintySlider");
         if (uncertaintySliderElement) {
+            try {
+                const inputEl = uncertaintySliderElement as HTMLInputElement;
+                inputEl.readOnly = true;
+                inputEl.setAttribute('readonly', 'true');
+                const preventDefaultFn = (ev: Event) => { ev.preventDefault(); };
+                inputEl.addEventListener('keydown', preventDefaultFn as EventListener);
+                inputEl.addEventListener('keypress', preventDefaultFn as EventListener);
+                inputEl.addEventListener('paste', preventDefaultFn as EventListener);
+                inputEl.addEventListener('drop', preventDefaultFn as EventListener);
+            } catch (err) {
+                console.warn('Could not enforce readonly on uncertaintySlider element', err);
+            }
+
             // Si ya existe un slider, destruirlo primero
             if (this.uncertaintySlider) {
                 try {
@@ -259,18 +272,18 @@ export default class PaletteFrame extends BaseFrame {
                     console.warn('Error destroying old slider:', e);
                 }
             }
-            
+
             this.uncertaintySlider = new Slider(uncertaintySliderElement, {
                 natural_arrow_keys: true,
                 min: 0,
                 max: 100,
                 value: initialValue,
             });
-            
+
             this.uncertaintySlider.on('slideStop', (val: number) => {
                 this.changeUncertaintyOpacity(val);
             });
-            
+
             console.log('Uncertainty slider initialized with value:', initialValue);
         }
     }

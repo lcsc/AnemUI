@@ -165,7 +165,6 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
            
             let timesArray = timesJs.times[varName];
             if (typeof timesArray === 'string') {
-                
                 timesArray = [timesArray];
             } else if (!Array.isArray(timesArray)) {
                 console.error('Times data is not an array or string for', varName);
@@ -175,15 +174,38 @@ export function downloadTCSVChunked(x: number, varName: string, portion: string,
             let baseData = zip(timesArray, floatArray);
             
             let download = false;
-            baseData.forEach((value, index, array) => {
-                if (!isNaN(value[1])) download = true;
-                asciiResult += value[0];
-                asciiResult += ';';
-                if (['e', 'f', 'd'].includes(timesJs.varType))
-                    asciiResult += parseFloat(value[1].toPrecision(ncSignif)) + "\n";
-                else
-                    asciiResult += value[1] + "\n";
-            });
+            
+            if (varName === 'ai_serie_anu') {
+                baseData.forEach((value, index, array) => {
+                    const numValue = value[1];
+                    const isValidNumber = numValue != null && !isNaN(numValue) && isFinite(numValue);
+                    
+                    if (isValidNumber) download = true;
+                    
+                    asciiResult += value[0];
+                    asciiResult += ';';
+                    
+                    if (isValidNumber) {
+                        if (['e', 'f', 'd'].includes(timesJs.varType))
+                            asciiResult += parseFloat(numValue.toPrecision(ncSignif)) + "\n";
+                        else
+                            asciiResult += numValue + "\n";
+                    } else {
+                        asciiResult += "\n"; // Línea vacía para valores inválidos
+                    }
+                });
+            } else {
+                // Código original para otras variables
+                baseData.forEach((value, index, array) => {
+                    if (!isNaN(value[1])) download = true;
+                    asciiResult += value[0];
+                    asciiResult += ';';
+                    if (['e', 'f', 'd'].includes(timesJs.varType))
+                        asciiResult += parseFloat(value[1].toPrecision(ncSignif)) + "\n";
+                    else
+                        asciiResult += value[1] + "\n";
+                });
+            }
 
             if (download) {
                 let xIndex: number = (x - 1) % timesJs.lonNum[varName + portion];
