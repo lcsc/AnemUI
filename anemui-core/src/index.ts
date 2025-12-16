@@ -4,6 +4,7 @@ export * from './PaletteManager';
 export * from './ServiceApp';
 export { BaseApp } from './BaseApp';
 export { InfoDiv } from './ui/InfoPanel';
+export { default as Language } from './language/language';
 // Export Support.ts items for backward compatibility  
 export { renderers, getFolders, defaultRenderer } from './tiles/Support';
 export const defaultElement = "Rejilla";

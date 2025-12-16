@@ -11,8 +11,7 @@ export default class LayerFrame  extends BaseFrame {
     protected slider: Slider
     private baseDiv: HTMLElement
     private polDiv: HTMLElement
-    private trpDiv: HTMLElement
-    private uncertaintyFrame: HTMLElement; 
+    private trpDiv: HTMLElement 
 
     public render():JSX.Element{
         let self=this;
@@ -20,11 +19,8 @@ export default class LayerFrame  extends BaseFrame {
         let lmgr = LayerManager.getInstance();
         let baseLayers=lmgr.getBaseLayerNames();
         let topLayers=lmgr.getTopLayerNames();
-        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
         let i: number = 0;
-        // mgr.setUncertaintyLayerChecked(true) //  ------------ ORIGINAL, por defecto está activada
-        // mgr.setUncertaintyLayerChecked(false)
         let element=
         (
             <div id="layer-frame" className='layerFrame btnSelect left'>
@@ -103,26 +99,6 @@ export default class LayerFrame  extends BaseFrame {
                         </div>
                     </div>
                 </div>
-                <div id="unc-div">
-                    {uncertaintyLayer &&
-                        <div>
-                            <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
-                                <span className="icon"><i className="bi bi-check-circle"></i></span>
-                                <span className="text"  id='uncertainty-text' aria-label='uncertainty'>
-                                    {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()}
-                                </span>
-                            </div>
-                            <div className='row selectDiv uncDiv hidden'>
-                                <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
-                                    <span className="icon"><i className="bi bi-x"></i></span>
-                                </div>
-                                <div className='col-9 p-0 inputDiv'>    
-                                    <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>self.toggleUncertaintyLayer(event.target.checked)} />
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
             </div>
         );
         return element;
@@ -151,53 +127,6 @@ export default class LayerFrame  extends BaseFrame {
         mgr.setTopSelected(value);
         this.parent.update();
         // this.container.querySelector("div.layerFrame").classList.remove("visible")
-    }
-
-    public toggleUncertaintyLayer (checked: boolean) {
-        let ptMgr=PaletteManager.getInstance();
-        ptMgr.setUncertaintyLayerChecked(checked)
-
-        // Verificar si el elemento existe antes de modificarlo
-        let uncertaintyText = document.querySelector("#uncertainty-text")
-        if (uncertaintyText) {
-            uncertaintyText.innerHTML = this.parent.getTranslation('uncertainty') + ': ' + ptMgr.getUncertaintyLayerChecked()
-        }
-
-        let mgr=LayerManager.getInstance();
-        // Solo intentar mostrar/ocultar la capa si existe
-        const uncertaintyLayer = mgr.getUncertaintyLayer();
-        if (uncertaintyLayer && uncertaintyLayer.length > 0) {
-            mgr.showUncertaintyLayer(checked)
-
-            // Forzar renderizado completo del mapa
-            const csMap = this.parent.getMap();
-            if (csMap && (csMap as any).controller && (csMap as any).controller.map) {
-                (csMap as any).controller.map.render();
-            }
-        }
-    }
-
-    public renderUncertaintyFrame():JSX.Element {
-        let mgr=PaletteManager.getInstance();
-        mgr.setUncertaintyLayerChecked(false)
-        return (
-            <div>
-                <div className="buttonDiv uncDiv visible" onClick={()=>this.toggleSelect('uncDiv')}>
-                    <span className="icon"><i className="bi bi-check-circle"></i></span>
-                    <span className="text"  id='uncertainty-text' aria-label='uncertainty'>
-                        {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyLayerChecked()}
-                    </span>
-                </div>
-                <div className='row selectDiv uncDiv hidden'>
-                    <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('uncDiv')}>
-                        <span className="icon"><i className="bi bi-x"></i></span>
-                    </div>
-                    <div className='col-9 p-0 inputDiv'>    
-                        <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" onChange={(event)=>this.toggleUncertaintyLayer(event.target.checked)} />
-                    </div>
-                </div>
-            </div>
-        );
     }
 
     public build(){
@@ -248,21 +177,5 @@ export default class LayerFrame  extends BaseFrame {
         this.container.querySelector(".layerFrame span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
         this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
         this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
-        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
-        
-        this.uncertaintyFrame = this.container.querySelector("#unc-div")
-        if (uncertaintyLayer) {
-            this.uncertaintyFrame.hidden = false;
-            if (this.uncertaintyFrame.children.length == 0) {
-                addChild(this.uncertaintyFrame,this.renderUncertaintyFrame())
-            }
-        } else {
-            this.uncertaintyFrame.hidden = true;
-            if (this.uncertaintyFrame.children.length > 0) {
-                while (this.uncertaintyFrame.firstChild) {
-                    this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
-                }
-            }
-        }
     }
 }
