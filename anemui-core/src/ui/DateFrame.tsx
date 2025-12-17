@@ -4,10 +4,11 @@ import 'bootstrap-datepicker'
 // import * as $ from "jquery";
 import $ from "jquery";
 import 'bootstrap-slider'
-import { default as Slider } from 'bootstrap-slider'; 
+import { default as Slider } from 'bootstrap-slider';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
+import { locale } from '../Env';
 
 
 export interface DateFrameListener {
@@ -69,6 +70,100 @@ export class DateSelectorFrame extends BaseFrame {
         super(_parent)
         this.listener = _listener;
         let self = this
+        this.configureDatepickerLocale();
+    }
+
+    /**
+     * Configura el locale del datepicker según el idioma del sistema
+     * Añade traducciones personalizadas si bootstrap-datepicker no las tiene nativas
+     */
+    private configureDatepickerLocale(): void {
+        // bootstrap-datepicker tiene soporte nativo para 'es' e 'en'
+        // pero vamos a asegurar que estén correctamente configurados
+
+        // Cast a any para acceder a la propiedad dates que existe en runtime pero no en los tipos
+        const datepicker = $.fn.datepicker as any;
+
+        if (locale === 'es' && datepicker && datepicker.dates) {
+            // Configuración española personalizada
+            datepicker.dates['es'] = {
+                days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+                daysShort: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+                daysMin: ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"],
+                months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+                monthsShort: ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                              "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+                today: "Hoy",
+                clear: "Borrar",
+                titleFormat: "MM yyyy",
+                weekStart: 1
+            };
+        } else if (locale === 'en' && datepicker && datepicker.dates) {
+            // Configuración inglesa (bootstrap-datepicker tiene 'en' por defecto, pero lo aseguramos)
+            datepicker.dates['en'] = {
+                days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+                daysMin: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+                months: ["January", "February", "March", "April", "May", "June",
+                         "July", "August", "September", "October", "November", "December"],
+                monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                today: "Today",
+                clear: "Clear",
+                titleFormat: "MM yyyy",
+                weekStart: 0
+            };
+        }
+    }
+
+    /**
+     * Obtiene el código de idioma para bootstrap-datepicker según el locale configurado
+     */
+    private getDatepickerLanguage(): string {
+        // bootstrap-datepicker acepta 'es' o 'en'
+        return locale === 'en' ? 'en' : 'es';
+    }
+
+    /**
+     * Obtiene el formato de fecha para visualización según el locale
+     */
+    private getDateFormat(): string {
+        // Español: dd/mm/yyyy (formato europeo con barras)
+        // Inglés: yyyy-mm-dd (formato ISO)
+        return locale === 'en' ? 'yyyy-mm-dd' : 'dd/mm/yyyy';
+    }
+
+    /**
+     * Convierte una fecha del formato yyyy-mm-dd (interno) al formato de visualización
+     */
+    private formatDateForDisplay(dateStr: string): string {
+        if (!dateStr || locale === 'en') {
+            return dateStr; // En inglés no hay conversión necesaria
+        }
+
+        // Convertir yyyy-mm-dd a dd/mm/yyyy para español
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return dateStr;
+    }
+
+    /**
+     * Convierte una fecha del formato de visualización al formato interno yyyy-mm-dd
+     */
+    private parseDateFromDisplay(dateStr: string): string {
+        if (!dateStr || locale === 'en') {
+            return dateStr; // En inglés no hay conversión necesaria
+        }
+
+        // Convertir dd/mm/yyyy a yyyy-mm-dd para español
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return dateStr;
     }
 
     public setValidDates(_dates: string[], _varChanged: boolean = false): void {
@@ -188,18 +283,20 @@ export class DateSelectorFrame extends BaseFrame {
 
             switch(this.mode) {
                 case DateFrameMode.DateFrameDate:
-                    this.datepicker.datepicker('setDate', this.dates[safeIndex]);
+                    // Convertir formato para visualización en español
+                    const displayDate = this.formatDateForDisplay(this.dates[safeIndex]);
+                    this.datepicker.datepicker('setDate', displayDate);
                     if (this.dates.length > 1) {
-                        this.datepicker.datepicker('setStartDate', this.dates[0]);
-                        this.datepicker.datepicker('setEndDate', this.dates[this.dates.length - 1]);
+                        this.datepicker.datepicker('setStartDate', this.formatDateForDisplay(this.dates[0]));
+                        this.datepicker.datepicker('setEndDate', this.formatDateForDisplay(this.dates[this.dates.length - 1]));
                     }
                     break;
                 case DateFrameMode.DateFrameMonth:
                     if (this.months && this.months.length > 0) {
-                        this.datepicker.datepicker('setDate', this.months[safeIndex]);
+                        this.datepicker.datepicker('setDate', this.formatDateForDisplay(this.months[safeIndex]));
                         if (this.months.length > 1) {
-                            this.datepicker.datepicker('setStartDate', this.months[0]);
-                            this.datepicker.datepicker('setEndDate', this.months[this.months.length - 1]);
+                            this.datepicker.datepicker('setStartDate', this.formatDateForDisplay(this.months[0]));
+                            this.datepicker.datepicker('setEndDate', this.formatDateForDisplay(this.months[this.months.length - 1]));
                         }
                     }
                     break;
@@ -379,17 +476,21 @@ export class DateSelectorFrame extends BaseFrame {
         }
         let options: DatepickerOptions;
         let pickerId: string
+        const datepickerLang = this.getDatepickerLanguage();
+        const dateFormat = this.getDateFormat();
+        const weekStart = locale === 'en' ? 0 : 1; // Inglés: domingo=0, Español: lunes=1
+
         switch(this.mode) {
             case DateFrameMode.DateFrameDate:
                 options = {
-                    format: "yyyy-mm-dd",
+                    format: dateFormat,
                     autoclose: true,
                     beforeShowDay: (date: Date) => this.isDateValid(date),
                     beforeShowMonth:(date: Date) => this.isMonthValid(date),
                     beforeShowYear:(date: Date) => this.isYearValid(date),
                     maxViewMode:'years',
-                    language:'es-ES',
-                    weekStart:1,
+                    language: datepickerLang,
+                    weekStart: weekStart,
                 }
                 pickerId = 'datePicker'
                 break;
@@ -400,7 +501,7 @@ export class DateSelectorFrame extends BaseFrame {
                     startView: 'months',
                     minViewMode: 'months',
                     maxViewMode:'years',
-                    language:'es-ES'
+                    language: datepickerLang
                 }
                 pickerId = 'monthPicker'
                 break;
@@ -410,7 +511,7 @@ export class DateSelectorFrame extends BaseFrame {
                     autoclose: true,
                     minViewMode: "years",
                     maxViewMode: "years",
-                    language: "es"
+                    language: datepickerLang
                 }
                 pickerId = 'seasonPicker'
                 this.pickerNotClicked = true;
@@ -421,7 +522,7 @@ export class DateSelectorFrame extends BaseFrame {
                     autoclose: true,
                     minViewMode: "years",
                     maxViewMode: "years",
-                    language: "es",
+                    language: datepickerLang,
                     beforeShowYear: (date: Date) => {
                         const year = date.getFullYear().toString();
                         const isValid = this.yearIndex && this.yearIndex[year] !== undefined;
@@ -562,21 +663,21 @@ export class DateSelectorFrame extends BaseFrame {
         })
         // @ts-ignore
         this.slider._setText = function (element: any, text: any) {}
-        this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[endDate]
+        this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[endDate])
         this.slider.on('slideStop',(val:number)=>{
             if(val==this.parent.getState().selectedTimeIndex)return;
             this.parent.getState().selectedTimeIndex=val;
-            this.datepicker.datepicker('setDate', this.dates[val])
+            this.datepicker.datepicker('setDate', this.formatDateForDisplay(this.dates[val]))
             if (this.mode == DateFrameMode.DateFrameSeason) {
-                let season = this.getSeason(this.dates[val]) 
+                let season = this.getSeason(this.dates[val])
             }
             this.parent.update();
         })
         this.slider.on('slide',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[val]
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
         })
         this.slider.on('slideStop',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[val]
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
         })
     }
 
