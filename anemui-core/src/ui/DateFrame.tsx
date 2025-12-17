@@ -4,10 +4,11 @@ import 'bootstrap-datepicker'
 // import * as $ from "jquery";
 import $ from "jquery";
 import 'bootstrap-slider'
-import { default as Slider } from 'bootstrap-slider'; 
+import { default as Slider } from 'bootstrap-slider';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
+import { locale } from '../Env';
 
 
 export interface DateFrameListener {
@@ -69,6 +70,79 @@ export class DateSelectorFrame extends BaseFrame {
         super(_parent)
         this.listener = _listener;
         let self = this
+    }
+
+    /**
+     * Configura el locale del datepicker según el idioma del sistema
+     * Añade traducciones personalizadas si bootstrap-datepicker no las tiene nativas
+     */
+    private configureDatepickerLocale(): void {
+        // bootstrap-datepicker tiene soporte nativo para 'es' e 'en'
+        // pero vamos a asegurar que estén correctamente configurados
+
+        // Cast a any para acceder a la propiedad dates que existe en runtime pero no en los tipos
+        const datepicker = $.fn.datepicker as any;
+
+        if (locale === 'es' && datepicker && datepicker.dates) {
+            // Configuración española personalizada
+            datepicker.dates['es'] = {
+                days: this.parent.getTranslation('days'),
+                daysShort: this.parent.getTranslation('daysShort'),
+                daysMin: this.parent.getTranslation('daysMin'),
+                months: this.parent.getTranslation('months'),
+                monthsShort: this.parent.getTranslation('monthsShort'),
+                today: this.parent.getTranslation('today'),
+                clear: this.parent.getTranslation('clear'),
+                titleFormat: "MM yyyy",
+                weekStart: 1
+            };
+        } else if (locale === 'en' && datepicker && datepicker.dates) {
+            // Configuración inglesa (bootstrap-datepicker tiene 'en' por defecto, pero lo aseguramos)
+            datepicker.dates['en'] = {
+                days: this.parent.getTranslation('days'),
+                daysShort: this.parent.getTranslation('daysShort'),
+                daysMin: this.parent.getTranslation('daysMin'),
+                months: this.parent.getTranslation('months'),
+                monthsShort: this.parent.getTranslation('monthsShort'),
+                today: this.parent.getTranslation('today'),
+                clear: this.parent.getTranslation('clear'),
+                titleFormat: "MM yyyy",
+                weekStart: 0
+            };
+        }
+    }
+
+    /**
+     * Obtiene el código de idioma para bootstrap-datepicker según el locale configurado
+     */
+    private getDatepickerLanguage(): string {
+        // bootstrap-datepicker acepta 'es' o 'en'
+        return locale === 'en' ? 'en' : 'es';
+    }
+
+    /**
+     * Obtiene el formato de fecha para visualización según el locale
+     */
+    private getDateFormat(): string {
+        // Español: dd/mm/yyyy (formato europeo con barras)
+        // Inglés: yyyy-mm-dd (formato ISO)
+        return locale === 'en' ? 'yyyy-mm-dd' : 'dd/mm/yyyy';
+    }
+
+    /**
+     * Convierte una fecha del formato yyyy-mm-dd (interno) al formato de visualización
+     */
+    private formatDateForDisplay(dateStr: string): string {
+        if (!dateStr || locale === 'en') {
+            return dateStr; // En inglés no hay conversión necesaria
+        }
+
+        // Convertir yyyy-mm-dd a dd/mm/yyyy para español
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return dateStr;
     }
 
     public setValidDates(_dates: string[], _varChanged: boolean = false): void {
@@ -188,18 +262,20 @@ export class DateSelectorFrame extends BaseFrame {
 
             switch(this.mode) {
                 case DateFrameMode.DateFrameDate:
-                    this.datepicker.datepicker('setDate', this.dates[safeIndex]);
+                    // Convertir formato para visualización en español
+                    const displayDate = this.formatDateForDisplay(this.dates[safeIndex]);
+                    this.datepicker.datepicker('setDate', displayDate);
                     if (this.dates.length > 1) {
-                        this.datepicker.datepicker('setStartDate', this.dates[0]);
-                        this.datepicker.datepicker('setEndDate', this.dates[this.dates.length - 1]);
+                        this.datepicker.datepicker('setStartDate', this.formatDateForDisplay(this.dates[0]));
+                        this.datepicker.datepicker('setEndDate', this.formatDateForDisplay(this.dates[this.dates.length - 1]));
                     }
                     break;
                 case DateFrameMode.DateFrameMonth:
                     if (this.months && this.months.length > 0) {
-                        this.datepicker.datepicker('setDate', this.months[safeIndex]);
+                        this.datepicker.datepicker('setDate', this.formatDateForDisplay(this.months[safeIndex]));
                         if (this.months.length > 1) {
-                            this.datepicker.datepicker('setStartDate', this.months[0]);
-                            this.datepicker.datepicker('setEndDate', this.months[this.months.length - 1]);
+                            this.datepicker.datepicker('setStartDate', this.formatDateForDisplay(this.months[0]));
+                            this.datepicker.datepicker('setEndDate', this.formatDateForDisplay(this.months[this.months.length - 1]));
                         }
                     }
                     break;
@@ -325,36 +401,36 @@ export class DateSelectorFrame extends BaseFrame {
     };
 
     private getSeason(season: string): string {
-        const translations: any = this.parent.getTranslation('season'); 
-        
+        const translations: any = this.parent.getTranslation('season');
+
         switch (season.trim()) {
-            case translations[2]:    
+            case translations[1]:
                 return '04'
-            case translations[3]:    
-                return '07' 
-            case translations[4]:    
+            case translations[2]:
+                return '07'
+            case translations[3]:
                 return '10'
             default:
-                return '01'    
+                return '01'
         }
     }
 
     public setSeason (seasonId: string) {
-        const translations: any = this.parent.getTranslation('season'); 
+        const translations: any = this.parent.getTranslation('season');
         let season: string;
         switch (seasonId) {
             case '04':
-                season = translations[2];
+                season = translations[1];
                 break;
             case '07':
-                season = translations[3];
-                break; 
+                season = translations[2];
+                break;
             case '10':
-                season = translations[4];
+                season = translations[3];
                 break;
             default:
-                season = translations[1];
-                break;    
+                season = translations[0];
+                break;
         }
         this.season.config(true, season);
     }
@@ -379,17 +455,21 @@ export class DateSelectorFrame extends BaseFrame {
         }
         let options: DatepickerOptions;
         let pickerId: string
+        const datepickerLang = this.getDatepickerLanguage();
+        const dateFormat = this.getDateFormat();
+        const weekStart = locale === 'en' ? 0 : 1; // Inglés: domingo=0, Español: lunes=1
+
         switch(this.mode) {
             case DateFrameMode.DateFrameDate:
                 options = {
-                    format: "yyyy-mm-dd",
+                    format: dateFormat,
                     autoclose: true,
                     beforeShowDay: (date: Date) => this.isDateValid(date),
                     beforeShowMonth:(date: Date) => this.isMonthValid(date),
                     beforeShowYear:(date: Date) => this.isYearValid(date),
                     maxViewMode:'years',
-                    language:'es-ES',
-                    weekStart:1,
+                    language: datepickerLang,
+                    weekStart: weekStart,
                 }
                 pickerId = 'datePicker'
                 break;
@@ -400,7 +480,7 @@ export class DateSelectorFrame extends BaseFrame {
                     startView: 'months',
                     minViewMode: 'months',
                     maxViewMode:'years',
-                    language:'es-ES'
+                    language: datepickerLang
                 }
                 pickerId = 'monthPicker'
                 break;
@@ -410,7 +490,7 @@ export class DateSelectorFrame extends BaseFrame {
                     autoclose: true,
                     minViewMode: "years",
                     maxViewMode: "years",
-                    language: "es"
+                    language: datepickerLang
                 }
                 pickerId = 'seasonPicker'
                 this.pickerNotClicked = true;
@@ -421,7 +501,7 @@ export class DateSelectorFrame extends BaseFrame {
                     autoclose: true,
                     minViewMode: "years",
                     maxViewMode: "years",
-                    language: "es",
+                    language: datepickerLang,
                     beforeShowYear: (date: Date) => {
                         const year = date.getFullYear().toString();
                         const isValid = this.yearIndex && this.yearIndex[year] !== undefined;
@@ -548,6 +628,9 @@ export class DateSelectorFrame extends BaseFrame {
         this.sliderFrame = document.getElementById("sliderFrame") as HTMLElement;
         this.periods = [1,4,12]
 
+        // Configurar locale del datepicker ahora que parent está completamente inicializado
+        this.configureDatepickerLocale();
+
         let self = this
         this.updateMode();
         this.updatePicker();
@@ -562,21 +645,21 @@ export class DateSelectorFrame extends BaseFrame {
         })
         // @ts-ignore
         this.slider._setText = function (element: any, text: any) {}
-        this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[endDate]
+        this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[endDate])
         this.slider.on('slideStop',(val:number)=>{
             if(val==this.parent.getState().selectedTimeIndex)return;
             this.parent.getState().selectedTimeIndex=val;
-            this.datepicker.datepicker('setDate', this.dates[val])
+            this.datepicker.datepicker('setDate', this.formatDateForDisplay(this.dates[val]))
             if (this.mode == DateFrameMode.DateFrameSeason) {
-                let season = this.getSeason(this.dates[val]) 
+                let season = this.getSeason(this.dates[val])
             }
             this.parent.update();
         })
         this.slider.on('slide',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[val]
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
         })
         this.slider.on('slideStop',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[val]
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
         })
     }
 
@@ -714,8 +797,15 @@ export class DateSelectorFrame extends BaseFrame {
 
     public getPeriods(): string[] {
         const timeSpan = this.getTimeSpan()
-        let period = timeSpan==2? this.parent.getTranslation('season'):this.parent.getTranslation('month')
-        return Object.values(period);       
+        if (timeSpan == 2) {
+            // Para estaciones, devolver los valores del objeto season
+            const season = this.parent.getTranslation('season');
+            return Object.values(season);
+        } else {
+            // Para meses, devolver directamente el array de meses
+            const months = this.parent.getTranslation('months');
+            return Array.isArray(months) ? months : Object.values(months);
+        }
     }
 
     public getTime (time:string[]): number  {
