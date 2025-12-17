@@ -70,7 +70,6 @@ export class DateSelectorFrame extends BaseFrame {
         super(_parent)
         this.listener = _listener;
         let self = this
-        this.configureDatepickerLocale();
     }
 
     /**
@@ -87,30 +86,26 @@ export class DateSelectorFrame extends BaseFrame {
         if (locale === 'es' && datepicker && datepicker.dates) {
             // Configuración española personalizada
             datepicker.dates['es'] = {
-                days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
-                daysShort: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
-                daysMin: ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"],
-                months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
-                monthsShort: ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
-                              "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-                today: "Hoy",
-                clear: "Borrar",
+                days: this.parent.getTranslation('days'),
+                daysShort: this.parent.getTranslation('daysShort'),
+                daysMin: this.parent.getTranslation('daysMin'),
+                months: this.parent.getTranslation('months'),
+                monthsShort: this.parent.getTranslation('monthsShort'),
+                today: this.parent.getTranslation('today'),
+                clear: this.parent.getTranslation('clear'),
                 titleFormat: "MM yyyy",
                 weekStart: 1
             };
         } else if (locale === 'en' && datepicker && datepicker.dates) {
             // Configuración inglesa (bootstrap-datepicker tiene 'en' por defecto, pero lo aseguramos)
             datepicker.dates['en'] = {
-                days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-                daysMin: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-                months: ["January", "February", "March", "April", "May", "June",
-                         "July", "August", "September", "October", "November", "December"],
-                monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                today: "Today",
-                clear: "Clear",
+                days: this.parent.getTranslation('days'),
+                daysShort: this.parent.getTranslation('daysShort'),
+                daysMin: this.parent.getTranslation('daysMin'),
+                months: this.parent.getTranslation('months'),
+                monthsShort: this.parent.getTranslation('monthsShort'),
+                today: this.parent.getTranslation('today'),
+                clear: this.parent.getTranslation('clear'),
                 titleFormat: "MM yyyy",
                 weekStart: 0
             };
@@ -146,22 +141,6 @@ export class DateSelectorFrame extends BaseFrame {
         const parts = dateStr.split('-');
         if (parts.length === 3) {
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-        return dateStr;
-    }
-
-    /**
-     * Convierte una fecha del formato de visualización al formato interno yyyy-mm-dd
-     */
-    private parseDateFromDisplay(dateStr: string): string {
-        if (!dateStr || locale === 'en') {
-            return dateStr; // En inglés no hay conversión necesaria
-        }
-
-        // Convertir dd/mm/yyyy a yyyy-mm-dd para español
-        const parts = dateStr.split('/');
-        if (parts.length === 3) {
-            return `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
         return dateStr;
     }
@@ -422,36 +401,36 @@ export class DateSelectorFrame extends BaseFrame {
     };
 
     private getSeason(season: string): string {
-        const translations: any = this.parent.getTranslation('season'); 
-        
+        const translations: any = this.parent.getTranslation('season');
+
         switch (season.trim()) {
-            case translations[2]:    
+            case translations[1]:
                 return '04'
-            case translations[3]:    
-                return '07' 
-            case translations[4]:    
+            case translations[2]:
+                return '07'
+            case translations[3]:
                 return '10'
             default:
-                return '01'    
+                return '01'
         }
     }
 
     public setSeason (seasonId: string) {
-        const translations: any = this.parent.getTranslation('season'); 
+        const translations: any = this.parent.getTranslation('season');
         let season: string;
         switch (seasonId) {
             case '04':
-                season = translations[2];
+                season = translations[1];
                 break;
             case '07':
-                season = translations[3];
-                break; 
+                season = translations[2];
+                break;
             case '10':
-                season = translations[4];
+                season = translations[3];
                 break;
             default:
-                season = translations[1];
-                break;    
+                season = translations[0];
+                break;
         }
         this.season.config(true, season);
     }
@@ -649,6 +628,9 @@ export class DateSelectorFrame extends BaseFrame {
         this.sliderFrame = document.getElementById("sliderFrame") as HTMLElement;
         this.periods = [1,4,12]
 
+        // Configurar locale del datepicker ahora que parent está completamente inicializado
+        this.configureDatepickerLocale();
+
         let self = this
         this.updateMode();
         this.updatePicker();
@@ -815,8 +797,15 @@ export class DateSelectorFrame extends BaseFrame {
 
     public getPeriods(): string[] {
         const timeSpan = this.getTimeSpan()
-        let period = timeSpan==2? this.parent.getTranslation('season'):this.parent.getTranslation('month')
-        return Object.values(period);       
+        if (timeSpan == 2) {
+            // Para estaciones, devolver los valores del objeto season
+            const season = this.parent.getTranslation('season');
+            return Object.values(season);
+        } else {
+            // Para meses, devolver directamente el array de meses
+            const months = this.parent.getTranslation('months');
+            return Array.isArray(months) ? months : Object.values(months);
+        }
     }
 
     public getTime (time:string[]): number  {
