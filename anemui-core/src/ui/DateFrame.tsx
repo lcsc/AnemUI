@@ -620,69 +620,92 @@ export class DateSelectorFrame extends BaseFrame {
         this.slider.setValue(this.parent.getState().selectedTimeIndex,false,false);
     }
 
-    protected updateMode(){
-        let time = this.getTime(this.parent.getState().times)
-        let state = this.parent.getState();
+protected updateMode(){
+    let time = this.getTime(this.parent.getState().times)
+    let state = this.parent.getState();
+    
+    console.log('📅 DateSelectorFrame.updateMode:', {
+        tpSupport: state.tpSupport,
+        varName: state.varName,
+        climatology: state.climatology,
+        time
+    });
+    
+    // Handle single date strings specially
+    if (typeof this.parent.getState().times === 'string') {
+        console.log('DEBUG: Single date string detected, using year mode');
+        this.timeSeriesFrame.hidden = false;
+        this.climatologyFrame.hidden = true;
+        this.sliderFrame.hidden = true;
+        this.mode = DateFrameMode.DateFrameYear;
+        return;
+    }
+    
+    // Determinar si es climatología
+    const isClimatology = state.climatology || state.tpSupport === 'Climatología histórica';
+    
+    if (!isClimatology) {
+        // SERIE TEMPORAL O ESCENARIOS FUTUROS
+        const isScenarioAnnual = state.tpSupport === 'Escenarios futuros' && state.varName === 'Índice de aridez anual';
         
-        // Handle single date strings specially
-        if (typeof this.parent.getState().times === 'string') {
-            console.log('DEBUG: Single date string detected, using year mode');
-            this.timeSeriesFrame.hidden = false;
+        if (isScenarioAnnual) {
+            console.log('🚫 Hiding datepicker for scenario annual');
+            this.timeSeriesFrame.hidden = true;
             this.climatologyFrame.hidden = true;
             this.sliderFrame.hidden = true;
-            this.mode = DateFrameMode.DateFrameYear;
-            return;
-        }
-        
-        if (!this.parent.getState().climatology) {
-            const isScenarioAnnual = state.tpSupport === 'Escenarios futuros' && state.varName === 'Índice de aridez anual';
-            
-            if (isScenarioAnnual) {
-                console.log('DEBUG: Hiding datepicker for scenario annual (any spatial support)');
-                this.timeSeriesFrame.hidden = true;
-                this.climatologyFrame.hidden = true;
-                this.sliderFrame.hidden = true;
-                this.mode = DateFrameMode.DateFrameDisabled;
-            } else {
-                console.log('DEBUG: Showing datepicker for time series');
-                this.timeSeriesFrame.hidden = false;
-                this.climatologyFrame.hidden = true;
-                this.sliderFrame.hidden = false;
-                
-                switch (time) {
-                    case 1: 
-                        this.mode = DateFrameMode.DateFrameYear;
-                        this.sliderFrame.hidden = true;
-                        break;
-                    case 4:
-                        this.mode = DateFrameMode.DateFrameSeason;
-                        break;
-                    case 12:
-                        this.mode = DateFrameMode.DateFrameMonth;
-                        break;
-                    default:
-                        this.mode = DateFrameMode.DateFrameDate;
-                        break;
-                }
-            }
+            this.mode = DateFrameMode.DateFrameDisabled;
         } else {
-            this.timeSeriesFrame.hidden = true;
+            console.log('✅ Showing datepicker for time series or scenario monthly/seasonal');
+            this.timeSeriesFrame.hidden = false;
+            this.climatologyFrame.hidden = true;
+            
             switch (time) {
                 case 1: 
-                    this.mode = DateFrameMode.ClimFrameYear;
+                    this.mode = DateFrameMode.DateFrameYear;
                     this.sliderFrame.hidden = true;
-                    this.climatologyFrame.hidden = true;
+                    break;
+                case 4:
+                    this.mode = DateFrameMode.DateFrameSeason;
+                    this.sliderFrame.hidden = false;
+                    break;
+                case 12:
+                    this.mode = DateFrameMode.DateFrameMonth;
+                    this.sliderFrame.hidden = false;
                     break;
                 default:
-                    this.mode = time==4? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
-                    let period = this.getPeriods(time);
-                    this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
+                    this.mode = DateFrameMode.DateFrameDate;
                     this.sliderFrame.hidden = false;
-                    this.climatologyFrame.hidden = false;
                     break;
             }
         }
+    } else {
+        // CLIMATOLOGÍA HISTÓRICA: siempre ocultar
+        console.log('🚫 Hiding datepicker for climatology');
+        this.timeSeriesFrame.hidden = true;
+        
+        switch (time) {
+            case 1: 
+                this.mode = DateFrameMode.ClimFrameYear;
+                this.sliderFrame.hidden = true;
+                this.climatologyFrame.hidden = true;
+                break;
+            default:
+                this.mode = time == 4 ? DateFrameMode.ClimFrameSeason : DateFrameMode.ClimFrameMonth;
+                let period = this.getPeriods(time);
+                this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
+                this.sliderFrame.hidden = false;
+                this.climatologyFrame.hidden = false;
+                break;
+        }
     }
+    
+    console.log('📅 DateSelectorFrame.updateMode result:', {
+        mode: this.mode,
+        timeSeriesHidden: this.timeSeriesFrame.hidden,
+        climatologyHidden: this.climatologyFrame.hidden,
+        sliderHidden: this.sliderFrame.hidden
+    });
+}
 
     public showAdvanceButtons(visible:boolean=true){
         this.container.querySelectorAll("[role=event-btn]").forEach((value:HTMLButtonElement)=>value.hidden=!visible);
@@ -714,4 +737,30 @@ export class DateSelectorFrame extends BaseFrame {
         }, []);
         return time.length / result.length;
     }
+
+public hide(): void {
+    console.log('🚫 DateSelectorFrame.hide() called');
+    const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
+    if (dateFrame) {
+        dateFrame.style.display = 'none';
+        dateFrame.hidden = true;
+        
+        // Ocultar también los frames internos
+        if (this.timeSeriesFrame) this.timeSeriesFrame.hidden = true;
+        if (this.climatologyFrame) this.climatologyFrame.hidden = true;
+        if (this.sliderFrame) this.sliderFrame.hidden = true;
+    }
+}
+
+public show(): void {
+    console.log('✅ DateSelectorFrame.show() called');
+    const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
+    if (dateFrame) {
+        dateFrame.style.display = '';
+        dateFrame.hidden = false;
+        
+        // Forzar actualización del modo para mostrar los frames correctos
+        this.updateMode();
+    }
+}
 }

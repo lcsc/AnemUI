@@ -1,6 +1,6 @@
 import { createElement, addChild } from 'tsx-create-element';
 import { BaseFrame, mouseOverFrame } from './BaseFrame';
-import { GradientPainter, CsDynamicPainter, PaletteManager } from '../PaletteManager';
+import { GradientPainter, PaletteManager } from '../PaletteManager';
 import Slider from 'bootstrap-slider';
 import { LayerManager } from '../LayerManager';
 
@@ -25,8 +25,15 @@ export default class PaletteFrame extends BaseFrame {
         let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
         mgr.setUncertaintyLayerChecked(false)
         
-        const currentPalette = mgr.getSelected();
-        const isContinuousPalette = currentPalette === 'continua' || currentPalette === 'cambio-continuo' || currentPalette === 'gradiente';
+        // Pedimos a la app las paletas permitidas (si la app implementa la función)
+        const allowedPalettes: string[] =
+            (typeof (this.parent as any).getAllowedPalettes === 'function')
+                ? (this.parent as any).getAllowedPalettes()
+                : palettes.filter(p => p !== 'uncertainty'); // fallback: todas excepto uncertainty
+         
+         // Selección actual, y si es tipo continua según nuevos nombres
+         const currentPalette = mgr.getSelected();
+         const isContinuousPalette = ['continua_cv','continua_cambio','continua_prom'].includes(currentPalette);
 
         console.log('PaletteFrame.render:', { 
             palette: currentPalette, 
@@ -35,6 +42,12 @@ export default class PaletteFrame extends BaseFrame {
             firstText: texts[0],
             lastText: texts[texts.length - 1]
         });
+
+        // Consultar a la app qué paletas están permitidas y si debe mostrarse el selector
+        const showPaletteSelector: boolean =
+            (typeof (this.parent as any).isPaletteSelectorVisible === 'function')
+                ? (this.parent as any).isPaletteSelectorVisible()
+                : allowedPalettes.length > 1;
 
         let element = (
             <div id="PaletteFrame" className='rightbar-item paletteFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
@@ -66,7 +79,7 @@ export default class PaletteFrame extends BaseFrame {
                     }
                     <div id="legendBottom"></div>
                 </div>
-                {palettes.length > 2 &&
+                { showPaletteSelector &&
                     <div className='paletteSelect btnSelect right'>
                         <div id="palette-div">
                             <div className="buttonDiv paletteDiv visible" onClick={() => this.toggleSelect('paletteDiv')}>
@@ -81,13 +94,11 @@ export default class PaletteFrame extends BaseFrame {
                                 </div>
                                 <div className='col-9 p-0 inputDiv'>
                                     <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event) => { self.changePalette(event.target.value) }}>
-                                        {palettes.map((val, index) => {
-                                            if (val != 'uncertainty') {
-                                                if (mgr.getSelected() == val) {
-                                                    return (<option key={index} value={val} selected>{val}</option>)
-                                                }
-                                                return (<option key={index} value={val}>{val}</option>)
+                                        {allowedPalettes.map((val, index) => {
+                                            if (mgr.getSelected() == val) {
+                                                return (<option key={index} value={val} selected>{val}</option>)
                                             }
+                                            return (<option key={index} value={val}>{val}</option>)
                                         })}
                                     </select>
                                 </div>
@@ -121,19 +132,12 @@ export default class PaletteFrame extends BaseFrame {
     }
 
     private createGradientForPalette(paletteName: string, mgr: PaletteManager): string {
+        // Obtener colores desde PaletteManager (definidos por el servicio)
         const colors = mgr.updatePaletteStrings();
-        
-        switch(paletteName) {
-            case 'cambio-continuo':
-                return this.generateSmoothGradient(['#2166AC', '#67A9CF', '#F7F7F7', '#F4A582', '#B2182B']);
-            case 'continua':
-                return this.generateSmoothGradient(['#A50026','#ED3D3F',  '#FDBF6F', '#B2DF8A', '#A6CEE3', '#1F78B4']);
-            default:
-                if (colors.length >= 2) {
-                    return this.generateSmoothGradient(colors);
-                }
-                return 'linear-gradient(to top, #ccc, #fff)';
+        if (colors && colors.length >= 2) {
+            return this.generateSmoothGradient(colors);
         }
+        return 'linear-gradient(to top, #ccc, #fff)';
     }
 
     private generateSmoothGradient(baseColors: string[]): string {
@@ -227,7 +231,8 @@ export default class PaletteFrame extends BaseFrame {
         let mgr = PaletteManager.getInstance();
         return (
             <div className='paletteSelect btnSelect right'>
-                <div className="buttonDiv uncDiv visible" onClick={() => this.toggleSelect('uncDiv')}>
+                {/* add data-key so tooltip observer can pick it */}
+                <div className="buttonDiv uncDiv visible" data-key="uncertainty" onClick={() => this.toggleSelect('uncDiv')}>
                     <span className="icon"><i className="bi bi-question-circle"></i></span>
                     <span className="text" id='uncertainty-text' aria-label='uncertainty'>
                         {this.parent.getTranslation('uncertainty')}: {mgr.getUncertaintyOpacity()}%
@@ -245,75 +250,273 @@ export default class PaletteFrame extends BaseFrame {
         );
     }
 
-    /**
-     * Inicializa el slider de uncertainty
-     */
-    private initializeUncertaintySlider(initialValue: number): void {
-        const uncertaintySliderElement = document.getElementById("uncertaintySlider");
-        if (uncertaintySliderElement) {
-            try {
-                const inputEl = uncertaintySliderElement as HTMLInputElement;
-                inputEl.readOnly = true;
-                inputEl.setAttribute('readonly', 'true');
-                const preventDefaultFn = (ev: Event) => { ev.preventDefault(); };
-                inputEl.addEventListener('keydown', preventDefaultFn as EventListener);
-                inputEl.addEventListener('keypress', preventDefaultFn as EventListener);
-                inputEl.addEventListener('paste', preventDefaultFn as EventListener);
-                inputEl.addEventListener('drop', preventDefaultFn as EventListener);
-            } catch (err) {
-                console.warn('Could not enforce readonly on uncertaintySlider element', err);
-            }
-
-            // Si ya existe un slider, destruirlo primero
-            if (this.uncertaintySlider) {
-                try {
-                    this.uncertaintySlider.destroy();
-                } catch (e) {
-                    console.warn('Error destroying old slider:', e);
-                }
-            }
-
-            this.uncertaintySlider = new Slider(uncertaintySliderElement, {
-                natural_arrow_keys: true,
-                min: 0,
-                max: 100,
-                value: initialValue,
-            });
-
-            this.uncertaintySlider.on('slideStop', (val: number) => {
-                this.changeUncertaintyOpacity(val);
-            });
-
-            console.log('Uncertainty slider initialized with value:', initialValue);
-        }
+/**
+ * Inicializa el slider de uncertainty
+ */
+private initializeUncertaintySlider(initialValue: number): void {
+    const uncertaintySliderElement = document.getElementById("uncertaintySlider");
+    
+    if (!uncertaintySliderElement) {
+        console.warn('uncertaintySlider element not found in DOM');
+        return;
     }
 
-    /**
-     * Verifica que el slider esté correctamente inicializado
-     */
-    private ensureUncertaintySliderInitialized(currentValue: number): void {
-        const uncertaintySliderElement = document.getElementById("uncertaintySlider");
+    try {
+        // Configurar el elemento como readonly ANTES de crear el slider
+        const inputEl = uncertaintySliderElement as HTMLInputElement;
+        inputEl.readOnly = true;
+        inputEl.setAttribute('readonly', 'readonly');
+        inputEl.setAttribute('data-provide', 'slider');
         
-        if (!uncertaintySliderElement) {
-            return;
+        // Prevenir escritura
+        const preventInput = (ev: Event) => { 
+            ev.preventDefault(); 
+            ev.stopPropagation();
+            return false;
+        };
+        inputEl.addEventListener('keydown', preventInput as EventListener);
+        inputEl.addEventListener('keypress', preventInput as EventListener);
+        inputEl.addEventListener('keyup', preventInput as EventListener);
+        inputEl.addEventListener('paste', preventInput as EventListener);
+        inputEl.addEventListener('drop', preventInput as EventListener);
+        inputEl.addEventListener('input', preventInput as EventListener);
+        
+        // Si ya existe un slider, destruirlo primero
+        if (this.uncertaintySlider) {
+            try {
+                this.uncertaintySlider.destroy();
+                this.uncertaintySlider = null;
+            } catch (e) {
+                console.warn('Error destroying old slider:', e);
+                this.uncertaintySlider = null;
+            }
         }
-        
-        // Verificar si el slider existe y está funcionando
-        if (!this.uncertaintySlider) {
-            console.log('Uncertainty slider not initialized, creating it...');
+
+        // Crear el slider
+        this.uncertaintySlider = new Slider(uncertaintySliderElement, {
+            natural_arrow_keys: true,
+            min: 0,
+            max: 100,
+            value: initialValue,
+            tooltip: 'hide'
+        });
+
+        // Prevenir focus en el input
+        inputEl.addEventListener('focus', (ev) => {
+            ev.preventDefault();
+            inputEl.blur();
+        });
+
+        this.uncertaintySlider.on('slideStop', (val: number) => {
+            this.changeUncertaintyOpacity(val);
+        });
+
+        console.log('Uncertainty slider initialized with value:', initialValue);
+    } catch (err) {
+        console.error('Error initializing uncertainty slider:', err);
+    }
+}
+
+/**
+ * Verifica que el slider esté correctamente inicializado
+ */
+private ensureUncertaintySliderInitialized(currentValue: number): void {
+    const uncertaintySliderElement = document.getElementById("uncertaintySlider");
+    
+    if (!uncertaintySliderElement) {
+        console.warn('uncertaintySlider element not found');
+        return;
+    }
+    
+    // Verificar si el slider existe y está funcionando
+    if (!this.uncertaintySlider) {
+        console.log('Uncertainty slider not initialized, creating it...');
+        this.initializeUncertaintySlider(currentValue);
+    } else {
+        // El slider existe, actualizar su valor
+        try {
+            this.uncertaintySlider.setValue(currentValue);
+            console.log('Updated uncertainty slider value to:', currentValue);
+        } catch (error) {
+            // Si falla, significa que el slider se destruyó, recrearlo
+            console.warn('Uncertainty slider broken, reinitializing...', error);
+            this.uncertaintySlider = null;
             this.initializeUncertaintySlider(currentValue);
-        } else {
-            // El slider existe, actualizar su valor
-            try {
-                this.uncertaintySlider.setValue(currentValue);
-                console.log('Updated uncertainty slider value to:', currentValue);
-            } catch (error) {
-                // Si falla, significa que el slider se destruyó, recrearlo
-                console.warn('Uncertainty slider broken, reinitializing...');
-                this.initializeUncertaintySlider(currentValue);
-            }
         }
     }
+}
+
+public async update(): Promise<void> {
+    const legendValues = await this.parent.getLegendValues();
+    const legendText = await this.parent.getLegendText();
+
+    if (!legendValues || !legendText) {
+        console.warn('Legend values or text are undefined, skipping palette update');
+        return;
+    }
+
+    if (!this.container) {
+        console.warn('PaletteFrame container not initialized, skipping palette update');
+        return;
+    }
+
+    // Asegurar visibilidad del selector de paleta según la app
+    try {
+        const mgrForVisibility = PaletteManager.getInstance();
+        const allowedPalettes: string[] =
+            (typeof (this.parent as any).getAllowedPalettes === 'function')
+                ? (this.parent as any).getAllowedPalettes()
+                : mgrForVisibility.getPalettesNames().filter(p => p !== 'uncertainty');
+
+        const showPaletteSelector: boolean =
+            (typeof (this.parent as any).isPaletteSelectorVisible === 'function')
+                ? (this.parent as any).isPaletteSelectorVisible()
+                : allowedPalettes.length > 1;
+
+        const paletteSelectorEls = Array.from(this.container.querySelectorAll('.paletteSelect'))
+            .filter((el: Element) => el.querySelector('#palette-div') !== null) as HTMLElement[];
+        paletteSelectorEls.forEach(el => {
+            el.style.display = showPaletteSelector ? '' : 'none';
+        });
+    } catch (e) {
+        console.warn('Error checking palette selector visibility:', e);
+    }
+
+    let values = [...legendValues].reverse();
+    let texts = [...legendText].reverse();
+    let ptr = PaletteManager.getInstance().getPainter();
+    let mgr = PaletteManager.getInstance();
+    let lmgr = LayerManager.getInstance();
+    let min: number = Math.min(...values);
+    let max: number = Math.max(...values);
+    let name: string;
+    let data = this.container.querySelector(".info")
+
+    if (this.parent.getState().computedLayer) {
+        name = this.parent.getState().legendTitle;
+    } else {
+        if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined) {
+            name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+        } else {
+            name = this.parent.getState().legendTitle;
+        }
+    }
+
+    data.innerHTML = "<div id='units'><span class='legendText'>" + name + "</span><br/></div>";
+
+    const currentPalette = mgr.getSelected();
+    const isContinuousPalette = ['continua_cv', 'continua_cambio', 'continua_prom'].includes(currentPalette);
+    const isWindPalette = currentPalette === 'wind-kmh';
+    
+    console.log('PaletteFrame.update:', { 
+        currentPalette, 
+        isWindPalette, 
+        valuesLength: values.length, 
+        textsLength: texts.length,
+        firstText: texts[0],
+        lastText: texts[texts.length - 1]
+    });
+
+    if (isContinuousPalette) {
+        const gradientDiv = document.createElement('div');
+        gradientDiv.className = 'gradient-legend-container';
+        const bg = this.createGradientForPalette(currentPalette, mgr);
+        gradientDiv.innerHTML = `
+            <div class="gradient-legend-bar" style="
+                background: ${bg};
+                height: ${Math.max(values.length * 40, 200)}px;
+                width: 100%;
+                border: 1px solid #ccc;
+                border-radius: 2px;
+                min-height: 150px;
+            "></div>
+        `;
+        data.appendChild(gradientDiv);
+    } else if (isWindPalette) {
+        console.log('Rendering wind palette legend in update');
+        
+        const windColors = mgr.updatePaletteStrings();
+        console.log('Wind colors for legend:', windColors);
+        
+        texts.forEach((text, index) => {
+            const colorIndex = windColors.length - 1 - index;
+            const backgroundColor = windColors[colorIndex];
+            const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
+            
+            const legendItem = document.createElement('div');
+            legendItem.style.background = backgroundColor;
+            legendItem.style.color = textColor;
+            legendItem.innerHTML = `<span class="legendText smallText"> ${text}</span><br/>`;
+            
+            data.appendChild(legendItem);
+            
+            console.log(`Wind legend item ${index}:`, { text, color: backgroundColor, colorIndex });
+        });
+    } else {
+        values.map((val: number, index: number) => {
+            let mgr = PaletteManager.getInstance();
+            mgr.updatePaletteStrings(); 
+            let ptr = mgr.getPainter();
+            const backgroundColor = ptr.getColorString(val, min, max);
+            const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
+
+            let displayText = texts[index];
+
+            addChild(data, (
+                <div style={{ background: backgroundColor, color: textColor }}>
+                    <span className="legendText smallText">{displayText}</span><br />
+                </div>
+            ));
+        });
+    }
+
+    data.innerHTML += "<div id='legendBottom'></div>";
+
+    let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
+
+this.uncertaintyFrame = this.container.querySelector("#unc-div");
+if (uncertaintyLayer && this.uncertaintyFrame) {
+    this.uncertaintyFrame.hidden = false;
+    
+    const existingUncertaintyDiv = this.uncertaintyFrame.querySelector('.paletteSelect');
+    
+    if (!existingUncertaintyDiv) {
+        // Primera vez: crear el frame
+        addChild(this.uncertaintyFrame, this.renderUncertaintyFrame());
+        
+        // Esperar a que el DOM esté listo
+        setTimeout(() => {
+            const sliderEl = document.getElementById("uncertaintySlider");
+            if (sliderEl) {
+                this.initializeUncertaintySlider(mgr.getUncertaintyOpacity());
+            } else {
+                console.warn('uncertaintySlider element not found after render');
+            }
+        }, 150);
+    } else {
+        // Ya existe: actualizar texto y verificar slider
+        const uncertaintyText = this.uncertaintyFrame.querySelector("#uncertainty-text");
+        if (uncertaintyText) {
+            uncertaintyText.textContent = this.parent.getTranslation('uncertainty') + ': ' + mgr.getUncertaintyOpacity() + '%';
+        }
+        
+        // Verificar si el slider existe y reinicializarlo si es necesario
+        setTimeout(() => {
+            this.ensureUncertaintySliderInitialized(mgr.getUncertaintyOpacity());
+        }, 50);
+    }
+} else if (this.uncertaintyFrame) {
+    this.uncertaintyFrame.hidden = true;
+    // Destruir el slider si existe
+    this.destroyUncertaintySlider();
+    // Limpiar el DOM
+    if (this.uncertaintyFrame.children.length > 0) {
+        while (this.uncertaintyFrame.firstChild) {
+            this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
+        }
+    }
+}
+}
 
     /**
      * Destruye el slider de uncertainty
@@ -343,153 +546,6 @@ export default class PaletteFrame extends BaseFrame {
 
     public showFrame(): void {
         this.container.classList.remove("paletteSmall")
-    }
-
-    public async update(): Promise<void> {
-        const legendValues = await this.parent.getLegendValues();
-        const legendText = await this.parent.getLegendText();
-
-        if (!legendValues || !legendText) {
-            console.warn('Legend values or text are undefined, skipping palette update');
-            return;
-        }
-
-        if (!this.container) {
-            console.warn('PaletteFrame container not initialized, skipping palette update');
-            return;
-        }
-
-        let values= [...legendValues].reverse();
-        let texts=[...legendText].reverse();
-        let ptr=PaletteManager.getInstance().getPainter();
-        let mgr=PaletteManager.getInstance();
-        let lmgr=LayerManager.getInstance();
-        let min: number =  Math.min(...values);
-        let max: number =  Math.max(...values);
-        let name:string;
-        let data=this.container.querySelector(".info")
-
-        if (this.parent.getState().computedLayer) {
-            name = this.parent.getState().legendTitle;
-        } else {
-            if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined) {
-                name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
-            } else {
-                name = this.parent.getState().legendTitle;
-            }
-        }
-
-        data.innerHTML = "<div id='units'><span class='legendText'>" + name + "</span><br/></div>";
-
-        const currentPalette = mgr.getSelected();
-        const isContinuousPalette = currentPalette === 'continua' || currentPalette === 'cambio-continuo' || currentPalette === 'gradiente';
-        const isWindPalette = currentPalette === 'wind-kmh';
-
-        console.log('PaletteFrame.update:', { 
-            currentPalette, 
-            isWindPalette, 
-            valuesLength: values.length, 
-            textsLength: texts.length,
-            firstText: texts[0],
-            lastText: texts[texts.length - 1]
-        });
-
-        if (isContinuousPalette) {
-            const gradientDiv = document.createElement('div');
-            gradientDiv.className = 'gradient-legend-container';
-            gradientDiv.innerHTML = `
-                <div class="gradient-legend-bar" style="
-                    background: ${this.createDataDrivenGradient(values, min, max, ptr)};
-                    height: ${Math.max(values.length * 40, 200)}px;
-                    width: 100%;
-                    border: 1px solid #ccc;
-                    border-radius: 2px;
-                    min-height: 150px;
-                "></div>
-            `;
-            data.appendChild(gradientDiv);
-        } else if (isWindPalette) {
-            console.log('Rendering wind palette legend in update');
-            
-            const windColors = mgr.updatePaletteStrings();
-            console.log('Wind colors for legend:', windColors);
-            
-            texts.forEach((text, index) => {
-                const colorIndex = windColors.length - 1 - index;
-                const backgroundColor = windColors[colorIndex];
-                const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
-                
-                const legendItem = document.createElement('div');
-                legendItem.style.background = backgroundColor;
-                legendItem.style.color = textColor;
-                legendItem.innerHTML = `<span class="legendText smallText"> ${text}</span><br/>`;
-                
-                data.appendChild(legendItem);
-                
-                console.log(`Wind legend item ${index}:`, { text, color: backgroundColor, colorIndex });
-            });
-        } else {
-            values.map((val, index) => {
-                let mgr = PaletteManager.getInstance();
-                mgr.updatePaletteStrings(); 
-                let ptr = mgr.getPainter();
-                const backgroundColor = ptr.getColorString(val, min, max);
-                const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
-
-                let displayText = texts[index];
-
-                addChild(data, (
-                    <div style={{ background: backgroundColor, color: textColor }}>
-                        <span className="legendText smallText">{displayText}</span><br />
-                    </div>
-                ));
-            });
-        }
-
-        data.innerHTML += "<div id='legendBottom'></div>";
-
-        let palettes = mgr.getPalettesNames();
-        if (palettes.length > 2) {
-            const paletteSpan = this.container.querySelector(".paletteSelect span[aria-label=paleta]") as HTMLElement;
-            if (paletteSpan) {
-                paletteSpan.textContent = this.parent.getTranslation('paleta') + ": " + mgr.getSelected();
-            }
-        }
-
-        // GESTIÓN DEL SLIDER DE UNCERTAINTY
-        let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
-        
-        this.uncertaintyFrame = this.container.querySelector("#unc-div");
-        if (uncertaintyLayer && this.uncertaintyFrame) {
-            this.uncertaintyFrame.hidden = false;
-            if (this.uncertaintyFrame.children.length == 0) {
-                // Primera vez: crear el frame
-                addChild(this.uncertaintyFrame, this.renderUncertaintyFrame());
-                
-                setTimeout(() => {
-                    this.initializeUncertaintySlider(mgr.getUncertaintyOpacity());
-                }, 100);
-            } else {
-                // Ya existe: actualizar texto y verificar slider
-                const uncertaintyText = this.uncertaintyFrame.querySelector("#uncertainty-text");
-                if (uncertaintyText) {
-                    uncertaintyText.textContent = this.parent.getTranslation('uncertainty') + ': ' + mgr.getUncertaintyOpacity() + '%';
-                }
-                
-                // Verificar si el slider existe y reinicializarlo si es necesario
-                this.ensureUncertaintySliderInitialized(mgr.getUncertaintyOpacity());
-            }
-        } else if (this.uncertaintyFrame) {
-            this.uncertaintyFrame.hidden = true;
-            // Destruir el slider si existe
-            this.destroyUncertaintySlider();
-            // Limpiar el DOM
-            if (this.uncertaintyFrame.children.length > 0) {
-                while (this.uncertaintyFrame.firstChild) {
-                    this.uncertaintyFrame.removeChild(this.uncertaintyFrame.firstChild);
-                }
-            }
-        }
     }
 
     private createDataDrivenGradient(values: number[], min: number, max: number, ptr: any): string {

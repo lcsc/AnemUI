@@ -382,6 +382,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     const imgData = ctx.createImageData(width, height);
                  
                     const totalPixels = width * height;
+                    // Invertir: oscurecer las zonas contrarias (NO = 1), dejar transparente donde v == 1
                     for (let p = 0; p < totalPixels; p++) {
                         const v = filteredArray && filteredArray[p] !== undefined ? filteredArray[p] : NaN;
                         
@@ -389,22 +390,26 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                         const y = Math.floor(p / width);
                         const flippedY = height - 1 - y;
                         const flippedIdx = (flippedY * width + x) * 4;
-            
+
                         const isOne = (v === 1) || (typeof v === 'number' && Math.abs(v - 1) < 1e-9);
-                        if (isOne) {
-                            imgData.data[flippedIdx] = 128;     
-                            imgData.data[flippedIdx + 1] = 128;
-                            imgData.data[flippedIdx + 2] = 128; 
-                            imgData.data[flippedIdx + 3] = 255; 
-                        } else {
+
+                        // Si NO es 1 => oscurecer (contrario); si es 1 => transparente
+                        if (!isOne && !isNaN(v)) {
+                            // Oscurecido (negro opaco)
                             imgData.data[flippedIdx] = 0;
                             imgData.data[flippedIdx + 1] = 0;
                             imgData.data[flippedIdx + 2] = 0;
-                            imgData.data[flippedIdx + 3] = 0; 
+                            imgData.data[flippedIdx + 3] = 255;
+                        } else {
+                            // Transparente
+                            imgData.data[flippedIdx] = 0;
+                            imgData.data[flippedIdx + 1] = 0;
+                            imgData.data[flippedIdx + 2] = 0;
+                            imgData.data[flippedIdx + 3] = 0;
                         }
                     }
                     ctx.putImageData(imgData, 0, 0);
-                    
+
                     dataTilesLayer[i].setSource(new Static({
                         url: canvas.toDataURL('image/png'),
                         crossOrigin: '',

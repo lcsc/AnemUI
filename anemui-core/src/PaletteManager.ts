@@ -286,13 +286,33 @@ export class CategoryRangePainter implements Painter {
 
 export class GradientPainter implements Painter{
     protected values: number[];
-    protected colorGradient;
-    constructor(colors:string[], values:number[], points:number){
+    protected colorGradient: string[];
+    // colors: lista de colores (se usan los 4 primeros para la rampa interna de js-color-gradient)
+    // values: array de valores (p. ej. [0,0.01,...])
+    // points: número de steps esperados (p. ej. 256)
+    // saturateFrom: si se indica (ej. 0.35) se forzará a partir de ese valor el color de saturación
+    constructor(colors:string[], values:number[], points:number, saturateFrom?: number){
         this.values = values;
         this.colorGradient = new Gradient()
-        .setColorGradient(colors[0], colors[1], colors[2], colors[3])
-        .setMidpoint(points)
-        .getColors();
+            .setColorGradient(colors[0], colors[1] || colors[0], colors[2] || colors[1] || colors[0], colors[3] || colors[2] || colors[1] || colors[0])
+            .setMidpoint(points)
+            .getColors();
+
+        // Si se solicita saturación desde un valor (p. ej. 0.35), forzamos todos los colores
+        // desde el índice correspondiente hasta el final a un color de saturación.
+        if (typeof saturateFrom === 'number' && !isNaN(saturateFrom)) {
+            // Los valores en this.values son i/100 (por cómo los genera App), así que convertimos
+            // saturateFrom a un índice aproximado dentro del gradient.
+            const pointsCount = this.colorGradient.length || points;
+            const threshIdx = Math.max(0, Math.min(pointsCount - 1, Math.round(saturateFrom * 100)));
+
+            // Color de saturación: usamos el último color declarado en el argumento `colors` si existe,
+            // o el color final del gradient generado como fallback.
+            const saturateColor = (colors && colors.length > 0) ? colors[colors.length - 1] : this.colorGradient[this.colorGradient.length - 1];
+            for (let i = threshIdx; i < this.colorGradient.length; i++) {
+                this.colorGradient[i] = saturateColor;
+            }
+        }
     }
     
     public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number,uncertaintyLayer:boolean): Promise<HTMLCanvasElement> {
@@ -326,14 +346,20 @@ export class GradientPainter implements Painter{
     }
 
     getValIndex(val:number):number{
-        if(val > this.values[this.values.length - 1]) return this.values.length -1 ;
-        let valAnt = 0;
-        for (let i =0;i<this.values.length;i++){
-            if(val == this.values[i]) return i;
-            if(val > valAnt && val<= this.values[i]) return i;
-            valAnt == this.values[i];
+        if (isNaN(val)) return -1;
+        if (this.values.length === 0) return -1;
+        // Si menor o igual al primer umbral -> primer índice
+        if (val <= this.values[0]) return 0;
+        // Si mayor o igual al último -> último índice
+        if (val >= this.values[this.values.length - 1]) return this.values.length - 1;
+
+        let prev = this.values[0];
+        for (let i = 1; i < this.values.length; i++) {
+            const cur = this.values[i];
+            if (val <= cur) return i;
+            prev = cur;
         }
-        return -1
+        return this.values.length - 1;
     }
 
     getColorString(val: number, min: number, max: number): string {
@@ -437,6 +463,37 @@ export class CsDynamicPainter implements Painter{
 
     getValIndex(val:number):number{
         return 0;
+    }
+}
+
+// Nuevo: pintor específico para la paleta de cambio (clamping en umbrales)
+export class ChangeGradientPainter extends GradientPainter {
+    // Umbrales fijos solicitados por el usuario
+    private readonly lowerThreshold = 0.2;
+    private readonly upperThreshold = 1.8;
+
+    constructor(colors:string[], values:number[], points:number){
+        super(colors, values, points);
+    }
+
+    // Sobrescribimos para forzar los tramos solicitados
+    public getValIndex(val:number): number {
+        if (isNaN(val)) return -1;
+        // Valores menores o iguales al umbral inferior => primer color (rojo)
+        if (val <= this.lowerThreshold) {
+            return 0;
+        }
+        // Valores mayores o iguales al umbral superior => último color (azul)
+        if (val >= this.upperThreshold) {
+            return this.values.length - 1;
+        }
+
+        // Para valores intermedios, buscar el índice como en la implementación base
+        for (let i = 0; i < this.values.length; i++) {
+            if (Math.abs(this.values[i] - val) < 1e-9) return i;
+            if (val < this.values[i]) return i;
+        }
+        return this.values.length - 1;
     }
 }
 
