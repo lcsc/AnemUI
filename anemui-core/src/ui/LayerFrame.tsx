@@ -25,7 +25,47 @@ export default class LayerFrame  extends BaseFrame {
         let element=
         (
             <div id="layer-frame" className='layerFrame btnSelect left'>
-                <div id="base-div">
+                      <div id="pol-div">
+                    <div className="buttonDiv polDiv visible" onClick={()=>this.toggleSelect('polDiv')}>
+                        <span className="icon"><i className="bi bi-map"></i></span>
+                        <span className="text" aria-label='top'>
+                            {this.parent.getTranslation('top_layer')}: {this.parent.getTranslation('politico')}
+                        </span>
+                    </div>
+                    <div className='row selectDiv polDiv hidden'>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('polDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
+                        </div>
+                        <div className='col-9 p-0 inputDiv'>
+                            <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}>
+                                {topLayers.map((val,index)=>{
+                                    let trVal = this.parent.getTranslation(val)
+                                    if(lmgr.getTopSelected()==val){
+                                        return (<option value={val} selected>{this.parent.getTranslation(val)}</option>)
+                                    }
+                                    return (<option value={val}>{val}</option>)
+                                })}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="trp-div">
+                    <div className="buttonDiv trpDiv visible" onClick={()=>this.toggleSelect('trpDiv')}>
+                        <span className="icon"><i className="bi bi-transparency"></i></span>
+                        <span className="text"  aria-label='transparency'>
+                            {this.parent.getTranslation('transparency')}: {mgr.getTransparency()}
+                        </span>
+                    </div>
+                    <div className='row selectDiv trpDiv hidden'>
+                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
+                        </div>
+                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
+                            <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
+                        </div>
+                    </div>
+                </div>
+                                <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
                         <span className="icon"><i className="bi bi-globe-europe-africa"></i></span>
                         <span className="text" aria-label='base'>
@@ -60,46 +100,7 @@ export default class LayerFrame  extends BaseFrame {
                         </div>
                     </div>
                 </div>
-                <div id="trp-div">
-                    <div className="buttonDiv trpDiv visible" onClick={()=>this.toggleSelect('trpDiv')}>
-                        <span className="icon"><i className="bi bi-transparency"></i></span>
-                        <span className="text"  aria-label='transparency'>
-                            {this.parent.getTranslation('transparency')}: {mgr.getTransparency()}
-                        </span>
-                    </div>
-                    <div className='row selectDiv trpDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
-                            <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
-                        </div>
-                    </div>
-                </div>
-                <div id="pol-div">
-                    <div className="buttonDiv polDiv visible" onClick={()=>this.toggleSelect('polDiv')}>
-                        <span className="icon"><i className="bi bi-map"></i></span>
-                        <span className="text" aria-label='top'>
-                            {this.parent.getTranslation('top_layer')}: {this.parent.getTranslation('politico')}
-                        </span>
-                    </div>
-                    <div className='row selectDiv polDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('polDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 p-0 inputDiv'>
-                            <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}>
-                                {topLayers.map((val,index)=>{
-                                    let trVal = this.parent.getTranslation(val)
-                                    if(lmgr.getTopSelected()==val){
-                                        return (<option value={val} selected>{this.parent.getTranslation(val)}</option>)
-                                    }
-                                    return (<option value={val}>{val}</option>)
-                                })}
-                            </select>
-                        </div>
-                    </div>
-                </div>
+          
             </div>
         );
         return element;

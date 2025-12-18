@@ -410,13 +410,14 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     }
                     ctx.putImageData(imgData, 0, 0);
 
-                    dataTilesLayer[i].setSource(new Static({
-                        url: canvas.toDataURL('image/png'),
-                        crossOrigin: '',
-                        projection: timesJs.projection,
-                        imageExtent: ncExtents[timesJs.portions[varIdForStructures][i]],
-                        interpolate: false
-                    }));
+                dataTilesLayer[i].setSource(new Static({
+                    url: canvas.toDataURL('image/png'),
+                    crossOrigin: '',
+                    projection: timesJs.projection,
+                    imageExtent: ncExtents[timesJs.portions[varIdForStructures][i]],
+                    interpolate: false
+                }));
+                dataTilesLayer[i].setZIndex(50);
 
                 } catch (err) {
                     console.error('Error painting uncertainty canvas:', err);

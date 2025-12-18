@@ -79,22 +79,13 @@ export class LayerManager {
         // ------ Estatal ()
         this.addBaseLayer({ name: "IGN-BASE", url: 'https://www.ign.es/wms-inspire/ign-base?', type: AL_TYPE_WMS, layer: 'IGNBaseTodo', global: false })
         this.addBaseLayer({ name: "PNOA", url: 'https://www.ign.es/wms-inspire/pnoa-ma?', type: AL_TYPE_WMS, layer: 'OI.OrthoimageCoverage', global: false })
-        this.addBaseLayer({ name: "LIDAR", url: 'https://wmts-mapa-lidar.idee.es/lidar?', type: AL_TYPE_WMTS, layer: 'EL.GridCoverageDSM', global: false })
-
         // CAPAS SUPERPUESTAS
         // ------ Global ()
         this.addTopLayer({ name: "mapbox", url: 'https://api.mapbox.com/styles/v1/' + mapboxMapID + '/tiles/{z}/{x}/{y}?access_token=' + mapboxAccessToken, type: AL_TYPE_OSM, global: true })
-        this.addTopLayer({ name: "EU NUTS", url: "./NUTS_RG_10M_2021_3857.json", type: AL_TYPE_TOPO_JSON, global: true })
         // ------ Estatal ()
         this.addTopLayer({ name: "unidad_administrativa", url: "https://www.ign.es/wms-inspire/unidades-administrativas?", type: AL_TYPE_IMG_LAYER, layer: 'AU.AdministrativeBoundary', global: false })
         this.addTopLayer({ name: "demarcaciones_hidrograficas", url: "https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'AM.RiverBasinDistrict', global: false })
         this.addTopLayer({ name: "comarcas_agrarias", url: "https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'LC.LandCoverSurfaces', global: false })
-        this.addTopLayer({ name: "comarcas_ganaderas", url: "https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'LC.LandCoverSurfaces', global: false })
-        this.addTopLayer({ name: "zonas_inundables-L", url: "https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'NZ.RiskZone', global: false })
-        this.addTopLayer({ name: "zonas_inundables-T10", url: "https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'NZ.RiskZone', global: false })
-        this.addTopLayer({ name: "zonas_inundables-T50", url: "https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'NZ.RiskZone', global: false })
-        this.addTopLayer({ name: "zonas_inundables-T100", url: "https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'NZ.RiskZone', global: false })
-        this.addTopLayer({ name: "zonas_inundables-T500", url: "https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?", type: AL_TYPE_IMG_LAYER, layer: 'NZ.RiskZone', global: false })
 
         this.topSelected = "mapbox";
         this.uncertaintyLayer = [];
@@ -178,42 +169,57 @@ export class LayerManager {
         return this.topSelected;
     }
 
-    public setTopSelected(_selected: string) {
-        if (this.topLayers[_selected] != undefined) {
-            this.topSelected = _selected;
+public setTopSelected(_selected: string) {
+    if (this.topLayers[_selected] != undefined) {
+        const previousSelection = this.topSelected;
+        this.topSelected = _selected;
+        
+        if (previousSelection && 
+            this.topLayers[previousSelection].type !== this.topLayers[_selected].type) {
+            this.topLayerTile = undefined;
+            this.topLayerVector = undefined;
+            this.topLayerImage = undefined;
         }
     }
+}
 
     public getTopLayerOlLayer(): Layer {
-        let tLayer = this.topLayers[this.topSelected]
-        switch (tLayer.type) {
-            case AL_TYPE_OSM:
-                if (this.topLayerTile == undefined) {
-                    this.topLayerTile = new WebGLTile({
-                        source: this.getTopLayerSource() as DataTileSource
-                    })
-                }
-                return this.topLayerTile;
+    let tLayer = this.topLayers[this.topSelected]
+    
+    switch (tLayer.type) {
+        case AL_TYPE_OSM:
+            if (this.topLayerTile == undefined) {
+                this.topLayerTile = new WebGLTile({
+                    source: this.getTopLayerSource() as DataTileSource,
+                    zIndex: 100
+                })
+            }
+            this.topLayerTile.setZIndex(100);
+            return this.topLayerTile;
 
-            case AL_TYPE_GEO_JSON:
-            case AL_TYPE_TOPO_JSON:
-                if (this.topLayerVector == undefined) {
-                    this.topLayerVector = new VectorLayer({
-                        source: this.getTopLayerSource() as VectorSource,
-                        style: (feature, resolution) => { return baseStyle }
-                    })
-                }
-                return this.topLayerVector;
+        case AL_TYPE_GEO_JSON:
+        case AL_TYPE_TOPO_JSON:
+            if (this.topLayerVector == undefined) {
+                this.topLayerVector = new VectorLayer({
+                    source: this.getTopLayerSource() as VectorSource,
+                    style: (feature, resolution) => { return baseStyle },
+                    zIndex: 100
+                })
+            }
+            this.topLayerVector.setZIndex(100);
+            return this.topLayerVector;
 
-            case AL_TYPE_IMG_LAYER:
-                if (this.topLayerImage == undefined) {
-                    this.topLayerImage = new Image<ImageWMS>({
-                        source: this.getTopLayerSource() as ImageWMS
-                    })
-                }
-                return this.topLayerImage;
-        }
+        case AL_TYPE_IMG_LAYER:
+            if (this.topLayerImage == undefined) {
+                this.topLayerImage = new Image<ImageWMS>({
+                    source: this.getTopLayerSource() as ImageWMS,
+                    zIndex: 100
+                })
+            }
+            this.topLayerImage.setZIndex(100);
+            return this.topLayerImage;
     }
+}
 
     public getTopLayerSource(): Source {
         if (this.topLayers[this.topSelected].source == undefined) {
