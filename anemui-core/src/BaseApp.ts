@@ -1,16 +1,16 @@
 import { addChild, mount } from "tsx-create-element";
 import { MainFrame } from "./ui/MainFrame";
-import { MenuBar, MenuBarListener } from './ui/MenuBar'; 
+import { MenuBar, MenuBarListener } from './ui/MenuBar';
 import { CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
 import LayerFrame from './ui/LayerFrame'
-import PaletteFrame from "./ui/PaletteFrame";  
+import PaletteFrame from "./ui/PaletteFrame";
 import { CsLatLong, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData, CsTimeSpan } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer } from "./Env";
+import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods } from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked } from "./data/ChunkDownloader";
@@ -22,8 +22,8 @@ import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-import LeftBar from "./ui/LeftBar"; 
-import RightBar from "./ui/RightBar"; 
+import LeftBar from "./ui/LeftBar";
+import RightBar from "./ui/RightBar";
 import Language from "./language/language";
 import { renderers, folders, defaultRenderer } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
@@ -95,20 +95,19 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected cookies: CsCookies;
 
     protected constructor() {
-        this.menuBar = new MenuBar(this, this);
-        // this.leftBar = new LeftBar(this, this) // - VERSIÓN SIDEBAR_00  (DROPDOWNS)
-        this.leftBar = new LeftBar(this) // - VERSIÓN SIDEBAR_01  (BOTONES CAPAS)
-        this.rightBar = new RightBar(this)
-
-        this.csMap = new CsMap(this, new OpenLayerMap(), this);
+        this.menuBar = useFactoryMethods.menuBar ? this.createMenuBar() : new MenuBar(this, this);
+        this.leftBar = useFactoryMethods.leftBar ? this.createLeftBar() : new LeftBar(this);
+        this.rightBar = useFactoryMethods.rightBar ? this.createRightBar() : new RightBar(this);
 
         this.mainFrame = new MainFrame(this);
-        this.downloadFrame = new DownloadFrame(this);
-        this.layerFrame = new LayerFrame(this) 
-        this.paletteFrame = new PaletteFrame(this);
-        this.dateSelectorFrame = new DateSelectorFrame(this, this);
-        this.graph = new CsGraph(this);
+        this.downloadFrame = useFactoryMethods.downloadFrame ? this.createDownloadFrame() : new DownloadFrame(this);
+        this.layerFrame = useFactoryMethods.layerFrame ? this.createLayerFrame() : new LayerFrame(this);
+        this.paletteFrame = useFactoryMethods.paletteFrame ? this.createPaletteFrame() : new PaletteFrame(this);
+        this.dateSelectorFrame = useFactoryMethods.dateSelectorFrame ? this.createDateSelectorFrame() : new DateSelectorFrame(this, this);
+        this.graph = useFactoryMethods.graph ? this.createGraph() : new CsGraph(this);
         this.infoFrame = new InfoFrame(this);
+
+        this.csMap = new CsMap(this, new OpenLayerMap(), this);
 
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
@@ -117,6 +116,39 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         
         if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);
         if (hasCookies) this.cookies = new CsCookies(this);
+    }
+
+    // Factory Methods: permite a las subclases personalizar la creación de los componentes
+    protected createGraph(): CsGraph {
+        return new CsGraph(this);
+    }
+
+    protected createMenuBar(): MenuBar {
+        return  new MenuBar(this, this);
+    }
+
+    protected createLeftBar(): LeftBar {
+        return new LeftBar(this);
+    }
+
+    protected createRightBar(): RightBar {
+        return new RightBar(this);
+    }
+
+    protected createDownloadFrame(): DownloadFrame {
+        return new DownloadFrame(this);
+    }
+
+    protected createLayerFrame(): LayerFrame {
+        return new LayerFrame(this);
+    }
+
+    protected createPaletteFrame(): PaletteFrame {
+        return new PaletteFrame(this);
+    }
+
+    protected createDateSelectorFrame(): DateSelectorFrame {
+        return new DateSelectorFrame(this, this);
     }
 
     public getMenuBar(): MenuBar {
@@ -562,8 +594,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             varName = varId
         }
         
-        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined 
-        
+        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined
+
         if (this.state == undefined) this.state = INITIAL_STATE;
         this.state = {
             ...this.state,
@@ -649,19 +681,19 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         try {
             this.menuBar.update();
             this.leftBar.update();
-            this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
+            await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
             this.csMap.updateRender(this.state.support);
-            
+
             // Wait for data only if we have computed data tiles layer
-            if (computedDataTilesLayer && this.state.computedLayer) {        
+            if (computedDataTilesLayer && this.state.computedLayer) {
                 await this.waitForDataLoad();
             }
-            
+
             if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
-            
+
         } catch (error) {
             console.error('Error during update:', error);
             // Continue with update even if there's an error
@@ -745,14 +777,37 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.csMap.refreshFeatureLayer()
     }
 
+    /**
+     * Verifica si estamos en modo climatología con ciclo temporal (mensual o estacional)
+     */
+    protected isClimatologyCyclicMode(): boolean {
+        return this.state.climatology &&
+               (this.state.timeSpan === CsTimeSpan.Month || this.state.timeSpan === CsTimeSpan.Season);
+    }
+
     public dateDateBack(): void {
-        if (this.state.selectedTimeIndex == 0) return;
-        this.state.selectedTimeIndex--;
+        if (this.state.selectedTimeIndex == 0) {
+            if (this.isClimatologyCyclicMode()) {
+                this.state.selectedTimeIndex = this.state.times.length - 1;
+            } else {
+                return;
+            }
+        } else {
+            this.state.selectedTimeIndex--;
+        }
         this.update()
     }
+
     public dateDateForward(): void {
-        if (this.state.selectedTimeIndex == this.state.times.length - 1) return;
-        this.state.selectedTimeIndex++;
+        if (this.state.selectedTimeIndex == this.state.times.length - 1) {
+            if (this.isClimatologyCyclicMode()) {
+                this.state.selectedTimeIndex = 0;
+            } else {
+                return;
+            }
+        } else {
+            this.state.selectedTimeIndex++;
+        }
         this.update()
     }
 
@@ -854,6 +909,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public formatPopupValue(text: string, pixelIndex: number, portion: string, value: number): string {
+        // Añadidos los parámetros pixelIndex y portion para personalización de la info para datos calculados en App.ts de visor (Ej: EPM, ETM) - NO ELIMINAR
         let formattedValue: string;
         if (value % 1 === 0) {
             formattedValue = value.toString(); // Convierte el número directamente a string sin decimales
@@ -922,6 +978,16 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
      public showPercentileClockForPoint(latlng: CsLatLong, currentValue: number, historicalData: number[]): void {
-       
+
+    }
+
+    /**
+     * Resetea la capa de incertidumbre: la oculta y desactiva el checkbox
+     * Útil cuando se cambia de contexto (ej: cambiar horizonte de predicción)
+     * Usa el método toggleUncertaintyLayer del MenuBar para mantener consistencia
+     */
+    public resetUncertaintyLayer(): void {
+        // Llamar al método del MenuBar que coordina todo el comportamiento
+        this.getMenuBar().toggleUncertaintyLayer(false);
     }
 }
