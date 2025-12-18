@@ -4,7 +4,7 @@ import 'bootstrap-datepicker'
 // import * as $ from "jquery";
 import $ from "jquery";
 import 'bootstrap-slider'
-import { default as Slider } from 'bootstrap-slider'; 
+import { default as Slider } from 'bootstrap-slider';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
@@ -20,14 +20,14 @@ type dateHashMap = {
 }
 
 type monthHashMap = {
-    [key: string]: { [key: string]:  number } 
+    [key: string]: { [key: string]: number }
 }
 
 type yearHashMap = {
-    [key: string]: number  
+    [key: string]: number
 }
 
-export enum DateFrameMode{
+export enum DateFrameMode {
     DateFrameDate,
     DateFrameSeason,
     DateFrameMonth,
@@ -39,7 +39,7 @@ export enum DateFrameMode{
 }
 
 export class DateSelectorFrame extends BaseFrame {
-    protected datepickerFrame: HTMLElement; 
+    protected datepickerFrame: HTMLElement;
     protected datepickerEl: HTMLElement;
     protected datepicker: JQuery<HTMLDivElement>
     protected seasonButton: HTMLElement;
@@ -52,7 +52,7 @@ export class DateSelectorFrame extends BaseFrame {
     protected seasonIndex: monthHashMap;
     protected yearIndex: yearHashMap;
     protected slider: Slider
-    protected sliderFrame: HTMLElement 
+    protected sliderFrame: HTMLElement
     protected var: string;
     protected mode: DateFrameMode;
     protected periods: number[]
@@ -64,7 +64,7 @@ export class DateSelectorFrame extends BaseFrame {
     private month: CsDropdown;
     private listener: DateFrameListener;
     private pickerNotClicked: boolean;
-    
+
     constructor(_parent: BaseApp, _listener: DateFrameListener) {
         super(_parent)
         this.listener = _listener;
@@ -73,14 +73,13 @@ export class DateSelectorFrame extends BaseFrame {
 
     public setValidDates(_dates: string[], _varChanged: boolean = false): void {
         console.log("Setting valid dates:", _dates);
-        
+
         // Handle the case where _dates is actually a single string (annual data)
         const times = this.parent.getState().times;
-        
-        // CRITICAL FIX: Convert single date string to array format for DateFrame compatibility
+
         if (typeof times === 'string') {
             console.log("Converting single date string to array for DateFrame:", times);
-            this.dates = [times]; // Convert single string to array
+            this.dates = [times]; 
         } else if (Array.isArray(_dates) && _dates.length > 0) {
             this.dates = _dates;
         } else {
@@ -96,13 +95,11 @@ export class DateSelectorFrame extends BaseFrame {
 
         // Handle single date case specially
         if (this.dates.length === 1) {
-            console.log("Handling single date case:", this.dates[0]);
             this.handleSingleDateCase(_varChanged);
             return;
         }
 
-        // Original logic for multi-date arrays
-        switch(this.mode) {
+        switch (this.mode) {
             case DateFrameMode.DateFrameDate:
                 if (_varChanged) {
                     this.dateIndex = {};
@@ -123,7 +120,7 @@ export class DateSelectorFrame extends BaseFrame {
                         const [year, month, day] = this.dates[i].split('-');
                         if (this.monthIndex[year] == undefined) this.monthIndex[year] = {}
                         this.months.push(year + '-' + month);
-                        this.monthIndex[year][month]= i;
+                        this.monthIndex[year][month] = i;
                     }
                 }
                 this.updateDatepicker();
@@ -135,17 +132,17 @@ export class DateSelectorFrame extends BaseFrame {
                     let myYear = '1800'
                     for (let i = 0; i < this.dates.length; i++) {
                         const [year, season, day] = this.dates[i].split('-');
-                            if (this.seasonIndex[year] == undefined) this.seasonIndex[year] = {}
-                                this.seasonIndex[year][season]= i;
-                            if (year != myYear) {
-                                this.years.push(year);
-                                myYear = year;
-                            } 
+                        if (this.seasonIndex[year] == undefined) this.seasonIndex[year] = {}
+                        this.seasonIndex[year][season] = i;
+                        if (year != myYear) {
+                            this.years.push(year);
+                            myYear = year;
+                        }
                     }
                 }
                 this.updateDatepicker();
                 if (this.datepicker != undefined) {
-                    let [selectedYear, selectedMonth, ] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
+                    let [selectedYear, selectedMonth,] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
                     this.setSeason(selectedMonth)
                 }
                 break;
@@ -155,24 +152,24 @@ export class DateSelectorFrame extends BaseFrame {
                     this.years = [];
                     for (let i = 0; i < this.dates.length; i++) {
                         const [year, month, day] = this.dates[i].split('-');
-                            this.years.push(year);
-                            this.yearIndex[year]= i;
+                        this.years.push(year);
+                        this.yearIndex[year] = i;
                     }
                 }
                 this.updateDatepicker();
                 break;
-            default: 
+            default:
                 break;
         }
     }
 
     private handleSingleDateCase(_varChanged: boolean): void {
         console.log("Handling single date case - mode:", this.mode);
-        
+
         // For single dates, set up minimal index structures
         if (_varChanged) {
             const [year, month, day] = this.dates[0].split('-');
-            
+
             // Initialize all index structures for single date
             this.dateIndex = { [year]: { [month]: { [day]: 0 } } };
             this.monthIndex = { [year]: { [month]: 0 } };
@@ -180,7 +177,7 @@ export class DateSelectorFrame extends BaseFrame {
             this.years = [year];
             this.months = [year + '-' + month];
         }
-        
+
         // Set the datepicker safely for single date
         this.updateDatepicker();
     }
@@ -194,8 +191,8 @@ export class DateSelectorFrame extends BaseFrame {
         try {
             const selectedIndex = this.parent.getState().selectedTimeIndex;
             const safeIndex = Math.min(selectedIndex, this.dates.length - 1);
-            
-            switch(this.mode) {
+
+            switch (this.mode) {
                 case DateFrameMode.DateFrameDate:
                     this.datepicker.datepicker('setDate', this.dates[safeIndex]);
                     if (this.dates.length > 1) {
@@ -226,9 +223,9 @@ export class DateSelectorFrame extends BaseFrame {
                         const currentYear = this.years[Math.min(safeIndex, this.years.length - 1)];
                         const startYear = this.years[0];
                         const endYear = this.years[this.years.length - 1];
-                        
+
                         console.log('Setting year datepicker:', { currentYear, startYear, endYear, safeIndex });
-                        
+
                         // Crear fechas completas para el datepicker
                         this.datepicker.datepicker('setDate', new Date(parseInt(currentYear), 0, 1));
                         if (this.years.length > 1) {
@@ -238,17 +235,17 @@ export class DateSelectorFrame extends BaseFrame {
                     }
                     break;
             }
-            
+
             console.log("Datepicker updated successfully for mode:", this.mode);
-            
+
         } catch (error) {
             console.error("Error updating datepicker:", error);
             // Don't throw - just log and continue
         }
     }
 
-    private indexOfDate(date:Date):number{
-        if (date==undefined) return -1;
+    private indexOfDate(date: Date): number {
+        if (date == undefined) return -1;
         let year: string;
         let month: string;
         let season: string;
@@ -257,7 +254,7 @@ export class DateSelectorFrame extends BaseFrame {
         month = ("0" + (date.getMonth() + 1)).slice(-2)
         season = month
         day = date.getDate() + "";
-        switch(this.mode) {
+        switch (this.mode) {
             case DateFrameMode.DateFrameDate:
                 if (this.dateIndex == undefined) return -1;
                 if (day.length == 1) day = "0" + day;
@@ -273,8 +270,8 @@ export class DateSelectorFrame extends BaseFrame {
                 return this.monthIndex[year][month];
             case DateFrameMode.DateFrameSeason:
                 if (this.seasonIndex == undefined) return -1;
-                let lastDate =  new Date(this.dates[this.dates.length - 1])
-                if (this.seasonIndex[year] == undefined) year = lastDate.getFullYear() +"";
+                let lastDate = new Date(this.dates[this.dates.length - 1])
+                if (this.seasonIndex[year] == undefined) year = lastDate.getFullYear() + "";
                 if (this.seasonIndex[year][season] == undefined) season = (lastDate.getMonth() + 1) + ""
                 return this.seasonIndex[year][season];
             case DateFrameMode.DateFrameYear:
@@ -285,11 +282,11 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     private isDateValid(date: Date): boolean {
-        let index=this.indexOfDate(date)
+        let index = this.indexOfDate(date)
         return index >= 0;
     }
-    
-    private isMonthValid(date:Date):boolean{
+
+    private isMonthValid(date: Date): boolean {
         if (this.dateIndex == undefined) return false;
         let year: string;
         let month: string;
@@ -301,12 +298,12 @@ export class DateSelectorFrame extends BaseFrame {
         return true
     }
 
-    private isYearValid(date:Date):boolean{
+    private isYearValid(date: Date): boolean {
         if (this.mode === DateFrameMode.DateFrameYear) {
             const year = date.getFullYear().toString();
             return this.yearIndex && this.yearIndex[year] !== undefined;
         }
-        
+
         if (this.dateIndex == undefined) return false;
         let year: string;
         year = date.getFullYear() + ""
@@ -326,34 +323,34 @@ export class DateSelectorFrame extends BaseFrame {
 
     public seasonSelected(index: number, value?: string, values?: string[]): void {
         this.season.config(true, value);
-        let [selectedYear,,] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
+        let [selectedYear, ,] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
         let selectedSeason = this.getSeason(value)
-        let selectedDate = new Date(selectedYear + '-' +selectedSeason)
+        let selectedDate = new Date(selectedYear + '-' + selectedSeason)
         let dateIndex = this.indexOfDate(selectedDate)
-        if(dateIndex>=0 && dateIndex!=this.parent.getState().selectedTimeIndex){
-            this.slider.setValue(dateIndex,false,false)
-            this.parent.getState().selectedTimeIndex=dateIndex;
+        if (dateIndex >= 0 && dateIndex != this.parent.getState().selectedTimeIndex) {
+            this.slider.setValue(dateIndex, false, false)
+            this.parent.getState().selectedTimeIndex = dateIndex;
             this.parent.update(true);
         }
     };
 
     private getSeason(season: string): string {
-        const translations: any = this.parent.getTranslation('season'); 
-        
+        const translations: any = this.parent.getTranslation('season');
+
         switch (season.trim()) {
-            case translations[2]:    
+            case translations[2]:
                 return '04'
-            case translations[3]:    
-                return '07' 
-            case translations[4]:    
+            case translations[3]:
+                return '07'
+            case translations[4]:
                 return '10'
             default:
-                return '01'    
+                return '01'
         }
     }
 
-    public setSeason (seasonId: string) {
-        const translations: any = this.parent.getTranslation('season'); 
+    public setSeason(seasonId: string) {
+        const translations: any = this.parent.getTranslation('season');
         let season: string;
         switch (seasonId) {
             case '04':
@@ -361,13 +358,13 @@ export class DateSelectorFrame extends BaseFrame {
                 break;
             case '07':
                 season = translations[3];
-                break; 
+                break;
             case '10':
                 season = translations[4];
                 break;
             default:
                 season = translations[1];
-                break;    
+                break;
         }
         this.season.config(true, season);
     }
@@ -375,16 +372,16 @@ export class DateSelectorFrame extends BaseFrame {
     public monthSelected(index: number, value?: string, values?: string[]): void {
         this.month.config(true, value);
         let [selectedYear, selectedMonth,] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
-        let selectedDate = new Date(selectedYear + '-' +selectedMonth)
+        let selectedDate = new Date(selectedYear + '-' + selectedMonth)
         let dateIndex = this.indexOfDate(selectedDate)
-        if(dateIndex>=0 && dateIndex!=this.parent.getState().selectedTimeIndex){
-            this.slider.setValue(dateIndex,false,false)
-            this.parent.getState().selectedTimeIndex=dateIndex;
+        if (dateIndex >= 0 && dateIndex != this.parent.getState().selectedTimeIndex) {
+            this.slider.setValue(dateIndex, false, false)
+            this.parent.getState().selectedTimeIndex = dateIndex;
             this.parent.update(true);
         }
     };
 
-    public updatePicker():any {
+    public updatePicker(): any {
         if (this.datepickerFrame.children.length > 0) {
             while (this.datepickerFrame.firstChild) {
                 this.datepickerFrame.removeChild(this.datepickerFrame.firstChild);
@@ -392,17 +389,17 @@ export class DateSelectorFrame extends BaseFrame {
         }
         let options: DatepickerOptions;
         let pickerId: string
-        switch(this.mode) {
+        switch (this.mode) {
             case DateFrameMode.DateFrameDate:
                 options = {
                     format: "yyyy-mm-dd",
                     autoclose: true,
                     beforeShowDay: (date: Date) => this.isDateValid(date),
-                    beforeShowMonth:(date: Date) => this.isMonthValid(date),
-                    beforeShowYear:(date: Date) => this.isYearValid(date),
-                    maxViewMode:'years',
-                    language:'es-ES',
-                    weekStart:1,
+                    beforeShowMonth: (date: Date) => this.isMonthValid(date),
+                    beforeShowYear: (date: Date) => this.isYearValid(date),
+                    maxViewMode: 'years',
+                    language: 'es-ES',
+                    weekStart: 1,
                 }
                 pickerId = 'datePicker'
                 break;
@@ -412,8 +409,8 @@ export class DateSelectorFrame extends BaseFrame {
                     autoclose: true,
                     startView: 'months',
                     minViewMode: 'months',
-                    maxViewMode:'years',
-                    language:'es-ES'
+                    maxViewMode: 'years',
+                    language: 'es-ES'
                 }
                 pickerId = 'monthPicker'
                 break;
@@ -447,9 +444,9 @@ export class DateSelectorFrame extends BaseFrame {
             case DateFrameMode.ClimFrameSeason:
             case DateFrameMode.ClimFrameYear:
                 break;
-        }   
+        }
 
-        addChild(this.datepickerFrame,this.renderPicker(pickerId))
+        addChild(this.datepickerFrame, this.renderPicker(pickerId))
         this.datepickerEl = document.getElementById(pickerId)
         this.datepicker = $(this.datepickerEl).datepicker(options) as JQuery<HTMLDivElement>;
 
@@ -468,30 +465,30 @@ export class DateSelectorFrame extends BaseFrame {
             document.getElementById("SeasonDD").classList.remove("navbar-btn-title");
         }
 
-        this.datepicker.on("changeDate", (event:DatepickerEventObject) => {
+        this.datepicker.on("changeDate", (event: DatepickerEventObject) => {
             if (this.mode == DateFrameMode.DateFrameSeason && this.pickerNotClicked) {
                 this.pickerNotClicked = false;
                 let index = this.parent.getState().selectedTimeIndex
-                this.slider.setValue(index,false,false)
-                this.parent.update( true ); 
+                this.slider.setValue(index, false, false)
+                this.parent.update(true);
                 return 0
             }
             //Set the action
             let index = this.indexOfDate(event.date)
             console.log('changeDate event:', event.date, 'index:', index);
-            if (index>=0 && index!=this.parent.getState().selectedTimeIndex) {
-                this.slider.setValue(index,false,false)
-                this.parent.getState().selectedTimeIndex=index;
-                this.parent.update( true );
+            if (index >= 0 && index != this.parent.getState().selectedTimeIndex) {
+                this.slider.setValue(index, false, false)
+                this.parent.getState().selectedTimeIndex = index;
+                this.parent.update(true);
             }
             if (this.mode == DateFrameMode.DateFrameSeason && !this.pickerNotClicked) {
-                let [, selectedMonth, ] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
+                let [, selectedMonth,] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
                 this.setSeason(selectedMonth)
             }
         })
     }
 
-    public renderPicker(id:string):JSX.Element {
+    public renderPicker(id: string): JSX.Element {
         if (this.mode == DateFrameMode.DateFrameSeason) {
             this.datepickerFrame.classList.remove("col-6")
             this.datepickerFrame.classList.add("col-8")
@@ -510,9 +507,9 @@ export class DateSelectorFrame extends BaseFrame {
         this.datepickerFrame.classList.remove("col-8")
         this.datepickerFrame.classList.add("col-6")
         return (<div id={id} className="input-group date">
-                    <input type="text" className="form-control"></input>
-                    <span className="input-group-addon input-group-text"><i className="bi bi-calendar4-week"></i></span>
-                </div>);
+            <input type="text" className="form-control"></input>
+            <span className="input-group-addon input-group-text"><i className="bi bi-calendar4-week"></i></span>
+        </div>);
     }
 
     public render(): JSX.Element {
@@ -520,77 +517,77 @@ export class DateSelectorFrame extends BaseFrame {
         let element =
             (<div id="DateSelectorFrame" className='DateSelectorFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                 <div id="TimeSeriesFrame" className='datePickerGroup'>
-                <div className='row gap-2'>
+                    <div className='row gap-2'>
                         <div className="col leftButtons">
-                            <button type="button" role="event-btn" className="btn navbar-btn navbar-md-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left"/></button>
-                            <button type="button" className="btn navbar-btn navbar-md-btn" onClick={() => { self.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
+                            <button type="button" role="event-btn" className="btn navbar-btn navbar-md-btn" onClick={() => { this.parent.dateEventBack() }} hidden><i className="bi bi-chevron-double-left" /></button>
+                            <button type="button" className="btn navbar-btn navbar-md-btn" onClick={() => { self.dateDateBack() }}><i className="bi bi-chevron-left" /></button>
                         </div>
                         <div id="PickerFrame" className="col-6"></div>
                         <div className="col rightButtons">
-                            <button type="button" className="btn navbar-btn navbar-md-btn" onClick={() => { self.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
-                            <button type="button" role="event-btn" className="btn navbar-btn navbar-md-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right"/></button>
+                            <button type="button" className="btn navbar-btn navbar-md-btn" onClick={() => { self.dateDateForward() }}><i className="bi bi-chevron-right" /></button>
+                            <button type="button" role="event-btn" className="btn navbar-btn navbar-md-btn" onClick={() => { this.parent.dateEventForward() }} hidden><i className="bi bi-chevron-double-right" /></button>
                         </div>
                     </div>
                 </div>
                 <div id="ClimatologyFrame" className='datePickerGroup'>
                     <div className='row'>
                         <div className="col">
-                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateBack() }}><i className="bi bi-chevron-left"/></button>
+                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateBack() }}><i className="bi bi-chevron-left" /></button>
                         </div>
                         <div id="climPicker" className="col-6">
                             <p id="climTitle">Marco climatología</p>
                         </div>
                         <div className="col">
-                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right"/></button>
+                            <button type="button" className="btn navbar-btn" onClick={() => { this.parent.dateDateForward() }}><i className="bi bi-chevron-right" /></button>
                         </div>
                     </div>
                 </div>
                 <div id="sliderFrame">
-                    <input id="datesSlider" data-slider-id='ex1Slider' type="text" data-slider-step="1"/>
+                    <input id="datesSlider" data-slider-id='ex1Slider' type="text" data-slider-step="1" />
                 </div>
             </div>);
         return element;
     }
 
     public build() {
-        this.var=this.parent.getState().varId;
+        this.var = this.parent.getState().varId;
         this.container = document.getElementById("DateSelectorFrame") as HTMLDivElement
-        this.datepickerFrame  = document.getElementById("PickerFrame")
+        this.datepickerFrame = document.getElementById("PickerFrame")
         this.timeSeriesFrame = document.getElementById("TimeSeriesFrame") as HTMLElement;
         this.climatologyFrame = document.getElementById("ClimatologyFrame") as HTMLElement;
         this.climTitle = document.getElementById("climTitle") as HTMLElement;
         this.sliderFrame = document.getElementById("sliderFrame") as HTMLElement;
-        this.periods = [1,4,12]
+        this.periods = [1, 4, 12]
 
         let self = this
         this.updateMode();
         this.updatePicker();
         this.setValidDates(this.parent.getState().times, true);
-        
+
         const endDate = this.dates.length - 1;
-        this.slider=new Slider(document.getElementById("datesSlider"),{
+        this.slider = new Slider(document.getElementById("datesSlider"), {
             natural_arrow_keys: true,
             min: 0,
             max: endDate,
             value: this.parent.getState().selectedTimeIndex
         })
         // @ts-ignore
-        this.slider._setText = function (element: any, text: any) {}
-        this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[endDate]
-        this.slider.on('slideStop',(val:number)=>{
-            if(val==this.parent.getState().selectedTimeIndex)return;
-            this.parent.getState().selectedTimeIndex=val;
+        this.slider._setText = function (element: any, text: any) { }
+        this.container.getElementsByClassName("tooltip-inner")[0].textContent = this.dates[endDate]
+        this.slider.on('slideStop', (val: number) => {
+            if (val == this.parent.getState().selectedTimeIndex) return;
+            this.parent.getState().selectedTimeIndex = val;
             this.datepicker.datepicker('setDate', this.dates[val])
             if (this.mode == DateFrameMode.DateFrameSeason) {
-                let season = this.getSeason(this.dates[val]) 
+                let season = this.getSeason(this.dates[val])
             }
             this.parent.update();
         })
-        this.slider.on('slide',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[val]
+        this.slider.on('slide', (val) => {
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent = this.dates[val]
         })
-        this.slider.on('slideStop',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.dates[val]
+        this.slider.on('slideStop', (val) => {
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent = this.dates[val]
         })
     }
 
@@ -603,64 +600,61 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     public update(): void {
+      
+        if (this.mode === DateFrameMode.DateFrameDisabled) {
+            const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
+            if (dateFrame && (dateFrame.hidden || dateFrame.style.display === 'none')) {
+                return;
+            }
+        }
+
         let varChanged: boolean = false
-        if(this.parent.getState().varId!=this.var){
+        if (this.parent.getState().varId != this.var) {
             varChanged = true
             this.updateMode();
             this.updatePicker();
             this.setValidDates(this.parent.getState().times, varChanged);
-            const endDate = this.dates.length - 1; 
-            
-            this.slider.setAttribute("max",endDate)
+            const endDate = this.dates.length - 1;
+
+            this.slider.setAttribute("max", endDate)
             this.slider.setValue(this.parent.getState().selectedTimeIndex);
-            this.var=this.parent.getState().varId;
+            this.var = this.parent.getState().varId;
             return
         }
         this.setValidDates(this.parent.getState().times, varChanged);
-        this.slider.setValue(this.parent.getState().selectedTimeIndex,false,false);
+        this.slider.setValue(this.parent.getState().selectedTimeIndex, false, false);
     }
 
-protected updateMode(){
-    let time = this.getTime(this.parent.getState().times)
-    let state = this.parent.getState();
-    
-    console.log('📅 DateSelectorFrame.updateMode:', {
-        tpSupport: state.tpSupport,
-        varName: state.varName,
-        climatology: state.climatology,
-        time
-    });
-    
-    // Handle single date strings specially
-    if (typeof this.parent.getState().times === 'string') {
-        console.log('DEBUG: Single date string detected, using year mode');
-        this.timeSeriesFrame.hidden = false;
-        this.climatologyFrame.hidden = true;
-        this.sliderFrame.hidden = true;
-        this.mode = DateFrameMode.DateFrameYear;
-        return;
-    }
-    
-    // Determinar si es climatología
-    const isClimatology = state.climatology || state.tpSupport === 'Climatología histórica';
-    
-    if (!isClimatology) {
-        // SERIE TEMPORAL O ESCENARIOS FUTUROS
-        const isScenarioAnnual = state.tpSupport === 'Escenarios futuros' && state.varName === 'Índice de aridez anual';
-        
-        if (isScenarioAnnual) {
-            console.log('🚫 Hiding datepicker for scenario annual');
-            this.timeSeriesFrame.hidden = true;
-            this.climatologyFrame.hidden = true;
-            this.sliderFrame.hidden = true;
-            this.mode = DateFrameMode.DateFrameDisabled;
-        } else {
-            console.log('✅ Showing datepicker for time series or scenario monthly/seasonal');
+    protected updateMode() {
+       
+        if (this.mode === DateFrameMode.DateFrameDisabled) {
+            const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
+            if (!dateFrame || dateFrame.hidden || dateFrame.style.display === 'none') {
+                
+                return;
+            }
+        }
+
+        let time = this.getTime(this.parent.getState().times)
+        let state = this.parent.getState();
+
+        // Handle single date strings specially
+        if (typeof this.parent.getState().times === 'string') {
             this.timeSeriesFrame.hidden = false;
             this.climatologyFrame.hidden = true;
-            
+            this.sliderFrame.hidden = true;
+            this.mode = DateFrameMode.DateFrameYear;
+            return;
+        }
+
+        const isClimatology = state.climatology;
+
+        if (!isClimatology) {
+            this.timeSeriesFrame.hidden = false;
+            this.climatologyFrame.hidden = true;
+
             switch (time) {
-                case 1: 
+                case 1:
                     this.mode = DateFrameMode.DateFrameYear;
                     this.sliderFrame.hidden = true;
                     break;
@@ -677,90 +671,77 @@ protected updateMode(){
                     this.sliderFrame.hidden = false;
                     break;
             }
-        }
-    } else {
-        // CLIMATOLOGÍA HISTÓRICA: siempre ocultar
-        console.log('🚫 Hiding datepicker for climatology');
-        this.timeSeriesFrame.hidden = true;
-        
-        switch (time) {
-            case 1: 
-                this.mode = DateFrameMode.ClimFrameYear;
-                this.sliderFrame.hidden = true;
-                this.climatologyFrame.hidden = true;
-                break;
-            default:
-                this.mode = time == 4 ? DateFrameMode.ClimFrameSeason : DateFrameMode.ClimFrameMonth;
-                let period = this.getPeriods(time);
-                this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
-                this.sliderFrame.hidden = false;
-                this.climatologyFrame.hidden = false;
-                break;
+        } else {
+            this.timeSeriesFrame.hidden = true;
+
+            switch (time) {
+                case 1:
+                    this.mode = DateFrameMode.ClimFrameYear;
+                    this.sliderFrame.hidden = true;
+                    this.climatologyFrame.hidden = true;
+                    break;
+                default:
+                    this.mode = time == 4 ? DateFrameMode.ClimFrameSeason : DateFrameMode.ClimFrameMonth;
+                    let period = this.getPeriods(time);
+                    this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
+                    this.sliderFrame.hidden = false;
+                    this.climatologyFrame.hidden = false;
+                    break;
+            }
         }
     }
-    
-    console.log('📅 DateSelectorFrame.updateMode result:', {
-        mode: this.mode,
-        timeSeriesHidden: this.timeSeriesFrame.hidden,
-        climatologyHidden: this.climatologyFrame.hidden,
-        sliderHidden: this.sliderFrame.hidden
-    });
-}
 
-    public showAdvanceButtons(visible:boolean=true){
-        this.container.querySelectorAll("[role=event-btn]").forEach((value:HTMLButtonElement)=>value.hidden=!visible);
+    public showAdvanceButtons(visible: boolean = true) {
+        this.container.querySelectorAll("[role=event-btn]").forEach((value: HTMLButtonElement) => value.hidden = !visible);
     }
 
-    public setMode(_mode:DateFrameMode):void{
-        this.mode=_mode;
+    public setMode(_mode: DateFrameMode): void {
+        this.mode = _mode;
         this.updateMode();
     }
 
-    public getMode():DateFrameMode{
+    public getMode(): DateFrameMode {
         return this.mode;
     }
 
     public getPeriods(time: number): string[] {
-        let period = time==4? this.parent.getTranslation('season'):this.parent.getTranslation('month')
-        return Object.values(period);       
+        let period = time == 4 ? this.parent.getTranslation('season') : this.parent.getTranslation('month')
+        return Object.values(period);
     }
 
-    public getTime (time:string[]): number  {
-        if(typeof this.parent.getState().times === 'string') return 1
-        if (time.length<=12) return time.length
+    public getTime(time: string[]): number {
+        if (typeof this.parent.getState().times === 'string') return 1
+        if (time.length <= 12) return time.length
         const result = time.reduce((acc, curr) => {
             const year = curr.split('-')[0];
             if (!acc.includes(year)) {
-              acc.push(year);
+                acc.push(year);
             }
             return acc;
         }, []);
         return time.length / result.length;
     }
 
-public hide(): void {
-    console.log('🚫 DateSelectorFrame.hide() called');
-    const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
-    if (dateFrame) {
-        dateFrame.style.display = 'none';
-        dateFrame.hidden = true;
-        
-        // Ocultar también los frames internos
-        if (this.timeSeriesFrame) this.timeSeriesFrame.hidden = true;
-        if (this.climatologyFrame) this.climatologyFrame.hidden = true;
-        if (this.sliderFrame) this.sliderFrame.hidden = true;
-    }
-}
+    public hide(): void {
+        const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
+        if (dateFrame) {
+            dateFrame.style.display = 'none';
+            dateFrame.hidden = true;
 
-public show(): void {
-    console.log('✅ DateSelectorFrame.show() called');
-    const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
-    if (dateFrame) {
-        dateFrame.style.display = '';
-        dateFrame.hidden = false;
-        
-        // Forzar actualización del modo para mostrar los frames correctos
-        this.updateMode();
+            this.mode = DateFrameMode.DateFrameDisabled;
+
+            // Ocultar todos los frames internos
+            if (this.timeSeriesFrame) this.timeSeriesFrame.hidden = true;
+            if (this.climatologyFrame) this.climatologyFrame.hidden = true;
+            if (this.sliderFrame) this.sliderFrame.hidden = true;
+        }
     }
-}
+
+    public show(): void {
+        const dateFrame = document.getElementById('DateSelectorFrame') || this.container;
+        if (dateFrame) {
+            dateFrame.style.display = '';
+            dateFrame.hidden = false;
+        }
+    }
 }

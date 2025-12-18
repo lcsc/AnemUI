@@ -1,11 +1,11 @@
 import Gradient from "javascript-color-gradient";
-import { maxPaletteValue, maxPaletteSteps  } from "./Env";
+import { maxPaletteValue, maxPaletteSteps } from "./Env";
 
 export type PaletteUpdater = () => string[];
 
 const DEFAULT_CHARACTERS: string[] = ["·", " "];
 const NUM_BREAKS: number = 10
-const MAX_DISPLAY_VALUE:number = 1000
+const MAX_DISPLAY_VALUE: number = 1000
 
 
 type CS_RGBA_Info = {
@@ -15,10 +15,10 @@ type CS_RGBA_Info = {
     a: number,
 }
 
-export interface Painter{
-    paintValues(floatArray:number[],width:number,height:number,minArray:number,maxArray:number,pxTransparent:number,uncertaintyLayer:boolean):Promise<HTMLCanvasElement>
+export interface Painter {
+    paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement>
     getColorString(val: number, min: number, max: number): string
-    getValIndex(val:number):number
+    getValIndex(val: number): number
 }
 
 export class NiceSteps {
@@ -49,53 +49,53 @@ export class NiceSteps {
     public getRegularSteps(data: number[], numBreaks = NUM_BREAKS, maxDisplayVal: number = MAX_DISPLAY_VALUE): number[] {
         // Filtramos y ordenamos los datos, convirtiendo infinitos a maxDisplayVal
         data = data.filter(v => !isNaN(v))
-                  .map(v => isFinite(v) ? v : maxDisplayVal)
-                  .sort((a, b) => a - b);
-        
+            .map(v => isFinite(v) ? v : maxDisplayVal)
+            .sort((a, b) => a - b);
+
         // Calculamos percentiles
         const p05 = this.percentile(data, 5);
         const p95 = this.percentile(data, 95);
-        
+
         // Si el p05 ya excede maxDisplayVal, usamos un rango desde 0 hasta maxDisplayVal
         let effectiveMin = p05;
         let effectiveMax = Math.min(p95, maxDisplayVal);
-        
+
         if (effectiveMin >= maxDisplayVal) {
             effectiveMin = 0;
             effectiveMax = maxDisplayVal;
         }
-        
+
         // Calculamos el paso inicial usando el rango efectivo
         const rawStep = (effectiveMax - effectiveMin) / numBreaks;
         // Si rawStep es muy pequeño o negativo, usar un paso mínimo
         const minStep = (effectiveMax - effectiveMin) / 100; // 1% del rango
         const safeRawStep = Math.max(rawStep, minStep);
-        
+
         const step = this.niceStep(safeRawStep);
-        
-        
+
+
         // Ajustamos los límites para que sean múltiplos del paso
         const start = Math.floor(effectiveMin / step) * step;
         const end = Math.ceil(effectiveMax / step) * step;
-        
+
         // Generamos los puntos de corte asegurándonos de que no sean duplicados
         const breaks: number[] = [];
-        
+
         // Generamos exactamente numBreaks + 1 breaks
         for (let i = 0; i <= numBreaks; i++) {
             const val = start + (i * step);
-            
+
             // Si el valor excede maxDisplayVal, lo limitamos
             const limitedVal = Math.min(val, maxDisplayVal);
-            
+
             // Redondeamos a 2 decimales para preservar más precisión
             const roundedValue = Math.round(limitedVal * 100) / 100;
-        
+
             // Evitamos valores duplicados
             if (!breaks.includes(roundedValue)) {
                 breaks.push(roundedValue);
             }
-            
+
             // Si hemos alcanzado maxDisplayVal, no generamos más breaks
             if (limitedVal >= maxDisplayVal) {
                 break;
@@ -107,24 +107,24 @@ export class NiceSteps {
     // ---- Detección automática de límite superior maxDisplayVal
     public getRegularStepsAdaptive(data: number[], numBreaks = NUM_BREAKS): number[] {
         data = data.filter(v => !isNaN(v) && isFinite(v)).sort((a, b) => a - b);
-        
+
         if (data.length === 0) return [];
-        
+
         // Calculamos varios percentiles para decidir el mejor corte
         const p70 = this.percentile(data, 70);
         const p80 = this.percentile(data, 80);
         const p90 = this.percentile(data, 90);
         const p95 = this.percentile(data, 95);
-        
+
         // Calculamos la densidad de datos en diferentes rangos
         const countBelow80 = data.filter(v => v <= p80).length;
         const countBelow90 = data.filter(v => v <= p90).length;
         const countBelow95 = data.filter(v => v <= p95).length;
-        
+
         const density80 = countBelow80 / data.length;
         const density90 = countBelow90 / data.length;
         const density95 = countBelow95 / data.length;
-        
+
         // Elegimos el percentil que capture entre 75-85% de los datos
         let effectiveMax: number;
         if (density80 >= 0.75 && density80 <= 0.85) {
@@ -134,19 +134,19 @@ export class NiceSteps {
         } else {
             effectiveMax = p80; // Por defecto usamos P80
         }
-        
+
         const effectiveMin = Math.max(0, this.percentile(data, 5));
-        
+
         // Resto del código igual que antes
         const rawStep = (effectiveMax - effectiveMin) / numBreaks;
         const minStep = (effectiveMax - effectiveMin) / 100;
         const safeRawStep = Math.max(rawStep, minStep);
-        
+
         const step = this.niceStep(safeRawStep);
-        
+
         const start = Math.floor(effectiveMin / step) * step;
         const end = Math.ceil(effectiveMax / step) * step;
-        
+
         const breaks: number[] = [];
         for (let i = 0; i <= numBreaks; i++) {
             const val = start + (i * step);
@@ -157,7 +157,7 @@ export class NiceSteps {
                 }
             }
         }
-        
+
         return breaks;
     }
 }
@@ -165,9 +165,9 @@ export class NiceSteps {
 // Debug helper - add this to CategoryRangePainter for better debugging
 
 export class CategoryRangePainter implements Painter {
-    protected ranges: {a:number,b:number}[]
-    
-    constructor(ranges: {a:number,b:number}[]) {
+    protected ranges: { a: number, b: number }[]
+
+    constructor(ranges: { a: number, b: number }[]) {
         this.ranges = ranges;
         console.log('CategoryRangePainter initialized');
         console.log('Ranges count:', ranges.length);
@@ -175,16 +175,16 @@ export class CategoryRangePainter implements Painter {
     }
 
     public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
-        
+
         let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
         let imgData: ImageData = context.getImageData(0, 0, width, height);
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
 
         const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
-        
+
         let stats = {
             processed: 0,
             colored: 0,
@@ -193,23 +193,23 @@ export class CategoryRangePainter implements Painter {
             outOfRange: 0,
             sampleValues: [] as number[]
         };
-        
+
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
                 let ncIndex: number = x + y * width;
                 let value: number = floatArray[ncIndex];
                 let pxIndex: number = x + ((height - 1) - y) * width;
-                
+
                 stats.processed++;
-                
+
                 if (!isNaN(value) && isFinite(value)) {
                     // Guardar algunos valores de muestra
                     if (stats.sampleValues.length < 10 && Math.random() < 0.01) {
                         stats.sampleValues.push(value);
                     }
-                    
+
                     let index: number = this.getValIndex(value);
-                    
+
                     if (index >= 0 && index < gradient.length) {
                         bitmap[pxIndex] = gradient[index];
                         stats.colored++;
@@ -225,16 +225,16 @@ export class CategoryRangePainter implements Painter {
                 }
             }
         }
-        
+
         console.log('Paint stats:', {
             processed: stats.processed,
             colored: stats.colored,
             transparent: stats.transparent,
             outOfRange: stats.outOfRange
         });
-        
+
         console.log('Sample values tested:', stats.sampleValues.map(v => v.toFixed(1)));
-        
+
         console.log('Range hits:');
         stats.rangeHits.forEach((count, i) => {
             if (count > 0) {
@@ -242,7 +242,7 @@ export class CategoryRangePainter implements Painter {
                 console.log(`  Range ${i} [${r.a}-${r.b}): ${count} pixels`);
             }
         });
-        
+
         context.putImageData(imgData, 0, 0);
         return canvas;
     }
@@ -251,7 +251,7 @@ export class CategoryRangePainter implements Painter {
         // Buscar el rango apropiado
         for (let i = 0; i < this.ranges.length; i++) {
             let range = this.ranges[i];
-            
+
             // Rango con límite inferior indefinido: val < b
             if (range.a === undefined && val < range.b) {
                 return i;
@@ -267,57 +267,47 @@ export class CategoryRangePainter implements Painter {
                 }
             }
         }
-        
-        return -1; // No encontrado
+
+        return -1; 
     }
 
     getColorString(val: number, min: number, max: number): string {
         let mgr = PaletteManager.getInstance();
         let paletteStr: string[] = mgr.updatePaletteStrings();
         let index = this.getValIndex(val);
-        
+
         if (index >= 0 && index < paletteStr.length) {
             return paletteStr[index];
         }
-        
+
         return "#000000";
     }
 }
 
-export class GradientPainter implements Painter{
+export class GradientPainter implements Painter {
     protected values: number[];
     protected colorGradient: string[];
-    // colors: lista de colores (se usan los 4 primeros para la rampa interna de js-color-gradient)
-    // values: array de valores (p. ej. [0,0.01,...])
-    // points: número de steps esperados (p. ej. 256)
-    // saturateFrom: si se indica (ej. 0.35) se forzará a partir de ese valor el color de saturación
-    constructor(colors:string[], values:number[], points:number, saturateFrom?: number){
+    constructor(colors: string[], values: number[], points: number, saturateFrom?: number) {
         this.values = values;
         this.colorGradient = new Gradient()
             .setColorGradient(colors[0], colors[1] || colors[0], colors[2] || colors[1] || colors[0], colors[3] || colors[2] || colors[1] || colors[0])
             .setMidpoint(points)
             .getColors();
 
-        // Si se solicita saturación desde un valor (p. ej. 0.35), forzamos todos los colores
-        // desde el índice correspondiente hasta el final a un color de saturación.
         if (typeof saturateFrom === 'number' && !isNaN(saturateFrom)) {
-            // Los valores en this.values son i/100 (por cómo los genera App), así que convertimos
-            // saturateFrom a un índice aproximado dentro del gradient.
             const pointsCount = this.colorGradient.length || points;
             const threshIdx = Math.max(0, Math.min(pointsCount - 1, Math.round(saturateFrom * 100)));
 
-            // Color de saturación: usamos el último color declarado en el argumento `colors` si existe,
-            // o el color final del gradient generado como fallback.
             const saturateColor = (colors && colors.length > 0) ? colors[colors.length - 1] : this.colorGradient[this.colorGradient.length - 1];
             for (let i = threshIdx; i < this.colorGradient.length; i++) {
                 this.colorGradient[i] = saturateColor;
             }
         }
     }
-    
-    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number,uncertaintyLayer:boolean): Promise<HTMLCanvasElement> {
+
+    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
         let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');    
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
         let imgData: ImageData = context.getImageData(0, 0, width, height);
@@ -325,7 +315,7 @@ export class GradientPainter implements Painter{
         let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer, this.colorGradient);
 
         const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer); // RGBA values
-        
+
         // colorize canvas
         for (let y: number = 0; y < height; y++) {
             for (let x: number = 0; x < width; x++) {
@@ -334,10 +324,10 @@ export class GradientPainter implements Painter{
                 let pxIndex: number = x + ((height - 1) - y) * width;
                 if (!isNaN(value)) {
                     value = Math.max(minArray, Math.min(value, maxArray));
-                    let index: number = uncertaintyLayer? value: this.getValIndex(value);
+                    let index: number = uncertaintyLayer ? value : this.getValIndex(value);
                     bitmap[pxIndex] = gradient[index]; // copy RGBA values in a single action
-                }else{
-                    bitmap[pxIndex]=pxTransparent;
+                } else {
+                    bitmap[pxIndex] = pxTransparent;
                 }
             }
         }
@@ -345,7 +335,7 @@ export class GradientPainter implements Painter{
         return canvas;
     }
 
-    getValIndex(val:number):number{
+    getValIndex(val: number): number {
         if (isNaN(val)) return -1;
         if (this.values.length === 0) return -1;
         // Si menor o igual al primer umbral -> primer índice
@@ -367,14 +357,14 @@ export class GradientPainter implements Painter{
         // let paletteStr: string[] = mgr.updatePaletteStrings();
         let paletteStr: string[] = this.colorGradient;
         let index = this.getValIndex(val)
-        if(index >=0) return paletteStr[index]
+        if (index >= 0) return paletteStr[index]
         return "#000000"//black
     }
 
 }
 
-export class CsDynamicPainter implements Painter{
-    
+export class CsDynamicPainter implements Painter {
+
     public getColorString(val: number, min: number, max: number): string {
         let mgr = PaletteManager.getInstance()
         let paletteStr: string[] = mgr.updatePaletteStrings()
@@ -401,7 +391,7 @@ export class CsDynamicPainter implements Painter{
         // Obtener los breaks de NiceSteps
         let niceSteps = new NiceSteps();
         let breaks = niceSteps.getRegularSteps(floatArray.filter(v => !isNaN(v)), maxPaletteSteps, maxPaletteValue);
-        
+
         const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
 
         // Función para encontrar el índice del intervalo correcto
@@ -456,44 +446,277 @@ export class CsDynamicPainter implements Painter{
                 }
             }
         }
-        
+
         context.putImageData(imgData, 0, 0);
         return canvas;
     }
 
-    getValIndex(val:number):number{
+    getValIndex(val: number): number {
         return 0;
     }
 }
 
-// Nuevo: pintor específico para la paleta de cambio (clamping en umbrales)
-export class ChangeGradientPainter extends GradientPainter {
-    // Umbrales fijos solicitados por el usuario
-    private readonly lowerThreshold = 0.2;
-    private readonly upperThreshold = 1.8;
+export class CVGradientPainter extends GradientPainter {
+    private readonly lowerThreshold = 0;   
+    private readonly centerValue = 0.25;      
+    private readonly upperThreshold = 1.1;   
 
-    constructor(colors:string[], values:number[], points:number){
+    constructor(colors: string[], values: number[], points: number) {
         super(colors, values, points);
     }
 
-    // Sobrescribimos para forzar los tramos solicitados
-    public getValIndex(val:number): number {
+    // Sobrescribimos getValIndex para implementar el mapeo correcto
+    public getValIndex(val: number): number {
         if (isNaN(val)) return -1;
-        // Valores menores o iguales al umbral inferior => primer color (rojo)
+        if (this.colorGradient.length === 0) return -1;
+
+        const totalColors = this.colorGradient.length;
+        const centerIdx = Math.floor(totalColors / 2);
+
+        // Valores menores o iguales al umbral inferior (0.7) => primer color (rojo oscuro)
         if (val <= this.lowerThreshold) {
             return 0;
         }
-        // Valores mayores o iguales al umbral superior => último color (azul)
+
+        // Valores mayores o iguales al umbral superior (1.3) => último color (azul oscuro)
         if (val >= this.upperThreshold) {
-            return this.values.length - 1;
+            return totalColors - 1;
         }
 
-        // Para valores intermedios, buscar el índice como en la implementación base
-        for (let i = 0; i < this.values.length; i++) {
-            if (Math.abs(this.values[i] - val) < 1e-9) return i;
-            if (val < this.values[i]) return i;
+        // Valores intermedios: calcular posición en el gradiente
+
+        // Rango inferior: 0.7 a 1.0 => mapear a primera mitad del gradiente (rojo -> blanco)
+        if (val < this.centerValue) {
+            const ratio = (val - this.lowerThreshold) / (this.centerValue - this.lowerThreshold);
+            return Math.round(ratio * centerIdx);
         }
-        return this.values.length - 1;
+
+        // Rango superior: 1.0 a 1.3 => mapear a segunda mitad del gradiente (blanco -> azul)
+        const ratio = (val - this.centerValue) / (this.upperThreshold - this.centerValue);
+        return centerIdx + Math.round(ratio * (totalColors - 1 - centerIdx));
+    }
+
+    // Sobrescribir getColorString para usar el nuevo mapeo
+    public getColorString(val: number, min: number, max: number): string {
+        if (!this.colorGradient || this.colorGradient.length === 0) {
+            return "#000000";
+        }
+
+        const index = this.getValIndex(val);
+
+        if (index >= 0 && index < this.colorGradient.length) {
+            return this.colorGradient[index];
+        }
+
+        return "#000000";
+    }
+}
+
+export class ChangeGradientPainter extends GradientPainter {
+    private readonly lowerThreshold = 0.5;   
+    private readonly centerValue = 1.0;     
+    private readonly upperThreshold = 1.5;   
+
+    constructor(colors: string[], values: number[], points: number) {
+        super(colors, values, points);
+    }
+
+    // Mapeo que crea zona blanca amplia entre 0.85 y 1.15
+    public getValIndex(val: number): number {
+        if (isNaN(val)) return -1;
+        if (this.colorGradient.length === 0) return -1;
+
+        const totalColors = this.colorGradient.length;
+        const centerIdx = Math.floor(totalColors / 2);
+
+        // Valores ≤ 0.5 => primer color (rojo oscuro)
+        if (val <= this.lowerThreshold) {
+            return 0;
+        }
+
+        // Valores ≥ 1.5 => último color (azul oscuro)
+        if (val >= this.upperThreshold) {
+            return totalColors - 1;
+        }
+
+        // Rango inferior: 0.5 a 1.0 => mapear a primera mitad 
+        // Con 17 colores, esto será índices 0-8
+        if (val < this.centerValue) {
+            const ratio = (val - this.lowerThreshold) / (this.centerValue - this.lowerThreshold);
+            return Math.round(ratio * centerIdx);
+        }
+
+        // Rango superior: 1.0 a 1.5 => mapear a segunda mitad
+        // Con 17 colores, esto será índices 8-16
+        const ratio = (val - this.centerValue) / (this.upperThreshold - this.centerValue);
+        return centerIdx + Math.round(ratio * (totalColors - 1 - centerIdx));
+    }
+
+    public getColorString(val: number, min: number, max: number): string {
+        if (!this.colorGradient || this.colorGradient.length === 0) {
+            return "#000000";
+        }
+
+        const index = this.getValIndex(val);
+
+        if (index >= 0 && index < this.colorGradient.length) {
+            return this.colorGradient[index];
+        }
+
+        return "#000000";
+    }
+}
+
+
+export class SmoothChangeGradientPainter implements Painter {
+    private colors: string[];
+    private lowerThreshold = 0.70;
+    private centerValue = 1.0;
+    private upperThreshold = 1.5;
+
+    constructor(colors: string[]) {
+        this.colors = colors;
+    }
+
+    public getColorString(val: number, min: number, max: number): string {
+        return this.interpolateColor(val);
+    }
+
+    public async paintValues(
+        floatArray: number[],
+        width: number,
+        height: number,
+        minArray: number,
+        maxArray: number,
+        pxTransparent: number,
+        uncertaintyLayer: boolean
+    ): Promise<HTMLCanvasElement> {
+        let canvas: HTMLCanvasElement = document.createElement('canvas');
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
+        canvas.width = width;
+        canvas.height = height;
+        let imgData: ImageData = context.getImageData(0, 0, width, height);
+
+        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
+
+        for (let y: number = 0; y < height; y++) {
+            for (let x: number = 0; x < width; x++) {
+                let ncIndex: number = x + y * width;
+                let value: number = floatArray[ncIndex];
+                let pxIndex: number = x + ((height - 1) - y) * width;
+
+                if (!isNaN(value) && isFinite(value)) {
+                    // Obtener color interpolado
+                    const color = this.interpolateColor(value);
+                    const rgba = this.hexToRgba(color);
+
+                    // Convertir RGBA a formato uint32
+                    bitmap[pxIndex] = (rgba.a << 24) | (rgba.b << 16) | (rgba.g << 8) | rgba.r;
+                } else {
+                    bitmap[pxIndex] = pxTransparent;
+                }
+            }
+        }
+
+        context.putImageData(imgData, 0, 0);
+        return canvas;
+    }
+
+    private interpolateColor(value: number): string {
+        // Valores fuera de rango
+        if (value <= this.lowerThreshold) {
+            return this.colors[0]; 
+        }
+        if (value >= this.upperThreshold) {
+            return this.colors[this.colors.length - 1]; 
+        }
+
+        // Calcular posición en el gradiente (0.0 a 1.0)
+        let position: number;
+
+        if (value < this.centerValue) {
+            // Rango inferior: 0.5 a 1.0
+            position = (value - this.lowerThreshold) / (this.centerValue - this.lowerThreshold);
+            position = position * 0.5; // Mapear a primera mitad (0.0 a 0.5)
+        } else {
+            // Rango superior: 1.0 a 1.5
+            position = (value - this.centerValue) / (this.upperThreshold - this.centerValue);
+            position = 0.5 + (position * 0.5); // Mapear a segunda mitad (0.5 a 1.0)
+        }
+
+        // Interpolar entre colores
+        const totalColors = this.colors.length;
+        const exactIndex = position * (totalColors - 1);
+        const lowerIndex = Math.floor(exactIndex);
+        const upperIndex = Math.min(lowerIndex + 1, totalColors - 1);
+        const fraction = exactIndex - lowerIndex;
+
+        // Si la fracción es muy pequeña, usar el color directamente
+        if (fraction < 0.001) {
+            return this.colors[lowerIndex];
+        }
+        if (fraction > 0.999) {
+            return this.colors[upperIndex];
+        }
+
+        // Interpolar entre los dos colores
+        const color1 = this.hexToRgba(this.colors[lowerIndex]);
+        const color2 = this.hexToRgba(this.colors[upperIndex]);
+
+        const r = Math.round(color1.r + (color2.r - color1.r) * fraction);
+        const g = Math.round(color1.g + (color2.g - color1.g) * fraction);
+        const b = Math.round(color1.b + (color2.b - color1.b) * fraction);
+        const a = Math.round(color1.a + (color2.a - color1.a) * fraction);
+
+        return this.rgbaToHex(r, g, b, a);
+    }
+
+    private hexToRgba(hex: string): { r: number, g: number, b: number, a: number } {
+        // Eliminar # si existe
+        hex = hex.replace('#', '');
+
+        // Expandir formato corto (ej: "03F" a "0033FF")
+        if (hex.length === 3) {
+            hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+        }
+
+        // Añadir alpha si no existe
+        if (hex.length === 6) {
+            hex = hex + 'FF';
+        }
+
+        return {
+            r: parseInt(hex.substring(0, 2), 16),
+            g: parseInt(hex.substring(2, 4), 16),
+            b: parseInt(hex.substring(4, 6), 16),
+            a: parseInt(hex.substring(6, 8), 16)
+        };
+    }
+
+    private rgbaToHex(r: number, g: number, b: number, a: number): string {
+        const toHex = (n: number) => {
+            const hex = Math.max(0, Math.min(255, n)).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        };
+
+        return '#' + toHex(r) + toHex(g) + toHex(b) + toHex(a);
+    }
+
+    public getValIndex(val: number): number {
+        // No se usa en este painter, pero es requerido por la interfaz
+        if (val <= this.lowerThreshold) return 0;
+        if (val >= this.upperThreshold) return this.colors.length - 1;
+
+        let position: number;
+        if (val < this.centerValue) {
+            position = (val - this.lowerThreshold) / (this.centerValue - this.lowerThreshold);
+            position = position * 0.5;
+        } else {
+            position = (val - this.centerValue) / (this.upperThreshold - this.centerValue);
+            position = 0.5 + (position * 0.5);
+        }
+
+        return Math.round(position * (this.colors.length - 1));
     }
 }
 
@@ -515,8 +738,8 @@ export class PaletteManager {
     protected selected: string;
     private paletteBuffer: ArrayBuffer;
     private palette: Uint8Array;
-    private painter:Painter;
-    private transparency:number;
+    private painter: Painter;
+    private transparency: number;
     private uncertaintyLayerChecked: string
 
     private constructor() {
@@ -530,20 +753,20 @@ export class PaletteManager {
         this.addPalette("blue", () => {
             return ["#FFFFFF", "#FFFFFD", "#FFFFFC", "#FFFFFA", "#FFFFF9", "#FFFFF8", "#FFFFF6", "#FFFFF5", "#FFFFF4", "#FFFFF2", "#FFFFF1", "#FFFFF0", "#FFFFEE", "#FFFFED", "#FFFFEC", "#FFFFEA", "#FFFFE9", "#FFFFE8", "#FFFFE6", "#FFFFE5", "#FFFFE4", "#FFFFE2", "#FFFFE1", "#FFFFE0", "#FFFFDE", "#FFFFDD", "#FFFFDC", "#FFFFDA", "#FFFFD9", "#FEFED8", "#FDFED6", "#FDFED5", "#FCFED3", "#FCFDD2", "#FBFDD1", "#FAFDCF", "#FAFDCE", "#F9FCCC", "#F8FCCB", "#F8FCC9", "#F7FCC8", "#F6FBC7", "#F6FBC5", "#F5FBC4", "#F5FBC2", "#F4FAC1", "#F3FAC0", "#F3FABE", "#F2FABD", "#F1F9BB", "#F1F9BA", "#F0F9B9", "#EFF9B7", "#EFF8B6", "#EEF8B4", "#EEF8B3", "#EDF8B1", "#ECF7B1", "#EBF7B1", "#E9F6B1", "#E8F6B1", "#E7F5B1", "#E5F5B1", "#E4F4B1", "#E3F4B1", "#E1F3B1", "#E0F3B1", "#DFF2B2", "#DDF2B2", "#DCF1B2", "#DBF0B2", "#D9F0B2", "#D8EFB2", "#D7EFB2", "#D5EEB2", "#D4EEB2", "#D3EDB3", "#D1EDB3", "#D0ECB3", "#CFECB3", "#CDEBB3", "#CCEBB3", "#CBEAB3", "#C9EAB3", "#C8E9B3", "#C7E9B4", "#C4E8B4", "#C1E7B4", "#BFE6B4", "#BCE5B4", "#BAE4B5", "#B7E3B5", "#B5E2B5", "#B2E1B5", "#B0E0B6", "#ADDFB6", "#ABDEB6", "#A8DDB6", "#A5DCB7", "#A3DBB7", "#A0DAB7", "#9ED9B7", "#9BD8B8", "#99D7B8", "#96D6B8", "#94D5B8", "#91D4B9", "#8FD3B9", "#8CD2B9", "#8AD1B9", "#87D0BA", "#84CFBA", "#82CEBA", "#7FCDBA", "#7DCCBB", "#7BCBBB", "#79CABB", "#76CABC", "#74C9BC", "#72C8BC", "#70C7BD", "#6EC6BD", "#6CC5BD", "#69C5BE", "#67C4BE", "#65C3BE", "#63C2BF", "#61C1BF", "#5EC1BF", "#5CC0BF", "#5ABFC0", "#58BEC0", "#56BDC0", "#53BDC1", "#51BCC1", "#4FBBC1", "#4DBAC2", "#4BB9C2", "#49B8C2", "#46B8C3", "#44B7C3", "#42B6C3", "#40B5C3", "#3FB4C3", "#3EB2C3", "#3CB1C3", "#3BB0C3", "#3AAFC3", "#38ADC3", "#37ACC2", "#36ABC2", "#35A9C2", "#33A8C2", "#32A7C2", "#31A5C2", "#30A4C2", "#2EA3C1", "#2DA1C1", "#2CA0C1", "#2A9FC1", "#299EC1", "#289CC1", "#279BC1", "#259AC0", "#2498C0", "#2397C0", "#2296C0", "#2094C0", "#1F93C0", "#1E92C0", "#1D91C0", "#1D8FBF", "#1D8DBE", "#1D8BBD", "#1D89BC", "#1D87BB", "#1E86BA", "#1E84BA", "#1E82B9", "#1E80B8", "#1E7FB7", "#1E7DB6", "#1F7BB5", "#1F79B4", "#1F77B4", "#1F75B3", "#1F74B2", "#2072B1", "#2070B0", "#206EAF", "#206CAF", "#206BAE", "#2069AD", "#2167AC", "#2165AB", "#2163AA", "#2162A9", "#2160A9", "#215EA8", "#225DA7", "#225BA6", "#225AA6", "#2258A5", "#2257A4", "#2255A3", "#2254A3", "#2252A2", "#2251A1", "#234FA1", "#234EA0", "#234C9F", "#234B9F", "#23499E", "#23489D", "#23469C", "#23459C", "#23439B", "#23429A", "#24409A", "#243F99", "#243D98", "#243C98", "#243A97", "#243996", "#243795", "#243695", "#243494", "#243393", "#233291", "#22328F", "#21318C", "#20308A", "#1F2F88", "#1E2E86", "#1D2E84", "#1C2D82", "#1B2C80", "#1A2B7E", "#192A7B", "#182979", "#172977", "#162875", "#152773", "#142671", "#13256F", "#12256D", "#11246B", "#102368", "#0F2266", "#0E2164", "#0D2162", "#0C2060", "#0B1F5E", "#0A1E5C", "#091D5A", "#081D58"];
         })
-        this.addPalette("uncertainty", ()=> {
+        this.addPalette("uncertainty", () => {
             return ['#65656580', '#00000000']
         })
-        
+
         this.paletteBuffer = new ArrayBuffer(256 * 4);
         this.palette = new Uint8Array(this.paletteBuffer);
         this.painter = new CsDynamicPainter();
-        this.transparency=0;
+        this.transparency = 0;
     }
 
-    public addPalette(name: string, palette: PaletteUpdater,_painter?:Painter): void {
+    public addPalette(name: string, palette: PaletteUpdater, _painter?: Painter): void {
         this.palettes[name] = palette;
-        if(_painter!=undefined)
-            this.painters[name]=_painter
+        if (_painter != undefined)
+            this.painters[name] = _painter
     }
 
     public removePalette(names: string[]): void {
@@ -553,7 +776,7 @@ export class PaletteManager {
         })
     }
 
-    public updatePaletteStrings():string[]{
+    public updatePaletteStrings(): string[] {
         let paletteStr: string[] = this.palettes[this.selected]();
         return paletteStr
     }
@@ -571,22 +794,22 @@ export class PaletteManager {
         return this.palette;
     }
 
-    public updatePalete32(uncertaintyLayer:boolean, _palette: string[]= []):Uint32Array{
-        let opacity = 100-this.transparency
-        opacity= parseInt(255*opacity/100+"");
+    public updatePalete32(uncertaintyLayer: boolean, _palette: string[] = []): Uint32Array {
+        let opacity = 100 - this.transparency
+        opacity = parseInt(255 * opacity / 100 + "");
         let ALPHA_VAL = opacity.toString(16);
-        if(ALPHA_VAL.length==1)ALPHA_VAL="0"+ALPHA_VAL;
-        let paletteStr: string[] = uncertaintyLayer? this.palettes['uncertainty']():(_palette.length == 0? this.palettes[this.selected]():_palette)
+        if (ALPHA_VAL.length == 1) ALPHA_VAL = "0" + ALPHA_VAL;
+        let paletteStr: string[] = uncertaintyLayer ? this.palettes['uncertainty']() : (_palette.length == 0 ? this.palettes[this.selected]() : _palette)
         let gradient = new Uint32Array(paletteStr.length); // RGBA values
         let rgba = new Uint8Array(gradient.buffer);
         for (var i = 0; i < paletteStr.length; i++) {
-            let hexValue = uncertaintyLayer? paletteStr[i] : paletteStr[i] + ALPHA_VAL
+            let hexValue = uncertaintyLayer ? paletteStr[i] : paletteStr[i] + ALPHA_VAL
             let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexValue);
             rgba[i * 4 + 0] = parseInt(result[1], 16);
             rgba[i * 4 + 1] = parseInt(result[2], 16);
             rgba[i * 4 + 2] = parseInt(result[3], 16);
             rgba[i * 4 + 3] = parseInt(result[4], 16);
-        } 
+        }
         return gradient
     }
 
@@ -612,60 +835,60 @@ export class PaletteManager {
     }
 
     getContinuousColor(value: number, min: number, max: number, paletteColors: string[]): string {
-    if (value == null || isNaN(value)) return "#ccc";
+        if (value == null || isNaN(value)) return "#ccc";
 
-    const ratio = (value - min) / (max - min); // normalizar 0..1
-    const scaled = ratio * (paletteColors.length - 1);
+        const ratio = (value - min) / (max - min);
+        const scaled = ratio * (paletteColors.length - 1);
 
-    const idx = Math.floor(scaled);
-    const nextIdx = Math.min(idx + 1, paletteColors.length - 1);
+        const idx = Math.floor(scaled);
+        const nextIdx = Math.min(idx + 1, paletteColors.length - 1);
 
-    const localRatio = scaled - idx;
+        const localRatio = scaled - idx;
 
-    const c1 = this.hexToRgb(paletteColors[idx]);
-    const c2 = this.hexToRgb(paletteColors[nextIdx]);
+        const c1 = this.hexToRgb(paletteColors[idx]);
+        const c2 = this.hexToRgb(paletteColors[nextIdx]);
 
-    const r = Math.round(c1.r + (c2.r - c1.r) * localRatio);
-    const g = Math.round(c1.g + (c2.g - c1.g) * localRatio);
-    const b = Math.round(c1.b + (c2.b - c1.b) * localRatio);
+        const r = Math.round(c1.r + (c2.r - c1.r) * localRatio);
+        const g = Math.round(c1.g + (c2.g - c1.g) * localRatio);
+        const b = Math.round(c1.b + (c2.b - c1.b) * localRatio);
 
-    return `rgb(${r},${g},${b})`;
-}
+        return `rgb(${r},${g},${b})`;
+    }
 
-    public getSelected():string{
+    public getSelected(): string {
         return this.selected;
     }
 
-    public setSelected(_selected:string){
-        if(this.palettes[_selected]!=undefined){
-            this.selected=_selected;
+    public setSelected(_selected: string) {
+        if (this.palettes[_selected] != undefined) {
+            this.selected = _selected;
         }
     }
 
-    public getPalettesNames():string[]{
+    public getPalettesNames(): string[] {
         return Object.keys(this.palettes);
     }
 
-    public getPainter():Painter{
-        if(this.painters[this.selected]!=undefined)return this.painters[this.selected]
+    public getPainter(): Painter {
+        if (this.painters[this.selected] != undefined) return this.painters[this.selected]
         return this.painter;
     }
 
-    public getTransparency():number{
+    public getTransparency(): number {
         return this.transparency;
     }
 
-    public setTransparency(_transparency:number){
-        if(_transparency<0)_transparency=0;
-        if(_transparency>100)_transparency=100;
-        this.transparency=_transparency;
+    public setTransparency(_transparency: number) {
+        if (_transparency < 0) _transparency = 0;
+        if (_transparency > 100) _transparency = 100;
+        this.transparency = _transparency;
     }
 
-    public setUncertaintyLayerChecked(checked: boolean){
-        this.uncertaintyLayerChecked = checked? 'On':'Off'
+    public setUncertaintyLayerChecked(checked: boolean) {
+        this.uncertaintyLayerChecked = checked ? 'On' : 'Off'
     }
 
-    public getUncertaintyLayerChecked():string{
+    public getUncertaintyLayerChecked(): string {
         return this.uncertaintyLayerChecked;
     }
 
