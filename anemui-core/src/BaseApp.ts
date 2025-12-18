@@ -1,10 +1,10 @@
 import { addChild, mount } from "tsx-create-element";
 import { MainFrame } from "./ui/MainFrame";
-import { MenuBar, MenuBarListener } from './ui/MenuBar'; 
+import { MenuBar, MenuBarListener } from './ui/MenuBar';
 import { CsMap } from "./CsMap";
 import { DownloadFrame, DownloadIframe, DownloadOptionsDiv } from "./ui/DownloadFrame";
 import LayerFrame from './ui/LayerFrame'
-import PaletteFrame from "./ui/PaletteFrame";  
+import PaletteFrame from "./ui/PaletteFrame";
 import { CsLatLong, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData } from "./data/CsDataLoader";
@@ -22,8 +22,8 @@ import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
 import { FeatureLike } from "ol/Feature";
-import LeftBar from "./ui/LeftBar"; 
-import RightBar from "./ui/RightBar"; 
+import LeftBar from "./ui/LeftBar";
+import RightBar from "./ui/RightBar";
 import Language from "./language/language";
 import { renderers, folders, defaultRenderer } from "./tiles/Support";
 import CsCookies from "./cookies/CsCookies";
@@ -594,8 +594,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             varName = varId
         }
         
-        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined 
-        
+        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined
+
         if (this.state == undefined) this.state = INITIAL_STATE;
         this.state = {
             ...this.state,
@@ -681,19 +681,19 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         try {
             this.menuBar.update();
             this.leftBar.update();
-            this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
+            await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
             this.csMap.updateRender(this.state.support);
-            
+
             // Wait for data only if we have computed data tiles layer
-            if (computedDataTilesLayer && this.state.computedLayer) {        
+            if (computedDataTilesLayer && this.state.computedLayer) {
                 await this.waitForDataLoad();
             }
-            
+
             if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
-            
+
         } catch (error) {
             console.error('Error during update:', error);
             // Continue with update even if there's an error
@@ -777,14 +777,37 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.csMap.refreshFeatureLayer()
     }
 
+    /**
+     * Verifica si estamos en modo climatología con ciclo temporal (mensual o estacional)
+     */
+    protected isClimatologyCyclicMode(): boolean {
+        return this.state.climatology &&
+               (this.state.timeSpan === CsTimeSpan.Month || this.state.timeSpan === CsTimeSpan.Season);
+    }
+
     public dateDateBack(): void {
-        if (this.state.selectedTimeIndex == 0) return;
-        this.state.selectedTimeIndex--;
+        if (this.state.selectedTimeIndex == 0) {
+            if (this.isClimatologyCyclicMode()) {
+                this.state.selectedTimeIndex = this.state.times.length - 1;
+            } else {
+                return;
+            }
+        } else {
+            this.state.selectedTimeIndex--;
+        }
         this.update()
     }
+
     public dateDateForward(): void {
-        if (this.state.selectedTimeIndex == this.state.times.length - 1) return;
-        this.state.selectedTimeIndex++;
+        if (this.state.selectedTimeIndex == this.state.times.length - 1) {
+            if (this.isClimatologyCyclicMode()) {
+                this.state.selectedTimeIndex = 0;
+            } else {
+                return;
+            }
+        } else {
+            this.state.selectedTimeIndex++;
+        }
         this.update()
     }
 
@@ -955,6 +978,16 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
      public showPercentileClockForPoint(latlng: CsLatLong, currentValue: number, historicalData: number[]): void {
-       
+
+    }
+
+    /**
+     * Resetea la capa de incertidumbre: la oculta y desactiva el checkbox
+     * Útil cuando se cambia de contexto (ej: cambiar horizonte de predicción)
+     * Usa el método toggleUncertaintyLayer del MenuBar para mantener consistencia
+     */
+    public resetUncertaintyLayer(): void {
+        // Llamar al método del MenuBar que coordina todo el comportamiento
+        this.getMenuBar().toggleUncertaintyLayer(false);
     }
 }
