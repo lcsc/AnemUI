@@ -25,6 +25,18 @@ interface MeanLineConfig {
   labelPadding: number;
 }
 
+export interface ColorLegendRange {
+  min: number;
+  max: number;
+  color: string;
+  label: string;
+}
+
+export interface ColorLegendConfig {
+  title: string;
+  ranges: ColorLegendRange[];
+}
+
 
 export class CsGraph extends BaseFrame {
   private graphTitle: string;
@@ -108,19 +120,7 @@ export class CsGraph extends BaseFrame {
             <div className="labels-content" style={{ width: "auto" }}>
               <div id="labels" style={{ width: graphWidth + "px" }}></div>
             </div>
-            <div id="colorLegend" style={{ display: "none", padding: "8px 5px", justifyContent: "center", alignItems: "center", gap: "3px", flexWrap: "wrap", fontSize: "11px" }}>
-              <span style={{ fontWeight: "bold", marginRight: "5px", whiteSpace: "nowrap" }}>Superficie afectada:</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#ffcccc" }}></div><span style={{ whiteSpace: "nowrap" }}>0-10%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#ff9999" }}></div><span style={{ whiteSpace: "nowrap" }}>10-20%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#ff6666" }}></div><span style={{ whiteSpace: "nowrap" }}>20-30%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#ff3333" }}></div><span style={{ whiteSpace: "nowrap" }}>30-40%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#ff0000" }}></div><span style={{ whiteSpace: "nowrap" }}>40-50%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#cc0000" }}></div><span style={{ whiteSpace: "nowrap" }}>50-60%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#990000" }}></div><span style={{ whiteSpace: "nowrap" }}>60-70%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#660000" }}></div><span style={{ whiteSpace: "nowrap" }}>70-80%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#4d0000" }}></div><span style={{ whiteSpace: "nowrap" }}>80-90%</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "2px" }}><div style={{ width: "18px", height: "12px", backgroundColor: "#330000" }}></div><span style={{ whiteSpace: "nowrap" }}>90-100%</span></div>
-            </div>
+            <div id="colorLegend" style={{ display: "none", padding: "8px 5px", justifyContent: "center", alignItems: "center", gap: "3px", flexWrap: "wrap", fontSize: "11px" }}></div>
             <div id="graphControls" className="graph-controls" hidden style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", gap: "15px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <label htmlFor="viewModeSelector" style={{ fontWeight: "bold" }}>Vista:</label>
@@ -202,6 +202,50 @@ export class CsGraph extends BaseFrame {
     }
 
     // Ocultar leyenda de colores
+    this.hideColorLegend();
+  }
+
+  /**
+   * Configura y muestra una leyenda de colores personalizada
+   * @param config Configuración de la leyenda con título y rangos de colores
+   */
+  public setColorLegend(config: ColorLegendConfig): void {
+    const legendDiv = document.getElementById('colorLegend');
+    if (!legendDiv) return;
+
+    // Construir HTML de la leyenda
+    let legendHTML = `<span style="font-weight: bold; margin-right: 5px; white-space: nowrap;">${config.title}</span>`;
+
+    config.ranges.forEach(range => {
+      legendHTML += `
+        <div style="display: flex; align-items: center; gap: 2px;">
+          <div style="width: 18px; height: 12px; background-color: ${range.color};"></div>
+          <span style="white-space: nowrap;">${range.label}</span>
+        </div>
+      `;
+    });
+
+    legendDiv.innerHTML = legendHTML;
+    legendDiv.style.display = 'flex';
+  }
+
+  /**
+   * Configura y muestra una leyenda con HTML personalizado
+   * Para casos complejos que requieren SVG u otros elementos personalizados
+   * @param html HTML personalizado para la leyenda
+   */
+  public setCustomColorLegend(html: string): void {
+    const legendDiv = document.getElementById('colorLegend');
+    if (!legendDiv) return;
+
+    legendDiv.innerHTML = html;
+    legendDiv.style.display = 'flex';
+  }
+
+  /**
+   * Oculta la leyenda de colores
+   */
+  public hideColorLegend(): void {
     const legendDiv = document.getElementById('colorLegend');
     if (legendDiv) {
       legendDiv.style.display = 'none';
@@ -229,7 +273,10 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     console.log('Data type:', typeof data);
     console.log('Has currentValue:', data?.currentValue !== undefined);
     console.log('Has historicalData:', data?.historicalData !== undefined);
-    
+
+    // Ocultar leyenda por defecto (cada tipo de gráfico decidirá si mostrarla)
+    this.hideColorLegend();
+
     this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E';
     this.container.hidden = false;
     
