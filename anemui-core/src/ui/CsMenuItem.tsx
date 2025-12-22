@@ -32,28 +32,30 @@ export class CsMenuItem extends BaseUiElement {
     this.values = _values;
     let count = 0;
     for (let i = 0; i < this.values.length; i++) {
-        if (!this.values[i].startsWith("~")) {
+        if (!this.values[i].startsWith("-")) {
             count++;
         }
     }
     if (this.container != undefined) {
       //alert("needs Update")
       let ul = this.container.getElementsByTagName("ul")[0]
-      ul.innerHTML = "";
-      this.values.map((val, index) => {
-        var popOverAttrs = {
-          id: val.startsWith("~") ? val.substring(1) : val,
-          'data-toggle': 'popover'
-        };
-        if (!val.startsWith("-") && !val.startsWith("~")) {
-      /*     if (val.startsWith("~")) {
-            addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
-          } else { */
-            addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>))
-          // }
-        }
-      });
-      this.drop.update()
+      if (ul) {
+        ul.innerHTML = "";
+        this.values.map((val, index) => {
+          var popOverAttrs = {
+            id: val.startsWith("~") ? val.substring(1) : val,
+            'data-toggle': 'popover'
+          };
+          if (!val.startsWith("-") && !val.startsWith("~")) {
+        /*     if (val.startsWith("~")) {
+              addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
+            } else { */
+              addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item" onClick={(event: React.MouseEvent) => { this.select(index) }} href="#"> {val}  </a></li>))
+            // }
+          }
+        });
+        this.drop.update()
+      }
     }
   }
   
@@ -180,6 +182,80 @@ export class CsMenuItem extends BaseUiElement {
   //   }
   // }
 
+}
+
+export interface CsMenuCheckboxListener {
+  checkboxChanged(origin: CsMenuCheckbox, checked: boolean): void;
+}
+
+export class CsMenuCheckbox extends BaseUiElement {
+  public id: string;
+  private title: string;
+  private checked: boolean;
+  private listener: CsMenuCheckboxListener;
+
+  constructor(_id: string, _title: string, _listener: CsMenuCheckboxListener, _checked: boolean = false) {
+    super();
+    this.id = _id;
+    this.title = _title;
+    this.checked = _checked;
+    this.listener = _listener;
+  }
+
+  public setTitle(_title: string) {
+    this.title = _title;
+    if (this.container != undefined) {
+      const titleSpan = this.container.querySelector(".title");
+      if (titleSpan) {
+        titleSpan.innerHTML = this.title;
+      }
+    }
+  }
+
+  public setChecked(_checked: boolean) {
+    this.checked = _checked;
+    if (this.container) {
+      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.checked = _checked;
+      }
+    }
+  }
+
+  public getChecked(): boolean {
+    return this.checked;
+  }
+
+  public render(): JSX.Element {
+    return (
+      <div className={"menu-checkbox menu-item"}>
+        <span className={"title"}>{this.title}</span>
+        <div className="form-check form-switch">
+          <input
+            id={this.id}
+            type="checkbox"
+            role="switch"
+            className="form-check-input"
+            checked={this.checked}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              this.checked = e.target.checked;
+              this.listener.checkboxChanged(this, this.checked);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  public build(_container?: HTMLDivElement) {
+    this.container = _container;
+  }
+
+  public config(hidden: boolean) {
+    if (this.container) {
+      this.container.hidden = hidden;
+    }
+  }
 }
 
 export class CsMenuInput extends BaseUiElement {

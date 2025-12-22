@@ -4,6 +4,7 @@ export * from './PaletteManager';
 export * from './ServiceApp';
 export { BaseApp } from './BaseApp';
 export { InfoDiv } from './ui/InfoPanel';
+export { default as Language } from './language/language';
 // Export Support.ts items for backward compatibility  
 export { renderers, getFolders, defaultRenderer } from './tiles/Support';
 export const defaultElement = "Rejilla";
@@ -16,8 +17,8 @@ export {enableRenderer } from './tiles/Support';
 
 // public APIs
 export { CsGraph, type GraphType, ColorLegendConfig } from './ui/Graph';
-export { MenuBar, MenuBarListener } from './ui/MenuBar';
-export { DateFrameMode } from "./ui/DateFrame";
+export { MenuBar, MenuBarListener, simpleDiv } from './ui/MenuBar';
+export { DateSelectorFrame, DateFrameListener, DateFrameMode } from "./ui/DateFrame";
 
 export { fromLonLat } from 'ol/proj';
 
