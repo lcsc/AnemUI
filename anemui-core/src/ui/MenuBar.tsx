@@ -1,6 +1,6 @@
 import { createElement, addChild } from 'tsx-create-element';
 import "../../css/anemui-core.scss"
-import { CsMenuItem, CsMenuInput, CsMenuItemListener } from './CsMenuItem';
+import { CsMenuItem, CsMenuInput, CsMenuCheckbox, CsMenuItemListener, CsMenuCheckboxListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
 import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData } from "../Env";
@@ -60,15 +60,15 @@ export class MenuBar extends BaseFrame {
     private extraDisplays: simpleDiv[];
     private inputOrder: string[];
 
-    private climBtnArray: HTMLElement[]
+    protected climBtnArray: HTMLElement[]
     private spatialSupport: CsMenuItem;
     private temporalSupport: CsMenuItem;
     private variable: CsMenuItem;
     private subVariable: CsMenuItem;
     private selection: CsMenuItem;
     private selectionParam: CsMenuInput;
-    private extraMenuItems: CsMenuItem[];
-    private extraMenuInputs: CsMenuInput[];
+    protected extraMenuItems: CsMenuItem[];
+    protected extraMenuInputs: CsMenuInput[];
     private dropDownOrder: string[]
     private logoMaps: string[]
 
@@ -85,6 +85,13 @@ export class MenuBar extends BaseFrame {
 
     private displayUnits: HTMLDivElement;
     private units: CsMenuItem;
+
+    private displayUncertainty: HTMLDivElement;
+    private uncertaintyCheckbox: CsMenuCheckbox;
+    private uncertaintyAssociatedRole: string; // Role del botón al que está asociado
+    private uncertaintyCssClass: string; // Clase CSS del botón asociado
+    private uncertaintyRole: string; // Role dinámico del uncertainty basado en el botón asociado
+    private uncertaintyId: string; // ID dinámico del uncertainty basado en el botón asociado
 
 
     constructor(_parent: BaseApp, _listener: MenuBarListener) {
@@ -144,6 +151,9 @@ export class MenuBar extends BaseFrame {
                 self.listener.subVarSelected(index, value, values) // Reutiliza el mismo listener
             },
         });
+
+        // El uncertainty checkbox se creará dinámicamente en setUncertaintyAssociation()
+        // con un id y role basados en el botón asociado
 
         this.extraMenuItems = []
         this.extraMenuInputs = []
@@ -367,32 +377,29 @@ export class MenuBar extends BaseFrame {
                 addChild(this.displayUnits, this.units.render(this.parent.getState().subVarName, false));
                 this.units.build(this.displayUnits);
             }
-          if (hasClimatology) {
-   
 
-    this.extraDisplays.forEach((dsp) => {
-        addChild(this.inputsFrame, this.renderDisplay(dsp, 'basicBtn'));
-        addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'basicBtn'));
-        
-        this.extraMenuItems.forEach((dpn) => {
-            if (dpn.id == dsp.role) {
-                console.log('  -> Rendering menu item:', dpn.id);
-                let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                addChild(container, dpn.render(dsp.subTitle, false));
-                dpn.build(container)
+            if (hasClimatology) {
+                this.extraDisplays.forEach((dsp) => {
+                    addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
+                    addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                    this.extraMenuItems.forEach((dpn) => {
+                        if (dpn.id == dsp.role) {
+                            let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
+                            addChild(container, dpn.render(dsp.subTitle, false));
+                            dpn.build(container)
+                        }
+                    });
+                    if (this.extraMenuInputs.length > 0) {
+                        this.extraMenuInputs.forEach((input) => {
+                            if (input.id == dsp.role) {
+                                let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
+                                addChild(container, input.render(this.parent.getState().selectionParam + ''));
+                                input.build(container)
+                            }
+                        })
+                    }
+                });
             }
-        });
-        if (this.extraMenuInputs.length > 0) {
-            this.extraMenuInputs.forEach((input) => {
-                if (input.id == dsp.role) {
-                    let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                    addChild(container, input.render(this.parent.getState().selectionParam + ''));
-                    input.build(container)
-                }
-            })
-        }
-    });
-}
             if (this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
             }
@@ -520,6 +527,38 @@ export class MenuBar extends BaseFrame {
         this.displayVar.classList.add('display:none')
     }
 
+    /**
+     * Maneja el cambio de estado del checkbox de incertidumbre
+     * @param checked - Estado del checkbox (true = mostrar capa, false = ocultar capa)
+     */
+    public toggleUncertaintyLayer(checked: boolean): void {
+        const PaletteManager = require('../PaletteManager').PaletteManager;
+        const LayerManager = require('../LayerManager').LayerManager;
+
+        const ptMgr = PaletteManager.getInstance();
+        const lmgr = LayerManager.getInstance();
+
+        // Actualizar el estado en PaletteManager
+        ptMgr.setUncertaintyLayerChecked(checked);
+
+        // Actualizar el checkbox solo si existe
+        if (this.uncertaintyCheckbox) {
+            this.uncertaintyCheckbox.setChecked(checked);
+        }
+
+        // Mostrar/ocultar la capa si existe
+        const uncertaintyLayer = lmgr.getUncertaintyLayer();
+        if (uncertaintyLayer && uncertaintyLayer.length > 0) {
+            lmgr.showUncertaintyLayer(checked);
+
+            // Forzar renderizado del mapa
+            const csMap = this.parent.getMap();
+            if (csMap && (csMap as any).controller && (csMap as any).controller.map) {
+                (csMap as any).controller.map.render();
+            }
+        }
+    }
+
     public update(): void {
         if (!hasButtons) return
 
@@ -552,6 +591,71 @@ export class MenuBar extends BaseFrame {
         } else {
             this.hideClimFrame()
         }
+
+        // Gestionar checkbox de incertidumbre dinámicamente
+        const uncertaintyLayer = this.parent.getState().uncertaintyLayer;
+
+        if (uncertaintyLayer && this.uncertaintyAssociatedRole && this.uncertaintyCssClass) {
+            const PaletteManager = require('../PaletteManager').PaletteManager;
+            const ptMgr = PaletteManager.getInstance();
+
+            // Si no existe el checkbox, crearlo
+            const isNewCheckbox = !this.displayUncertainty;
+            if (isNewCheckbox) {
+                // Activar la capa de incertidumbre por defecto ANTES de crear el checkbox
+                ptMgr.setUncertaintyLayerChecked(true);
+
+                // Encontrar el botón asociado
+                const associatedButton = this.container.querySelector(`[role="${this.uncertaintyAssociatedRole}"]`) as HTMLElement;
+                if (associatedButton) {
+                    // Crear el display del checkbox con la clase CSS del botón asociado
+                    // Usar el role dinámico basado en el botón asociado
+                    let dspUncertainty: simpleDiv = { role: this.uncertaintyRole, title: 'Incertidumbre', subTitle: '' };
+                    const uncertaintyElement = this.renderDisplay(dspUncertainty, this.uncertaintyCssClass);
+
+                    // Agregar el elemento al DOM
+                    addChild(this.inputsFrame, uncertaintyElement);
+
+                    // Obtener el elemento recién agregado y reposicionarlo después del botón asociado
+                    this.displayUncertainty = this.container.querySelector(`[role="${this.uncertaintyRole}"]`) as HTMLDivElement;
+                    if (this.displayUncertainty && associatedButton.nextSibling) {
+                        this.inputsFrame.insertBefore(this.displayUncertainty, associatedButton.nextSibling);
+                    }
+
+                    // Configurar el checkbox - establecer checked=true ANTES de renderizar
+                    this.uncertaintyCheckbox.setChecked(true);
+                    addChild(this.displayUncertainty, this.uncertaintyCheckbox.render());
+                    this.uncertaintyCheckbox.build(this.displayUncertainty);
+
+                    // Activar la visualización de la capa de incertidumbre con un pequeño delay
+                    // para dar tiempo a que la capa se cargue en el LayerManager
+                    setTimeout(() => {
+                        this.toggleUncertaintyLayer(true);
+                    }, 200);
+                }
+            }
+
+            // Mostrar y actualizar el estado del checkbox
+            if (this.displayUncertainty) {
+                this.displayUncertainty.hidden = false;
+                // Si no es nuevo, mantener el estado actual del PaletteManager
+                if (!isNewCheckbox) {
+                    const isChecked = ptMgr.getUncertaintyLayerChecked();
+                    this.uncertaintyCheckbox.setChecked(isChecked);
+
+                    // Si el checkbox está activo, reactivar la capa con delay
+                    // para dar tiempo a que se cargue la nueva capa de uncertainty
+                    if (isChecked) {
+                        setTimeout(() => {
+                            this.toggleUncertaintyLayer(true);
+                        }, 200);
+                    }
+                }
+            }
+        } else if (this.displayUncertainty) {
+            // Si no hay capa de incertidumbre, ocultar el checkbox
+            this.displayUncertainty.hidden = true;
+        }
     }
     public showMenusForClimatology(): void {
         if (!this.climBtnArray || this.climBtnArray.length === 0) {
@@ -561,8 +665,8 @@ export class MenuBar extends BaseFrame {
 
         this.climBtnArray.forEach((btn) => {
             const role = btn.getAttribute('role');
-            if (role === 'variable' || role === 'escala' || role === 'size' || role === 'year' || role === 'magnitude' || role === 'timeSpan' || role === 'period') {
-                // Mostrar variable y escala para climatología
+            if (role === 'variable' || role === 'escala' || role === 'size' || role === 'magnitude' || role === 'timeSpan' || role === 'period' || role === 'year') {
+                // Mostrar estos elementos para climatología
                 btn.hidden = false;
             } else if (role === 'escenario') {
                 // Ocultar escenario para climatología
@@ -625,7 +729,7 @@ export class MenuBar extends BaseFrame {
         }
     }
 
-    public setExtraDisplay(type: number, id: string, displayTitle: string, options: string[]) {
+    public setExtraDisplay(type: number, id: string, displayTitle: string, options: string[], cssClass?: string, hasUncertainty?: boolean) {
         this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0] })
         let listener = this.listener
 
@@ -649,6 +753,11 @@ export class MenuBar extends BaseFrame {
                 break;
         }
 
+        // Si este botón debe tener un checkbox de incertidumbre asociado, configurarlo automáticamente
+        // La clase CSS es necesaria para saber qué tipo de botón es (predBtn, climBtn, etc.)
+        if (hasUncertainty && cssClass) {
+            this.setUncertaintyAssociation(id, cssClass);
+        }
     }
 
     public hideExtraMenuItem(role: string): void {
@@ -665,7 +774,7 @@ export class MenuBar extends BaseFrame {
         }
     }
 
-    public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[]) {
+    public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[], hidden: boolean = false) {
         switch (type) {
             case 1:
                 this.extraMenuItems.forEach((dpn) => {
@@ -673,6 +782,8 @@ export class MenuBar extends BaseFrame {
                         dpn.setTitle(displayTitle)
                         dpn.setSubTitle(options[0])
                         dpn.setValues(options)
+                        // Controlar visibilidad usando el método config
+                        // dpn.config(hidden, displayTitle);
                     }
                 });
                 break;
@@ -684,9 +795,11 @@ export class MenuBar extends BaseFrame {
                         if (options && options.length > 0 && options[0] !== undefined && options[0] !== '') {
                             const newValue = parseFloat(options[0]);
                             if (!isNaN(newValue)) {
-                                inp.value = newValue;
+                                inp.setValue(newValue);
                             }
                         }
+                        // Controlar visibilidad usando el método config
+                        inp.config(hidden, displayTitle);
                     }
                 });
                 break;
@@ -714,7 +827,9 @@ export class MenuBar extends BaseFrame {
     }
 
     public setSupportValues(_supportValues: string[]) {
+          if (hasSpSupport) {
         this.spatialSupport.setValues(_supportValues)
+        }
     }
 
     public setTpSupportValues(_tpSupportValues: string[]) {
@@ -805,39 +920,61 @@ export class MenuBar extends BaseFrame {
     }
 
     public setUnits(_units: string[]) {
-    this.units.setValues(_units);
-}
+        this.units.setValues(_units);
+    }
 
-public updateUnitsDisplay(value: string) {
-    if (this.displayUnits) {
-        const subtitle = this.displayUnits.querySelector('.sub-title');
-        if (subtitle) {
-            subtitle.innerHTML = value;
+    public updateUnitsDisplay(value: string) {
+        if (this.displayUnits) {
+            const subtitle = this.displayUnits.querySelector('.sub-title');
+            if (subtitle) {
+                subtitle.innerHTML = value;
+            }
         }
     }
-}
 
-public hideUnits() {
-    if (this.displayUnits) {
-        this.displayUnits.hidden = true;
+    public hideUnits() {
+        if (this.displayUnits) {
+            this.displayUnits.hidden = true;
+        }
     }
-}
 
-public showUnits() {
-    if (this.displayUnits) {
-        this.displayUnits.hidden = false;
+    public showUnits() {
+        if (this.displayUnits) {
+            this.displayUnits.hidden = false;
+        }
     }
-}
 
-private getLegendTitleForUnit(unit: string): string {
-    switch(unit) {
-        case 'Km/h': return 'Km/h';
-        case 'm/s': return 'm/s';
-        case 'Nudos': return 'Nudos';
-        case 'Escala WMO/Beaufort': return 'Beaufort';
-        default: return unit;
+    /**
+     * Configura el checkbox de incertidumbre para que se cree asociado a un botón específico
+     * @param associatedRole - Role del botón al que se asociará (ej: 'horizontePred')
+     * @param cssClass - Clase CSS del botón (ej: 'predBtn', 'climBtn')
+     */
+    public setUncertaintyAssociation(associatedRole: string, cssClass: string): void {
+        let self = this;
+        this.uncertaintyAssociatedRole = associatedRole;
+        this.uncertaintyCssClass = cssClass;
+
+        // Generar role e id dinámicos basados en el botón asociado
+        this.uncertaintyRole = `uncertainty-${associatedRole}`;
+        this.uncertaintyId = `UncertaintyCheckbox-${associatedRole}`;
+
+        // Crear el checkbox con el id dinámico
+        this.uncertaintyCheckbox = new CsMenuCheckbox(this.uncertaintyId, "Incertidumbre", {
+            checkboxChanged(origin, checked) {
+                self.toggleUncertaintyLayer(checked);
+            },
+        }, false); // Inicialmente no marcado
     }
-}
+
+    private getLegendTitleForUnit(unit: string): string {
+        switch(unit) {
+            case 'Km/h': return 'Km/h';
+            case 'm/s': return 'm/s';
+            case 'Nudos': return 'Nudos';
+            case 'Escala WMO/Beaufort': return 'Beaufort';
+            default: return unit;
+        }
+    }
 
     // public selectFirstSpatialSupportValue(): void {
     //     this.spatialSupport.selectFirstValidValue();

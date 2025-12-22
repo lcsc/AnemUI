@@ -48,3 +48,34 @@ export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'?
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
 export const maxPaletteValue = ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
 export const maxPaletteSteps = ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
+
+// Factory Method Pattern
+// true = usar factory method (permite override en subclases)
+// false = instanciación directa en BaseApp
+export interface FactoryMethodsConfig {
+    menuBar: boolean;
+    leftBar: boolean;
+    rightBar: boolean;
+    downloadFrame: boolean;
+    layerFrame: boolean;
+    paletteFrame: boolean;
+    dateSelectorFrame: boolean;
+    graph: boolean;
+}
+
+// Default: todos en false (backward compatible)
+const defaultFactoryConfig: FactoryMethodsConfig = {
+    menuBar: false,
+    leftBar: false,
+    rightBar: false,
+    downloadFrame: false,
+    layerFrame: false,
+    paletteFrame: false,
+    dateSelectorFrame: false,
+    graph: false
+};
+
+export const useFactoryMethods: FactoryMethodsConfig =
+    typeof ENV.useFactoryMethods !== 'undefined'
+        ? { ...defaultFactoryConfig, ...ENV.useFactoryMethods }
+        : defaultFactoryConfig;

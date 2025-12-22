@@ -74,30 +74,30 @@ export class LayerManager {
     private constructor() {
         // CAPAS BASE
         // ------ Global ()
-        this.addBaseLayer({name:"ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true})
-        this.addBaseLayer({name:"OSM",url:undefined,type:AL_TYPE_OSM, global:true})
-        this.addBaseLayer({name:"EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true})
+        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true})
+        this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true})
+        this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true})
         // ------ Estatal ()
-        this.addBaseLayer({name:"IGN-BASE",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false})
-        this.addBaseLayer({name:"PNOA",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false})
-        this.addBaseLayer({name:"LIDAR",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false})
+        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false})
+        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false})
+        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false})
   
         // CAPAS SUPERPUESTAS
         // ------ Global ()
-        this.addTopLayer({name:"mapbox",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM, global:true})   
-        this.addTopLayer({name:"EU NUTS",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true})
+        this.addTopLayer({name:"Límites estatales (mapbox)",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM, global:true})   
+        this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true})
         // ------ Estatal ()
-        this.addTopLayer({name:"unidad_administrativa",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false})
-        this.addTopLayer({name:"demarcaciones_hidrograficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false})
-        this.addTopLayer({name:"comarcas_agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
-        this.addTopLayer({name:"comarcas_ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
-        this.addTopLayer({name:"zonas_inundables-L",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"zonas_inundables-T10",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"zonas_inundables-T50",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"zonas_inundables-T100",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"zonas_inundables-T500",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false})
+        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false})
+        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
+        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
+        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
         
-        this.topSelected="mapbox";
+        this.topSelected="Límites estatales (mapbox)";
         this.uncertaintyLayer = [];
          this.uncertaintyLayerVisible = false; 
     }
@@ -115,7 +115,7 @@ export class LayerManager {
     }
 
     public initBaseSelected(zoom: number): number{
-        this.baseSelected = zoom >=6.00? ["EUMETSAT","PNOA"]:["ARCGIS"];
+        this.baseSelected = zoom >=6.00? ["Capa fondo global EUMETSAT","Ortofoto nacional (PNOA)"]:["ARCGIS"];
         return this.baseSelected.length - 1
     } 
 
@@ -132,7 +132,11 @@ export class LayerManager {
     
     public getBaseLayerSource(layer: number):Source {
         let bLayer = this.baseLayers[this.baseSelected[layer]]
-        if(this.baseLayers[this.baseSelected[layer]].source==undefined){
+        if (!bLayer) {
+            console.error(`[LayerManager] Base layer not found for index ${layer}, baseSelected: ${this.baseSelected ? this.baseSelected[layer] : 'undefined'}`);
+            return null;
+        }
+        if(bLayer.source==undefined){
             switch(bLayer.type) {
                 case AL_TYPE_OSM:
                         this.baseLayers[this.baseSelected[layer]].source = new OSM({
@@ -250,43 +254,20 @@ export class LayerManager {
         return this.topLayers[this.topSelected].source
     }
 
-   public setUncertaintyLayers(layers: (Image<ImageStatic> | WebGLTile)[]): void {
-        this.uncertaintyLayer = layers;
-        this.showUncertaintyLayer(this.uncertaintyLayerVisible);
-    }
-
-
-    public getUncertaintyLayer(): (Image<ImageStatic> | WebGLTile)[] {
+    public getUncertaintyLayer():(Image<ImageStatic> | WebGLTile)[] {
         return this.uncertaintyLayer;
     }
 
-    public showUncertaintyLayer(show: boolean): void {
-        
-        this.uncertaintyLayerVisible = show;
-        
-        if (!this.uncertaintyLayer || this.uncertaintyLayer.length === 0) {
-            console.warn('No uncertainty layers available to toggle (state saved for later)');
-            return;
-        }
+    public setUncertaintyLayer(layers: (Image<ImageStatic> | WebGLTile)[]) {
+        this.uncertaintyLayer = layers;
+    }
 
-        this.uncertaintyLayer.forEach((layer, index) => {
-            if (layer && typeof layer.setVisible === 'function') {
+    public showUncertaintyLayer(show: boolean) {
+        if (this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+            this.uncertaintyLayer.forEach((layer) => {
                 layer.setVisible(show);
-                layer.changed();
-                console.log(`${index} visibility set to:`, show);
-            } else {
-                console.error(`${index} is undefined or missing setVisible method`);
-            }
-        });
-    }
-
-
-    public isUncertaintyLayerVisible(): boolean {
-        return this.uncertaintyLayerVisible;
-    }
-
- 
-    public clearUncertaintyLayers(): void {
-        this.uncertaintyLayer = [];
+                layer.changed(); // Forzar re-renderizado
+            });
+        }
     }
 }

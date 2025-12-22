@@ -63,41 +63,18 @@ export default class Language {
             'media':'Average temperature',
             'superficie_afectada':'Affected area %',
             'duracion_ola_frio':'Cold wave duration', 
-            'duracion_ola_calor':'Heat wave duration',   
-            'month': {
-                1: "January",
-                2: "February",
-                3: "March",
-                4: "April",
-                5:  "May",
-                6: "June",
-                7: "July",
-                8: "August",
-                9: "September",
-                10: "October",
-                11: "November",
-                12: "December"
-            },
-            'month_short': {
-                0: "Jan",
-                1: "Feb",
-                2: "Mar",
-                3: "Apr",
-                4: "May",
-                5: "Jun",
-                6: "Jul",
-                7: "Aug",
-                8: "Sep",
-                9: "Oct",
-                10: "Nov",
-                11: "Dec"
-            },
-            'season': {
-                1: 'Jan - Mar',
-                2: 'Apr - Jun',
-                3: 'Jul - Sep',
-                4: 'Oct - Dec'
-            }
+            'duracion_ola_calor':'Heat wave duration',
+            'precipitacion_24':'Precipitation in 24 hours',   
+            'season': ['Dec - Feb', 'Mar - May', 'Jun - Aug', 'Sep - Nov'],
+            'days': ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            'daysShort': ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            'daysMin': ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+            'months': ["January", "February", "March", "April", "May", "June",
+                        "July", "August", "September", "October", "November", "December"],
+            'monthsShort': ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            'today': "Today",
+            'clear': "Clear"
         },
         es: {
             "descargar_nc": "Descargar Archivo",
@@ -151,40 +128,17 @@ export default class Language {
             'superficie_afectada':'Superficie afectada',
             'duracion_ola_frio':'Duración de la ola de frio', 
             'duracion_ola_calor':'Duración de la ola de calor',   
-            'month': {
-                0: "Enero",
-                1: "Febrero",
-                2: "Marzo",
-                3: "Abril",
-                4: "Mayo",
-                5: "Junio",
-                6: "Julio",
-                7: "Agosto",
-                8: "Septiembre",
-                9: "Octubre",
-                10: "Noviembre",
-                11: "Diciembre"
-            },
-            'month_short': {
-                0: "Ene",
-                1: "Feb",
-                2: "Mar",
-                3: "Abr",
-                4: "May",
-                5: "Jun",
-                6: "Jul",
-                7: "Ago",
-                8: "Sep",
-                9: "Oct",
-                10: "Nov",
-                11: "Dic"
-            },
-            'season': {
-                1: 'Ene - Mar',
-                2: 'Abr - Jun',
-                3: 'Jul - Sep',
-                4:' Oct - Dic'
-            }
+            'precipitacion_24':'Precipitación en 24h',
+            'season': ['Dic - Feb', 'Mar - May', 'Jun - Aug', 'Sep - Nov'],
+            'days': ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+            'daysShort': ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+            'daysMin': ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"],
+            'months': ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+            'monthsShort': ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+            'today': "Hoy",
+            'clear': "Borrar"
         }
     }
 
@@ -213,9 +167,10 @@ export default class Language {
     }
 
     public getMonthName(monthIndex: number, short: boolean = false): string {
-        const key = short ? 'month_short' : 'month';
-        if (this.locales[this.defaultLocale][key] && this.locales[this.defaultLocale][key][monthIndex] !== undefined) {
-            return this.locales[this.defaultLocale][key][monthIndex];
+        const key = short ? 'monthsShort' : 'months';
+        const monthsArray = this.locales[this.defaultLocale][key];
+        if (monthsArray && Array.isArray(monthsArray) && monthsArray[monthIndex] !== undefined) {
+            return monthsArray[monthIndex];
         }
         return monthIndex.toString();
     }

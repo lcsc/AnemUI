@@ -300,14 +300,50 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         let minArray: number = Number.MAX_VALUE;
         let maxArray: number = Number.MIN_VALUE;
 
-        filteredArrays.forEach((filteredArray) => {
-            filteredArray.forEach((value) => {
-                if (!isNaN(value) && isFinite(value)) {
-                    minArray = Math.min(minArray, value);
-                    maxArray = Math.max(maxArray, value);
-                }
+        // Para datos computados, calcular min/max usando todos los datos (península + canarias)
+        let allValidNumbers: number[] = [];
+        if (status.computedLayer) {
+            // Obtener datos de península y filtrar NaN
+            const penData = status.computedData['_pen'];
+            if (Array.isArray(penData)) {
+                const validNumbersInArray = penData.filter(num =>
+                    typeof num === 'number' && !isNaN(num) && isFinite(num)
+                );
+                allValidNumbers.push(...validNumbersInArray);
+            }
+
+            // Obtener datos de canarias y filtrar NaN
+            const canData = status.computedData['_can'];
+            if (Array.isArray(canData)) {
+                const validNumbersInArray = canData.filter(num =>
+                    typeof num === 'number' && !isNaN(num) && isFinite(num)
+                );
+                allValidNumbers.push(...validNumbersInArray);
+            }
+
+            // Calcular min/max con todos los datos válidos
+            allValidNumbers.forEach((value) => {
+                minArray = Math.min(minArray, value);
+                maxArray = Math.max(maxArray, value);
             });
-        });
+
+            // Para datos computados con rango muy pequeño (ej: probabilidades todas iguales),
+            // forzar un rango fijo 0-1 para permitir el pintado
+            if ((maxArray - minArray) < 0.01) {
+                minArray = 0;
+                maxArray = 1;
+            }
+        } else {
+            // Para datos NO computados (leídos de fichero), usar filteredArrays
+            filteredArrays.forEach((filteredArray) => {
+                filteredArray.forEach((value) => {
+                    if (!isNaN(value) && isFinite(value)) {
+                        minArray = Math.min(minArray, value);
+                        maxArray = Math.max(maxArray, value);
+                    }
+                });
+            });
+        }
 
         if (minArray === Number.MAX_VALUE || maxArray === Number.MIN_VALUE) {
             console.warn('No valid data found, using default ranges');
@@ -329,20 +365,35 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
         app.notifyMaxMinChanged();
 
-        let painterInstance = PaletteManager.getInstance().getPainter();
+        // Si es capa de incertidumbre, usar el painter específico de uncertainty
+        let painterInstance = uncertaintyLayer
+            ? PaletteManager.getInstance()['painters']['uncertainty'] || PaletteManager.getInstance().getPainter()
+            : PaletteManager.getInstance().getPainter();
+
+        // Para datos computados, precalcular breaks con todos los datos combinados
+        if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
+            (painterInstance as any).setPrecalculatedBreaks(allValidNumbers);
+        }
+
+        // Obtener el nivel de zoom actual del mapa
+        const currentZoom = app.getMap()?.getZoom() || 6;
+
+        // Para capas de incertidumbre, usar el varId con sufijo '_uncertainty'
+        const uncertaintyVarId = uncertaintyLayer ? status.varId + '_uncertainty' : status.varId;
 
         for (let i = 0; i < filteredArrays.length; i++) {
             const filteredArray = filteredArrays[i];
 
-            const width = timesJs.lonNum[status.varId + timesJs.portions[status.varId][i]];
-            const height = timesJs.latNum[status.varId + timesJs.portions[status.varId][i]];
+            const width = timesJs.lonNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
+            const height = timesJs.latNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
 
             let canvas: HTMLCanvasElement | null = null;
             try {
-                canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer);
+                canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer, currentZoom);
 
                 if (canvas) {
-                    const extent = ncExtents[timesJs.portions[status.varId][i]];
+                    const portionName = timesJs.portions[uncertaintyVarId][i];
+                    const extent = ncExtents[portionName];
 
                     const imageSource = new Static({
                         url: canvas.toDataURL('image/png'),
@@ -353,8 +404,14 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     });
 
                     dataTilesLayer[i].setSource(imageSource);
-                    dataTilesLayer[i].setZIndex(5000 + i);
-                    dataTilesLayer[i].setVisible(true);
+
+                    // zIndex diferenciado: incertidumbre (2000) por encima de datos (100) pero debajo de política (5000)
+                    if (uncertaintyLayer) {
+                        dataTilesLayer[i].setZIndex(2000 + i); // Capas de incertidumbre
+                    } else {
+                        dataTilesLayer[i].setZIndex(100 + i); // Capas de datos
+                    }
+                    dataTilesLayer[i].setVisible(uncertaintyLayer ? false : true);
                     dataTilesLayer[i].setOpacity(1.0);
                     dataTilesLayer[i].changed();
 
@@ -372,11 +429,16 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                         }
                     }
                 }
-                
+
             } catch (error) {
                 console.error('paintValues failed:', error);
                 continue;
             }
+        }
+
+        // Limpiar breaks precalculados después de pintar todas las porciones
+        if (status.computedLayer && (painterInstance as any).clearPrecalculatedBreaks) {
+            (painterInstance as any).clearPrecalculatedBreaks();
         }
 
         try {

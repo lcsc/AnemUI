@@ -119,14 +119,15 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     timesJs.portions[varId].forEach((portion: string, index, array) => {
         let selector = varId + portion;
         let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
-   
+
         const dataExtent = [
-            timesJs.lonMin[selector] - pxSize / 2, 
-            timesJs.latMin[selector] - pxSize / 2, 
-            timesJs.lonMax[selector] + pxSize / 2, 
+            timesJs.lonMin[selector] - pxSize / 2,
+            timesJs.latMin[selector] - pxSize / 2,
+            timesJs.lonMax[selector] + pxSize / 2,
             timesJs.latMax[selector] + pxSize / 2
         ];
-        
+
+        // Si el mapa está en una proyección diferente, transformar
         if (timesJs.projection !== olProjection) {
             const transformedExtent = transformExtent(
                 dataExtent,
@@ -138,6 +139,38 @@ protected setExtents(timesJs: CsTimesJsData, varId: string): void {
             this.ncExtents[portion] = dataExtent;
         }
     });
+}
+
+/**
+ * Ajusta la vista inicial del mapa para mostrar todo el territorio español
+ * (Península, Baleares y Canarias) adaptándose al tamaño de la pantalla
+ */
+protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
+    // Calcular el extent combinado de todas las porciones
+    let combinedExtent: [number, number, number, number] | null = null;
+
+    timesJs.portions[varId].forEach((portion: string) => {
+        const extent = this.ncExtents[portion];
+        if (extent) {
+            if (!combinedExtent) {
+                combinedExtent = [...extent] as [number, number, number, number];
+            } else {
+                // Expandir el extent para incluir esta porción
+                combinedExtent[0] = Math.min(combinedExtent[0], extent[0]); // minX
+                combinedExtent[1] = Math.min(combinedExtent[1], extent[1]); // minY
+                combinedExtent[2] = Math.max(combinedExtent[2], extent[2]); // maxX
+                combinedExtent[3] = Math.max(combinedExtent[3], extent[3]); // maxY
+            }
+        }
+    });
+
+    // Ajustar la vista para mostrar el extent combinado
+    if (combinedExtent && this.map) {
+        this.map.getView().fit(combinedExtent, {
+            padding: [50, 50, 50, 50], // Padding en píxeles alrededor del extent
+            duration: 0 // Sin animación en la carga inicial
+        });
+    }
 }
 
 
@@ -164,12 +197,9 @@ init(_parent: CsMap): void {
     };
 
     this.map = new Map(options);
-    
-    
-    setTimeout(() => {
-        this.map.getControls().clear();
-    }, 100);
-    
+
+    // Ajustar la vista inicial para mostrar todo el territorio español
+    this.fitInitialView(timesJs, state.varId);
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
@@ -197,7 +227,6 @@ init(_parent: CsMap): void {
     this.buildFeatureLayers();
     if (!isWmsEnabled) {
       this.buildDataTilesLayers(state, timesJs);
-      if (this.uncertaintyLayer) this.buildUncertaintyLayer(state, timesJs);
     }
 }
   private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
@@ -406,6 +435,7 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
     if (Number.isNaN(value)) {
+      this.parent.getParent().getState().xyValue = NaN
       this.value.setPosition(undefined)
       return;
     }
@@ -438,12 +468,21 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
   }
 
 
-public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
+public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let app = window.CsViewerApp;
+
+
 
     this.safelyRemoveDataLayers();
 
     this.dataTilesLayer = [];
+
+    // Si la capa de incertidumbre está activa, reconstruirla con el nuevo varId
+    if (state.uncertaintyLayer) {
+        this.safelyRemoveUncertaintyLayers();
+        // Esperar a que se construyan las capas de incertidumbre
+        await this.buildUncertaintyLayer(state, timesJs);
+    }
 
     if (!timesJs.portions[state.varId]) {
         console.warn('No portions found for varId:', state.varId);
@@ -510,11 +549,18 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
       this.dataTilesLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
         if (layer && this.map) {
           try {
+            // Set layer invisible and source to null before removing
+            layer.setVisible(false);
+            if (layer.setSource) {
+              layer.setSource(null);
+            }
+
             // Check if layer exists in map before removing
             const layers = this.map.getLayers();
             if (layers && layers.getArray().includes(layer)) {
               layers.remove(layer);
             }
+
             // Dispose of layer resources if method exists
             if (typeof layer.dispose === 'function') {
               layer.dispose();
@@ -524,16 +570,22 @@ public buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): void {
           }
         }
       });
+
+      // Clear the array
+      this.dataTilesLayer = [];
     }
     this.dataTilesLayer = [];
   }
 
-public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void {
+  // Fix for uncertainty layer with proper initialization
+  public async buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
     this.safelyRemoveUncertaintyLayers();
-    lmgr.clearUncertaintyLayers();
+
+    // Siempre empezar con un array limpio
+    this.uncertaintyLayer = [];
 
     const uncertaintyVarId = state.varId + '_uncertainty';
     
@@ -548,19 +600,15 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
     this.uncertaintyLayer = [];
 
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
-        console.log(`Creating uncertainty layer for portion: ${portion}`);
-        
-        let imageLayer: ImageLayer<Static> = new ImageLayer({
-            visible: true,  // Construir visible temporalmente
-            opacity: 1.0,
-            zIndex: 5001 + index,
-            source: null,
-            properties: {
-                'name': `uncertainty-layer-${index}`,
-                'portion': portion
-            }
-        });
+      let imageLayer: ImageLayer<Static> = new ImageLayer({
+        visible: false,
+        opacity: 1.0,
+        zIndex: 2000, // Entre capas de datos (100) y capa política (5000)
+        source: null,
+        className: 'uncertainty-layer' // Agregar clase CSS para la capa de incertidumbre
+      });
 
+      if (imageLayer) {
         this.uncertaintyLayer.push(imageLayer);
         
         const layers = this.map.getLayers();
@@ -584,20 +632,15 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
     });
 
     if (this.uncertaintyLayer.length > 0 && promises.length > 0) {
-        console.log('Building uncertainty images...');
-        buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true)
-            .then(() => {
-                console.log('✅ Uncertainty images built successfully.');
-                
-                
-                lmgr.setUncertaintyLayers(this.uncertaintyLayer);
-                this.map.render();
-            })
-            .catch(error => {
-                console.error('❌ Error building uncertainty images:', error);
-            });
+      // Esperar a que se construyan las imágenes antes de registrar las capas
+      await buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
+
+      // Registrar las capas en LayerManager después de construirlas
+      lmgr.setUncertaintyLayer(this.uncertaintyLayer);
+      lmgr.showUncertaintyLayer(false);
     }
-}
+  }
+
   private safelyRemoveUncertaintyLayers(): void {
     if (this.uncertaintyLayer && Array.isArray(this.uncertaintyLayer)) {
       this.uncertaintyLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
@@ -617,6 +660,8 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
       });
     }
     this.uncertaintyLayer = [];
+    // Limpiar también el array en LayerManager
+    LayerManager.getInstance().setUncertaintyLayer([]);
   }
 
   public buildFeatureLayers () {
@@ -639,8 +684,7 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
         } )
       }
 
-  // Fix for setDate method
-  public setDate(dateIndex: number, state: CsViewerData): void {
+  public async setDate(dateIndex: number, state: CsViewerData): Promise<void> {
     try {
       if (isWmsEnabled) {
         if (this.dataWMSLayer) {
@@ -652,14 +696,7 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
           this.dataWMSLayer.refresh();
         }
       } else {
-        this.buildDataTilesLayers(state, this.parent.getParent().getTimesJs());
-
-        // Safely remove uncertainty layers
-        this.safelyRemoveUncertaintyLayers();
-
-        if (this.uncertaintyLayer) {
-          this.buildUncertaintyLayer(state, this.parent.getParent().getTimesJs());
-        }
+        await this.buildDataTilesLayers(state, this.parent.getParent().getTimesJs());
       }
     } catch (error) {
       console.error('Error in setDate:', error);
@@ -1274,47 +1311,24 @@ public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): vo
     let value: string;
     
     if (feature) {
-        if (state.support == this.csMap.renderers[0]) {
-            feature.setStyle(this.setStationStyle(state, feature, timesJs));
-        } else {
-            feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
+      if (state.support == this.csMap.renderers[0]) feature.setStyle(this.setStationStyle(state, feature, timesJs))
+      else feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
+      this.csMap.popupContent.style.left = pixel[0] + 'px';
+      this.csMap.popupContent.style.top = pixel[1] + 'px';
+      this.csMap.popup.hidden = false
+      if (feature !== this.currentFeature) {
+        let id = feature.getProperties()['id']
+        let id_ant = feature.getProperties()['id_ant']
+        // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
+        // Try with new id first, fallback to old id_ant if not found
+        value = data[id];
+        if (value === undefined && id_ant !== undefined) {
+          value = data[id_ant];
         }
-        
-        this.csMap.popupContent.style.left = pixel[0] + 'px';
-        this.csMap.popupContent.style.top = pixel[1] + 'px';
-        this.csMap.popup.hidden = false;
-        
-        if (feature !== this.currentFeature) {
-            let id = feature.getProperties()['id'];
-            let id_ant = feature.getProperties()['id_ant'];
-            
-            let mappedId = id;
-            if (id && id.length > 5) {
-                const match = id.match(/^34(\d{2})0000000$/);
-                if (match) {
-                    mappedId = parseInt(match[1]).toString();
-                }
-            }
-            
-            value = data[mappedId];
-          
-            if (value === undefined) {
-                value = data[id];
-            }
-            
-            if (value === undefined && id_ant !== undefined) {
-                value = data[id_ant];
-            }
-            
-            if (value !== undefined && !isNaN(parseFloat(value))) {
-                this.csMap.popupContent.style.visibility = 'visible';
-                this.csMap.popupContent.innerText = feature.get('name') + ': ' + parseFloat(value).toFixed(2);
-                this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]));
-            } else {
-                console.warn('No valid value for tooltip. ID:', id, 'mappedId:', mappedId, 'value:', value);
-                this.csMap.popupContent.style.visibility = 'hidden';
-            }
-        }
+        this.csMap.popupContent.style.visibility = 'visible';
+        this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(feature.get('name'), id, parseFloat(value));
+        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+      }
     } else {
         this.csMap.popupContent.style.visibility = 'hidden';
         this.csMap.popup.hidden = true;
@@ -1328,7 +1342,11 @@ public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): vo
         }
     }
     this.currentFeature = feature;
-}
+  };
+
+  public formatFeaturePopupValue(featureName: string, featureId: any, value: number): string {
+    return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
+  }
 
   public highLightColor(hex: string, lum: number): string {
     hex = String(hex).replace(/[^0-9a-f]/gi, '');
