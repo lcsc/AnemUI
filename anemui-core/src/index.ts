@@ -16,7 +16,7 @@ export { hasSubVars } from './Env';
 export {enableRenderer } from './tiles/Support';
 
 // public APIs
-export { CsGraph, type GraphType } from './ui/Graph';
+export { CsGraph, type GraphType, ColorLegendConfig } from './ui/Graph';
 export { MenuBar, MenuBarListener, simpleDiv } from './ui/MenuBar';
 export { DateSelectorFrame, DateFrameListener, DateFrameMode } from "./ui/DateFrame";
 
