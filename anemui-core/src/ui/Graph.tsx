@@ -3,12 +3,12 @@ import { BaseApp } from "../BaseApp";
 import { BaseFrame } from "./BaseFrame";
 import Dygraph, { dygraphs } from 'dygraphs';
 import { dateText } from "../data/CsPConstans";
-import { CsLatLongData } from "../data/CsDataTypes";
+import { CsTimeSpan } from "../data/CsDataTypes";
 import { CsLatLong } from '../CsMapTypes';
 
 require("dygraphs/dist/dygraph.css")
 
-export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose" | "PercentileClock" | "ECDF" | "DailyEvolution" | "Bar" | "StackedBar" | "ScatterPlot"
+export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose" | "PercentileClock" | "ECDF" | "DailyEvolution"
 
 interface MeanLineConfig {
   show: boolean;
@@ -39,10 +39,10 @@ export interface ColorLegendConfig {
 
 
 export class CsGraph extends BaseFrame {
-  private graphTitle: string;
-  private graphSubTitle: string;
-  private yLabel: string;
-  private xLabel: string;
+  protected graphTitle: string;
+  protected graphSubTitle: string;
+  protected yLabel: string;
+  protected xLabel: string;
   public graphType: GraphType;
   public byPoint: boolean;
   public scaleSelectors: boolean = false;
@@ -59,6 +59,9 @@ export class CsGraph extends BaseFrame {
 
   // Tipo de ola (calor o frío)
   public waveType: string = "heat"; // "heat" o "cold"
+
+  // Contador para climatología
+  protected climatologyIndex: number = 0;
 
   // Propiedades para manejo de escalas logarítmicas
   protected originalGraphData: string | null = null;
@@ -78,7 +81,7 @@ export class CsGraph extends BaseFrame {
     labelText: 'Media'
   };
 
-  private currentMeanValue: number = 0;
+  protected currentMeanValue: number = 0;
   private eventDataCSV: string = ''; // CSV data for event-based visualization
   private drawnPoints: Array<{cx: number, cy: number, radius: number, row: number, dygraph: any}> = []; // Store drawn point positions
 
@@ -174,7 +177,6 @@ export class CsGraph extends BaseFrame {
       switch (this.graphType) {
         case "Serial":
         case "Area":
-          case "Bar":  
           this.graphTitle = this.parent.getTranslation('serie_temporal');
           break;
         case "Cummulative":
@@ -313,16 +315,62 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       case "WindRose":
         graph = this.drawWindRoseGraph(data, latlng);
         break;
-      case "StackedBar":
-        graph = this.drawStackedBarGraph(data, latlng);
-        break;
     }
     // if (this.scaleSelectors) this.addScaleSelectors(graph)
     this.parent.completeGraph(graph, data);
   }
 
+  /**
+   * Parsea el valor X (fecha) para el gráfico.
+   * En climatología, genera fechas sintéticas ignorando las del .nc
+   */
+  protected parseXValue(str: any): number {
+    let readTime: string;
+    const state = this.parent.getState();
+
+    // Si es climatología, generar fechas sintéticas según timeSpan
+    if (state.climatology) {
+      const index = this.climatologyIndex;
+      this.climatologyIndex++;
+
+      if (state.timeSpan === CsTimeSpan.Month) {
+        // Climatología mensual: 12 meses (enero-diciembre)
+        const monthlyDates = [
+          '1975-01-01', '1975-02-01', '1975-03-01', '1975-04-01',
+          '1975-05-01', '1975-06-01', '1975-07-01', '1975-08-01',
+          '1975-09-01', '1975-10-01', '1975-11-01', '1975-12-01'
+        ];
+        readTime = monthlyDates[index] || '1975-01-01';
+      } else if (state.timeSpan === CsTimeSpan.Season) {
+        // Climatología estacional: 4 estaciones (dic-ene, mar-may, jun-ago, sep-nov)
+        const seasonalDates = [
+          '1975-01-01',  // Invierno (dic-ene-feb)
+          '1975-04-01',  // Primavera (mar-abr-may)
+          '1975-07-01',  // Verano (jun-jul-ago)
+          '1975-10-01'   // Otoño (sep-oct-nov)
+        ];
+        readTime = seasonalDates[index] || '1975-01-01';
+      } else {
+        // Climatología anual o fallback
+        readTime = '1975-07-01';
+      }
+    } else {
+      // No es climatología: usar fechas del .nc
+      if (typeof str === "string") {
+        readTime = str;
+      } else {
+        readTime = state.times[str - 1];
+      }
+    }
+
+    return parseDate(readTime);
+  }
+
   public drawSerialGraph(url: any, latlng: CsLatLong):Dygraph {
     let self = this
+
+    // Resetear contador de climatología
+    this.climatologyIndex = 0;
 
     // Ocultar leyenda de colores (no se usa en Serial)
     const legendDiv = document.getElementById('colorLegend');
@@ -344,17 +392,11 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         digitsAfterDecimal: 3,
         delimiter: ";",
         title: this.graphTitle + this.graphSubTitle,
-        ylabel: this.yLabel || this.parent.getState().legendTitle,
-        xlabel: this.xLabel || dateText,
+        ylabel: this.yLabel,
+        xlabel: "",
         showRangeSelector: true,
         xValueParser: function (str: any): number {
-          let readTime: string
-          if (typeof str == "string") {
-            readTime = str;
-          } else {
-            readTime = self.parent.getState().times[str - 1];
-          }
-          return parseDate(readTime);
+          return self.parseXValue(str);
         },
         axes: {
           x: {
@@ -369,11 +411,10 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
               const numRows = dygraph.numRows();
               
               if (numRows <= 12 && numRows > 4) {
-                const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 
-                                   'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                const monthNames = self.parent.getTranslation('monthsShort');
                 return monthNames[fecha.getMonth()];
               } else if (numRows <= 4) {
-                const seasonNames = ['invierno', 'primavera', 'verano', 'otoño'];
+                const seasonNames = self.parent.getTranslation('season');
                 const season = Math.floor(fecha.getMonth() / 3);
                 return seasonNames[season];
               } else {
@@ -393,210 +434,6 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     return graph;
   }
 
-  public drawStackedBarGraph(url: any, latlng: CsLatLong): Dygraph {
-    let self = this;
-
-    // Ocultar leyenda de colores (no se usa en StackedBar)
-    const legendDiv = document.getElementById('colorLegend');
-    if (legendDiv) {
-      legendDiv.style.display = 'none';
-    }
-
-    // Guardar datos completos para paginación
-    this.fullData = url;
-
-    // Calcular años disponibles
-    const lines = url.split('\n');
-    const dataLines = lines.slice(1);
-    const years = new Set<number>();
-    dataLines.forEach((line: string) => {
-      if (line.trim()) {
-        const date = line.split(',')[0];
-        const year = parseInt(date.split('-')[0]);
-        years.add(year);
-      }
-    });
-
-    const sortedYears = Array.from(years).sort((a, b) => a - b);
-    this.totalYears = sortedYears.length;
-    this.currentYear = this.totalYears - 1; // Empezar por el último año
-
-    // Crear datos completos para el último año (365 días)
-    const lastYear = sortedYears[this.currentYear];
-    const yearData = this.createCompleteYearData(dataLines, lastYear, lines[0]);
-
-    // Mostrar controles de paginación
-    const paginationDiv = document.getElementById('yearPagination');
-    if (paginationDiv) {
-      paginationDiv.hidden = false;
-    }
-
-    // Actualizar label inicial
-    const yearLabel = document.getElementById('currentYearLabel');
-    if (yearLabel) {
-      yearLabel.textContent = `Año: ${lastYear}`;
-    }
-
-    // Actualizar estado inicial de botones
-    const prevBtn = document.getElementById('prevYearBtn') as HTMLButtonElement;
-    const nextBtn = document.getElementById('nextYearBtn') as HTMLButtonElement;
-    if (prevBtn) prevBtn.disabled = false;
-    if (nextBtn) nextBtn.disabled = true; // Deshabilitar "siguiente" porque estamos en el último año
-
-    var graph = new Dygraph(
-      document.getElementById("popGraph"),
-      yearData,
-      {
-        labelsDiv: document.getElementById('labels'),
-        digitsAfterDecimal: 2,
-        delimiter: ",",
-        title: "Histórico de olas de calor",
-        ylabel: this.yLabel || "Valor",
-        xlabel: "",
-        xAxisHeight: 20,
-        showRangeSelector: true,
-        stackedGraph: false,
-
-        // Formatear la leyenda para mostrar ambos valores en columnas
-        legend: 'never',
-
-        highlightCallback: function(event: any, x: any, points: any, row: any) {
-          const tooltip = document.getElementById('graphTooltip');
-          if (!tooltip || points.length === 0) return;
-
-          // Obtener valores de extreme y surface
-          const extremeValue = points[0].yval;
-          const surfaceValue = points.length > 1 ? points[1].yval : 0;
-
-          // Formatear la fecha
-          const date = new Date(x);
-          const dateStr = self.formatDate(date);
-
-          // Crear contenido del tooltip
-          tooltip.innerHTML = `
-            <div><strong>${dateStr}</strong></div>
-            <div style="color: #ff6b6b;">● Extreme: ${extremeValue.toFixed(2)}</div>
-            <div style="color: #4ecdc4;">● Surface: ${surfaceValue.toFixed(2)}</div>
-          `;
-
-          // Posicionar tooltip
-          const canvas = document.getElementById('popGraph');
-          if (canvas && event) {
-            const rect = canvas.getBoundingClientRect();
-            tooltip.style.left = (event.pageX - rect.left + 10) + 'px';
-            tooltip.style.top = (event.pageY - rect.top - 30) + 'px';
-            tooltip.style.display = 'block';
-          }
-        },
-
-        unhighlightCallback: function() {
-          const tooltip = document.getElementById('graphTooltip');
-          if (tooltip) {
-            tooltip.style.display = 'none';
-          }
-        },
-
-        // Plotter personalizado para dos barras independientes lado a lado
-        plotter: [
-          function (e: any) {
-            // Solo dibujar cuando procesamos la primera serie
-            if (e.setName !== e.dygraph.getLabels()[1]) {
-              return; // No hacer nada para la segunda serie
-            }
-
-            let ctx = e.drawingContext;
-            let area = e.plotArea;
-
-            // Colores para extreme y surface
-            const extremeColor = "#ff6b6b"; // Rojo para extreme
-            const surfaceColor = "#4ecdc4"; // Turquesa para surface
-
-            // Calcular ancho de cada barra (dividido en 2 para las dos barras)
-            let totalBarWidth = Math.max(4, (area.w / e.points.length) * 0.6);
-            let barWidth = totalBarWidth / 2 - 1;
-            let barGap = 2;
-
-            ctx.save();
-
-            for (let i = 0; i < e.points.length; i++) {
-              let point = e.points[i];
-
-              // Obtener valores de extreme (columna 1) y surface (columna 2)
-              let extremeValue = e.dygraph.getValue(i, 1);
-              let surfaceValue = e.dygraph.getValue(i, 2);
-
-              if (!isNaN(extremeValue) && extremeValue !== null &&
-                  !isNaN(surfaceValue) && surfaceValue !== null) {
-
-                // Calcular posiciones Y en el canvas
-                let zeroY = e.dygraph.toDomYCoord(0);
-                let extremeY = e.dygraph.toDomYCoord(extremeValue);
-                let surfaceY = e.dygraph.toDomYCoord(surfaceValue);
-
-                // Posición X para las dos barras (lado a lado)
-                let centerX = point.canvasx;
-                let leftBarX = centerX - barWidth - barGap / 2;
-                let rightBarX = centerX + barGap / 2;
-
-                // Dibujar barra de extreme (izquierda, desde 0 hasta extreme)
-                let extremeHeight = zeroY - extremeY;
-                if (extremeHeight > 0) {
-                  ctx.fillStyle = extremeColor;
-                  ctx.fillRect(leftBarX, extremeY, barWidth, extremeHeight);
-                  ctx.strokeStyle = "#d63031";
-                  ctx.lineWidth = 1;
-                  ctx.strokeRect(leftBarX, extremeY, barWidth, extremeHeight);
-                }
-
-                // Dibujar barra de surface (derecha, desde 0 hasta surface)
-                let surfaceHeight = zeroY - surfaceY;
-                if (surfaceHeight > 0) {
-                  ctx.fillStyle = surfaceColor;
-                  ctx.fillRect(rightBarX, surfaceY, barWidth, surfaceHeight);
-                  ctx.strokeStyle = "#00b894";
-                  ctx.lineWidth = 1;
-                  ctx.strokeRect(rightBarX, surfaceY, barWidth, surfaceHeight);
-                }
-              }
-            }
-
-            ctx.restore();
-          }
-        ],
-
-        axes: {
-          x: {
-            valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
-              let fecha = new Date(millis);
-              return self.formatDate(fecha);
-            },
-            axisLabelFormatter(number, granularity, opts, dygraph) {
-              const fecha = new Date(number);
-
-              // Mostrar solo el nombre del mes
-              // Si es el primer día del mes, mostrar el nombre del mes
-              if (fecha.getDate() === 1 || granularity === Dygraph.MONTHLY) {
-                return self.parent.getMonthName(fecha.getMonth(), true);
-              }
-              return '';
-            },
-            pixelsPerLabel: 50
-          },
-          y: {
-            valueFormatter: function (val, opts, seriesName, dygraph, row, col) {
-              return " " + (val < 0.01 ? val.toFixed(3) : val.toFixed(2));
-            }
-          }
-        }
-      }
-    );
-
-    // Guardar referencia al gráfico
-    this.currentGraph = graph;
-
-    return graph;
-  }
-
   public setMeanLineConfig(config: Partial<MeanLineConfig>): void {
     this.meanLineConfig = { ...this.meanLineConfig, ...config };
   }
@@ -605,11 +442,11 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     return this.currentMeanValue;
   }
 
-  private calculateMean(data: string): number {
+  protected calculateMean(data: string): number {
     const lines = data.split('\n');
     let sum = 0;
     let count = 0;
-    
+
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line.length > 0) {
@@ -620,7 +457,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
             }
         }
     }
-    
+
     return count > 0 ? sum / count : 0;
   }
 
@@ -773,7 +610,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         digitsAfterDecimal: 3,
         delimiter: ";",
         title: this.graphTitle + this.graphSubTitle,
-        ylabel: this.yLabel || this.parent.getState().legendTitle,
+        ylabel: this.yLabel,
         xlabel: this.xLabel || dateText,
         showRangeSelector: true,
         plotter: function (e: any) {
