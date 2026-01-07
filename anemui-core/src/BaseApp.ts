@@ -577,6 +577,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.timesJs = _timesJs;
         //TODO on change
         let timeSpan = this.getTimeSpan(_timesJs.times[varId])
+        // let timeIndex = typeof _timesJs.times[varId] === 'string'? 0:_timesJs.times[varId].length - 1
         let timeIndex = timeSpan == CsTimeSpan.Year? 0:_timesJs.times[varId].length - 1
         let legendTitle: string;
         if (_timesJs.legendTitle[varId] != undefined) {
