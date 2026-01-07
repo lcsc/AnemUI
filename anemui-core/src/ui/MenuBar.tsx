@@ -35,6 +35,8 @@ export class MenuBar extends BaseFrame {
     private loadingText: HTMLSpanElement
     private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
+    private titleButtonDiv: HTMLDivElement | null;
+    private titleButtonData: { label?: string, className?: string, onClick?: (() => void) } | null;
     private collapseMenu: HTMLElement
     private navMenu: HTMLElement
     private logoMap: HTMLElement
@@ -129,11 +131,60 @@ export class MenuBar extends BaseFrame {
         this.extraBtns = []
         this.dropDownOrder = []
         this.logoMaps = []
+        this.titleButtonDiv = null;
+        this.titleButtonData = null;
     }
 
     public setTitle(_title: string) {
         this.title = _title;
         document.title = _title;
+    }
+
+    /**
+     * Set a small button next to the title. Prefer this over injecting raw HTML.
+     * @param label button text
+     * @param onClick click handler
+     * @param className optional classes for styling
+     */
+    public setTitleButton(label: string, onClick?: () => void, className?: string) {
+        this.titleButtonData = { label, className, onClick };
+        if (this.titleButtonDiv) {
+            this.renderTitleButton();
+        }
+    }
+
+    public clearTitleButton() {
+        this.titleButtonData = null;
+        if (this.titleButtonDiv) this.titleButtonDiv.innerHTML = '';
+    }
+
+    private renderTitleButton() {
+        if (!this.titleButtonDiv) return;
+        this.titleButtonDiv.innerHTML = '';
+        if (!this.titleButtonData || !this.titleButtonData.label) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = this.titleButtonData.className || '';
+        btn.textContent = this.titleButtonData.label;
+        // Ensure the button is visible even if no utility CSS is available
+        btn.style.backgroundColor = '#f97316';
+        btn.style.color = '#fff';
+        btn.style.padding = '6px 10px';
+        btn.style.borderRadius = '6px';
+        btn.style.border = 'none';
+        btn.style.cursor = 'pointer';
+        btn.style.marginLeft = '8px';
+        if (this.titleButtonData.onClick) {
+            btn.addEventListener('click', (e) => {
+                try {
+                    this.titleButtonData?.onClick?.();
+                } catch (err) {
+                    console.error('Error in title button handler', err);
+                }
+            });
+        }
+        this.titleButtonDiv.appendChild(btn);
     }
 
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
@@ -165,7 +216,10 @@ export class MenuBar extends BaseFrame {
                     </div>
                     <div id="menu-title" className="menu-info text-left row mx-0git status">
                         <div className="col-title">
-                            <h3 id="title">{this.title}</h3>
+                            <div className="title-with-button" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                                <h3 id="title">{this.title}</h3>
+                                <div id="title-btn" className="title-btn"></div>
+                            </div>
                         </div>
                         <div id="menu-central" className="col-info">
                             <ul id="inputs" className="nav-menu">
@@ -198,6 +252,10 @@ export class MenuBar extends BaseFrame {
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
+        this.titleButtonDiv = document.getElementById('title-btn') as HTMLDivElement;
+        if (this.titleButtonDiv && this.titleButtonData) {
+            this.renderTitleButton();
+        }
         // this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
         this.collapseMenu = document.querySelector(".collapse-menu");
         this.navMenu = document.querySelector(".nav-menu");
