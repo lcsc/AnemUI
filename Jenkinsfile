@@ -22,9 +22,13 @@ pipeline {
         In Jenkins upload your ~/.npmrc
     */
     stages {
-        stage('Prepare Build') { 
+        stage('Prepare Build') {
+            environment {
+                NEXUS_FILE = credentials('nexus_credential')
+            }
             steps {
-                sh 'npm install' 
+                sh 'cp $NEXUS_FILE .npmrc'
+                sh 'npm install'
             }
         }
         stage('Configure Build') {
