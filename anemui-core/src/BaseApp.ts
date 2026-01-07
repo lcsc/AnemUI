@@ -17,7 +17,6 @@ import { downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, CsOpenLayerGeoJsonLayer, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
-import { ElementManager } from "./ElementManager";
 import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
@@ -81,7 +80,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected graph: CsGraph
     protected infoFrame: InfoFrame
     protected loginFrame: LoginFrame
-    protected elementManager: ElementManager
 
     protected state: CsViewerData;
     protected timesJs: CsTimesJsData;

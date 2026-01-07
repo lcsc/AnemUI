@@ -7,13 +7,10 @@ export { InfoDiv } from './ui/InfoPanel';
 export { default as Language } from './language/language';
 // Export Support.ts items for backward compatibility  
 export { renderers, getFolders, defaultRenderer } from './tiles/Support';
-export const defaultElement = "Rejilla";
-export type { Element } from "./ElementManager";
-export { ElementManager } from "./ElementManager";
 export { tpRenderers } from "./tiles/tpSupport"
 export * from './data/CsDataTypes';
 export { hasSubVars } from './Env';
-export {enableRenderer } from './tiles/Support';
+export { enableRenderer } from './tiles/Support';
 
 // public APIs
 export { CsGraph, type GraphType, ColorLegendConfig } from './ui/Graph';
