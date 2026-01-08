@@ -124,8 +124,8 @@ public onMapClick(event: CsMapEvent): void {
         this.controller.putMarker(latLong);
     }
 
-    public updateDate(selectedTimeIndex: number, state: CsViewerData) {
-        this.controller.setDate(selectedTimeIndex,state);
+    public async updateDate(selectedTimeIndex: number, state: CsViewerData): Promise<void> {
+        await this.controller.setDate(selectedTimeIndex,state);
     }
 
     public getParent():BaseApp{
