@@ -621,6 +621,7 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
         } else {
             layers.push(imageLayer);
         }
+      }
     });
 
     let promises: Promise<number[]>[] = [];
