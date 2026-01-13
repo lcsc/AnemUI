@@ -520,6 +520,55 @@ input.selection-param-input {
     min-width: fit-content;
 }
 
+// Contenedor del checkbox de incertidumbre
+.inputDiv[role^="uncertainty-"] {
+    background: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+
+    &:hover {
+        background: none !important;
+        color: $color_10 !important;
+    }
+}
+
+.menu-checkbox {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none !important;  // Eliminar el fondo destacado
+
+    .title {
+        white-space: nowrap;
+        font-size: 0.7em;
+        font-style: italic;
+        line-height: 1.2;
+        margin: 0;
+        padding: 0;
+    }
+
+    .form-check {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        background: none !important;
+
+        .form-check-input {
+            margin: 0;
+            cursor: pointer;
+            width: 2.5em;
+            height: 1.25em;
+
+            &:focus {
+                box-shadow: none;
+                border-color: #0d6efd;
+            }
+        }
+    }
+}
+
 .menu-input {
     width: 150px !important;
     min-width: 150px !important;

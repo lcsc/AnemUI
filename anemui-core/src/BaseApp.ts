@@ -17,7 +17,6 @@ import { downloadTCSVChunked } from "./data/ChunkDownloader";
 import { DEF_STYLE_STATIONS, CsOpenLayerGeoJsonLayer, OpenLayerMap } from "./OpenLayersMap";
 import { LoginFrame } from "./ui/LoginFrame";
 import { PaletteManager } from "./PaletteManager";
-import { ElementManager } from "./ElementManager";
 import { fromLonLat } from "ol/proj";
 import Dygraph from "dygraphs";
 import { Style } from 'ol/style.js';
@@ -81,7 +80,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     protected graph: CsGraph
     protected infoFrame: InfoFrame
     protected loginFrame: LoginFrame
-    protected elementManager: ElementManager
 
     protected state: CsViewerData;
     protected timesJs: CsTimesJsData;
@@ -947,14 +945,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 renderers[i]=renderers[i].substring(1)
             }
         } )
-        console.log('enable renderer - renderers: ' + renderers)
     }
 
     public disableRenderer(i:number){
         if(! renderers[i].startsWith("~")){
             renderers[i]="~"+renderers[i];
         }
-        console.log('disable renderer - renderers: ' + renderers)
     }
 
     public removeRenderer(i:number){
@@ -986,16 +982,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     /**
      * Resetea la capa de incertidumbre: la oculta y desactiva el checkbox
      * Útil cuando se cambia de contexto (ej: cambiar horizonte de predicción)
-     * Usa el método toggleUncertaintyLayer del LayerFrame para mantener consistencia
+     * Usa el método toggleUncertaintyLayer del MenuBar para mantener consistencia
      */
     public resetUncertaintyLayer(): void {
-        // Llamar al método del LayerFrame que ya coordina todo el comportamiento
-        this.layerFrame.toggleUncertaintyLayer(false);
-
-        // Asegurar que el checkbox en el DOM esté desactivado
-        const checkbox = document.getElementById('flexSwitchCheckChecked') as HTMLInputElement;
-        if (checkbox) {
-            checkbox.checked = false;
-        }
+        // Llamar al método del MenuBar que coordina todo el comportamiento
+        this.getMenuBar().toggleUncertaintyLayer(false);
     }
 }
