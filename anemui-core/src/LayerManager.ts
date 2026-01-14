@@ -253,11 +253,19 @@ export class LayerManager {
     }
 
     public getUncertaintyLayer():(Image<ImageStatic> | WebGLTile)[] {
-        this.uncertaintyLayer = [];
         return this.uncertaintyLayer;
     }
 
+    public setUncertaintyLayer(layers: (Image<ImageStatic> | WebGLTile)[]) {
+        this.uncertaintyLayer = layers;
+    }
+
     public showUncertaintyLayer(show: boolean) {
-        this.uncertaintyLayer[0].setVisible(show);
+        if (this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+            this.uncertaintyLayer.forEach((layer) => {
+                layer.setVisible(show);
+                layer.changed(); // Forzar re-renderizado
+            });
+        }
     }
 }

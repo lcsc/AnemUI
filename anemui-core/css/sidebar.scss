@@ -580,16 +580,15 @@ ul .two-columns {
 /* ---------------------------------------------------
     SELECTORES DE CAPAS
 ----------------------------------------------------- */
-
 div.row.selectDiv{
-    width: 260px;
-    margin: 0.45rem 0rem; 
+    width: 240px;
+    margin: 0.45rem 0rem;
 }
 
 .uncDiv input.form-check-input {
     visibility: visible;
     margin: 0px auto;
-    width: 4rem !important; 
+    width: 4rem !important;
     height: 2rem !important;
     background-color: $color_8;
     box-shadow: 0.5px 0.5px 3px $color_3;
@@ -630,6 +629,11 @@ div.slider.visible {
 
 .hidden {
     display: none;
+}
+
+.uncDiv .inputDiv {
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .closeDiv .icon {
