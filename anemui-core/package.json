@@ -82,6 +82,6 @@
     "zarr": "^0.6.3"
   },
   "devDependencies": {
-    "@lcsc/anemui-test": ">=0.2.3"
+    "@lcsc/anemui-test": ">=0.2.2"
   }
 }
