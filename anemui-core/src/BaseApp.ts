@@ -697,6 +697,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             // Continue with update even if there's an error
             if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
+             this.layerFrame.update();
             this.changeUrl();
         }
     }

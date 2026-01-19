@@ -838,31 +838,52 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
     }
   }
 
-  async initializeFeatureLayer(time: string, timeIndex: number, folder: string, varName: string): Promise<void> {
+async initializeFeatureLayer(time: string, timeIndex: number, folder: string, varName: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
-        if (this.featureLayer) {
-          this.featureLayer.indexData = data;
-          if (this.featureLayer.show) {
-            this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
-          }
-          resolve();
+        let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
+            if (this.featureLayer) {
+                this.featureLayer.indexData = data;
+                if (this.featureLayer.show) {
+                    this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+                }
+                resolve();
+            } else {
+                console.error("featureLayer is undefined in initializeFeatureLayer callback");
+                reject("featureLayer is undefined");
+            }
+        };
+
+        // Detectar si hay múltiples porciones
+        const timesJs = this.parent.getParent().getTimesJs();
+        const portions = timesJs.portions[varName] || [];
+        
+        
+        // Si hay múltiples porciones, usar la función que combina
+        if (portions.length > 1) {
+            
+            // Importar la función desde ChunkDownloader
+            const { downloadXYbyRegionMultiPortion } = require('./data/ChunkDownloader');
+            
+            downloadXYbyRegionMultiPortion(
+                time,
+                timeIndex,
+                folder,
+                varName,
+                portions,
+                openSt
+            );
         } else {
-          console.error("featureLayer is undefined in initializeFeatureLayer callback");
-          reject("featureLayer is undefined");
+            
+            if (computedDataTilesLayer) {
+                // Build calculated Layer
+                this.computeFeatureLayerData(time, folder, varName, openSt);
+            } else {
+                // Download and build new data layers
+                downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
+            }
         }
-      };
-
-      if (computedDataTilesLayer) {
-        // Build calculated Layer
-        this.computeFeatureLayerData(time, folder, varName, openSt);
-      } else {
-        // Download and build new data layers
-        downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
-      }
-
     });
-  }
+}
 
   private setupInteractions(): void {
     if (this.selectInteraction) {
