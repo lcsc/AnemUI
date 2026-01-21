@@ -12,7 +12,7 @@ import { PaletteManager } from "./PaletteManager";
 import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
@@ -1215,44 +1215,73 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     return new Style({ image: imgStation, })
   }
 
-  public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
+public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
     let min: number = Number.MAX_VALUE;
     let max: number = Number.MIN_VALUE;
 
     Object.values(this.indexData).forEach((value) => {
-      if (!isNaN(value)) {
-        min = Math.min(min, value);
-        max = Math.max(max, value);
-      }
+        if (!isNaN(value)) {
+            min = Math.min(min, value);
+            max = Math.max(max, value);
+        }
     });
 
     let color: string = '#fff';
     let id = feature.getProperties()['id'];
     let id_ant = feature.getProperties()['id_ant'];
+    let name = feature.getProperties()['name'];
     let ptr = PaletteManager.getInstance().getPainter();
 
-    // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
-    // Try with new id first, fallback to old id_ant if not found
-    let dataValue = this.indexData[id];
-    if (dataValue === undefined && id_ant !== undefined) {
-      dataValue = this.indexData[id_ant];
+    if (id === null || id === undefined) {
+        const isHovered = feature.get('hover');
+        if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
+        else this.map.getTargetElement().style.cursor = '';
+        
+        return new Style({
+            fill: new Fill({ color: '#ffffff00' }), // Transparente
+            stroke: new Stroke({
+                color: '#999',
+            }),
+        });
     }
 
-    if (dataValue !== undefined) {
-      color = ptr.getColorString(dataValue, min, max);
+    let dataValue = undefined;
+    
+    if (this.indexData[id] !== undefined) {
+        dataValue = this.indexData[id];
+    }
+    else if (id_ant && this.indexData[id_ant] !== undefined) {
+        dataValue = this.indexData[id_ant];
+    }
+    else if (id.length === 1 && this.indexData['0' + id] !== undefined) {
+        dataValue = this.indexData['0' + id];
+    }
+    else if (id.startsWith('0') && this.indexData[id.substring(1)] !== undefined) {
+        dataValue = this.indexData[id.substring(1)];
+    }
+    else if (id_ant && id_ant.length >= 2) {
+        const shortCode = id_ant.substring(0, 2);
+        if (this.indexData[shortCode] !== undefined) {
+            dataValue = this.indexData[shortCode];
+        }
+    }
+
+    if (dataValue !== undefined && !isNaN(dataValue)) {
+        color = ptr.getColorString(dataValue, min, max);
     }
 
     const isHovered = feature.get('hover');
 
     if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
     else this.map.getTargetElement().style.cursor = '';
+    
     return new Style({
-      fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
-      stroke: new Stroke({
-        color: '#999',
-      }),
+        fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+        stroke: new Stroke({
+            color: '#999',
+        }),
     });
-  }
+}
 
   private intersectsExtent(featureExtent: number[], viewExtent: number[]): boolean {
     return !(
@@ -1263,43 +1292,86 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     );
   }
 
-  public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
+public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
-    let value: string;
+    
     if (feature) {
-      if (state.support == this.csMap.renderers[0]) feature.setStyle(this.setStationStyle(state, feature, timesJs))
-      else feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
-      this.csMap.popupContent.style.left = pixel[0] + 'px';
-      this.csMap.popupContent.style.top = pixel[1] + 'px';
-      this.csMap.popup.hidden = false
-      if (feature !== this.currentFeature) {
-        let id = feature.getProperties()['id']
-        let id_ant = feature.getProperties()['id_ant']
-        // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
-        // Try with new id first, fallback to old id_ant if not found
-        value = data[id];
-        if (value === undefined && id_ant !== undefined) {
-          value = data[id_ant];
+        if (state.support == this.csMap.renderers[0]) {
+            feature.setStyle(this.setStationStyle(state, feature, timesJs));
+        } else {
+            feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
         }
-        this.csMap.popupContent.style.visibility = 'visible';
-        this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(feature.get('name'), id, parseFloat(value));
-        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
-      }
+        
+        this.csMap.popupContent.style.left = pixel[0] + 'px';
+        this.csMap.popupContent.style.top = pixel[1] + 'px';
+        this.csMap.popup.hidden = false;
+        
+        if (feature !== this.currentFeature) {
+            let id = feature.getProperties()['id'];
+            let id_ant = feature.getProperties()['id_ant'];
+            let name = feature.getProperties()['name'];
+
+            let value: any = undefined;
+            
+            if (data[id] !== undefined) {
+                value = data[id];
+            }
+            else if (id_ant && data[id_ant] !== undefined) {
+                value = data[id_ant];
+            }
+            else if (id && id.length === 1 && data['0' + id] !== undefined) {
+                value = data['0' + id];
+            }
+            else if (id && id.startsWith('0') && data[id.substring(1)] !== undefined) {
+                value = data[id.substring(1)];
+            }
+            else if (id_ant && id_ant.length >= 2) {
+                const shortCode = id_ant.substring(0, 2);
+                if (data[shortCode] !== undefined) {
+                    value = data[shortCode];
+                }
+            }
+            
+            if (value === undefined) {
+                value = 'N/A';
+            } else if (isNaN(parseFloat(value))) {
+                value = 'N/A';
+            } else {
+                value = parseFloat(value);
+            }
+            
+            this.csMap.popupContent.style.visibility = 'visible';
+            this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(name, id, value);
+            this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]));
+        }
     } else {
-      this.csMap.popupContent.style.visibility = 'hidden';
-      this.csMap.popup.hidden = true
+        this.csMap.popupContent.style.visibility = 'hidden';
+        this.csMap.popup.hidden = true;
     }
+    
     if (this.currentFeature instanceof Feature) {
-      if (state.support == this.csMap.renderers[0]) this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs))
-      else this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+        if (state.support == this.csMap.renderers[0]) {
+            this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs));
+        } else {
+            this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+        }
     }
     this.currentFeature = feature;
-  };
+}
 
-  public formatFeaturePopupValue(featureName: string, featureId: any, value: number): string {
-    return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
-  }
+public formatFeaturePopupValue(featureName: string, featureId: any, value: number | string): string {
+    if (value === 'N/A' || value === undefined || value === null) {
+        return `${featureName}: Sin datos`;
+    }
+    
+    if (typeof value === 'number') {
+        return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
+    }
+    
+    return `${featureName}: ${value}`;
+}
+
 
   public highLightColor(hex: string, lum: number): string {
     hex = String(hex).replace(/[^0-9a-f]/gi, '');
