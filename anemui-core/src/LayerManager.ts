@@ -69,6 +69,7 @@ export class LayerManager {
     private topLayerVector:Layer;
     private topLayerImage:Image<ImageWMS>;
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
+     private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
         // CAPAS BASE
@@ -98,6 +99,7 @@ export class LayerManager {
         
         this.topSelected="Límites estatales (mapbox)";
         this.uncertaintyLayer = [];
+         this.uncertaintyLayerVisible = false; 
     }
 
     // Base Layer
