@@ -296,7 +296,7 @@ public render(): JSX.Element {
 }
 
     // Función para determinar si un color de fondo es claro u oscuro
-    private isLightColor(hexColor: string): boolean {
+    protected isLightColor(hexColor: string): boolean {
 
         if (hexColor == undefined) return false;
         // Remover el # si existe

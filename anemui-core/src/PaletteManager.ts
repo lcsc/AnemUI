@@ -367,6 +367,14 @@ export class CsDynamicPainter implements Painter{
     }
 
     /**
+     * Método para establecer breaks directamente (sin usar getRegularSteps)
+     * Útil cuando los breaks ya están calculados (ej: getLegendValues)
+     */
+    public setDirectBreaks(breaks: number[]): void {
+        this.precalculatedBreaks = [...breaks];
+    }
+
+    /**
      * Método para limpiar los breaks precalculados
      */
     public clearPrecalculatedBreaks(): void {

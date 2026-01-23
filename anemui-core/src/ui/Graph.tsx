@@ -110,8 +110,11 @@ export class CsGraph extends BaseFrame {
 
   public render(): JSX.Element {
     let self = this;
-    let graphWidth = screen.width > 1200 ? screen.width * 0.4 : screen.width * 0.55;
-    let graphHeight = screen.height > 1200 ? screen.height * 0.4 : screen.height * 0.50;
+    // Calcular tamaño responsivo del gráfico
+    const maxWidth = Math.min(screen.width * 0.85, 900);
+    const maxHeight = Math.min(screen.height * 0.65, 500);
+    let graphWidth = screen.width > 1200 ? Math.min(screen.width * 0.4, maxWidth) : Math.min(screen.width * 0.55, maxWidth);
+    let graphHeight = screen.height > 900 ? Math.min(screen.height * 0.4, maxHeight) : Math.min(screen.height * 0.50, maxHeight);
     let element =
       (<div className="container">
         <div id="GraphContainer" className='GraphContainer row' hidden >
@@ -121,7 +124,7 @@ export class CsGraph extends BaseFrame {
               <div id="graphTooltip"></div>
             </div>
             <div className="labels-content" style={{ width: "auto" }}>
-              <div id="labels" style={{ width: graphWidth + "px" }}></div>
+              <div id="labels" style={{ width: "100%", maxWidth: graphWidth + "px" }}></div>
             </div>
             <div id="colorLegend" style={{ display: "none", padding: "8px 5px", justifyContent: "center", alignItems: "center", gap: "3px", flexWrap: "wrap", fontSize: "11px" }}></div>
             <div id="graphControls" className="graph-controls" hidden style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", gap: "15px", flexWrap: "wrap" }}>
@@ -168,6 +171,65 @@ export class CsGraph extends BaseFrame {
     this.container = document.getElementById("GraphContainer") as HTMLDivElement
     this.downloadButtonContainer = this.container.querySelector("[role=dropPointBtn]");
     this.featureButtonContainer = this.container.querySelector("[role=dropFeatureBtn]");
+
+    // Añadir funcionalidad de arrastrar
+    this.initDraggable();
+  }
+
+  /**
+   * Inicializa la funcionalidad de arrastrar el contenedor del gráfico
+   */
+  private initDraggable(): void {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      // No iniciar drag si se hace clic en botones, inputs o el área del gráfico
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' ||
+          target.tagName === 'SELECT' || target.tagName === 'A' ||
+          target.closest('#popGraph') || target.closest('.dygraph-legend') ||
+          target.closest('canvas')) {
+        return;
+      }
+
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      // Obtener posición actual
+      const rect = this.container.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      // Remover transform para usar posición absoluta
+      this.container.style.transform = 'none';
+      this.container.style.left = startLeft + 'px';
+      this.container.style.top = startTop + 'px';
+
+      e.preventDefault();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      this.container.style.left = (startLeft + deltaX) + 'px';
+      this.container.style.top = (startTop + deltaY) + 'px';
+    };
+
+    const onMouseUp = () => {
+      isDragging = false;
+    };
+
+    this.container.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 
   public setParams(_title: string = '', _type: GraphType, _byPoint: boolean, _scaleSelectors?: boolean, _xLabel: string = '', _yLabel: string = '') {

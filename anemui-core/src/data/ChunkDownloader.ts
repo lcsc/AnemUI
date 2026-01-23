@@ -10,7 +10,7 @@ import { fromLonLat } from "ol/proj";
 import { CategoryRangePainter, PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, dataSource, computedDataTilesLayer, olProjection } from "../Env";
+import { ncSignif, dataSource, globalMap, olProjection } from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestedArray, openArray, TypedArray } from 'zarr';
@@ -657,7 +657,7 @@ export function extractValueChunkedFromT(latlng: CsLatLong, functionValue: TileA
 export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false): void {
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
-    if (portion != '') {
+    if (portion != '' || globalMap) { 
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
 
         if (status.computedLayer) {

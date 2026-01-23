@@ -16,6 +16,7 @@ export { enableRenderer } from './tiles/Support';
 export { CsGraph, type GraphType, ColorLegendConfig } from './ui/Graph';
 export { MenuBar, MenuBarListener, simpleDiv } from './ui/MenuBar';
 export { DateSelectorFrame, DateFrameListener, DateFrameMode } from "./ui/DateFrame";
+export { default as PaletteFrame } from './ui/PaletteFrame';
 
 export { fromLonLat } from 'ol/proj';
 
