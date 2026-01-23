@@ -48,6 +48,7 @@ export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'?
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
 export const maxPaletteValue = ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
 export const maxPaletteSteps = ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
+export const globalMap = ENV.globalMap !== 'undefined'? ENV.globalMap:false;
 
 // Factory Method Pattern
 // true = usar factory method (permite override en subclases)

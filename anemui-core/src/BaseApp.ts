@@ -578,7 +578,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         //TODO on change
         let timeSpan = this.getTimeSpan(_timesJs.times[varId])
         // let timeIndex = typeof _timesJs.times[varId] === 'string'? 0:_timesJs.times[varId].length - 1
-        let timeIndex = timeSpan == CsTimeSpan.Year? 0:_timesJs.times[varId].length - 1
+        let timeIndex = timeSpan == CsTimeSpan.Year? 0 : _timesJs.times[varId].length - 1
         let legendTitle: string;
         if (_timesJs.legendTitle[varId] != undefined) {
             legendTitle = _timesJs.legendTitle[varId]
@@ -616,6 +616,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public getTimeSpan (time:string[]): CsTimeSpan {
         if(typeof time === 'string') return CsTimeSpan.Year
         let number
+        let yearCount = 1
         if (time.length<=12) number = time.length
         else {
             const result = time.reduce((acc, curr) => {
@@ -625,15 +626,25 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 }
                 return acc;
             }, []);
+            yearCount = result.length
             number = time.length / result.length;
         }
+        // Caso especial: si hay exactamente 365 o 366 elementos totales, es día juliano
+        // independientemente de si las fechas cruzan dos años
+        if (time.length === 365 || time.length === 366) {
+            return CsTimeSpan.Day;
+        }
+
         switch (number) {
-            case 1: 
-                return CsTimeSpan.Year;
+            case 1:
+                return yearCount > 1 ? CsTimeSpan.YearSeries : CsTimeSpan.Year;
             case 4:
                 return CsTimeSpan.Season;
             case 12:
                 return CsTimeSpan.Month;
+            case 365:
+            case 366:
+                return CsTimeSpan.Day;
             default:
                 return CsTimeSpan.Date;
         }
@@ -780,7 +791,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
      */
     protected isClimatologyCyclicMode(): boolean {
         return this.state.climatology &&
-               (this.state.timeSpan === CsTimeSpan.Month || this.state.timeSpan === CsTimeSpan.Season);
+               (this.state.timeSpan === CsTimeSpan.Day || this.state.timeSpan === CsTimeSpan.Month || this.state.timeSpan === CsTimeSpan.Season);
     }
 
     public dateDateBack(): void {
