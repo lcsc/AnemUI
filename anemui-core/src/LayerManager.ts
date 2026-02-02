@@ -262,9 +262,38 @@ export class LayerManager {
 
     public showUncertaintyLayer(show: boolean) {
         if (this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+            const duration = 150; // ms
+            const steps = 10;
+            const stepTime = duration / steps;
+
             this.uncertaintyLayer.forEach((layer) => {
-                layer.setVisible(show);
-                layer.changed(); // Forzar re-renderizado
+                if (show) {
+                    // Fade-in
+                    layer.setOpacity(0);
+                    layer.setVisible(true);
+                    let step = 0;
+                    const fadeIn = setInterval(() => {
+                        step++;
+                        layer.setOpacity(step / steps);
+                        if (step >= steps) {
+                            clearInterval(fadeIn);
+                            layer.setOpacity(1);
+                        }
+                    }, stepTime);
+                } else {
+                    // Fade-out
+                    let step = steps;
+                    const fadeOut = setInterval(() => {
+                        step--;
+                        layer.setOpacity(step / steps);
+                        if (step <= 0) {
+                            clearInterval(fadeOut);
+                            layer.setVisible(false);
+                            layer.setOpacity(1);
+                        }
+                    }, stepTime);
+                }
+                layer.changed();
             });
         }
     }

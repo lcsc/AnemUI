@@ -7,7 +7,7 @@ import LayerFrame from './ui/LayerFrame'
 import PaletteFrame from "./ui/PaletteFrame";
 import { CsLatLong, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
-import { loadLatLongData } from "./data/CsDataLoader";
+import { loadLatLongData, loadPopData, PopDataItem } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData, CsTimeSpan } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods } from "./Env";
@@ -195,7 +195,32 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     
     public setLanguage(lang:string): void {
         this.language.setDefault(lang) ;
-    } 
+    }
+
+    /**
+     * Carga y procesa los datos de popup desde popData.json
+     * Utiliza el idioma configurado en Language para seleccionar los campos correctos
+     * @param url - URL del archivo popData.json (por defecto 'popData.json')
+     * @returns Promise con los datos procesados para el popup
+     */
+    public async getPopData(url: string = 'popData.json'): Promise<PopDataItem[]> {
+        const langPrefix = this.language.getDefault() + '_'; // 'es_' o 'en_'
+
+        const rawData = await loadPopData(url);
+
+        return rawData.map(item => ({
+            id: item.id,
+            data: {
+                [this.language.getTranslation('pop_name')]: item.data[langPrefix + 'name'],
+                [this.language.getTranslation('pop_description')]: item.data[langPrefix + 'description'],
+                [this.language.getTranslation('pop_importance')]: item.data[langPrefix + 'importance_of_index'],
+                [this.language.getTranslation('pop_time_scale')]: item.data[langPrefix + 'time_scale_applicable'],
+                [this.language.getTranslation('pop_geographic')]: item.data[langPrefix + 'geographic_limitation'],
+                [this.language.getTranslation('pop_formula')]: item.data[langPrefix + 'formula'],
+                [this.language.getTranslation('pop_reference')]: item.data[langPrefix + 'reference']
+            }
+        }));
+    }
 
     public abstract configure(): void;
 

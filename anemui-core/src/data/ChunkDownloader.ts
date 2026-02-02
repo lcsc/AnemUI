@@ -268,6 +268,9 @@ async function downloadTChunkZarr(x: number, varName: string, portion: string, t
     return promise;
 }
 
+// Almacena los datos de la capa principal para usarlos como máscara en la capa de incertidumbre
+let mainLayerData: number[][] = [];
+
 export async function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
     try {
         const floatArrays = await Promise.all(promises);
@@ -291,8 +294,25 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         const filteredArrays: number[][] = [];
         
         for (let i = 0; i < validFloatArrays.length; i++) {
+<<<<<<< Updated upstream
             const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
+=======
+
+            const filteredArray = validFloatArrays[i];
+
+>>>>>>> Stashed changes
             filteredArrays.push(filteredArray);
+        }
+
+        // Guardar datos de la capa principal para usar como máscara en incertidumbre
+        if (!uncertaintyLayer) {
+            // Copia profunda para evitar problemas con referencias
+            mainLayerData = filteredArrays.map(arr => [...arr]);
+            console.log('[buildImages] Guardando mainLayerData para máscara:', {
+                numPortions: mainLayerData.length,
+                lengths: mainLayerData.map(arr => arr.length),
+                nanCounts: mainLayerData.map(arr => arr.filter(v => isNaN(v) || !isFinite(v)).length)
+            });
         }
 
         let minArray: number = Number.MAX_VALUE;
@@ -379,7 +399,33 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         const uncertaintyVarId = uncertaintyLayer ? status.varId + '_uncertainty' : status.varId;
 
         for (let i = 0; i < filteredArrays.length; i++) {
-            const filteredArray = filteredArrays[i];
+            let filteredArray = filteredArrays[i];
+
+            // Para capa de incertidumbre, filtrar píxeles donde la capa principal es NaN (mar/otros países)
+            if (uncertaintyLayer) {
+                console.log(`[buildImages] Incertidumbre porción ${i}:`, {
+                    mainLayerDataExists: !!mainLayerData[i],
+                    mainLayerLength: mainLayerData[i]?.length || 0,
+                    filteredArrayLength: filteredArray.length,
+                    lengthsMatch: mainLayerData[i]?.length === filteredArray.length
+                });
+
+                if (mainLayerData[i] && mainLayerData[i].length === filteredArray.length) {
+                    let maskedCount = 0;
+                    filteredArray = filteredArray.map((val, idx) => {
+                        const mainVal = mainLayerData[i][idx];
+                        // Si el dato principal es NaN, poner 0 en incertidumbre (no mostrar)
+                        if (isNaN(mainVal) || !isFinite(mainVal)) {
+                            maskedCount++;
+                            return 0;
+                        }
+                        return val;
+                    });
+                    console.log(`[buildImages] Incertidumbre porción ${i}: ${maskedCount} píxeles enmascarados de ${filteredArray.length}`);
+                } else {
+                    console.warn(`[buildImages] No se puede aplicar máscara en porción ${i}: mainLayerData no disponible o longitudes no coinciden`);
+                }
+            }
 
             const width = timesJs.lonNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
             const height = timesJs.latNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
@@ -408,7 +454,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     } else {
                         dataTilesLayer[i].setZIndex(100 + i); // Capas de datos
                     }
-                    dataTilesLayer[i].setVisible(uncertaintyLayer ? false : true);
+                    dataTilesLayer[i].setVisible(true);
                     dataTilesLayer[i].setOpacity(1.0);
 
                     dataTilesLayer[i].changed();

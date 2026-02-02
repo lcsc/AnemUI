@@ -13,6 +13,14 @@ export default class Language {
 
     private locales: any = {
         en: {
+            // PopData fields
+            "pop_name": "Name",
+            "pop_description": "Description",
+            "pop_importance": "Index importance",
+            "pop_time_scale": "Applicable time scale",
+            "pop_geographic": "Geographic limitation",
+            "pop_formula": "Formula",
+            "pop_reference": "Reference",
             "descargar_nc": "Download File",
             "descargar_peninsula": "Download Peninsula",
             "descargar_baleares": "Download Baleares",
@@ -75,6 +83,14 @@ export default class Language {
             'clear': "Clear"
         },
         es: {
+            // PopData fields
+            "pop_name": "Nombre",
+            "pop_description": "Descripción",
+            "pop_importance": "Importancia del índice",
+            "pop_time_scale": "Escala temporal aplicable",
+            "pop_geographic": "Limitación geográfica",
+            "pop_formula": "Fórmula",
+            "pop_reference": "Referencia",
             "descargar_nc": "Descargar Archivo",
             "descargar_peninsula": "Descargar Península",
             "descargar_baleares": "Descargar Baleares",

@@ -188,6 +188,7 @@ export class CategoryRangePainter implements Painter {
             height = 1;
         }
 
+<<<<<<< Updated upstream
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
@@ -221,6 +222,95 @@ export class CategoryRangePainter implements Painter {
                 }
             }
         }
+=======
+    let canvas: HTMLCanvasElement = document.createElement('canvas');
+    let context: CanvasRenderingContext2D = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+
+    if (uncertaintyLayer) {
+        // Patrón X para incertidumbre: dibujar líneas diagonales cruzadas
+        const spacing = 4; // Espaciado del patrón
+        context.strokeStyle = '#555555';
+        context.lineWidth = 1;
+        context.globalAlpha = 0.7;
+
+        // Crear máscara de incertidumbre primero
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = width;
+        maskCanvas.height = height;
+        const maskCtx = maskCanvas.getContext('2d');
+        const maskData = maskCtx.createImageData(width, height);
+        const maskPixels = maskData.data;
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let ncIndex = x + y * width;
+                let value = floatArray[ncIndex];
+                let canvasY = (height - 1) - y;
+                let pixelIndex = (canvasY * width + x) * 4;
+
+                if (!isNaN(value) && isFinite(value) && value > 0) {
+                    maskPixels[pixelIndex] = 255;
+                    maskPixels[pixelIndex + 1] = 255;
+                    maskPixels[pixelIndex + 2] = 255;
+                    maskPixels[pixelIndex + 3] = 255;
+                }
+            }
+        }
+        maskCtx.putImageData(maskData, 0, 0);
+
+        // Dibujar patrón X en todo el canvas
+        context.beginPath();
+        // Diagonales \
+        for (let i = -height; i < width + height; i += spacing) {
+            context.moveTo(i, 0);
+            context.lineTo(i + height, height);
+        }
+        // Diagonales /
+        for (let i = -height; i < width + height; i += spacing) {
+            context.moveTo(i + height, 0);
+            context.lineTo(i, height);
+        }
+        context.stroke();
+
+        // Aplicar máscara: solo mostrar donde hay incertidumbre
+        context.globalCompositeOperation = 'destination-in';
+        context.drawImage(maskCanvas, 0, 0);
+        context.globalCompositeOperation = 'source-over';
+
+        return canvas;
+    }
+
+    // Modo normal (no incertidumbre): pintar con gradiente
+    let imgData: ImageData = context.getImageData(0, 0, width, height);
+    let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
+    const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
+
+    for (let y: number = 0; y < height; y++) {
+        for (let x: number = 0; x < width; x++) {
+            let ncIndex: number = x + y * width;
+            let value: number = floatArray[ncIndex];
+            let pxIndex: number = x + ((height - 1) - y) * width;
+
+            if (!isNaN(value) && isFinite(value)) {
+                let index: number = this.getValIndex(value);
+
+                if (index >= 0 && index < gradient.length) {
+                    bitmap[pxIndex] = gradient[index];
+                } else {
+                    bitmap[pxIndex] = pxTransparent;
+                }
+            } else {
+                bitmap[pxIndex] = pxTransparent;
+            }
+        }
+    }
+
+    context.putImageData(imgData, 0, 0);
+    return canvas;
+}
+>>>>>>> Stashed changes
 
         context.putImageData(imgData, 0, 0);
         return canvas;
@@ -596,7 +686,11 @@ export class PaletteManager {
         return Object.keys(this.palettes);
     }
 
-    public getPainter():Painter{
+    public getPainter(forUncertainty: boolean = false):Painter{
+        // Si es para capa de incertidumbre y hay un painter específico, usarlo
+        if(forUncertainty && this.painters['uncertainty'] != undefined) {
+            return this.painters['uncertainty'];
+        }
         if(this.painters[this.selected]!=undefined)return this.painters[this.selected]
         return this.painter;
     }
@@ -621,20 +715,18 @@ export class PaletteManager {
 }
 
 /**
- * DotPatternPainter - Painter especializado para capa de incertidumbre con puntos
- * Aplica un patrón de puntos centrados en cada píxel
+ * DotPatternPainter - Painter especializado para capa de incertidumbre (Canvas 2D)
+ * Dibuja un patrón de X DENTRO de cada tile de datos
  */
 export class DotPatternPainter implements Painter {
-    private dotRadius: number = 1; // Radio del punto en píxeles
-    private dotColor: string = '#656565'; // Color del punto
-    private dotOpacity: number = 0.8; // Opacidad del punto
-    private dotSpacing: number = 3; // Espaciado entre puntos (cada N píxeles)
+    private lineColor: string = '#656565';
+    private lineOpacity: number = 0.7;
+    private tileSize: number = 6;
 
-    constructor(radius: number = 1, color: string = '#656565', opacity: number = 0.8, spacing: number = 3) {
-        this.dotRadius = radius;
-        this.dotColor = color;
-        this.dotOpacity = opacity;
-        this.dotSpacing = spacing;
+    constructor(radius: number = 1, color: string = '#656565', opacity: number = 0.7, tileSize: number = 6) {
+        this.lineColor = color;
+        this.lineOpacity = opacity;
+        this.tileSize = Math.max(1, tileSize);
     }
 
     public async paintValues(
@@ -647,109 +739,420 @@ export class DotPatternPainter implements Painter {
         uncertaintyLayer: boolean,
         zoom?: number
     ): Promise<HTMLCanvasElement> {
-        
-        // Validar dimensiones
+        console.log('🔴 DotPatternPainter.paintValues', { width, height, dataLen: floatArray.length });
+
         width = Math.max(1, Math.floor(width));
         height = Math.max(1, Math.floor(height));
 
         if (!isFinite(width) || !isFinite(height)) {
-            console.error('Invalid canvas dimensions:', width, height);
             width = 1;
             height = 1;
         }
+
+        // Contar valores con incertidumbre
+        let uncertainCount = 0;
+        for (let i = 0; i < floatArray.length; i++) {
+            if (!isNaN(floatArray[i]) && isFinite(floatArray[i]) && floatArray[i] > 0) {
+                uncertainCount++;
+            }
+        }
+        console.log('🔴 Pixels con incertidumbre:', uncertainCount);
 
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
 
-        // Desactivar el suavizado de imágenes para mantener píxeles nítidos
-        context.imageSmoothingEnabled = false;
+        // Patrón X - MISMO CÓDIGO QUE CategoryRangePainter
+        const spacing = 4;
+        context.strokeStyle = '#555555';
+        context.lineWidth = 1;
+        context.globalAlpha = 0.7;
 
-        // Parsear el color a valores RGB
-        const rgbaMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(this.dotColor);
-        let r = 101, g = 101, b = 101; // Valores por defecto para #656565
-        if (rgbaMatch) {
-            r = parseInt(rgbaMatch[1], 16);
-            g = parseInt(rgbaMatch[2], 16);
-            b = parseInt(rgbaMatch[3], 16);
-        }
+        // Crear máscara
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = width;
+        maskCanvas.height = height;
+        const maskCtx = maskCanvas.getContext('2d');
+        const maskData = maskCtx.createImageData(width, height);
+        const maskPixels = maskData.data;
 
-        // Convertir opacidad (0-1) a alpha (0-255)
-        const alpha = Math.round(this.dotOpacity * 255);
+        let maskCount = 0;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let ncIndex = x + y * width;
+                let value = floatArray[ncIndex];
+                let canvasY = (height - 1) - y;
+                let pixelIndex = (canvasY * width + x) * 4;
 
-        // Crear ImageData para manipular píxeles directamente
-        const imageData = context.createImageData(width, height);
-        const data = imageData.data;
-
-        // Analizar los valores para debug
-        let validValues = 0;
-        let zeroValues = 0;
-        let nanValues = 0;
-        let minVal = Infinity;
-        let maxVal = -Infinity;
-        let sampleValues: number[] = [];
-
-        for (let i = 0; i < Math.min(floatArray.length, 100); i++) {
-            const val = floatArray[i];
-            if (!isNaN(val) && isFinite(val)) {
-                validValues++;
-                if (val === 0) zeroValues++;
-                if (val < minVal) minVal = val;
-                if (val > maxVal) maxVal = val;
-                if (sampleValues.length < 10) sampleValues.push(val);
-            } else {
-                nanValues++;
-            }
-        }
-
-        // Pintar puntos cuadrados con espaciado solo donde hay incertidumbre
-        let dotsDrawn = 0;
-        let skippedDots = 0;
-        for (let y: number = 0; y < height; y++) {
-            for (let x: number = 0; x < width; x++) {
-                // Aplicar patrón de espaciado: solo pintar cada N píxeles
-                if ((x % this.dotSpacing !== 0) || (y % this.dotSpacing !== 0)) {
-                    continue;
-                }
-
-                let ncIndex: number = x + y * width;
-                let value: number = floatArray[ncIndex];
-
-                // Solo pintar si el valor indica incertidumbre (valor > 0)
                 if (!isNaN(value) && isFinite(value) && value > 0) {
-                    // Invertir Y para mantener consistencia con otros painters
-                    let canvasY = (height - 1) - y;
-
-                    // Calcular índice en el array de ImageData
-                    let pixelIndex = (canvasY * width + x) * 4;
-
-                    // Establecer valores RGBA (píxel cuadrado)
-                    data[pixelIndex] = r;         // Red
-                    data[pixelIndex + 1] = g;     // Green
-                    data[pixelIndex + 2] = b;     // Blue
-                    data[pixelIndex + 3] = alpha; // Alpha
-
-                    dotsDrawn++;
-                } else if (!isNaN(value) && isFinite(value)) {
-                    skippedDots++;
+                    maskPixels[pixelIndex] = 255;
+                    maskPixels[pixelIndex + 1] = 255;
+                    maskPixels[pixelIndex + 2] = 255;
+                    maskPixels[pixelIndex + 3] = 255;
+                    maskCount++;
                 }
             }
         }
+        console.log('🔴 Mask pixels:', maskCount);
+        maskCtx.putImageData(maskData, 0, 0);
 
-        // Escribir los datos de píxeles al canvas
-        context.putImageData(imageData, 0, 0);
+        // Dibujar patrón X
+        context.beginPath();
+        for (let i = -height; i < width + height; i += spacing) {
+            context.moveTo(i, 0);
+            context.lineTo(i + height, height);
+        }
+        for (let i = -height; i < width + height; i += spacing) {
+            context.moveTo(i + height, 0);
+            context.lineTo(i, height);
+        }
+        context.stroke();
+
+        // Aplicar máscara
+        context.globalCompositeOperation = 'destination-in';
+        context.drawImage(maskCanvas, 0, 0);
+
         return canvas;
     }
 
     public getColorString(val: number, min: number, max: number): string {
-        // Para compatibilidad con la interfaz Painter
-        return this.dotColor;
+        return this.lineColor;
     }
 
     public getValIndex(val: number): number {
-        // Para compatibilidad con la interfaz Painter
         return 0;
     }
 }
 
+/**
+ * WebGLPatternPainter - Painter con WebGL para capa de incertidumbre
+ * Usa shaders para dibujar patrón de X con mejor rendimiento y calidad
+ */
+export class WebGLPatternPainter implements Painter {
+    private lineColor: [number, number, number] = [0.33, 0.33, 0.33];
+    private lineOpacity: number = 0.7;
+    private patternScale: number = 8.0;
+
+    constructor(color: string = '#555555', opacity: number = 0.7, patternScale: number = 8.0) {
+        // Parsear color hex a RGB normalizado (0-1)
+        const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+        if (match) {
+            this.lineColor = [
+                parseInt(match[1], 16) / 255,
+                parseInt(match[2], 16) / 255,
+                parseInt(match[3], 16) / 255
+            ];
+        }
+        this.lineOpacity = opacity;
+        this.patternScale = patternScale;
+    }
+
+    public async paintValues(
+        floatArray: number[],
+        width: number,
+        height: number,
+        minArray: number,
+        maxArray: number,
+        pxTransparent: number,
+        uncertaintyLayer: boolean,
+        zoom?: number
+    ): Promise<HTMLCanvasElement> {
+
+        width = Math.max(1, Math.floor(width));
+        height = Math.max(1, Math.floor(height));
+
+        // Canvas de salida escalado
+        const scale = this.patternScale;
+        const canvasWidth = Math.floor(width * scale);
+        const canvasHeight = Math.floor(height * scale);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        const gl = canvas.getContext('webgl', {
+            preserveDrawingBuffer: true,
+            premultipliedAlpha: false,
+            alpha: true
+        });
+
+        if (!gl) {
+            console.warn('WebGL no disponible, usando fallback Canvas 2D');
+            return this.fallbackCanvas2D(floatArray, width, height);
+        }
+
+        // Vertex shader
+        const vsSource = `
+            attribute vec2 a_position;
+            attribute vec2 a_texCoord;
+            varying vec2 v_texCoord;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+                v_texCoord = a_texCoord;
+            }
+        `;
+
+        // Fragment shader con patrón X
+        const fsSource = `
+            precision mediump float;
+            varying vec2 v_texCoord;
+            uniform sampler2D u_data;
+            uniform vec2 u_resolution;
+            uniform vec3 u_color;
+            uniform float u_opacity;
+            uniform float u_scale;
+            uniform float u_lineWidth;
+
+            void main() {
+                // Coordenadas en el espacio de datos
+                vec2 dataCoord = v_texCoord;
+
+                // Obtener valor de incertidumbre (textura con datos)
+                float uncertainty = texture2D(u_data, dataCoord).r;
+
+                // Si no hay incertidumbre, transparente
+                if (uncertainty <= 0.0) {
+                    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+                    return;
+                }
+
+                // Coordenadas dentro del tile (0-1 para cada tile)
+                vec2 tileCoord = fract(v_texCoord * u_resolution);
+
+                // Calcular distancia a las diagonales
+                // Diagonal \: y = x -> distancia = |y - x| / sqrt(2)
+                // Diagonal /: y = 1 - x -> distancia = |y - (1-x)| / sqrt(2)
+                float d1 = abs(tileCoord.y - tileCoord.x);
+                float d2 = abs(tileCoord.y - (1.0 - tileCoord.x));
+                float dist = min(d1, d2);
+
+                // Ancho de línea relativo al tile
+                float lineW = u_lineWidth / u_scale;
+
+                // Suavizado anti-aliasing
+                float alpha = 1.0 - smoothstep(0.0, lineW, dist);
+
+                if (alpha > 0.01) {
+                    gl_FragColor = vec4(u_color, alpha * u_opacity);
+                } else {
+                    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+                }
+            }
+        `;
+
+        // Compilar shaders
+        const vs = this.compileShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = this.compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+        if (!vs || !fs) {
+            return this.fallbackCanvas2D(floatArray, width, height);
+        }
+
+        const program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error('Error linking program:', gl.getProgramInfoLog(program));
+            return this.fallbackCanvas2D(floatArray, width, height);
+        }
+
+        gl.useProgram(program);
+
+        // Crear quad que cubre toda la pantalla
+        const positions = new Float32Array([
+            -1, -1,  1, -1,  -1, 1,
+            -1,  1,  1, -1,   1, 1
+        ]);
+        const texCoords = new Float32Array([
+            0, 0,  1, 0,  0, 1,
+            0, 1,  1, 0,  1, 1
+        ]);
+
+        // Buffer de posiciones
+        const posBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+        const posLoc = gl.getAttribLocation(program, 'a_position');
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+        // Buffer de coordenadas de textura
+        const texBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+        const texLoc = gl.getAttribLocation(program, 'a_texCoord');
+        gl.enableVertexAttribArray(texLoc);
+        gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
+
+        // Crear textura con los datos de incertidumbre
+        const dataTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, dataTexture);
+
+        // Convertir floatArray a Uint8Array para la textura (normalizado)
+        const textureData = new Uint8Array(width * height);
+        for (let i = 0; i < floatArray.length; i++) {
+            const val = floatArray[i];
+            // Invertir Y al crear la textura
+            const srcY = Math.floor(i / width);
+            const srcX = i % width;
+            const dstY = height - 1 - srcY;
+            const dstIdx = dstY * width + srcX;
+            textureData[dstIdx] = (!isNaN(val) && isFinite(val) && val > 0) ? 255 : 0;
+        }
+
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, width, height, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, textureData);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        // Configurar uniforms
+        gl.uniform1i(gl.getUniformLocation(program, 'u_data'), 0);
+        gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
+        gl.uniform3fv(gl.getUniformLocation(program, 'u_color'), this.lineColor);
+        gl.uniform1f(gl.getUniformLocation(program, 'u_opacity'), this.lineOpacity);
+        gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), scale);
+        gl.uniform1f(gl.getUniformLocation(program, 'u_lineWidth'), 1.5);
+
+        // Configurar viewport y blend
+        gl.viewport(0, 0, canvasWidth, canvasHeight);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        // Dibujar
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        // Cleanup
+        gl.deleteTexture(dataTexture);
+        gl.deleteBuffer(posBuffer);
+        gl.deleteBuffer(texBuffer);
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+        gl.deleteProgram(program);
+
+        return canvas;
+    }
+
+    private compileShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+
+    private async fallbackCanvas2D(floatArray: number[], width: number, height: number): Promise<HTMLCanvasElement> {
+        const painter = new DotPatternPainter(1, '#555555', this.lineOpacity, this.patternScale);
+        return painter.paintValues(floatArray, width, height, 0, 0, 0, true);
+    }
+
+    public getColorString(val: number, min: number, max: number): string {
+        const r = Math.round(this.lineColor[0] * 255);
+        const g = Math.round(this.lineColor[1] * 255);
+        const b = Math.round(this.lineColor[2] * 255);
+        return `rgb(${r},${g},${b})`;
+    }
+
+    public getValIndex(val: number): number {
+        return 0;
+    }
+}
+
+/**
+ * CrossPatternPainter - Painter especializado para capa de incertidumbre con patrón de X
+ * Dibuja UNA X por cada pixel de datos con incertidumbre
+ */
+export class CrossPatternPainter implements Painter {
+    private strokeColor: string = '#555555';
+    private strokeOpacity: number = 0.7;
+    private tileSize: number = 8; // Escala del canvas (cada pixel de datos = tileSize x tileSize en canvas)
+
+    constructor(
+        color: string = '#555555',
+        opacity: number = 0.7,
+        tileSize: number = 8
+    ) {
+        this.strokeColor = color;
+        this.strokeOpacity = opacity;
+        this.tileSize = Math.max(4, tileSize);
+    }
+
+    public async paintValues(
+        floatArray: number[],
+        width: number,
+        height: number,
+        minArray: number,
+        maxArray: number,
+        pxTransparent: number,
+        uncertaintyLayer: boolean,
+        zoom?: number
+    ): Promise<HTMLCanvasElement> {
+
+        width = Math.max(1, Math.floor(width));
+        height = Math.max(1, Math.floor(height));
+
+        if (!isFinite(width) || !isFinite(height)) {
+            width = 1; height = 1;
+        }
+
+        // Canvas escalado: cada pixel de datos = tileSize x tileSize
+        const ts = this.tileSize;
+        const canvasW = width * ts;
+        const canvasH = height * ts;
+
+        let canvas: HTMLCanvasElement = document.createElement('canvas');
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+
+        context.clearRect(0, 0, canvasW, canvasH);
+        context.strokeStyle = this.strokeColor;
+        context.lineWidth = 1;
+        context.globalAlpha = this.strokeOpacity;
+
+        context.beginPath();
+
+        // Para cada pixel de datos con incertidumbre, dibujar X centrada en su tile
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let ncIndex = x + y * width;
+                let value = floatArray[ncIndex];
+
+                if (!isNaN(value) && isFinite(value) && value > 0) {
+                    // Centro del tile en el canvas
+                    let cx = x * ts + ts / 2;
+                    let cy = ((height - 1) - y) * ts + ts / 2;
+
+                    // Tamaño de la X (igual al tile para que se toquen)
+                    let half = ts / 2;
+
+                    // Dibujar X
+                    context.moveTo(cx - half, cy - half);
+                    context.lineTo(cx + half, cy + half);
+                    context.moveTo(cx + half, cy - half);
+                    context.lineTo(cx - half, cy + half);
+                }
+            }
+        }
+
+        context.stroke();
+        return canvas;
+    }
+
+    public getColorString(val: number, min: number, max: number): string {
+        return this.strokeColor;
+    }
+
+    public getValIndex(val: number): number {
+        return 0;
+    }
+}

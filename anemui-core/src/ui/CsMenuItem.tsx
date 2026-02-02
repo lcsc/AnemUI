@@ -163,11 +163,12 @@ export class CsMenuItem extends BaseUiElement {
             popDiv += "</div>"
             let popOver = new Popover(popoverElem, {
               container: 'body',
-              placement: 'right',
+              placement: 'left',
               trigger: 'hover',
               title: popTitle,
               html: true,
-              content: popDiv
+              content: popDiv,
+              offset: [0, 10]
             })
           }
         }
