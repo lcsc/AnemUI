@@ -627,18 +627,20 @@ export class PaletteManager {
 }
 
 /**
- * DotPatternPainter - Painter especializado para capa de incertidumbre (Canvas 2D)
- * Dibuja un patrón de X DENTRO de cada tile de datos
+ * DotPatternPainter - Painter especializado para capa de incertidumbre con puntos
+ * Aplica un patrón de puntos centrados en cada píxel
  */
 export class DotPatternPainter implements Painter {
-    private lineColor: string = '#656565';
-    private lineOpacity: number = 0.7;
-    private tileSize: number = 6;
+    private dotRadius: number = 1; // Radio del punto en píxeles
+    private dotColor: string = '#656565'; // Color del punto
+    private dotOpacity: number = 0.8; // Opacidad del punto
+    private dotSpacing: number = 3; // Espaciado entre puntos (cada N píxeles)
 
-    constructor(radius: number = 1, color: string = '#656565', opacity: number = 0.7, tileSize: number = 6) {
-        this.lineColor = color;
-        this.lineOpacity = opacity;
-        this.tileSize = Math.max(1, tileSize);
+    constructor(radius: number = 1, color: string = '#656565', opacity: number = 0.8, spacing: number = 3) {
+        this.dotRadius = radius;
+        this.dotColor = color;
+        this.dotOpacity = opacity;
+        this.dotSpacing = spacing;
     }
 
     public async paintValues(
@@ -651,88 +653,108 @@ export class DotPatternPainter implements Painter {
         uncertaintyLayer: boolean,
         zoom?: number
     ): Promise<HTMLCanvasElement> {
-        console.log('🔴 DotPatternPainter.paintValues', { width, height, dataLen: floatArray.length });
-
+        
+        // Validar dimensiones
         width = Math.max(1, Math.floor(width));
         height = Math.max(1, Math.floor(height));
 
         if (!isFinite(width) || !isFinite(height)) {
+            console.error('Invalid canvas dimensions:', width, height);
             width = 1;
             height = 1;
         }
-
-        // Contar valores con incertidumbre
-        let uncertainCount = 0;
-        for (let i = 0; i < floatArray.length; i++) {
-            if (!isNaN(floatArray[i]) && isFinite(floatArray[i]) && floatArray[i] > 0) {
-                uncertainCount++;
-            }
-        }
-        console.log('🔴 Pixels con incertidumbre:', uncertainCount);
 
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');
         canvas.width = width;
         canvas.height = height;
 
-        // Patrón X - MISMO CÓDIGO QUE CategoryRangePainter
-        const spacing = 4;
-        context.strokeStyle = '#555555';
-        context.lineWidth = 1;
-        context.globalAlpha = 0.7;
+        // Desactivar el suavizado de imágenes para mantener píxeles nítidos
+        context.imageSmoothingEnabled = false;
 
-        // Crear máscara
-        const maskCanvas = document.createElement('canvas');
-        maskCanvas.width = width;
-        maskCanvas.height = height;
-        const maskCtx = maskCanvas.getContext('2d');
-        const maskData = maskCtx.createImageData(width, height);
-        const maskPixels = maskData.data;
+        // Parsear el color a valores RGB
+        const rgbaMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(this.dotColor);
+        let r = 101, g = 101, b = 101; // Valores por defecto para #656565
+        if (rgbaMatch) {
+            r = parseInt(rgbaMatch[1], 16);
+            g = parseInt(rgbaMatch[2], 16);
+            b = parseInt(rgbaMatch[3], 16);
+        }
 
-        let maskCount = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                let ncIndex = x + y * width;
-                let value = floatArray[ncIndex];
-                let canvasY = (height - 1) - y;
-                let pixelIndex = (canvasY * width + x) * 4;
+        // Convertir opacidad (0-1) a alpha (0-255)
+        const alpha = Math.round(this.dotOpacity * 255);
 
+        // Crear ImageData para manipular píxeles directamente
+        const imageData = context.createImageData(width, height);
+        const data = imageData.data;
+
+        // Analizar los valores para debug
+        let validValues = 0;
+        let zeroValues = 0;
+        let nanValues = 0;
+        let minVal = Infinity;
+        let maxVal = -Infinity;
+        let sampleValues: number[] = [];
+
+        for (let i = 0; i < Math.min(floatArray.length, 100); i++) {
+            const val = floatArray[i];
+            if (!isNaN(val) && isFinite(val)) {
+                validValues++;
+                if (val === 0) zeroValues++;
+                if (val < minVal) minVal = val;
+                if (val > maxVal) maxVal = val;
+                if (sampleValues.length < 10) sampleValues.push(val);
+            } else {
+                nanValues++;
+            }
+        }
+
+        // Pintar puntos cuadrados con espaciado solo donde hay incertidumbre
+        let dotsDrawn = 0;
+        let skippedDots = 0;
+        for (let y: number = 0; y < height; y++) {
+            for (let x: number = 0; x < width; x++) {
+                // Aplicar patrón de espaciado: solo pintar cada N píxeles
+                if ((x % this.dotSpacing !== 0) || (y % this.dotSpacing !== 0)) {
+                    continue;
+                }
+
+                let ncIndex: number = x + y * width;
+                let value: number = floatArray[ncIndex];
+
+                // Solo pintar si el valor indica incertidumbre (valor > 0)
                 if (!isNaN(value) && isFinite(value) && value > 0) {
-                    maskPixels[pixelIndex] = 255;
-                    maskPixels[pixelIndex + 1] = 255;
-                    maskPixels[pixelIndex + 2] = 255;
-                    maskPixels[pixelIndex + 3] = 255;
-                    maskCount++;
+                    // Invertir Y para mantener consistencia con otros painters
+                    let canvasY = (height - 1) - y;
+
+                    // Calcular índice en el array de ImageData
+                    let pixelIndex = (canvasY * width + x) * 4;
+
+                    // Establecer valores RGBA (píxel cuadrado)
+                    data[pixelIndex] = r;         // Red
+                    data[pixelIndex + 1] = g;     // Green
+                    data[pixelIndex + 2] = b;     // Blue
+                    data[pixelIndex + 3] = alpha; // Alpha
+
+                    dotsDrawn++;
+                } else if (!isNaN(value) && isFinite(value)) {
+                    skippedDots++;
                 }
             }
         }
-        console.log('🔴 Mask pixels:', maskCount);
-        maskCtx.putImageData(maskData, 0, 0);
 
-        // Dibujar patrón X
-        context.beginPath();
-        for (let i = -height; i < width + height; i += spacing) {
-            context.moveTo(i, 0);
-            context.lineTo(i + height, height);
-        }
-        for (let i = -height; i < width + height; i += spacing) {
-            context.moveTo(i + height, 0);
-            context.lineTo(i, height);
-        }
-        context.stroke();
-
-        // Aplicar máscara
-        context.globalCompositeOperation = 'destination-in';
-        context.drawImage(maskCanvas, 0, 0);
-
+        // Escribir los datos de píxeles al canvas
+        context.putImageData(imageData, 0, 0);
         return canvas;
     }
 
     public getColorString(val: number, min: number, max: number): string {
-        return this.lineColor;
+        // Para compatibilidad con la interfaz Painter
+        return this.dotColor;
     }
 
     public getValIndex(val: number): number {
+        // Para compatibilidad con la interfaz Painter
         return 0;
     }
 }
