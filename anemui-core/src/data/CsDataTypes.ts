@@ -121,7 +121,9 @@ export type CsGeoJsonData={
 
 export enum CsTimeSpan{
     Date,
+    Day,      // 365/366 días del año (climatología diaria)
     Month,
     Season,
-    Year
+    Year,
+    YearSeries
 }

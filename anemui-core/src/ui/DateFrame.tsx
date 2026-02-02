@@ -8,6 +8,7 @@ import { default as Slider } from 'bootstrap-slider';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
 import { CsDropdown, CsDropdownListener } from './CsDropdown';
+import { CsTimeSpan } from "../data/CsDataTypes";
 import { locale } from '../Env';
 
 
@@ -30,9 +31,12 @@ type yearHashMap = {
 
 export enum DateFrameMode{
     DateFrameDate,
+    DateFrameDay,
     DateFrameSeason,
     DateFrameMonth,
     DateFrameYear,
+    DateFrameYearSeries,
+    ClimFrameDay,
     ClimFrameSeason,
     ClimFrameMonth,
     ClimFrameYear,
@@ -218,6 +222,7 @@ export class DateSelectorFrame extends BaseFrame {
                 }
                 break;
             case DateFrameMode.DateFrameYear:
+            case DateFrameMode.DateFrameYearSeries:
                 if (_varChanged) {
                     this.yearIndex = {};
                     this.years = [];
@@ -229,7 +234,7 @@ export class DateSelectorFrame extends BaseFrame {
                 }
                 this.updateDatepicker();
                 break;
-            default: 
+            default:
                 break;
         }
     }
@@ -289,6 +294,7 @@ export class DateSelectorFrame extends BaseFrame {
                     }
                     break;
                 case DateFrameMode.DateFrameYear:
+                case DateFrameMode.DateFrameYearSeries:
                     if (this.years && this.years.length > 0) {
                         const currentYear = this.years[Math.min(safeIndex, this.years.length - 1)];
                         const startYear = this.years[0];
@@ -341,6 +347,7 @@ export class DateSelectorFrame extends BaseFrame {
                 if (this.seasonIndex[year][season] == undefined) season = (lastDate.getMonth() + 1) + ""
                 return this.seasonIndex[year][season];
             case DateFrameMode.DateFrameYear:
+            case DateFrameMode.DateFrameYearSeries:
                 if (this.yearIndex == undefined) return -1;
                 if (this.yearIndex[year] == undefined) return -1;
                 return this.yearIndex[year];
@@ -365,11 +372,11 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     private isYearValid(date:Date):boolean{
-        if (this.mode === DateFrameMode.DateFrameYear) {
+        if (this.mode === DateFrameMode.DateFrameYear || this.mode === DateFrameMode.DateFrameYearSeries) {
             const year = date.getFullYear().toString();
             return this.yearIndex && this.yearIndex[year] !== undefined;
         }
-        
+
         if (this.dateIndex == undefined) return false;
         let year: string;
         year = date.getFullYear() + ""
@@ -496,6 +503,7 @@ export class DateSelectorFrame extends BaseFrame {
                 this.pickerNotClicked = true;
                 break;
             case DateFrameMode.DateFrameYear:
+            case DateFrameMode.DateFrameYearSeries:
                 options = {
                     format: "yyyy",
                     autoclose: true,
@@ -717,68 +725,51 @@ export class DateSelectorFrame extends BaseFrame {
                 this.sliderFrame.hidden = false;
                 
                 switch (timeSpan) {
-                    case 3: 
+                    case CsTimeSpan.YearSeries:
+                        this.mode = DateFrameMode.DateFrameYearSeries;
+                        break;
+                    case CsTimeSpan.Year:
                         this.mode = DateFrameMode.DateFrameYear;
                         this.sliderFrame.hidden = true;
                         break;
-                    case 2:
+                    case CsTimeSpan.Season:
                         this.mode = DateFrameMode.DateFrameSeason;
                         break;
-                    case 1:
+                    case CsTimeSpan.Month:
                         this.mode = DateFrameMode.DateFrameMonth;
                         break;
-                    default:
+                    case CsTimeSpan.Day:
+                        this.mode = DateFrameMode.DateFrameDay;
+                        break;
+                    default: // CsTimeSpan.Date (0)
                         this.mode = DateFrameMode.DateFrameDate;
                         break;
                 }
-
-                /* switch (time) {
-                    case 1: 
-                        this.mode = DateFrameMode.DateFrameYear;
-                        this.sliderFrame.hidden = true;
-                        break;
-                    case 4:
-                        this.mode = DateFrameMode.DateFrameSeason;
-                        break;
-                    case 12:
-                        this.mode = DateFrameMode.DateFrameMonth;
-                        break;
-                    default:
-                        this.mode = DateFrameMode.DateFrameDate;
-                        break;
-                } */
             }
         } else {
             this.timeSeriesFrame.hidden = true;
 
             switch (timeSpan) {
-                case 3: 
+                case CsTimeSpan.Year:
                     this.mode = DateFrameMode.ClimFrameYear;
                     this.sliderFrame.hidden = true;
                     this.climatologyFrame.hidden = true;
                     break;
-                default:
-                    this.mode = timeSpan == 2? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
+                case CsTimeSpan.Day:
+                    this.mode = DateFrameMode.ClimFrameDay;
+                    let periodDay = this.getPeriods();
+                    this.climTitle.innerHTML = periodDay[this.parent.getState().selectedTimeIndex];
+                    this.sliderFrame.hidden = false;
+                    this.climatologyFrame.hidden = false;
+                    break;
+                default: // CsTimeSpan.Season (3) or CsTimeSpan.Month (2)
+                    this.mode = timeSpan == 3? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
                     let period = this.getPeriods();
                     this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
                     this.sliderFrame.hidden = false;
                     this.climatologyFrame.hidden = false;
                     break;
             }
-            /* switch (time) {
-                case 1: 
-                    this.mode = DateFrameMode.ClimFrameYear;
-                    this.sliderFrame.hidden = true;
-                    this.climatologyFrame.hidden = true;
-                    break;
-                default:
-                    this.mode = time==4? DateFrameMode.ClimFrameSeason:DateFrameMode.ClimFrameMonth;
-                    let period = this.getPeriods(time);
-                    this.climTitle.innerHTML = period[this.parent.getState().selectedTimeIndex];
-                    this.sliderFrame.hidden = false;
-                    this.climatologyFrame.hidden = false;
-                    break;
-            } */
         }
     }
 
@@ -797,7 +788,7 @@ export class DateSelectorFrame extends BaseFrame {
 
     public getPeriods(): string[] {
         const timeSpan = this.getTimeSpan()
-        if (timeSpan == 2) {
+        if (timeSpan == CsTimeSpan.Season) {
             // Para estaciones, devolver los valores del objeto season
             const season = this.parent.getTranslation('season');
             return Object.values(season);

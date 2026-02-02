@@ -16,6 +16,7 @@ export { enableRenderer } from './tiles/Support';
 export { CsGraph, type GraphType, ColorLegendConfig } from './ui/Graph';
 export { MenuBar, MenuBarListener, simpleDiv } from './ui/MenuBar';
 export { DateSelectorFrame, DateFrameListener, DateFrameMode } from "./ui/DateFrame";
+export { default as PaletteFrame } from './ui/PaletteFrame';
 
 export { fromLonLat } from 'ol/proj';
 
@@ -23,4 +24,4 @@ export { fromLonLat } from 'ol/proj';
 export type { CsvDownloadDone } from './data/ChunkDownloader';
 export { CsLatLong } from './CsMapTypes';
 export { downloadUrl } from './data/UrlDownloader';
-export { downloadXYArrayChunked, downloadXYChunk, downloadTCSVChunked, getPortionForPoint, downloadXYbyRegion, downloadCSVbyRegion, downloadCSVbySt, downloadTimebyRegion, calcPixelIndex, downloadTArrayChunked } from './data/ChunkDownloader';
+export { downloadXYArrayChunked, downloadXYChunk, downloadTCSVChunked, getPortionForPoint, downloadXYbyRegion, downloadCSVbyRegion, downloadCSVbySt, downloadTimebyRegion, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from './data/ChunkDownloader';

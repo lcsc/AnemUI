@@ -10,7 +10,7 @@ import { fromLonLat } from "ol/proj";
 import { CategoryRangePainter, PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, dataSource, computedDataTilesLayer, olProjection } from "../Env";
+import { ncSignif, dataSource, globalMap, olProjection } from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestedArray, openArray, TypedArray } from 'zarr';
@@ -278,12 +278,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         const validFloatArrays = floatArrays.filter(arr => arr !== undefined && arr !== null);
         
         if (validFloatArrays.length === 0) {
+            console.warn('No valid float arrays received');
             return;
         }
 
         const actualTimeIndex = getActualTimeIndex(status.selectedTimeIndex, status.varId, timesJs);
 
-       
         if (!Array.isArray(timesJs.varMin[status.varId])) {
             timesJs.varMin[status.varId] = [];
         }
@@ -294,13 +294,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         const filteredArrays: number[][] = [];
         
         for (let i = 0; i < validFloatArrays.length; i++) {
-<<<<<<< Updated upstream
             const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
-=======
-
-            const filteredArray = validFloatArrays[i];
-
->>>>>>> Stashed changes
             filteredArrays.push(filteredArray);
         }
 
@@ -368,6 +362,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             minArray = 0;
             maxArray = 100;
         }
+
 
         try {
             (timesJs.varMin[status.varId] as number[])[actualTimeIndex] = minArray;
@@ -456,7 +451,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     }
                     dataTilesLayer[i].setVisible(true);
                     dataTilesLayer[i].setOpacity(1.0);
-
                     dataTilesLayer[i].changed();
 
                     await new Promise(resolve => setTimeout(resolve, 50));
@@ -489,15 +483,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             if (window.CsViewerApp && (window.CsViewerApp as any).csMap) {
                 const map = (window.CsViewerApp as any).csMap.map;
                 if (map) {
-        
                     map.render();
-                    
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    
                     if (map.renderSync) {
                         map.renderSync();
                     }
-                                    } else {
+                } else {
                     console.warn('Map not available');
                 }
             }
@@ -534,7 +525,6 @@ let xyCache: {
 } = undefined
 
 async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-
     let app = window.CsViewerApp;
     const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
 
@@ -571,18 +561,29 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
         const uncompressedArray = inflate(chunk);
    
-      
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
         if (!Array.isArray(floatArray) || floatArray.length === 0) {
             throw new Error(`Invalid float array: length=${floatArray.length}, isArray=${Array.isArray(floatArray)}`);
         }
 
+        const validCount = floatArray.filter(v => !isNaN(v) && isFinite(v)).length;
+        console.log('🔍 downloadXYChunkNC OUTPUT:', {
+            varName,
+            portion,
+            actualTimeIndex,
+            total: floatArray.length,
+            valid: validCount,
+            validPercent: (validCount / floatArray.length * 100).toFixed(2) + '%',
+            samples: floatArray.slice(0, 20),
+            min: Math.min(...floatArray.filter(v => !isNaN(v) && isFinite(v))),
+            max: Math.max(...floatArray.filter(v => !isNaN(v) && isFinite(v)))
+        });
+
         xyCache = { t: actualTimeIndex, varName, portion, data: [...floatArray] };
 
         let ret = [...floatArray];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
-
 
         return ret;
 
@@ -694,7 +695,7 @@ export function extractValueChunkedFromT(latlng: CsLatLong, functionValue: TileA
 export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false): void {
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
-    if (portion != '') {
+    if (portion != '' || globalMap) { 
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
 
         if (status.computedLayer) {
@@ -815,6 +816,62 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
             doneCb([], varName, 'text/plain');
         }
     }, undefined, 'text');
+}
+
+export function downloadXYbyRegionMultiPortion(
+    time: string, 
+    timeIndex: number, 
+    folder: string, 
+    varName: string, 
+    portions: string[],
+    doneCb: (mergedData: any, filename: string, type: string) => void
+) {
+    
+    const promises = portions.map(portion => {
+        return new Promise((resolve, reject) => {
+            const csvPath = `./regData/${folder}/${varName}${portion}.csv`;
+            console.log("  📥 Downloading:", csvPath);
+            
+            downloadUrl(csvPath, (status: number, response) => {
+                if (status == 200) {
+                    try {
+                        const records = parse(response as Buffer, {
+                            columns: true,
+                            skip_empty_lines: true
+                        });
+                        resolve({ portion, data: records[timeIndex] || {} });
+                    } catch (e) {
+                        console.error(`Error parsing CSV ${varName}${portion}:`, e);
+                        reject(e);
+                    }
+                } else {
+                    console.error(`HTTP ${status} for ${csvPath}`);
+                    reject(new Error(`HTTP ${status}`));
+                }
+            }, undefined, 'text');
+        });
+    });
+
+    Promise.all(promises)
+        .then((results: any[]) => {
+            
+            const mergedData: any = {};
+            results.forEach(({ portion, data }) => {
+                Object.keys(data).forEach(key => {
+                    if (key !== 'times_ini' && key !== 'times_end' && key !== 'times_mean') {
+                        if (!mergedData[key] || isNaN(mergedData[key])) {
+                            mergedData[key] = data[key];
+                        }
+                    }
+                });
+            });
+            
+            doneCb(mergedData, varName, 'text/plain');
+        })
+        .catch(error => {
+            console.error("Error loading region portions:", error);
+            doneCb({}, varName, 'text/plain');
+        });
 }
 
 export function downloadHistoricalDataForPercentile(
