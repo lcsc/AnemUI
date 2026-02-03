@@ -531,7 +531,7 @@ export class MenuBar extends BaseFrame {
      * Maneja el cambio de estado del checkbox de incertidumbre
      * @param checked - Estado del checkbox (true = mostrar capa, false = ocultar capa)
      */
-    public toggleUncertaintyLayer(checked: boolean): void {
+    public toggleUncertaintyLayer(checked: boolean, skipLayerToggle: boolean = false): void {
         const PaletteManager = require('../PaletteManager').PaletteManager;
         const LayerManager = require('../LayerManager').LayerManager;
 
@@ -546,7 +546,13 @@ export class MenuBar extends BaseFrame {
             this.uncertaintyCheckbox.setChecked(checked);
         }
 
-        // Mostrar/ocultar la capa si existe
+        // Si skipLayerToggle es true, solo actualizar estado/checkbox, no tocar la capa
+        // (útil cuando la capa se va a reconstruir inmediatamente después)
+        if (skipLayerToggle) {
+            return;
+        }
+
+        // Mostrar/ocultar la capa si existe (con fade)
         const uncertaintyLayer = lmgr.getUncertaintyLayer();
         if (uncertaintyLayer && uncertaintyLayer.length > 0) {
             lmgr.showUncertaintyLayer(checked);
@@ -627,11 +633,9 @@ export class MenuBar extends BaseFrame {
                     addChild(this.displayUncertainty, this.uncertaintyCheckbox.render());
                     this.uncertaintyCheckbox.build(this.displayUncertainty);
 
-                    // Activar la visualización de la capa de incertidumbre con un pequeño delay
-                    // para dar tiempo a que la capa se cargue en el LayerManager
-                    setTimeout(() => {
-                        this.toggleUncertaintyLayer(true);
-                    }, 200);
+                    // Solo actualizar estado y checkbox, la capa se mostrará al construirse
+                    // (skipLayerToggle=true evita el parpadeo de fade-in sobre capa que se va a reconstruir)
+                    this.toggleUncertaintyLayer(true, true);
                 }
             }
 
@@ -643,12 +647,10 @@ export class MenuBar extends BaseFrame {
                     const isChecked = ptMgr.getUncertaintyLayerChecked();
                     this.uncertaintyCheckbox.setChecked(isChecked);
 
-                    // Si el checkbox está activo, reactivar la capa con delay
-                    // para dar tiempo a que se cargue la nueva capa de uncertainty
+                    // Solo actualizar estado, la capa ya se mostrará al construirse
+                    // (evita el parpadeo de intentar mostrar una capa que se está reconstruyendo)
                     if (isChecked) {
-                        setTimeout(() => {
-                            this.toggleUncertaintyLayer(true);
-                        }, 200);
+                        this.toggleUncertaintyLayer(true, true);
                     }
                 }
             }

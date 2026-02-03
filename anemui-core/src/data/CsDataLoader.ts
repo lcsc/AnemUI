@@ -264,6 +264,31 @@ export async function loadLatLogValue(latLng:CsLatLong,appStatus:CsViewerData,ti
 }
 
 export async function loadGeoJsonData( region: string): Promise<any> {
-    return fetch('./data/poly_' + region + '.json') 
+    return fetch('./data/poly_' + region + '.json')
     .then(response => response.json());
+}
+
+/**
+ * Tipo para los datos de popup procesados
+ */
+export interface PopDataItem {
+    id: string;
+    data: { [key: string]: string };
+}
+
+/**
+ * Carga los datos de popup desde popData.json
+ * @param url - URL del archivo popData.json (por defecto 'popData.json')
+ * @returns Promise con los datos crudos del JSON
+ */
+export async function loadPopData(url: string = 'popData.json'): Promise<{ id: string, data: { [key: string]: any } }[]> {
+    return new Promise((resolve, reject) => {
+        downloadUrl(url, (status, data) => {
+            if (status !== 200) {
+                reject(new Error(`Failed to load popData: status ${status}`));
+                return;
+            }
+            resolve(data as { id: string, data: { [key: string]: any } }[]);
+        }, undefined, "json");
+    });
 }

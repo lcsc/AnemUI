@@ -1,5 +1,5 @@
 // Public API surface for @lcsc/anemui-core
-export { loadTimesJs } from './data/CsDataLoader';
+export { loadTimesJs, loadPopData, PopDataItem } from './data/CsDataLoader';
 export * from './PaletteManager';
 export * from './ServiceApp';
 export { BaseApp } from './BaseApp';

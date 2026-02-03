@@ -467,18 +467,14 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let app = window.CsViewerApp;
 
-
-
     this.safelyRemoveDataLayers();
 
-    this.dataTilesLayer = [];
-
-    // Si la capa de incertidumbre está activa, reconstruirla con el nuevo varId
+    // Si la capa de incertidumbre está activa, limpiarla primero
     if (state.uncertaintyLayer) {
         this.safelyRemoveUncertaintyLayers();
-        // Esperar a que se construyan las capas de incertidumbre
-        await this.buildUncertaintyLayer(state, timesJs);
     }
+
+    this.dataTilesLayer = [];
 
     if (!timesJs.portions[state.varId]) {
         console.warn('No portions found for varId:', state.varId);
@@ -520,21 +516,23 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
     }
 
     if (this.dataTilesLayer.length > 0 && promises.length > 0) {
-        buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false)
-            .then(() => {
-                // FORZAR REFRESH COMPLETO
-                this.dataTilesLayer.forEach((layer, i) => {
-                    layer.setVisible(true);
-                    layer.changed();
-                });
+        // PRIMERO construir la capa de datos principal (esto guarda mainLayerData)
+        await buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
 
-                // Renderizar el mapa
-                this.map.render();
-                this.map.renderSync();
-            })
-            .catch(error => {
-                console.error('Error building images:', error);
-            });
+        // FORZAR REFRESH COMPLETO
+        this.dataTilesLayer.forEach((layer, i) => {
+            layer.setVisible(true);
+            layer.changed();
+        });
+
+        // Renderizar el mapa
+        this.map.render();
+        this.map.renderSync();
+
+        // DESPUÉS construir la capa de incertidumbre (usa mainLayerData como máscara)
+        if (state.uncertaintyLayer) {
+            await this.buildUncertaintyLayer(state, timesJs);
+        }
     }
 }
 
@@ -625,7 +623,15 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
 
       // Registrar las capas en LayerManager después de construirlas
       lmgr.setUncertaintyLayer(this.uncertaintyLayer);
-      lmgr.showUncertaintyLayer(false);
+
+      // Mostrar directamente sin fade (el fade es solo para toggle manual del usuario)
+      if (state.uncertaintyLayer) {
+        this.uncertaintyLayer.forEach(layer => {
+          layer.setOpacity(1);
+          layer.setVisible(true);
+          layer.changed();
+        });
+      }
     }
   }
 

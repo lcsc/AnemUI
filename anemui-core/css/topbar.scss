@@ -741,3 +741,26 @@ $elements: 15;
         transform: translate(360px, 0);
     }
 }
+
+/* ---------------------------------------------------
+    ESTILOS POPOVERS
+----------------------------------------------------- */
+
+.popover {
+    max-width: 40% !important;
+    background-color: $color_8;
+    border-color: $color_4;
+    font-size: 12px;
+    margin-left: 20px !important;
+    z-index: 1500;
+}
+
+.popover-header {
+    color: $title_color;
+    background-color: $title_bgcolor;
+}
+
+.popover-body {
+    color: $color_4 !important;
+}
+
