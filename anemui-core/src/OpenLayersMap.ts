@@ -106,6 +106,7 @@ export class OpenLayerMap implements CsMapController {
   protected terrainLayer: Layer;
   protected politicalLayer: Layer;
   protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
+  private lastUncertaintyZoomLevel: number = 0; // 0=normal, 1=4X, 2=9X
   protected currentFeature: Feature;
   protected glmgr: GeoLayerManager;
   protected featureLayer: CsOpenLayerGeoJsonLayer;
@@ -387,6 +388,20 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
     if (state.support != this.defaultRenderer) {
       this.parent.getParent().update();
     }
+
+    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad
+    if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+      const zoom = this.getZoom();
+      const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
+      if (currentLevel !== this.lastUncertaintyZoomLevel) {
+        this.lastUncertaintyZoomLevel = currentLevel;
+        // Diferir al siguiente ciclo para no interferir con el render actual
+        setTimeout(() => {
+          let timesJs = this.parent.getParent().getTimesJs();
+          this.buildUncertaintyLayer(state, timesJs);
+        }, 0);
+      }
+    }
   }
 
   public putMarker(pos: CsLatLong): void {
@@ -467,17 +482,22 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let app = window.CsViewerApp;
 
-    this.safelyRemoveDataLayers();
-
-    // Si la capa de incertidumbre está activa, limpiarla primero
-    if (state.uncertaintyLayer) {
-        this.safelyRemoveUncertaintyLayers();
-    }
+    // Guardar referencia a las capas antiguas (se eliminan después del fade-in de las nuevas)
+    const oldDataLayers = this.dataTilesLayer ? [...this.dataTilesLayer] : [];
+    const oldUncertaintyLayers = (state.uncertaintyLayer && this.uncertaintyLayer) ? [...this.uncertaintyLayer] : [];
 
     this.dataTilesLayer = [];
+    this.uncertaintyLayer = [];
 
     if (!timesJs.portions[state.varId]) {
         console.warn('No portions found for varId:', state.varId);
+        // Limpiar capas antiguas si no hay datos
+        this.dataTilesLayer = oldDataLayers;
+        this.safelyRemoveDataLayers();
+        if (oldUncertaintyLayers.length > 0) {
+            this.uncertaintyLayer = oldUncertaintyLayers;
+            this.safelyRemoveUncertaintyLayers();
+        }
         return;
     }
 
@@ -519,8 +539,37 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
         // PRIMERO construir la capa de datos principal (esto guarda mainLayerData)
         await buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
 
-        // FORZAR REFRESH COMPLETO
-        this.dataTilesLayer.forEach((layer, i) => {
+        // Eliminar capas antiguas AHORA que las nuevas están listas
+        oldDataLayers.forEach((layer) => {
+            if (layer && this.map) {
+                try {
+                    layer.setVisible(false);
+                    if (layer.setSource) layer.setSource(null);
+                    const layers = this.map.getLayers();
+                    if (layers && layers.getArray().includes(layer)) {
+                        layers.remove(layer);
+                    }
+                    if (typeof layer.dispose === 'function') layer.dispose();
+                } catch (e) { /* ignore */ }
+            }
+        });
+        if (oldUncertaintyLayers.length > 0) {
+            oldUncertaintyLayers.forEach((layer) => {
+                if (layer && this.map) {
+                    try {
+                        layer.setVisible(false);
+                        const layers = this.map.getLayers();
+                        if (layers && layers.getArray().includes(layer)) {
+                            layers.remove(layer);
+                        }
+                        if (typeof layer.dispose === 'function') layer.dispose();
+                    } catch (e) { /* ignore */ }
+                }
+            });
+        }
+
+        // Mostrar las capas de datos directamente
+        this.dataTilesLayer.forEach((layer) => {
             layer.setVisible(true);
             layer.changed();
         });

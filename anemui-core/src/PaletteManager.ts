@@ -796,8 +796,17 @@ export class CrossPatternPainter implements Painter {
             width = 1; height = 1;
         }
 
-        // Canvas escalado: cada pixel de datos = tileSize x tileSize
-        const ts = this.tileSize;
+        // Nivel de subdivisión según zoom:
+        //   zoom < 8:   1 X por pixel (subDiv=1, escala x1)
+        //   zoom 8-10:  4 X por pixel (subDiv=2, escala x2)
+        //   zoom >= 11: 8 X por pixel (subDiv=3, escala x3) -- 3x3 = 9 pero visualmente ~8
+        let subDiv = 1;
+        if (zoom !== undefined && zoom >= 11) {
+            subDiv = 3;
+        } else if (zoom !== undefined && zoom >= 8) {
+            subDiv = 2;
+        }
+        const ts = this.tileSize * subDiv;
         const canvasW = width * ts;
         const canvasH = height * ts;
 
@@ -813,25 +822,31 @@ export class CrossPatternPainter implements Painter {
 
         context.beginPath();
 
-        // Para cada pixel de datos con incertidumbre, dibujar X centrada en su tile
+        const subSize = ts / subDiv;  // Siempre = tileSize → cada X tiene el mismo tamaño
+        const subHalf = subSize / 2;
+
+        // Para cada pixel de datos con incertidumbre
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 let ncIndex = x + y * width;
                 let value = floatArray[ncIndex];
 
                 if (!isNaN(value) && isFinite(value) && value > 0) {
-                    // Centro del tile en el canvas
-                    let cx = x * ts + ts / 2;
-                    let cy = ((height - 1) - y) * ts + ts / 2;
+                    let px = x * ts;
+                    let py = ((height - 1) - y) * ts;
 
-                    // Tamaño de la X (igual al tile para que se toquen)
-                    let half = ts / 2;
+                    // Dibujar subDiv x subDiv X's dentro del tile
+                    for (let sy = 0; sy < subDiv; sy++) {
+                        for (let sx = 0; sx < subDiv; sx++) {
+                            let cx = px + sx * subSize + subHalf;
+                            let cy = py + sy * subSize + subHalf;
 
-                    // Dibujar X
-                    context.moveTo(cx - half, cy - half);
-                    context.lineTo(cx + half, cy + half);
-                    context.moveTo(cx + half, cy - half);
-                    context.lineTo(cx - half, cy + half);
+                            context.moveTo(cx - subHalf, cy - subHalf);
+                            context.lineTo(cx + subHalf, cy + subHalf);
+                            context.moveTo(cx + subHalf, cy - subHalf);
+                            context.lineTo(cx - subHalf, cy + subHalf);
+                        }
+                    }
                 }
             }
         }
