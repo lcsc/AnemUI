@@ -798,8 +798,8 @@ export class CrossPatternPainter implements Painter {
 
         // Nivel de subdivisión según zoom:
         //   zoom < 8:   1 X por pixel (subDiv=1, escala x1)
-        //   zoom 8-10:  4 X por pixel (subDiv=2, escala x2)
-        //   zoom >= 11: 8 X por pixel (subDiv=3, escala x3) -- 3x3 = 9 pero visualmente ~8
+        //   zoom 8-10:  4 X por pixel (subDiv=2, escala x2) -- 2x2
+        //   zoom >= 11: 9 X por pixel (subDiv=3, escala x3) -- 3x3
         let subDiv = 1;
         if (zoom !== undefined && zoom >= 11) {
             subDiv = 3;

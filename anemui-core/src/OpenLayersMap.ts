@@ -484,7 +484,7 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
 
     // Guardar referencia a las capas antiguas (se eliminan después del fade-in de las nuevas)
     const oldDataLayers = this.dataTilesLayer ? [...this.dataTilesLayer] : [];
-    const oldUncertaintyLayers = (state.uncertaintyLayer && this.uncertaintyLayer) ? [...this.uncertaintyLayer] : [];
+    const oldUncertaintyLayers = this.uncertaintyLayer ? [...this.uncertaintyLayer] : [];
 
     this.dataTilesLayer = [];
     this.uncertaintyLayer = [];
