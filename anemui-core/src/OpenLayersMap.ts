@@ -115,63 +115,63 @@ export class OpenLayerMap implements CsMapController {
   protected hoverInteraction: Select;
   protected selectableLayers: CsOpenLayerGeoJsonLayer[]
 
-protected setExtents(timesJs: CsTimesJsData, varId: string): void {
+  protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     timesJs.portions[varId].forEach((portion: string, index, array) => {
-        let selector = varId + portion;
-        let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
+      let selector = varId + portion;
+      let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
 
-        const dataExtent = [
-            timesJs.lonMin[selector] - pxSize / 2,
-            timesJs.latMin[selector] - pxSize / 2,
-            timesJs.lonMax[selector] + pxSize / 2,
-            timesJs.latMax[selector] + pxSize / 2
-        ];
+      const dataExtent = [
+        timesJs.lonMin[selector] - pxSize / 2,
+        timesJs.latMin[selector] - pxSize / 2,
+        timesJs.lonMax[selector] + pxSize / 2,
+        timesJs.latMax[selector] + pxSize / 2
+      ];
 
-        // Si el mapa está en una proyección diferente, transformar
-        if (timesJs.projection !== olProjection) {
-            const transformedExtent = transformExtent(
-                dataExtent,
-                timesJs.projection,
-                olProjection
-            );
-            this.ncExtents[portion] = transformedExtent;
-        } else {
-            this.ncExtents[portion] = dataExtent;
-        }
+      // Si el mapa está en una proyección diferente, transformar
+      if (timesJs.projection !== olProjection) {
+        const transformedExtent = transformExtent(
+          dataExtent,
+          timesJs.projection,
+          olProjection
+        );
+        this.ncExtents[portion] = transformedExtent;
+      } else {
+        this.ncExtents[portion] = dataExtent;
+      }
     });
-}
+  }
 
-/**
- * Ajusta la vista inicial del mapa para mostrar todo el territorio español
- * (Península, Baleares y Canarias) adaptándose al tamaño de la pantalla
- */
-protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
+  /**
+   * Ajusta la vista inicial del mapa para mostrar todo el territorio español
+   * (Península, Baleares y Canarias) adaptándose al tamaño de la pantalla
+   */
+  protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     // Calcular el extent combinado de todas las porciones
     let combinedExtent: [number, number, number, number] | null = null;
 
     timesJs.portions[varId].forEach((portion: string) => {
-        const extent = this.ncExtents[portion];
-        if (extent) {
-            if (!combinedExtent) {
-                combinedExtent = [...extent] as [number, number, number, number];
-            } else {
-                // Expandir el extent para incluir esta porción
-                combinedExtent[0] = Math.min(combinedExtent[0], extent[0]); // minX
-                combinedExtent[1] = Math.min(combinedExtent[1], extent[1]); // minY
-                combinedExtent[2] = Math.max(combinedExtent[2], extent[2]); // maxX
-                combinedExtent[3] = Math.max(combinedExtent[3], extent[3]); // maxY
-            }
+      const extent = this.ncExtents[portion];
+      if (extent) {
+        if (!combinedExtent) {
+          combinedExtent = [...extent] as [number, number, number, number];
+        } else {
+          // Expandir el extent para incluir esta porción
+          combinedExtent[0] = Math.min(combinedExtent[0], extent[0]); // minX
+          combinedExtent[1] = Math.min(combinedExtent[1], extent[1]); // minY
+          combinedExtent[2] = Math.max(combinedExtent[2], extent[2]); // maxX
+          combinedExtent[3] = Math.max(combinedExtent[3], extent[3]); // maxY
         }
+      }
     });
 
     // Ajustar la vista para mostrar el extent combinado
     if (combinedExtent && this.map) {
-        this.map.getView().fit(combinedExtent, {
-            padding: [50, 50, 50, 50], // Padding en píxeles alrededor del extent
-            duration: 0 // Sin animación en la carga inicial
-        });
+      this.map.getView().fit(combinedExtent, {
+        padding: [50, 50, 50, 50], // Padding en píxeles alrededor del extent
+        duration: 0 // Sin animación en la carga inicial
+      });
     }
-}
+  }
 
 
   init(_parent: CsMap): void {
@@ -303,7 +303,7 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     if (this.mouseMoveTo) { clearTimeout(this.mouseMoveTo) }
     this.mouseMoveTo = setTimeout(() => {
       let mapEvent: CsMapEvent = this.toCsMapEvent(event)
-       this.parent.getParent().getRightBar().enableLatLng(mapEvent.latLong)
+      this.parent.getParent().getRightBar().enableLatLng(mapEvent.latLong)
       // this.onMouseMoveEnd(this.toCsMapEvent(event));
       this.onMouseMoveEnd(mapEvent);
     }, 100)
@@ -325,11 +325,11 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     return ret;
   }
 
-public onMouseMoveEnd(event: CsMapEvent): void {
+  public onMouseMoveEnd(event: CsMapEvent): void {
     let self = this;
     const state = this.parent.getParent().getState();
     const timesJs = this.parent.getParent().getTimesJs();
-    
+
     // ELIMINAR toda la lógica de shouldShowPercentileClock de aquí
     // Solo mantener el flujo normal de hover
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
@@ -345,26 +345,22 @@ public onMouseMoveEnd(event: CsMapEvent): void {
 
           let selectableFeatureIDS: string[] = []
 
-                if (features.length > 0) {
-                    const selectableFeatures = self.featureLayer.getFeatures();
-                    selectableFeatures.forEach(feature => {
-                        selectableFeatureIDS.push(feature.properties['id'])
-                    })
-                    for (var i = 0; i < features.length; ++i) {
-                        if (selectableFeatureIDS.includes(features[i].getProperties()['id']))
-                            self.featureLayer.showFeatureValue(self.featureLayer.indexData, features[i], event.original.pixel, event.latLong)
-                    }
-                }
+          if (features.length > 0) {
+            const selectableFeatures = self.featureLayer.getFeatures();
+            selectableFeatures.forEach(feature => {
+              selectableFeatureIDS.push(feature.properties['id'])
+            })
+            for (var i = 0; i < features.length; ++i) {
+              if (selectableFeatureIDS.includes(features[i].getProperties()['id']))
+                self.featureLayer.showFeatureValue(self.featureLayer.indexData, features[i], event.original.pixel, event.latLong)
             }
-        })
-        .catch(reason => {
-            console.log("error: " + reason)
-        })
-}
-
-private shouldShowPercentileClock(state: CsViewerData): boolean {
-    return state.climatology && state.escala === 'Anual';
-}
+          }
+        }
+      })
+      .catch(reason => {
+        console.log("error: " + reason)
+      })
+  }
 
   public onDragStart(event: MapEvent) {
     let tileQueue = event.frameState["tileQueue"] as TileQueue
@@ -388,7 +384,7 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
     if (state.support != this.defaultRenderer) {
       this.parent.getParent().update();
     }
-
+       
     // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad
     if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
       const zoom = this.getZoom();
@@ -620,7 +616,7 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
   }
 
   // Fix for uncertainty layer with proper initialization
-  public async buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
+    public async buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
@@ -747,78 +743,184 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
   }
 
   // Enhanced updateRender with better error handling
-  async updateRender(support: string): Promise<void> {
+async updateRender(support: string): Promise<void> {
     try {
-      let state = this.parent.getParent().getState();
+        let state = this.parent.getParent().getState();
 
-      // Safely hide existing layers
-      if (this.featureLayer && typeof this.featureLayer.hide === 'function') {
-        this.featureLayer.hide();
-        this.featureLayer = null;
-      }
+        // Safely hide existing layers
+        if (this.featureLayer && typeof this.featureLayer.hide === 'function') {
+            this.featureLayer.hide();
+            this.featureLayer = null;
+        }
 
-      if (this.contourLayer && typeof this.contourLayer.hide === 'function') {
-        this.contourLayer.hide();
-        this.contourLayer = null;
-      }
+        if (this.contourLayer && typeof this.contourLayer.hide === 'function') {
+            this.contourLayer.hide();
+            this.contourLayer = null;
+        }
 
-      switch (support) {
-        case this.renderers[1]:
-          break;
+        switch (support) {
+            case this.renderers[1]:
+                break;
 
-        case this.renderers[0]:
-          await this.setupStationRenderer(state, support);
-          break;
+            case this.renderers[0]:
+                await this.setupStationRenderer(state, support);
+                break;
 
-        case this.renderers[2]:
-        case this.renderers[3]:
-        case this.renderers[4]:
-        case this.renderers[5]:
-          await this.setupRegionRenderer(state, support);
-          break;
+            case this.renderers[2]:
+            case this.renderers[3]:
+            case this.renderers[4]:
+            case this.renderers[5]:
+                await this.setupRegionRenderer(state, support);
+                break;
 
-        default:
-          console.error("Render " + support + " not supported");
-          return;
-      }
+            default:
+                console.error("Render " + support + " not supported");
+                return;
+        }
 
-      this.lastSupport = support;
-      await this.finalizeRenderUpdate();
+        this.lastSupport = support;
+        await this.finalizeRenderUpdate();
 
     } catch (error) {
-      console.error('Error in updateRender:', error);
+        console.error('Error in updateRender:', error);
     }
-  }
+}
 
   private async setupStationRenderer(state: CsViewerData, support: string): Promise<void> {
     this.safelyRemoveDataLayers();
 
+    const remainingLayers = this.map.getLayers().getArray().filter(layer => {
+      return this.dataTilesLayer.includes(layer as any);
+    });
+
+    if (remainingLayers.length > 0) {
+      remainingLayers.forEach(layer => {
+        this.map.getLayers().remove(layer);
+      });
+    }
+
+    if (this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+      this.uncertaintyLayer.forEach((layer) => {
+        if (layer) {
+          layer.setVisible(false);
+          const layers = this.map.getLayers();
+          if (layers && layers.getArray().includes(layer)) {
+            layers.remove(layer);
+          }
+        }
+      });
+    }
+
     const folders = this.parent.getParent().getFolders(support);
+
     if (!folders || folders.length === 0) {
+      console.error(' No folders found');
       throw new Error(`No folders found for support: ${support}`);
     }
 
-    this.featureLayer = this.glmgr.getGeoLayer(folders[0]);
+    const folder = folders[0];
+
+    this.featureLayer = this.glmgr.getGeoLayer(folder);
+
     if (!this.featureLayer) {
-      throw new Error(`Failed to get geo layer for ${folders[0]}`);
+      console.error('Failed to get geo layer');
+      throw new Error(`Failed to get geo layer for ${folder}`);
     }
 
     this.featureLayer.indexData = null;
 
     return new Promise((resolve, reject) => {
-      let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
-        try {
-          if (this.featureLayer && typeof this.featureLayer.show === 'function') {
-            this.featureLayer.indexData = data;
-            this.featureLayer.show(this.renderers.indexOf(support));
-          }
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      };
+      const combinedData: any = {};
+      let filesLoaded = 0;
 
-      downloadXYbyRegion(state.times[state.selectedTimeIndex], state.selectedTimeIndex, folders[0], state.varId, openSt);
+      const timesJs = this.parent.getParent().getTimesJs();
+      const portions = timesJs.portions[state.varId] || ['_pen', '_can'];
+      const totalFiles = portions.length;
+
+      portions.forEach((portion: string) => {
+        const portionVarId = state.varId + portion;
+
+        const csvCallback: CsvDownloadDone = (data: any, filename: string, type: string) => {
+
+          if (data && Object.keys(data).length > 0) {
+            // Combinar los datos
+            Object.keys(data).forEach(key => {
+              combinedData[key] = data[key];
+            });
+          }
+
+          filesLoaded++;
+
+          // Cuando se hayan cargado todos los archivos
+          if (filesLoaded === totalFiles) {
+
+            if (Object.keys(combinedData).length === 0) {
+              console.error('No data received from any file');
+              reject('No data received');
+              return;
+            }
+
+            try {
+              if (this.featureLayer && typeof this.featureLayer.show === 'function') {
+                // Asignar datos combinados
+                this.featureLayer.indexData = combinedData;
+
+                // Obtener índice del renderer
+                const rendererIndex = this.renderers.indexOf(support);
+
+                if (rendererIndex === -1) {
+                  reject('Renderer not found');
+                  return;
+                }
+
+                // Mostrar la capa de estaciones
+                this.featureLayer.show(rendererIndex);
+
+                if (this.dataTilesLayer && this.dataTilesLayer.length > 0) {
+                  const mapLayers = this.map.getLayers();
+
+                  this.dataTilesLayer.forEach((layer, i) => {
+                    if (layer) {
+                      layer.setVisible(false);
+                      layer.setOpacity(0);
+
+                      // Remover del mapa
+                      if (mapLayers && mapLayers.getArray().includes(layer)) {
+                        try {
+                          mapLayers.remove(layer);
+                        } catch (e) {
+                          console.warn('Could not remove layer', i);
+                        }
+                      }
+                    }
+                  });
+                }
+
+                // Forzar zIndex alto para la capa de estaciones
+                if (this.featureLayer.geoLayer) {
+                  this.featureLayer.geoLayer.setZIndex(9999);
+                  this.featureLayer.geoLayer.setVisible(true);
+                }
+
+                this.map.render();
+                setTimeout(() => {
+                  this.map.render();
+                }, 100);
+                resolve();
+              } else {
+                console.error('featureLayer.show not available');
+                reject('featureLayer.show not available');
+              }
+            } catch (error) {
+              console.error('[setupStationRenderer] ✗ ERROR in setup:', error);
+              reject(error);
+            }
+          }
+        };
+
+        const time = state.times[state.selectedTimeIndex];
+        downloadXYbyRegion(time, state.selectedTimeIndex, folder, portionVarId, csvCallback);
+      });
     });
   }
 
@@ -893,52 +995,52 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
     }
   }
 
-async initializeFeatureLayer(time: string, timeIndex: number, folder: string, varName: string): Promise<void> {
+  async initializeFeatureLayer(time: string, timeIndex: number, folder: string, varName: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
-            if (this.featureLayer) {
-                this.featureLayer.indexData = data;
-                if (this.featureLayer.show) {
-                    this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
-                }
-                resolve();
-            } else {
-                console.error("featureLayer is undefined in initializeFeatureLayer callback");
-                reject("featureLayer is undefined");
-            }
-        };
-
-        // Detectar si hay múltiples porciones
-        const timesJs = this.parent.getParent().getTimesJs();
-        const portions = timesJs.portions[varName] || [];
-        
-        
-        // Si hay múltiples porciones, usar la función que combina
-        if (portions.length > 1) {
-            
-            // Importar la función desde ChunkDownloader
-            const { downloadXYbyRegionMultiPortion } = require('./data/ChunkDownloader');
-            
-            downloadXYbyRegionMultiPortion(
-                time,
-                timeIndex,
-                folder,
-                varName,
-                portions,
-                openSt
-            );
+      let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
+        if (this.featureLayer) {
+          this.featureLayer.indexData = data;
+          if (this.featureLayer.show) {
+            this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+          }
+          resolve();
         } else {
-            
-            if (computedDataTilesLayer) {
-                // Build calculated Layer
-                this.computeFeatureLayerData(time, folder, varName, openSt);
-            } else {
-                // Download and build new data layers
-                downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
-            }
+          console.error("featureLayer is undefined in initializeFeatureLayer callback");
+          reject("featureLayer is undefined");
         }
+      };
+
+      // Detectar si hay múltiples porciones
+      const timesJs = this.parent.getParent().getTimesJs();
+      const portions = timesJs.portions[varName] || [];
+
+
+      // Si hay múltiples porciones, usar la función que combina
+      if (portions.length > 1) {
+
+        // Importar la función desde ChunkDownloader
+        const { downloadXYbyRegionMultiPortion } = require('./data/ChunkDownloader');
+
+        downloadXYbyRegionMultiPortion(
+          time,
+          timeIndex,
+          folder,
+          varName,
+          portions,
+          openSt
+        );
+      } else {
+
+        if (computedDataTilesLayer) {
+          // Build calculated Layer
+          this.computeFeatureLayerData(time, folder, varName, openSt);
+        } else {
+          // Download and build new data layers
+          downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
+        }
+      }
     });
-}
+  }
 
   private setupInteractions(): void {
     if (this.selectInteraction) {
@@ -1063,7 +1165,7 @@ export class GeoLayerManager {
 export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   private map: Map;
   private csMap: OpenLayerMap;
-  private geoLayer: Layer;
+  public geoLayer: Layer;
   private onClick: CsGeoJsonClick;
 
   private popupOverlay: Overlay
@@ -1270,15 +1372,15 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     return new Style({ image: imgStation, })
   }
 
-public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
+  public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
     let min: number = Number.MAX_VALUE;
     let max: number = Number.MIN_VALUE;
 
     Object.values(this.indexData).forEach((value) => {
-        if (!isNaN(value)) {
-            min = Math.min(min, value);
-            max = Math.max(max, value);
-        }
+      if (!isNaN(value)) {
+        min = Math.min(min, value);
+        max = Math.max(max, value);
+      }
     });
 
     let color: string = '#fff';
@@ -1288,55 +1390,55 @@ public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJs
     let ptr = PaletteManager.getInstance().getPainter();
 
     if (id === null || id === undefined) {
-        const isHovered = feature.get('hover');
-        if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
-        else this.map.getTargetElement().style.cursor = '';
-        
-        return new Style({
-            fill: new Fill({ color: '#ffffff00' }), // Transparente
-            stroke: new Stroke({
-                color: '#999',
-            }),
-        });
+      const isHovered = feature.get('hover');
+      if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
+      else this.map.getTargetElement().style.cursor = '';
+
+      return new Style({
+        fill: new Fill({ color: '#ffffff00' }), // Transparente
+        stroke: new Stroke({
+          color: '#999',
+        }),
+      });
     }
 
     let dataValue = undefined;
-    
+
     if (this.indexData[id] !== undefined) {
-        dataValue = this.indexData[id];
+      dataValue = this.indexData[id];
     }
     else if (id_ant && this.indexData[id_ant] !== undefined) {
-        dataValue = this.indexData[id_ant];
+      dataValue = this.indexData[id_ant];
     }
     else if (id.length === 1 && this.indexData['0' + id] !== undefined) {
-        dataValue = this.indexData['0' + id];
+      dataValue = this.indexData['0' + id];
     }
     else if (id.startsWith('0') && this.indexData[id.substring(1)] !== undefined) {
-        dataValue = this.indexData[id.substring(1)];
+      dataValue = this.indexData[id.substring(1)];
     }
     else if (id_ant && id_ant.length >= 2) {
-        const shortCode = id_ant.substring(0, 2);
-        if (this.indexData[shortCode] !== undefined) {
-            dataValue = this.indexData[shortCode];
-        }
+      const shortCode = id_ant.substring(0, 2);
+      if (this.indexData[shortCode] !== undefined) {
+        dataValue = this.indexData[shortCode];
+      }
     }
 
     if (dataValue !== undefined && !isNaN(dataValue)) {
-        color = ptr.getColorString(dataValue, min, max);
+      color = ptr.getColorString(dataValue, min, max);
     }
 
     const isHovered = feature.get('hover');
 
     if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
     else this.map.getTargetElement().style.cursor = '';
-    
+
     return new Style({
-        fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
-        stroke: new Stroke({
-            color: '#999',
-        }),
+      fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+      stroke: new Stroke({
+        color: '#999',
+      }),
     });
-}
+  }
 
   private intersectsExtent(featureExtent: number[], viewExtent: number[]): boolean {
     return !(
@@ -1347,85 +1449,85 @@ public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJs
     );
   }
 
-public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
+  public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
-    
-    if (feature) {
-        if (state.support == this.csMap.renderers[0]) {
-            feature.setStyle(this.setStationStyle(state, feature, timesJs));
-        } else {
-            feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
-        }
-        
-        this.csMap.popupContent.style.left = pixel[0] + 'px';
-        this.csMap.popupContent.style.top = pixel[1] + 'px';
-        this.csMap.popup.hidden = false;
-        
-        if (feature !== this.currentFeature) {
-            let id = feature.getProperties()['id'];
-            let id_ant = feature.getProperties()['id_ant'];
-            let name = feature.getProperties()['name'];
 
-            let value: any = undefined;
-            
-            if (data[id] !== undefined) {
-                value = data[id];
-            }
-            else if (id_ant && data[id_ant] !== undefined) {
-                value = data[id_ant];
-            }
-            else if (id && id.length === 1 && data['0' + id] !== undefined) {
-                value = data['0' + id];
-            }
-            else if (id && id.startsWith('0') && data[id.substring(1)] !== undefined) {
-                value = data[id.substring(1)];
-            }
-            else if (id_ant && id_ant.length >= 2) {
-                const shortCode = id_ant.substring(0, 2);
-                if (data[shortCode] !== undefined) {
-                    value = data[shortCode];
-                }
-            }
-            
-            if (value === undefined) {
-                value = 'N/A';
-            } else if (isNaN(parseFloat(value))) {
-                value = 'N/A';
-            } else {
-                value = parseFloat(value);
-            }
-            
-            this.csMap.popupContent.style.visibility = 'visible';
-            this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(name, id, value);
-            this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]));
+    if (feature) {
+      if (state.support == this.csMap.renderers[0]) {
+        feature.setStyle(this.setStationStyle(state, feature, timesJs));
+      } else {
+        feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
+      }
+
+      this.csMap.popupContent.style.left = pixel[0] + 'px';
+      this.csMap.popupContent.style.top = pixel[1] + 'px';
+      this.csMap.popup.hidden = false;
+
+      if (feature !== this.currentFeature) {
+        let id = feature.getProperties()['id'];
+        let id_ant = feature.getProperties()['id_ant'];
+        let name = feature.getProperties()['name'];
+
+        let value: any = undefined;
+
+        if (data[id] !== undefined) {
+          value = data[id];
         }
-    } else {
-        this.csMap.popupContent.style.visibility = 'hidden';
-        this.csMap.popup.hidden = true;
-    }
-    
-    if (this.currentFeature instanceof Feature) {
-        if (state.support == this.csMap.renderers[0]) {
-            this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs));
+        else if (id_ant && data[id_ant] !== undefined) {
+          value = data[id_ant];
+        }
+        else if (id && id.length === 1 && data['0' + id] !== undefined) {
+          value = data['0' + id];
+        }
+        else if (id && id.startsWith('0') && data[id.substring(1)] !== undefined) {
+          value = data[id.substring(1)];
+        }
+        else if (id_ant && id_ant.length >= 2) {
+          const shortCode = id_ant.substring(0, 2);
+          if (data[shortCode] !== undefined) {
+            value = data[shortCode];
+          }
+        }
+
+        if (value === undefined) {
+          value = 'N/A';
+        } else if (isNaN(parseFloat(value))) {
+          value = 'N/A';
         } else {
-            this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+          value = parseFloat(value);
         }
+
+        this.csMap.popupContent.style.visibility = 'visible';
+        this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(name, id, value);
+        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]));
+      }
+    } else {
+      this.csMap.popupContent.style.visibility = 'hidden';
+      this.csMap.popup.hidden = true;
+    }
+
+    if (this.currentFeature instanceof Feature) {
+      if (state.support == this.csMap.renderers[0]) {
+        this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs));
+      } else {
+        this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+      }
     }
     this.currentFeature = feature;
-}
+  }
 
-public formatFeaturePopupValue(featureName: string, featureId: any, value: number | string): string {
+  public formatFeaturePopupValue(featureName: string, featureId: any, value: number | string): string {
     if (value === 'N/A' || value === undefined || value === null) {
-        return `${featureName}: Sin datos`;
+      return `${featureName}: Sin datos`;
     }
-    
+
     if (typeof value === 'number') {
-        return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
+      return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
     }
-    
+
     return `${featureName}: ${value}`;
-}
+  }
 
 
   public highLightColor(hex: string, lum: number): string {
