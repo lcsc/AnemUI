@@ -567,7 +567,11 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
             throw new Error(`Invalid float array: length=${floatArray.length}, isArray=${Array.isArray(floatArray)}`);
         }
 
-        const validCount = floatArray.filter(v => !isNaN(v) && isFinite(v)).length;
+        const validValues = floatArray.filter(v => !isNaN(v) && isFinite(v));
+        const validCount = validValues.length;
+        // Usar reduce en vez de spread para evitar stack overflow en arrays grandes
+        const minVal = validValues.reduce((a, b) => Math.min(a, b), Infinity);
+        const maxVal = validValues.reduce((a, b) => Math.max(a, b), -Infinity);
         console.log('🔍 downloadXYChunkNC OUTPUT:', {
             varName,
             portion,
@@ -576,8 +580,8 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
             valid: validCount,
             validPercent: (validCount / floatArray.length * 100).toFixed(2) + '%',
             samples: floatArray.slice(0, 20),
-            min: Math.min(...floatArray.filter(v => !isNaN(v) && isFinite(v))),
-            max: Math.max(...floatArray.filter(v => !isNaN(v) && isFinite(v)))
+            min: minVal,
+            max: maxVal
         });
 
         xyCache = { t: actualTimeIndex, varName, portion, data: [...floatArray] };
