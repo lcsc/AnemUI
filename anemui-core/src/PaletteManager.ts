@@ -761,12 +761,17 @@ export class DotPatternPainter implements Painter {
 
 /**
  * CrossPatternPainter - Painter especializado para capa de incertidumbre con patrón de X
- * Dibuja UNA X por cada pixel de datos con incertidumbre
+ * Dibuja X con DENSIDAD VISUAL UNIFORME independientemente de la resolución de los datos.
+ * Muestrea los datos para mantener un número constante de X visibles en el mapa.
  */
 export class CrossPatternPainter implements Painter {
     private strokeColor: string = '#555555';
     private strokeOpacity: number = 0.7;
-    private tileSize: number = 8; // Escala del canvas (cada pixel de datos = tileSize x tileSize en canvas)
+    private baseTileSize: number = 8;
+    // Resolución de referencia: número de celdas visuales (X marks) que queremos en el mapa
+    // ~120x80 da una densidad visual similar a la de predicción estacional
+    private targetCellsX: number = 120;
+    private targetCellsY: number = 80;
 
     constructor(
         color: string = '#555555',
@@ -775,7 +780,7 @@ export class CrossPatternPainter implements Painter {
     ) {
         this.strokeColor = color;
         this.strokeOpacity = opacity;
-        this.tileSize = Math.max(4, tileSize);
+        this.baseTileSize = Math.max(4, tileSize);
     }
 
     public async paintValues(
@@ -796,19 +801,31 @@ export class CrossPatternPainter implements Painter {
             width = 1; height = 1;
         }
 
-        // Nivel de subdivisión según zoom:
-        //   zoom < 8:   1 X por pixel (subDiv=1, escala x1)
-        //   zoom 8-10:  4 X por pixel (subDiv=2, escala x2) -- 2x2
-        //   zoom >= 11: 9 X por pixel (subDiv=3, escala x3) -- 3x3
+        // Calcular factor de muestreo: cuántos datos se agrupan en una celda visual
+        // Si datos tienen más resolución que el target, agrupamos varios píxeles
+        const sampleX = Math.max(1, Math.round(width / this.targetCellsX));
+        const sampleY = Math.max(1, Math.round(height / this.targetCellsY));
+
+        // Número efectivo de celdas visuales
+        const cellsX = Math.ceil(width / sampleX);
+        const cellsY = Math.ceil(height / sampleY);
+
+        // Tamaño del tile en el canvas (fijo)
+        const ts = this.baseTileSize;
+
+        // Nivel de subdivisión según zoom
         let subDiv = 1;
         if (zoom !== undefined && zoom >= 11) {
             subDiv = 3;
         } else if (zoom !== undefined && zoom >= 8) {
             subDiv = 2;
         }
-        const ts = this.tileSize * subDiv;
-        const canvasW = width * ts;
-        const canvasH = height * ts;
+
+        const effectiveTs = ts * subDiv;
+        const canvasW = cellsX * effectiveTs;
+        const canvasH = cellsY * effectiveTs;
+
+        console.log(`[CrossPatternPainter] data: ${width}x${height}, sample: ${sampleX}x${sampleY}, cells: ${cellsX}x${cellsY}, canvas: ${canvasW}x${canvasH}`);
 
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');
@@ -822,29 +839,42 @@ export class CrossPatternPainter implements Painter {
 
         context.beginPath();
 
-        const subSize = ts / subDiv;  // Siempre = tileSize → cada X tiene el mismo tamaño
+        const subSize = effectiveTs / subDiv;
         const subHalf = subSize / 2;
 
-        // Para cada pixel de datos con incertidumbre
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                let ncIndex = x + y * width;
-                let value = floatArray[ncIndex];
+        // Para cada celda visual (muestreada)
+        for (let cy = 0; cy < cellsY; cy++) {
+            for (let cx = 0; cx < cellsX; cx++) {
+                // Verificar si algún dato en esta celda tiene incertidumbre
+                let hasUncertainty = false;
+                for (let dy = 0; dy < sampleY && !hasUncertainty; dy++) {
+                    for (let dx = 0; dx < sampleX && !hasUncertainty; dx++) {
+                        const dataX = cx * sampleX + dx;
+                        const dataY = cy * sampleY + dy;
+                        if (dataX < width && dataY < height) {
+                            const ncIndex = dataX + dataY * width;
+                            const value = floatArray[ncIndex];
+                            if (!isNaN(value) && isFinite(value) && value > 0) {
+                                hasUncertainty = true;
+                            }
+                        }
+                    }
+                }
 
-                if (!isNaN(value) && isFinite(value) && value > 0) {
-                    let px = x * ts;
-                    let py = ((height - 1) - y) * ts;
+                if (hasUncertainty) {
+                    const px = cx * effectiveTs;
+                    const py = ((cellsY - 1) - cy) * effectiveTs;
 
                     // Dibujar subDiv x subDiv X's dentro del tile
                     for (let sy = 0; sy < subDiv; sy++) {
                         for (let sx = 0; sx < subDiv; sx++) {
-                            let cx = px + sx * subSize + subHalf;
-                            let cy = py + sy * subSize + subHalf;
+                            const centerX = px + sx * subSize + subHalf;
+                            const centerY = py + sy * subSize + subHalf;
 
-                            context.moveTo(cx - subHalf, cy - subHalf);
-                            context.lineTo(cx + subHalf, cy + subHalf);
-                            context.moveTo(cx + subHalf, cy - subHalf);
-                            context.lineTo(cx - subHalf, cy + subHalf);
+                            context.moveTo(centerX - subHalf, centerY - subHalf);
+                            context.lineTo(centerX + subHalf, centerY + subHalf);
+                            context.moveTo(centerX + subHalf, centerY - subHalf);
+                            context.lineTo(centerX - subHalf, centerY + subHalf);
                         }
                     }
                 }

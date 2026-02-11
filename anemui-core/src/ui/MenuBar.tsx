@@ -40,7 +40,8 @@ export class MenuBar extends BaseFrame {
     private navMenu: HTMLElement
     private collapseMenuMb: HTMLElement
     private navMenuMb: HTMLElement
-    private logoMap: HTMLElement
+    private logoContainer: HTMLElement
+    private logoContainerMobile: HTMLElement
 
     private displaySpSupport: HTMLDivElement
     private displaySpSupportMb: HTMLDivElement
@@ -57,6 +58,7 @@ export class MenuBar extends BaseFrame {
 
     private inputsFrame: HTMLDivElement
     private inputsFrameMobile: HTMLDivElement
+    private inputsSubmenu: HTMLUListElement
     private extraDisplays: simpleDiv[];
     private inputOrder: string[];
 
@@ -159,7 +161,12 @@ export class MenuBar extends BaseFrame {
         this.extraMenuInputs = []
         this.extraBtns = []
         this.dropDownOrder = []
-        this.logoMaps = []
+        this.logoMaps = [
+            "0,28|AEMET|https://www.aemet.es/",
+            "28,32|PTI Clima CSIC|https://pti-clima.csic.es/",
+            "60,22|Plan de Recuperación|https://planderecuperacion.gob.es/",
+            "82,22|NextGenerationEU|https://next-generation-eu.europa.eu/index_en"
+        ]
     }
 
     public setTitle(_title: string) {
@@ -221,10 +228,9 @@ export class MenuBar extends BaseFrame {
                     {/* Desktop TopBar */}
                     <div className="topbar-desktop">
                         <div className={"navbar " + logoStyle}>
-                            <img src={'./images/'+logo} useMap="#LogoMap"></img>
-                            <map id="LogoMap">
-
-                            </map>
+                            <div className="logo-container" id="logo-container">
+                                <img src={'./images/'+logo}></img>
+                            </div>
                         </div>
                         <div id="menu-title" className="menu-info text-left row mx-0">
                             <div className="col-title">
@@ -242,25 +248,26 @@ export class MenuBar extends BaseFrame {
                             <div className="col menu-info d-flex flex-row-reverse" id="info">
                             </div>
                         </div>
+                        <ul id="inputs-submenu" className="inputs-submenu">
+                        </ul>
                     </div>
 
                     {/* Mobile TopBar */}
                     <div className="topbar-mobile">
                         <div className="mobile-top-row">
                             <div id="menu-central-mobile" className="mobile-menu-central">
-                                <ul id="inputs-mobile" className="nav-menu-mb">
-                                </ul>
                                 <div className="collapse-menu-mb" onClick={() => { self.mobileMenu() }}>
                                     <span></span>
                                     <span></span>
                                     <span></span>
                                 </div>
+                                <ul id="inputs-mobile" className="nav-menu-mb">
+                                </ul>
                             </div>
                             <div className={"navbar " + logoStyle}>
-                                <img src={'./images/logo_aemet.svg'} useMap="#LogoMapMobile"></img> {/* incluir en env.js */}
-                                <map id="LogoMapMobile">
-
-                                </map>
+                                <div className="logo-container" id="logo-container-mobile">
+                                    <img src={'./images/'+logo}></img>
+                                </div>
                             </div>
                             <div className="mobile-menu-info d-flex flex-row-reverse" id="info-mobile">
                             </div>
@@ -289,13 +296,15 @@ export class MenuBar extends BaseFrame {
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
         this.inputsFrameMobile = document.getElementById('inputs-mobile') as HTMLDivElement;
+        this.inputsSubmenu = document.getElementById('inputs-submenu') as HTMLUListElement;
         this.loadingText = this.container.querySelector('#fetching-text') as HTMLSpanElement;
         // this.nodataText = this.container.querySelector('#nodata-text') as HTMLSpanElement;
         this.collapseMenu = document.querySelector(".collapse-menu");
         this.navMenu = document.querySelector(".nav-menu");
         this.collapseMenuMb = document.querySelector(".collapse-menu-mb");
         this.navMenuMb = document.querySelector(".nav-menu-mb");
-        this.logoMap = document.getElementById('LogoMap') as HTMLElement;
+        this.logoContainer = document.getElementById('logo-container') as HTMLElement;
+        this.logoContainerMobile = document.getElementById('logo-container-mobile') as HTMLElement;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
 
@@ -380,21 +389,36 @@ export class MenuBar extends BaseFrame {
 
             if (hasClimatology) {
                 this.extraDisplays.forEach((dsp) => {
-                    addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                    addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                    // Verificar si este display es un input (tiene un extraMenuInput asociado)
+                    const isInput = this.extraMenuInputs.some((input) => input.id == dsp.role);
+
+                    if (isInput) {
+                        // Los inputs van al submenu (desktop) y al menú móvil
+                        addChild(this.inputsSubmenu, this.renderDisplay(dsp, 'climBtn'));
+                        addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                    } else {
+                        // Los dropdowns van al menú principal
+                        addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
+                        addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                    }
+
+                    // Obtener TODOS los contenedores con este role (desktop y mobile)
+                    const containers = document.querySelectorAll("[role=" + dsp.role + "]") as NodeListOf<HTMLDivElement>;
                     this.extraMenuItems.forEach((dpn) => {
                         if (dpn.id == dsp.role) {
-                            let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                            addChild(container, dpn.render(dsp.subTitle, false));
-                            dpn.build(container)
+                            containers.forEach((container) => {
+                                addChild(container, dpn.render(dsp.subTitle, false));
+                                dpn.build(container);
+                            });
                         }
                     });
                     if (this.extraMenuInputs.length > 0) {
                         this.extraMenuInputs.forEach((input) => {
                             if (input.id == dsp.role) {
-                                let container: HTMLDivElement = document.querySelector("[role=" + dsp.role + "]")
-                                addChild(container, input.render(this.parent.getState().selectionParam + ''));
-                                input.build(container)
+                                containers.forEach((container) => {
+                                    addChild(container, input.render(this.parent.getState().selectionParam + ''));
+                                    input.build(container);
+                                });
                             }
                         })
                     }
@@ -407,6 +431,10 @@ export class MenuBar extends BaseFrame {
             this.climBtnArray.forEach((btn) => {
                 btn.hidden = true;
             })
+            // Inicialmente ocultar el submenu de inputs
+            if (this.inputsSubmenu) {
+                this.inputsSubmenu.hidden = true;
+            }
 
             if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
 
@@ -438,27 +466,43 @@ export class MenuBar extends BaseFrame {
     }
 
     private setupMobileDropdowns(): void {
-        // Solo para móvil
-        if (window.innerWidth <= 768) {
-            document.addEventListener('click', (e) => {
-                const button = (e.target as HTMLElement).closest('.dpdown-button');
+        // Manejar clicks en dropdowns del menú móvil y cerrar menú al click fuera
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const mobileMenu = target.closest('.nav-menu-mb');
+            const collapseBtn = target.closest('.collapse-menu-mb');
+
+            // Si click en el botón hamburguesa, dejar que mobileMenu() lo maneje
+            if (collapseBtn) {
+                return;
+            }
+
+            // Si click dentro del menú móvil
+            if (mobileMenu) {
+                const button = target.closest('.dpdown-button');
                 if (button) {
                     e.preventDefault();
+                    e.stopPropagation();
                     const parent = button.closest('.inputDiv');
-                    // Cerrar otros
-                    document.querySelectorAll('.inputDiv.active').forEach(el => {
+                    // Cerrar otros dropdowns dentro del menú móvil
+                    mobileMenu.querySelectorAll('.inputDiv.active').forEach(el => {
                         if (el !== parent) el.classList.remove('active');
                     });
                     // Toggle actual
                     parent?.classList.toggle('active');
-                } else if (!(e.target as HTMLElement).closest('.inputDiv')) {
-                    // Cerrar todos si click fuera
-                    document.querySelectorAll('.inputDiv.active').forEach(el => {
-                        el.classList.remove('active');
-                    });
                 }
-            });
-        }
+            } else {
+                // Click fuera del menú móvil: cerrar el menú lateral si está abierto
+                if (this.navMenuMb?.classList.contains('active')) {
+                    this.navMenuMb.classList.remove('active');
+                    this.collapseMenuMb?.classList.remove('active');
+                }
+                // Cerrar todos los dropdowns móviles
+                document.querySelectorAll('.nav-menu-mb .inputDiv.active').forEach(el => {
+                    el.classList.remove('active');
+                });
+            }
+        });
     }
 
     public setLogoMaps(_logoMaps: string[]) {
@@ -466,18 +510,24 @@ export class MenuBar extends BaseFrame {
     }
 
     public buildLogoMaps() {
-        if (!this.logoMaps || this.logoMaps.length === 0 || !this.logoMap) {
+        if (!this.logoMaps || this.logoMaps.length === 0) {
             return;
         }
-        this.logoMaps.forEach((logoMap) => {
-            let attrs = logoMap.split('-')
-            const area = document.createElement('area');
-            area.shape = 'rect';
-            area.coords = attrs[0];
-            area.alt = attrs[1];
-            area.href = attrs[2];
-            area.target = '_blank';
-            this.logoMap.appendChild(area);
+        const containers = [this.logoContainer, this.logoContainerMobile];
+        containers.forEach((container) => {
+            if (!container) return;
+            this.logoMaps.forEach((logoMap) => {
+                let attrs = logoMap.split('|');
+                let pcts = attrs[0].split(',');
+                const link = document.createElement('a');
+                link.className = 'logo-link';
+                link.style.left = pcts[0] + '%';
+                link.style.width = pcts[1] + '%';
+                link.title = attrs[1];
+                link.href = attrs[2];
+                link.target = '_blank';
+                container.appendChild(link);
+            });
         });
     }
 
@@ -709,6 +759,10 @@ export class MenuBar extends BaseFrame {
         this.climBtnArray.forEach((btn) => {
             btn.hidden = true;
         })
+        // Ocultar el submenu de inputs si existe
+        if (this.inputsSubmenu) {
+            this.inputsSubmenu.hidden = true;
+        }
     }
 
     public showClimFrame(): void {
@@ -728,6 +782,11 @@ export class MenuBar extends BaseFrame {
             this.climBtnArray.forEach((btn) => {
                 btn.hidden = false;
             })
+        }
+
+        // Mostrar el submenu de inputs si existe y tiene contenido
+        if (this.inputsSubmenu && this.inputsSubmenu.children.length > 0) {
+            this.inputsSubmenu.hidden = false;
         }
     }
 
