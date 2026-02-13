@@ -60,17 +60,29 @@ export class CsMenuItem extends BaseUiElement {
   }
   
   public setTitle(_title: string, _role?: string) {
-    if (this.container != undefined) {
-      this.title  = _title
-      this.container.querySelector(".title").innerHTML = this.title;
-    }
+    this.title = _title;
+    // Actualizar TODOS los contenedores con este role (desktop y mobile)
+    const role = _role || this.id;
+    const containers = document.querySelectorAll("[role=" + role + "]");
+    containers.forEach((container) => {
+      const titleElement = container.querySelector(".title");
+      if (titleElement) {
+        titleElement.innerHTML = this.title;
+      }
+    });
   }
 
   public setSubTitle(_sbTitle: string, _role?: string) {
-    if (this.container != undefined) {
-      this.subTitle  = _sbTitle
-      this.container.querySelector(".sub-title").innerHTML = this.subTitle;
-    }
+    this.subTitle = _sbTitle;
+    // Actualizar TODOS los contenedores con este role (desktop y mobile)
+    const role = _role || this.id;
+    const containers = document.querySelectorAll("[role=" + role + "]");
+    containers.forEach((container) => {
+      const subTitleElement = container.querySelector(".sub-title");
+      if (subTitleElement) {
+        subTitleElement.innerHTML = this.subTitle;
+      }
+    });
   }
 
   public getText(): string {
