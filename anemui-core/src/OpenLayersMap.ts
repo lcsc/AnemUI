@@ -1310,15 +1310,7 @@ async updateRender(support: string): Promise<void> {
     ctx.fillText('Canarias', insetX + 4, insetY + 3);
 
     // --- 4) Título ---
-    const varName = state.varName || '';
-    const subVarName = state.subVarName || '';
-    const tpSupport = state.tpSupport || '';
-    let dateStr = '';
-    if (state.times && state.times[state.selectedTimeIndex] !== undefined) {
-      dateStr = state.times[state.selectedTimeIndex];
-    }
-    const titleParts = [tpSupport, varName, subVarName, dateStr].filter(s => s.length > 0);
-    const titleText = titleParts.join(' - ');
+    const titleText = app.getExportTitle();
 
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(0, 0, exportCanvas.width, titleHeight);
@@ -1336,10 +1328,7 @@ async updateRender(support: string): Promise<void> {
       const min = Math.min(...legendValues);
       const max = Math.max(...legendValues);
 
-      let legendTitle = state.legendTitle || '';
-      if (timesJs.legendTitle && timesJs.legendTitle[state.varId]) {
-        legendTitle = timesJs.legendTitle[state.varId];
-      }
+      let legendTitle = app.getExportLegendTitle();
 
       const legendBoxWidth = 150;
       const itemHeight = Math.min(22, Math.max(14, (mainH * 0.4) / legendValues.length));
