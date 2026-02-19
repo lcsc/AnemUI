@@ -99,6 +99,14 @@ export default class LayerFrame  extends BaseFrame {
                         </div>
                     </div>
                 </div>
+                <div id="print-div">
+                    <div className="buttonDiv printDiv visible" onClick={()=>this.parent.getMap().exportMap()}>
+                        <span className="icon"><i className="bi bi-printer"></i></span>
+                        <span className="text">
+                            {this.parent.getTranslation('imprimir_mapa') || 'Imprimir mapa'}
+                        </span>
+                    </div>
+                </div>
             </div>
         );
         return element;

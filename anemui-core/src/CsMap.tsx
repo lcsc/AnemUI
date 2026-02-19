@@ -143,5 +143,9 @@ public onMapClick(event: CsMapEvent): void {
         this.controller.refreshFeatureLayer()
     }
 
+    public exportMap(): void {
+        this.controller.exportMap();
+    }
+
 }
 

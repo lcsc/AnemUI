@@ -140,13 +140,15 @@ export class LayerManager {
             switch(bLayer.type) {
                 case AL_TYPE_OSM:
                         this.baseLayers[this.baseSelected[layer]].source = new OSM({
-                            url: this.baseLayers[this.baseSelected[layer]].url
+                            url: this.baseLayers[this.baseSelected[layer]].url,
+                            crossOrigin: 'anonymous'
                         })
                     break;
                 case AL_TYPE_WMS:
                         this.baseLayers[this.baseSelected[layer]].source = new TileWMS({
                             url: this.baseLayers[this.baseSelected[layer]].url,
-                            params: { 'LAYERS': this.baseLayers[this.baseSelected[layer]].layer }
+                            params: { 'LAYERS': this.baseLayers[this.baseSelected[layer]].layer },
+                            crossOrigin: 'anonymous'
                         })
                     break;
                 case AL_TYPE_WMTS:
