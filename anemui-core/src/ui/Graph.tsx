@@ -152,9 +152,14 @@ export class CsGraph extends BaseFrame {
                 <button type="button" id="nextYearBtn" className="btn navbar-btn" onClick={() => { this.nextYear() }}>Año siguiente →</button>
               </div>
             </div>
-            <div id="graphDiv" className="droppDownButton">
-              <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
-              <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
+            <div id="graphDiv" className="droppDownButton" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+              <div>
+                <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
+                <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
+              </div>
+              <div>
+                <button type="button" className="btn navbar-btn" onClick={() => { this.exportGraph() }}><i className="bi bi-printer"></i> {this.parent.getTranslation('imprimir_grafico') || 'Imprimir gráfico'}</button>
+              </div>
             </div>
           </div>
           <div className="col">
@@ -267,6 +272,293 @@ export class CsGraph extends BaseFrame {
 
     // Ocultar leyenda de colores
     this.hideColorLegend();
+  }
+
+  public exportGraph(): void {
+    const popGraph = document.getElementById('popGraph');
+    if (!popGraph) return;
+
+    const labelsDiv = document.getElementById('labels');
+    const colorLegendDiv = document.getElementById('colorLegend');
+    const headerHeight = 36;
+    const padding = 12;
+    const copyrightHeight = 20;
+
+    // Obtener dimensiones del contenedor del gráfico
+    const graphRect = popGraph.getBoundingClientRect();
+
+    // Calcular el área útil del gráfico excluyendo el range selector
+    const rangeSelBg = popGraph.querySelector('.dygraph-rangesel-bgcanvas') as HTMLCanvasElement;
+    let plotBottomY = graphRect.height; // por defecto, todo el popGraph
+    if (rangeSelBg) {
+      const rsRect = rangeSelBg.getBoundingClientRect();
+      plotBottomY = rsRect.top - graphRect.top; // cortar justo antes del range selector
+    }
+
+    const graphW = Math.round(graphRect.width);
+    const graphH = Math.round(plotBottomY);
+
+    // Calcular alto de labels
+    let labelsH = 0;
+    if (labelsDiv && labelsDiv.offsetHeight > 0) {
+      labelsH = labelsDiv.offsetHeight + 8;
+    }
+
+    // Calcular alto de color legend
+    let colorLegendH = 0;
+    if (colorLegendDiv && colorLegendDiv.style.display !== 'none' && colorLegendDiv.offsetHeight > 0) {
+      colorLegendH = colorLegendDiv.offsetHeight + 8;
+    }
+
+    const totalH = headerHeight + graphH + labelsH + colorLegendH + copyrightHeight;
+    const totalW = graphW;
+
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = totalW;
+    exportCanvas.height = totalH;
+    const ctx = exportCanvas.getContext('2d');
+
+    // Fondo blanco
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, totalW, totalH);
+
+    // --- Barra de título (info del visor) ---
+    const state = this.parent.getState();
+    const varName = state.varName || '';
+    const subVarName = state.subVarName || '';
+    const tpSupport = state.tpSupport || '';
+    const titleParts = [tpSupport, varName, subVarName].filter(s => s && s.length > 0);
+    const headerText = titleParts.join(' - ') + (this.graphSubTitle || '');
+
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(0, 0, totalW, headerHeight);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(headerText, padding, headerHeight / 2);
+
+    // Recortar al área del gráfico para que no se salga
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, headerHeight, totalW, graphH);
+    ctx.clip();
+
+    // --- Capturar canvases del gráfico (excluyendo range selector) ---
+    const canvases = popGraph.querySelectorAll('canvas') as NodeListOf<HTMLCanvasElement>;
+    canvases.forEach((canvas) => {
+      if (canvas.width <= 0 || canvas.height <= 0) return;
+      // Excluir canvases del range selector
+      if (canvas.classList.contains('dygraph-rangesel-bgcanvas') ||
+          canvas.classList.contains('dygraph-rangesel-fgcanvas') ||
+          canvas.classList.contains('dygraph-rangesel-zoomhandle')) return;
+      const parent = canvas.parentElement;
+      if (parent && (parent.classList.contains('dygraph-rangesel-bgcanvas') ||
+          parent.classList.contains('dygraph-rangesel-fgcanvas'))) return;
+
+      try {
+        const rect = canvas.getBoundingClientRect();
+        // Usar las dimensiones CSS (display) no las del atributo canvas
+        const displayW = rect.width;
+        const displayH = rect.height;
+        const dx = rect.left - graphRect.left;
+        const dy = rect.top - graphRect.top + headerHeight;
+        ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, dx, dy, displayW, displayH);
+      } catch (e) {
+        console.warn('Error capturando canvas del gráfico:', e);
+      }
+    });
+
+    // Dibujar título del gráfico (Dygraph: div.dygraph-title)
+    const dygraphTitle = popGraph.querySelector('.dygraph-title') as HTMLElement;
+    if (dygraphTitle && dygraphTitle.textContent) {
+      const rect = dygraphTitle.getBoundingClientRect();
+      const style = window.getComputedStyle(dygraphTitle);
+      ctx.fillStyle = style.color || '#333333';
+      ctx.font = (style.fontWeight || 'bold') + ' ' + (style.fontSize || '14px') + ' ' + (style.fontFamily || 'sans-serif');
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'center';
+      ctx.fillText(dygraphTitle.textContent, graphW / 2, rect.top - graphRect.top + headerHeight);
+      ctx.textAlign = 'left';
+    }
+
+    // Dibujar etiqueta del eje Y (Dygraph: div.dygraph-ylabel)
+    const yLabel = popGraph.querySelector('.dygraph-ylabel') as HTMLElement;
+    if (yLabel && yLabel.textContent) {
+      const rect = yLabel.getBoundingClientRect();
+      const centerX = rect.left - graphRect.left + rect.width / 2;
+      const centerY = rect.top - graphRect.top + rect.height / 2 + headerHeight;
+      ctx.save();
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.translate(centerX, centerY);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(yLabel.textContent, 0, 0);
+      ctx.restore();
+    }
+
+    // Dibujar etiqueta del eje X (Dygraph: div.dygraph-xlabel)
+    const xLabel = popGraph.querySelector('.dygraph-xlabel') as HTMLElement;
+    if (xLabel && xLabel.textContent) {
+      const rect = xLabel.getBoundingClientRect();
+      ctx.fillStyle = '#333333';
+      ctx.font = '12px sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'center';
+      ctx.fillText(xLabel.textContent, graphW / 2, rect.top - graphRect.top + headerHeight);
+      ctx.textAlign = 'left';
+    }
+
+    // Dibujar etiquetas de ticks (div.dygraph-axis-label)
+    const axisLabels = popGraph.querySelectorAll('.dygraph-axis-label') as NodeListOf<HTMLElement>;
+    axisLabels.forEach((label) => {
+      if (!label.textContent) return;
+      const rect = label.getBoundingClientRect();
+      // Excluir labels que caigan en la zona del range selector
+      if (rect.top - graphRect.top >= plotBottomY) return;
+
+      const style = window.getComputedStyle(label);
+      ctx.fillStyle = style.color || '#333333';
+      ctx.font = (style.fontSize || '11px') + ' ' + (style.fontFamily || 'sans-serif');
+
+      if (label.classList.contains('dygraph-axis-label-y')) {
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'right';
+        ctx.fillText(label.textContent, rect.right - graphRect.left, rect.top - graphRect.top + rect.height / 2 + headerHeight);
+      } else {
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'center';
+        ctx.fillText(label.textContent, rect.left - graphRect.left + rect.width / 2, rect.top - graphRect.top + headerHeight);
+      }
+    });
+    ctx.textAlign = 'left';
+
+    // Restaurar clip
+    ctx.restore();
+
+    // --- Labels (leyenda de series Dygraph) ---
+    let curY = headerHeight + graphH;
+    if (labelsDiv && labelsDiv.offsetHeight > 0) {
+      curY += 4;
+      const labelsSpans = labelsDiv.querySelectorAll('span');
+      let lx = padding;
+      labelsSpans.forEach((span: HTMLSpanElement) => {
+        const style = window.getComputedStyle(span);
+        const color = style.color || '#333333';
+        const fontWeight = style.fontWeight || 'normal';
+        ctx.fillStyle = color;
+        ctx.font = (fontWeight === 'bold' || fontWeight === '700' ? 'bold ' : '') + '11px sans-serif';
+        ctx.textBaseline = 'top';
+        const text = span.textContent || '';
+        ctx.fillText(text, lx, curY);
+        lx += ctx.measureText(text).width + 4;
+      });
+      curY += labelsH;
+    }
+
+    // --- Color Legend ---
+    if (colorLegendDiv && colorLegendDiv.style.display !== 'none' && colorLegendDiv.offsetHeight > 0) {
+      const items = colorLegendDiv.children;
+      let lx = padding;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i] as HTMLElement;
+        if (item.tagName === 'SPAN') {
+          ctx.fillStyle = '#333333';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.textContent || '', lx, curY + 8);
+          lx += ctx.measureText(item.textContent || '').width + 8;
+        } else {
+          const colorBox = item.querySelector('div') as HTMLElement;
+          const label = item.querySelector('span') as HTMLElement;
+          if (colorBox) {
+            ctx.fillStyle = colorBox.style.backgroundColor || '#ccc';
+            ctx.fillRect(lx, curY + 2, 18, 12);
+            lx += 20;
+          }
+          if (label) {
+            ctx.fillStyle = '#333333';
+            ctx.font = '11px sans-serif';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label.textContent || '', lx, curY + 8);
+            lx += ctx.measureText(label.textContent || '').width + 8;
+          }
+        }
+      }
+      curY += colorLegendH;
+    }
+
+    // --- Barra de logos (pie) ---
+    this.drawLogosAndDownload(exportCanvas, ctx, 'grafico.png');
+  }
+
+  private drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string): void {
+    const logoImg = document.querySelector('#logo-container img') as HTMLImageElement;
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+      this.appendLogosBarAndDownload(exportCanvas, logoImg, filename);
+    } else if (logoImg) {
+      const clone = new Image();
+      clone.crossOrigin = 'anonymous';
+      clone.onload = () => this.appendLogosBarAndDownload(exportCanvas, clone, filename);
+      clone.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
+      clone.src = logoImg.src;
+    } else {
+      this.downloadExportCanvas(exportCanvas, filename);
+    }
+  }
+
+  private appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string): void {
+    const logoBarHeight = 60;
+    const pad = 10;
+
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = srcCanvas.width;
+    finalCanvas.height = srcCanvas.height + logoBarHeight;
+    const fCtx = finalCanvas.getContext('2d');
+
+    fCtx.drawImage(srcCanvas, 0, 0);
+
+    const barY = srcCanvas.height;
+    fCtx.fillStyle = '#ffffff';
+    fCtx.fillRect(0, barY, finalCanvas.width, logoBarHeight);
+
+    fCtx.strokeStyle = '#cccccc';
+    fCtx.lineWidth = 1;
+    fCtx.beginPath();
+    fCtx.moveTo(0, barY);
+    fCtx.lineTo(finalCanvas.width, barY);
+    fCtx.stroke();
+
+    const maxLogoH = logoBarHeight - pad * 2;
+    const scale = maxLogoH / logoImg.naturalHeight;
+    const logoW = logoImg.naturalWidth * scale;
+    const logoH = maxLogoH;
+    const logoX = (finalCanvas.width - logoW) / 2;
+    const logoY = barY + pad;
+    fCtx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+
+    const copyrightText = '\u00A9 AEMET - CSIC PTI-Clima';
+    fCtx.font = '10px sans-serif';
+    fCtx.fillStyle = '#666666';
+    fCtx.textBaseline = 'bottom';
+    fCtx.textAlign = 'right';
+    fCtx.fillText(copyrightText, finalCanvas.width - pad, barY + logoBarHeight - 4);
+    fCtx.textAlign = 'left';
+
+    this.downloadExportCanvas(finalCanvas, filename);
+  }
+
+  private downloadExportCanvas(canvas: HTMLCanvasElement, filename: string): void {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   /**

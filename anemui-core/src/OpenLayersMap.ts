@@ -1128,6 +1128,355 @@ async updateRender(support: string): Promise<void> {
       console.warn('Error during disposal:', error);
     }
   }
+
+  public exportMap(): void {
+    const app = this.parent.getParent();
+    const state = app.getState();
+    const timesJs = app.getTimesJs();
+    const proj = this.map.getView().getProjection();
+
+    // Guardar vista actual para restaurarla después
+    const currentCenter = this.map.getView().getCenter();
+    const currentResolution = this.map.getView().getResolution();
+
+    // Paso 1: Capturar Península + Baleares
+    // Padding asimétrico: [top, right, bottom, left] - más a la izquierda para dejar espacio al recuadro de Canarias
+    const peninsulaExtent4326 = [-10.0, 35.0, 5.0, 44.5];
+    const peninsulaExtent = transformExtent(peninsulaExtent4326, 'EPSG:4326', proj);
+    const mapSize0 = this.map.getSize();
+    const insetLeftPad = mapSize0 ? Math.round(mapSize0[0] * 0.22) : 200;
+    this.map.getView().fit(peninsulaExtent, { padding: [10, 35, 10, insetLeftPad] });
+
+    this.map.once('rendercomplete', () => {
+      const mapSize = this.map.getSize();
+      if (!mapSize) return;
+      const mainWidth = mapSize[0];
+      const mainHeight = mapSize[1];
+
+      // Capturar canvas OL de la península
+      const mainOlCanvas = this.captureOlCanvas(mainWidth, mainHeight);
+
+      // Obtener bbox para WMS de la península
+      const mainViewExtent = this.map.getView().calculateExtent(mapSize);
+      const mainBbox4326 = transformExtent(mainViewExtent, proj, 'EPSG:4326');
+
+      // Paso 2: Capturar Canarias
+      const canariasExtent4326 = [-18.5, 27.4, -13.2, 29.6];
+      const canariasExtent = transformExtent(canariasExtent4326, 'EPSG:4326', proj);
+      this.map.getView().fit(canariasExtent, { padding: [5, 5, 5, 5] });
+
+      this.map.once('rendercomplete', () => {
+        // Capturar canvas OL de Canarias
+        const insetWidth = Math.round(mainWidth * 0.30);
+        const insetHeight = Math.round(mainHeight * 0.28);
+        const canariasOlCanvas = this.captureOlCanvas(mapSize[0], mapSize[1]);
+
+        // Obtener bbox para WMS de Canarias
+        const canariasViewExtent = this.map.getView().calculateExtent(mapSize);
+        const canariasBbox4326 = transformExtent(canariasViewExtent, proj, 'EPSG:4326');
+
+        // Restaurar vista original
+        this.map.getView().setCenter(currentCenter);
+        this.map.getView().setResolution(currentResolution);
+
+        // Paso 3: Pedir ambas imágenes WMS al IGN y componer
+        this.loadWmsImages(mainBbox4326, mainWidth, mainHeight, canariasBbox4326, insetWidth, insetHeight,
+          (mainBg, canBg) => {
+            this.composeExportImage(
+              mainBg, mainOlCanvas, mainWidth, mainHeight,
+              canBg, canariasOlCanvas, insetWidth, insetHeight,
+              state, timesJs, app
+            );
+          }
+        );
+      });
+
+      this.map.renderSync();
+    });
+
+    this.map.renderSync();
+  }
+
+  private captureOlCanvas(width: number, height: number): HTMLCanvasElement {
+    const capture = document.createElement('canvas');
+    capture.width = width;
+    capture.height = height;
+    const ctx = capture.getContext('2d');
+
+    const olCanvases = this.map.getViewport().querySelectorAll('.ol-layer canvas') as NodeListOf<HTMLCanvasElement>;
+    olCanvases.forEach((canvas) => {
+      if (canvas.width > 0) {
+        ctx.save();
+        const opacity = (canvas.parentNode as HTMLElement).style.opacity || '1';
+        ctx.globalAlpha = parseFloat(opacity);
+        const transform = canvas.style.transform;
+        const matrix = transform.match(/^matrix\(([^\(]*)\)$/);
+        if (matrix) {
+          const values = matrix[1].split(',').map(Number);
+          ctx.setTransform(values[0], values[1], values[2], values[3], values[4], values[5]);
+        }
+        ctx.drawImage(canvas, 0, 0);
+        ctx.restore();
+      }
+    });
+    return capture;
+  }
+
+  private buildWmsUrl(bbox4326: number[], width: number, height: number): string {
+    return 'https://www.ign.es/wms-inspire/ign-base?' +
+      'SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap' +
+      '&LAYERS=IGNBaseTodo&STYLES=' +
+      '&SRS=EPSG:4326' +
+      '&BBOX=' + bbox4326.join(',') +
+      '&WIDTH=' + width + '&HEIGHT=' + height +
+      '&FORMAT=image/png&TRANSPARENT=false';
+  }
+
+  private loadWmsImages(
+    mainBbox: number[], mainW: number, mainH: number,
+    canBbox: number[], canW: number, canH: number,
+    callback: (mainBg: HTMLImageElement | null, canBg: HTMLImageElement | null) => void
+  ): void {
+    let mainBg: HTMLImageElement | null = null;
+    let canBg: HTMLImageElement | null = null;
+    let loaded = 0;
+
+    const check = () => { if (++loaded >= 2) callback(mainBg, canBg); };
+
+    const img1 = new Image();
+    img1.crossOrigin = 'anonymous';
+    img1.onload = () => { mainBg = img1; check(); };
+    img1.onerror = () => { console.warn('Error cargando WMS península'); check(); };
+    img1.src = this.buildWmsUrl(mainBbox, mainW, mainH);
+
+    const img2 = new Image();
+    img2.crossOrigin = 'anonymous';
+    img2.onload = () => { canBg = img2; check(); };
+    img2.onerror = () => { console.warn('Error cargando WMS Canarias'); check(); };
+    img2.src = this.buildWmsUrl(canBbox, canW, canH);
+  }
+
+  private composeExportImage(
+    mainBg: HTMLImageElement | null, mainOl: HTMLCanvasElement,
+    mainW: number, mainH: number,
+    canBg: HTMLImageElement | null, canOl: HTMLCanvasElement,
+    insetW: number, insetH: number,
+    state: any, timesJs: any, app: any
+  ): void {
+    const titleHeight = 40;
+    const padding = 10;
+    const insetMargin = 12;
+    const insetBorder = 2;
+
+    // Canvas final (sin columna extra a la derecha)
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = mainW;
+    exportCanvas.height = mainH + titleHeight;
+    const ctx = exportCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    // --- 1) Fondo WMS Península ---
+    if (mainBg) {
+      ctx.drawImage(mainBg, 0, titleHeight, mainW, mainH);
+    }
+
+    // --- 2) Datos OL Península ---
+    ctx.drawImage(mainOl, 0, titleHeight);
+
+    // --- 3) Recuadro Canarias (esquina inferior izquierda) ---
+    const insetX = insetMargin;
+    const insetY = titleHeight + mainH - insetH - insetMargin;
+
+    // Fondo blanco + borde
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = insetBorder;
+    ctx.strokeRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
+
+    // Fondo WMS Canarias
+    if (canBg) {
+      ctx.drawImage(canBg, 0, 0, canBg.width, canBg.height, insetX, insetY, insetW, insetH);
+    }
+
+    // Datos OL Canarias (reescalado al tamaño del recuadro)
+    ctx.drawImage(canOl, 0, 0, canOl.width, canOl.height, insetX, insetY, insetW, insetH);
+
+    // Etiqueta "Canarias"
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Canarias', insetX + 4, insetY + 3);
+
+    // --- 4) Título ---
+    const varName = state.varName || '';
+    const subVarName = state.subVarName || '';
+    const tpSupport = state.tpSupport || '';
+    let dateStr = '';
+    if (state.times && state.times[state.selectedTimeIndex] !== undefined) {
+      dateStr = state.times[state.selectedTimeIndex];
+    }
+    const titleParts = [tpSupport, varName, subVarName, dateStr].filter(s => s.length > 0);
+    const titleText = titleParts.join(' - ');
+
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(0, 0, exportCanvas.width, titleHeight);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(titleText, padding, titleHeight / 2);
+
+    // --- 5) Leyenda (superpuesta en la zona izquierda, encima del recuadro de Canarias) ---
+    const legendValues = app.getLegendValues();
+    const legendText = app.getLegendText();
+    if (legendValues && legendText) {
+      const mgr = PaletteManager.getInstance();
+      const painter = mgr.getPainter();
+      const min = Math.min(...legendValues);
+      const max = Math.max(...legendValues);
+
+      let legendTitle = state.legendTitle || '';
+      if (timesJs.legendTitle && timesJs.legendTitle[state.varId]) {
+        legendTitle = timesJs.legendTitle[state.varId];
+      }
+
+      const legendBoxWidth = 150;
+      const itemHeight = Math.min(22, Math.max(14, (mainH * 0.4) / legendValues.length));
+      const legendBoxHeight = 24 + legendValues.length * itemHeight + padding;
+      const lx = insetMargin;
+      const ly = titleHeight + padding;
+
+      // Fondo semitransparente para la leyenda
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(lx, ly, legendBoxWidth, legendBoxHeight);
+      ctx.restore();
+
+      // Borde de la leyenda
+      ctx.strokeStyle = '#999999';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(lx, ly, legendBoxWidth, legendBoxHeight);
+
+      let curY = ly + padding;
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.fillText(legendTitle, lx + padding, curY);
+      curY += 18;
+
+      const colorBoxWidth = legendBoxWidth - padding * 2;
+
+      for (let i = 0; i < legendValues.length; i++) {
+        const colorStr = painter.getColorString(legendValues[i], min, max);
+        ctx.fillStyle = colorStr;
+        ctx.fillRect(lx + padding, curY, colorBoxWidth, itemHeight - 2);
+
+        const text = legendText[i] || '';
+        ctx.fillStyle = this.isLightColorForExport(colorStr) ? '#000000' : '#ffffff';
+        ctx.font = '10px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, lx + padding + 4, curY + (itemHeight - 2) / 2);
+        curY += itemHeight;
+      }
+    }
+
+    // --- 6) Barra de logos (pie) ---
+    this.drawLogosAndDownload(exportCanvas, ctx, 'mapa.png');
+  }
+
+  private drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string): void {
+    const logoImg = document.querySelector('#logo-container img') as HTMLImageElement;
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+      this.appendLogosBarAndDownload(exportCanvas, ctx, logoImg, filename);
+    } else if (logoImg) {
+      const clone = new Image();
+      clone.crossOrigin = 'anonymous';
+      clone.onload = () => this.appendLogosBarAndDownload(exportCanvas, ctx, clone, filename);
+      clone.onerror = () => this.downloadCanvas(exportCanvas, filename);
+      clone.src = logoImg.src;
+    } else {
+      this.downloadCanvas(exportCanvas, filename);
+    }
+  }
+
+  private appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, srcCtx: CanvasRenderingContext2D, logoImg: HTMLImageElement, filename: string): void {
+    const logoBarHeight = 60;
+    const pad = 10;
+
+    // Crear canvas final con espacio para la barra de logos
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = srcCanvas.width;
+    finalCanvas.height = srcCanvas.height + logoBarHeight;
+    const fCtx = finalCanvas.getContext('2d');
+
+    // Copiar contenido original
+    fCtx.drawImage(srcCanvas, 0, 0);
+
+    // Barra de logos: fondo blanco
+    const barY = srcCanvas.height;
+    fCtx.fillStyle = '#ffffff';
+    fCtx.fillRect(0, barY, finalCanvas.width, logoBarHeight);
+
+    // Línea separadora
+    fCtx.strokeStyle = '#cccccc';
+    fCtx.lineWidth = 1;
+    fCtx.beginPath();
+    fCtx.moveTo(0, barY);
+    fCtx.lineTo(finalCanvas.width, barY);
+    fCtx.stroke();
+
+    // Dibujar logo escalado para que quepa en la barra
+    const maxLogoH = logoBarHeight - pad * 2;
+    const scale = maxLogoH / logoImg.naturalHeight;
+    const logoW = logoImg.naturalWidth * scale;
+    const logoH = maxLogoH;
+    const logoX = (finalCanvas.width - logoW) / 2;
+    const logoY = barY + pad;
+    fCtx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+
+    // Copyright a la derecha
+    const copyrightText = '\u00A9 AEMET - CSIC PTI-Clima';
+    fCtx.font = '10px sans-serif';
+    fCtx.fillStyle = '#666666';
+    fCtx.textBaseline = 'bottom';
+    fCtx.textAlign = 'right';
+    fCtx.fillText(copyrightText, finalCanvas.width - pad, barY + logoBarHeight - 4);
+    fCtx.textAlign = 'left';
+
+    this.downloadCanvas(finalCanvas, filename);
+  }
+
+  private downloadCanvas(canvas: HTMLCanvasElement, filename: string): void {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  private isLightColorForExport(color: string): boolean {
+    let r = 200, g = 200, b = 200;
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      r = parseInt(hex.substring(0, 2), 16);
+      g = parseInt(hex.substring(2, 4), 16);
+      b = parseInt(hex.substring(4, 6), 16);
+    } else if (color.startsWith('rgb')) {
+      const match = color.match(/(\d+)/g);
+      if (match) {
+        r = parseInt(match[0]);
+        g = parseInt(match[1]);
+        b = parseInt(match[2]);
+      }
+    }
+    return (r * 0.299 + g * 0.587 + b * 0.114) > 150;
+  }
 }
 
 export class GeoLayerManager {
