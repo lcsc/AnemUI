@@ -786,6 +786,31 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return ret
     }
 
+    /**
+     * Devuelve el texto del título para la exportación del mapa.
+     * Los visores pueden sobreescribirlo para incluir campos específicos.
+     */
+    public getExportTitle(): string {
+        const state = this.state;
+        const varName = state.varName || '';
+        const subVarName = state.subVarName || '';
+        const tpSupport = state.tpSupport || '';
+        let dateStr = '';
+        if (state.times && state.times[state.selectedTimeIndex] !== undefined) {
+            dateStr = state.times[state.selectedTimeIndex];
+        }
+        return [tpSupport, varName, subVarName, dateStr].filter(s => s.length > 0).join(' - ');
+    }
+
+    /**
+     * Devuelve el título de la leyenda para la exportación del mapa.
+     * Los visores pueden sobreescribirlo para adaptar el texto.
+     */
+    public getExportLegendTitle(): string {
+        const timesTitle = this.timesJs?.legendTitle?.[this.state.varId];
+        return timesTitle || this.state.legendTitle || '';
+    }
+
     public async filterValues(values: number[], t: number, varName: string, portion: string): Promise<number[]> {
         if (this.state.selection==STR_ALL)return values;
         for (let i = 0; i < values.length; i++) {
