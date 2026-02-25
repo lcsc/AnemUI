@@ -227,11 +227,21 @@ export class MenuBar extends BaseFrame {
                 <div id="TopBar" className="fixed-top" onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
                     {/* Desktop TopBar */}
                     <div className="topbar-desktop">
-                        <div className={"navbar " + logoStyle}>
-                            <div className="logo-container" id="logo-container">
-                                <img src={'./images/'+logo}></img>
+                        <div className="row">
+                            <div className= {"col navbar " + logoStyle}>
+                                <div className="logo-container" id="logo-container">
+                                    <img src={'./images/'+logo}></img>
+                                </div>
+                            </div>
+                            <div className="col menu-info d-flex" id="home">
+                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal">
+                                    <i className="bi bi-box-arrow-left"></i>
+                                </a>
+                            </div>
+                            <div className="col menu-info d-flex flex-row-reverse" id="info">
                             </div>
                         </div>
+                        
                         <div id="menu-title" className="menu-info text-left row mx-0">
                             <div className="col-title">
                                 <h3 id="title">{this.title}</h3>
@@ -245,8 +255,7 @@ export class MenuBar extends BaseFrame {
                                     <span></span>
                                 </div>
                             </div>
-                            <div className="col menu-info d-flex flex-row-reverse" id="info">
-                            </div>
+                            
                         </div>
                         <ul id="inputs-submenu" className="inputs-submenu">
                         </ul>
@@ -256,10 +265,8 @@ export class MenuBar extends BaseFrame {
                     <div className="topbar-mobile">
                         <div className="mobile-top-row">
                             <div id="menu-central-mobile" className="mobile-menu-central">
-                                <div className="collapse-menu-mb" onClick={() => { self.mobileMenu() }}>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
+                                <div className="topbar-icon-btn collapse-menu-mb" onClick={() => { self.mobileMenu() }}>
+                                    <i className="bi bi-list"></i>
                                 </div>
                                 <ul id="inputs-mobile" className="nav-menu-mb">
                                 </ul>
@@ -269,7 +276,12 @@ export class MenuBar extends BaseFrame {
                                     <img src={'./images/'+logo}></img>
                                 </div>
                             </div>
-                            <div className="mobile-menu-info d-flex flex-row-reverse" id="info-mobile">
+                            <div className="mobile-actions">
+                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
+                                    <i className="bi bi-box-arrow-left"></i>
+                                </a>
+                                <div className="topbar-icon-btn" id="info-mobile">
+                                </div>
                             </div>
                         </div>
                         <div className="mobile-title-row">

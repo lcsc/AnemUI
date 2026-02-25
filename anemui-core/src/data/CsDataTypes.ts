@@ -93,6 +93,7 @@ export type CsViewerData={
     legendTitle:string,
     climatology:boolean,
     uncertaintyLayer:boolean,
+    overlayVarId?:string,
     season:string,
     month:string,
     xyValue:number,

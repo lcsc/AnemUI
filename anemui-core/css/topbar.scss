@@ -6,8 +6,9 @@
 #menu-title{
     padding: 0rem 0rem;
     min-height: 1rem;
+    border-top: 1px solid $border-color;
     background-color: $title_color;
-    box-shadow: 0.5px 0.5px 3px $color_3;
+    box-shadow: 0px 3px 3px -2px $color_3;
     @include desktop {
         padding: 0rem 1.5rem;
     }
@@ -16,6 +17,7 @@
 #TopBar {
         padding: 0px !important;
         z-index: 1000;
+        background-color: $title_bgcolor;
 
     // Mobile first: show mobile, hide desktop
     .topbar-mobile {
@@ -42,7 +44,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background-color: $title_color;
+            background-color: $title_bgcolor;
             border-bottom: 1px solid $border-color;
         }
 
@@ -67,8 +69,12 @@
             padding-left: 0.5rem;
         }
 
-        .mobile-menu-info {
+        .mobile-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             padding-right: 0.5rem;
+            flex-shrink: 0;
         }
 
     }
@@ -81,9 +87,34 @@
         margin: 0;
     }    
     
-    #info {
-        display:flex;
+    #home, #info {
+        flex: 0 0 auto;
+        width: auto;
+        display: flex;
         align-items: center;
+        padding: 0 4px;
+    }
+
+    #info {
+        margin-right: 40px;
+    }
+
+    .topbar-icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        color: #555;
+        font-size: 1.4rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s, color 0.2s;
+        &:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #222;
+        }
     }
     
     #inputs {
@@ -208,7 +239,7 @@
     }
 
     .allScrLogo {
-        padding-left: 0.5em;
+        padding-left: 0;
         img {
             height: auto;
             max-width: 100%;
@@ -216,13 +247,13 @@
     }
 
     .longLogo {
-        padding-left: 0.5em;
+        padding-left: 0;
         img {
             height: 30px;
         }
 
         @include desktop {
-            padding-left: 2.5em;
+            padding-left: 0;
             img {
                 height: 50px;
             }
@@ -309,10 +340,19 @@
         }
     }
 
+    .topbar-desktop > .row {
+        --bs-gutter-x: 0;
+        margin-left: 0;
+        margin-right: 0;
+
+        > .col:first-child {
+            padding-left: 0;
+        }
+    }
+
     .topbar-desktop .navbar {
         width: 100%;
-        background-color: $color_4;
-        border-bottom: 1px solid $border-color;
+        // border-bottom: 1px solid $border-color;
         justify-content: left;
     }
 
@@ -331,7 +371,7 @@
     }
 
     .topbar-mobile .mobile-menu-central,
-    .topbar-mobile .mobile-menu-info {
+    .topbar-mobile .mobile-actions {
         flex-shrink: 0;
     }
 
@@ -340,7 +380,8 @@
     }
 
     .col.longLogo, .col.allScrLogo {
-        background-color: transparent !important;
+        --bs-navbar-padding-y: 0px;
+        // background-color: transparent !important;
     }
 
     a.cs-disabled {
@@ -458,7 +499,7 @@
         margin: 2.5rem 0;
     }
 
-    .collapse-menu, .collapse-menu-mb {
+    .collapse-menu {
         display: block;
         width: 40px;
         height: 40px;
@@ -466,11 +507,10 @@
         position: relative;
         z-index: 10000;
         transition: transform 0.4s;
-        // background-color: #4875b9;
         border-radius: 4px;
     }
 
-    .collapse-menu span, .collapse-menu-mb span {
+    .collapse-menu span {
         display: block;
         width: 20px;
         height: 2px;
@@ -484,34 +524,45 @@
         background-color: #fff;
     }
 
-    .collapse-menu span:nth-child(1), .collapse-menu-mb span:nth-child(1) {
+    .collapse-menu span:nth-child(1) {
         top: 10px;
     }
 
-    .collapse-menu span:nth-child(2), .collapse-menu-mb span:nth-child(2) {
+    .collapse-menu span:nth-child(2) {
         top: 18px;
     }
 
-    .collapse-menu span:nth-child(3), .collapse-menu-mb span:nth-child(3) {
+    .collapse-menu span:nth-child(3) {
         top: 26px;
     }
 
-    .collapse-menu.active, .collapse-menu-mb.active {
+    .collapse-menu.active {
         transform: rotate(180deg);
     }
 
-    .collapse-menu.active span:nth-child(2), .collapse-menu-mb.active span:nth-child(2) {
+    .collapse-menu.active span:nth-child(2) {
         opacity: 0;
     }
 
-    .collapse-menu.active span:nth-child(1), .collapse-menu-mb.active span:nth-child(1) {
+    .collapse-menu.active span:nth-child(1) {
         top: 18px;
         transform: translateX(-50%) rotate(-45deg);
     }
 
-    .collapse-menu.active span:nth-child(3), .collapse-menu-mb.active span:nth-child(3) {
+    .collapse-menu.active span:nth-child(3) {
         top: 18px;
         transform: translateX(-50%) rotate(45deg);
+    }
+
+    // Hamburguesa móvil: usa topbar-icon-btn con icono Bootstrap
+    .collapse-menu-mb {
+        z-index: 10000;
+        i::before {
+            content: "\f479"; // bi-list
+        }
+        &.active i::before {
+            content: "\f62a"; // bi-x-lg
+        }
     }
     
     @include tablet {
@@ -526,9 +577,9 @@
     }
 
     @include desktop {
-        
+
         .longLogo, .shortLogo, .allScrLogo {
-            padding-left: 2.2rem;
+            padding-left: 0;
         }
         
 
@@ -570,7 +621,7 @@
         padding-top: 0em;
 
         .longLogo, .shortLogo, .allScrLogo {
-            padding-left: 2.5rem;
+            padding-left: 0;
         }
         
         #logo img {
@@ -669,7 +720,7 @@ input.selection-param-input {
     position: absolute;
     width: 100%;
     left: 0;
-    top: 53px;
+    top: 100%;
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
 }
