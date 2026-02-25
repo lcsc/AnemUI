@@ -1,3 +1,5 @@
+@import "media-queries.scss";
+
 div.btnSelect {
     padding: 0.5em 0.1em;
     min-height: 47px;
@@ -66,35 +68,51 @@ div.btnSelect.visible {
 
  // --- BUTTON EXPAND HOVER
  .buttonDiv.visible {
-    height: 40px;
-    padding: 0.46rem;
-    font-size: 0.875rem;
-    margin-top: 5px;
+    height: 30px;
+    padding: 0.3rem;
+    font-size: 0.75rem;
+    margin-top: 3px;
     box-shadow: 0.5px 0.5px 3px $color_3;
     outline: none !important;
     background-color: $color_8;
     color: $color_4 !important;
-    border-radius: 50px;
+    border-radius: 20px;
     border: solid 1px $color_4;
     text-decoration: none;
-    border-radius: 20px;
     display: inline-flex;
     align-items: center;
     overflow: hidden;
     width: auto;
-    max-width: 40px;
+    max-width: 30px;
     transition: max-width 0.3s;
 
     .icon {
-        font-size: 24px !important;
-        margin-right: 15px;
+        font-size: 18px !important;
+        margin-right: 10px;
         display: flex;
         align-items: center;
     }
 
     .text {
         white-space: nowrap;
-        padding-right: 15px;
+        padding-right: 10px;
+    }
+
+    @include tablet {
+        height: 40px;
+        padding: 0.46rem;
+        font-size: 0.875rem;
+        margin-top: 5px;
+        max-width: 40px;
+
+        .icon {
+            font-size: 24px !important;
+            margin-right: 15px;
+        }
+
+        .text {
+            padding-right: 15px;
+        }
     }
 }
 
