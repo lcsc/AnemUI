@@ -626,9 +626,9 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
     // Siempre empezar con un array limpio
     this.uncertaintyLayer = [];
 
-    const uncertaintyVarId = state.varId + '_uncertainty';
+    const uncertaintyVarId = state.overlayVarId || (state.varId + '_uncertainty');
     if (!timesJs.portions[uncertaintyVarId]) {
-      console.warn('No uncertainty portions found for varId:', uncertaintyVarId);
+      console.warn('No overlay portions found for varId:', uncertaintyVarId);
       return;
     }
 

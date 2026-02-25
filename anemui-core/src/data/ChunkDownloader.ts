@@ -7,7 +7,7 @@ import { inflate } from 'pako';
 import { parse } from 'csv-parse/sync';
 import proj4 from 'proj4';
 import { fromLonLat } from "ol/proj";
-import { CategoryRangePainter, PaletteManager } from "../PaletteManager";
+import { CategoryRangePainter, Painter, PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
 import { ncSignif, dataSource, globalMap, olProjection } from "../Env";
@@ -377,10 +377,17 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
         app.notifyMaxMinChanged();
 
-        // Si es capa de incertidumbre, usar el painter específico de uncertainty
-        let painterInstance = uncertaintyLayer
-            ? PaletteManager.getInstance()['painters']['uncertainty'] || PaletteManager.getInstance().getPainter()
-            : PaletteManager.getInstance().getPainter();
+        // Si es capa overlay, usar el painter específico según tipo (significance o uncertainty)
+        let painterInstance: Painter;
+        if (uncertaintyLayer) {
+            const overlayVarId = status.overlayVarId || '';
+            const painterKey = overlayVarId.includes('_significance') ? 'significance' : 'uncertainty';
+            painterInstance = PaletteManager.getInstance()['painters'][painterKey]
+                || PaletteManager.getInstance()['painters']['uncertainty']
+                || PaletteManager.getInstance().getPainter();
+        } else {
+            painterInstance = PaletteManager.getInstance().getPainter();
+        }
 
         // Para datos computados, precalcular breaks con todos los datos combinados
         if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
@@ -390,8 +397,8 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         // Obtener el nivel de zoom actual del mapa
         const currentZoom = app.getMap()?.getZoom() || 6;
 
-        // Para capas de incertidumbre, usar el varId con sufijo '_uncertainty'
-        const uncertaintyVarId = uncertaintyLayer ? status.varId + '_uncertainty' : status.varId;
+        // Para capas overlay (incertidumbre/significación), usar el overlayVarId resuelto
+        const uncertaintyVarId = uncertaintyLayer ? (status.overlayVarId || status.varId + '_uncertainty') : status.varId;
 
         for (let i = 0; i < filteredArrays.length; i++) {
             let filteredArray = filteredArrays[i];

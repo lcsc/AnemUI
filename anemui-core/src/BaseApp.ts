@@ -62,6 +62,8 @@ const INITIAL_STATE: CsViewerData = {
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
+export const SIGNIFICANCE_LAYER = '_significance'
+export const OVERLAY_SUFFIXES = [UNCERTAINTY_LAYER, SIGNIFICANCE_LAYER]
 const LEYEND_TITLE = "Leyenda"
 const STR_ALL = "Todo"
 
@@ -213,11 +215,11 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             data: {
                 [this.language.getTranslation('pop_name')]: item.data[langPrefix + 'name'],
                 [this.language.getTranslation('pop_description')]: item.data[langPrefix + 'description'],
-                [this.language.getTranslation('pop_importance')]: item.data[langPrefix + 'importance_of_index'],
+                // [this.language.getTranslation('pop_importance')]: item.data[langPrefix + 'importance_of_index'],
                 [this.language.getTranslation('pop_time_scale')]: item.data[langPrefix + 'time_scale_applicable'],
-                [this.language.getTranslation('pop_geographic')]: item.data[langPrefix + 'geographic_limitation'],
+                // [this.language.getTranslation('pop_geographic')]: item.data[langPrefix + 'geographic_limitation'],
                 [this.language.getTranslation('pop_formula')]: item.data[langPrefix + 'formula'],
-                [this.language.getTranslation('pop_reference')]: item.data[langPrefix + 'reference']
+                // [this.language.getTranslation('pop_reference')]: item.data[langPrefix + 'reference']
             }
         }));
     }
@@ -617,7 +619,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             varName = varId
         }
         
-        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined
+        // Detectar capa overlay (incertidumbre o significación)
+        let overlayVarId: string | undefined = undefined;
+        for (const suffix of OVERLAY_SUFFIXES) {
+            if (_timesJs.times[varId + suffix] != undefined) {
+                overlayVarId = varId + suffix;
+                break;
+            }
+        }
 
         if (this.state == undefined) this.state = INITIAL_STATE;
         this.state = {
@@ -630,7 +639,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             legendTitle: legendTitle,
             selection: "",
             selectionParamEnable: false,
-            uncertaintyLayer: uncertainty
+            uncertaintyLayer: overlayVarId != undefined,
+            overlayVarId: overlayVarId
         }
     }
 
