@@ -62,8 +62,8 @@ const INITIAL_STATE: CsViewerData = {
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
-export const SIGNIFICANCE_LAYER = '_significance'
-export const OVERLAY_SUFFIXES = [UNCERTAINTY_LAYER, SIGNIFICANCE_LAYER]
+export const PVALUE_LAYER = '_pvalue'
+export const OVERLAY_SUFFIXES = [UNCERTAINTY_LAYER, PVALUE_LAYER]
 const LEYEND_TITLE = "Leyenda"
 const STR_ALL = "Todo"
 

@@ -377,11 +377,11 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
         app.notifyMaxMinChanged();
 
-        // Si es capa overlay, usar el painter específico según tipo (significance o uncertainty)
+        // Si es capa overlay, usar el painter específico según tipo (pvalue o uncertainty)
         let painterInstance: Painter;
         if (uncertaintyLayer) {
             const overlayVarId = status.overlayVarId || '';
-            const painterKey = overlayVarId.includes('_significance') ? 'significance' : 'uncertainty';
+            const painterKey = overlayVarId.includes('_pvalue') ? 'significance' : 'uncertainty';
             painterInstance = PaletteManager.getInstance()['painters'][painterKey]
                 || PaletteManager.getInstance()['painters']['uncertainty']
                 || PaletteManager.getInstance().getPainter();
