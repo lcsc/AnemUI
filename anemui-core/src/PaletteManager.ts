@@ -607,6 +607,13 @@ export class PaletteManager {
         return this.painter;
     }
 
+    /**
+     * Obtiene el painter registrado para un nombre de paleta específico
+     */
+    public getNamedPainter(name: string): Painter | undefined {
+        return this.painters[name];
+    }
+
     public getTransparency():number{
         return this.transparency;
     }

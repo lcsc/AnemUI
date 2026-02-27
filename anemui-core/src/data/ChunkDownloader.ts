@@ -95,6 +95,12 @@ async function rangeRequest(url: string, startByte: bigint, endByte: bigint): Pr
         const response = await fetch(url, { headers: headers });
         if (response.status === 206) {
             return new Uint8Array(await response.arrayBuffer());
+        } else if (response.status === 200) {
+            // Server doesn't support Range requests, extract the needed slice
+            const fullBuffer = await response.arrayBuffer();
+            const start = Number(startByte);
+            const end = Number(endByte) + 1; // endByte is inclusive in Range header
+            return new Uint8Array(fullBuffer.slice(start, end));
         } else if (response.status === 416) {
             console.error(`Range not satisfiable: requested bytes ${startByte}-${endByte} from ${url}`);
             throw new Error(`Range not satisfiable: requested bytes ${startByte}-${endByte} from ${url}`);
@@ -302,11 +308,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         if (!uncertaintyLayer) {
             // Copia profunda para evitar problemas con referencias
             mainLayerData = filteredArrays.map(arr => [...arr]);
-            console.log('[buildImages] Guardando mainLayerData para máscara:', {
-                numPortions: mainLayerData.length,
-                lengths: mainLayerData.map(arr => arr.length),
-                nanCounts: mainLayerData.map(arr => arr.filter(v => isNaN(v) || !isFinite(v)).length)
-            });
         }
 
         let minArray: number = Number.MAX_VALUE;
@@ -382,9 +383,9 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         if (uncertaintyLayer) {
             const overlayVarId = status.overlayVarId || '';
             const painterKey = overlayVarId.includes('_pvalue') ? 'significance' : 'uncertainty';
-            painterInstance = PaletteManager.getInstance()['painters'][painterKey]
-                || PaletteManager.getInstance()['painters']['uncertainty']
-                || PaletteManager.getInstance().getPainter();
+            painterInstance = PaletteManager.getInstance().getNamedPainter(painterKey)
+                || PaletteManager.getInstance().getNamedPainter('uncertainty')
+                || PaletteManager.getInstance().getPainter(true);
         } else {
             painterInstance = PaletteManager.getInstance().getPainter();
         }
@@ -405,25 +406,14 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
             // Para capa de incertidumbre, filtrar píxeles donde la capa principal es NaN (mar/otros países)
             if (uncertaintyLayer) {
-                console.log(`[buildImages] Incertidumbre porción ${i}:`, {
-                    mainLayerDataExists: !!mainLayerData[i],
-                    mainLayerLength: mainLayerData[i]?.length || 0,
-                    filteredArrayLength: filteredArray.length,
-                    lengthsMatch: mainLayerData[i]?.length === filteredArray.length
-                });
-
                 if (mainLayerData[i] && mainLayerData[i].length === filteredArray.length) {
-                    let maskedCount = 0;
                     filteredArray = filteredArray.map((val, idx) => {
                         const mainVal = mainLayerData[i][idx];
-                        // Si el dato principal es NaN, poner 0 en incertidumbre (no mostrar)
                         if (isNaN(mainVal) || !isFinite(mainVal)) {
-                            maskedCount++;
                             return 0;
                         }
                         return val;
                     });
-                    console.log(`[buildImages] Incertidumbre porción ${i}: ${maskedCount} píxeles enmascarados de ${filteredArray.length}`);
                 } else {
                     console.warn(`[buildImages] No se puede aplicar máscara en porción ${i}: mainLayerData no disponible o longitudes no coinciden`);
                 }
@@ -573,23 +563,6 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         if (!Array.isArray(floatArray) || floatArray.length === 0) {
             throw new Error(`Invalid float array: length=${floatArray.length}, isArray=${Array.isArray(floatArray)}`);
         }
-
-        const validValues = floatArray.filter(v => !isNaN(v) && isFinite(v));
-        const validCount = validValues.length;
-        // Usar reduce en vez de spread para evitar stack overflow en arrays grandes
-        const minVal = validValues.reduce((a, b) => Math.min(a, b), Infinity);
-        const maxVal = validValues.reduce((a, b) => Math.max(a, b), -Infinity);
-        console.log('🔍 downloadXYChunkNC OUTPUT:', {
-            varName,
-            portion,
-            actualTimeIndex,
-            total: floatArray.length,
-            valid: validCount,
-            validPercent: (validCount / floatArray.length * 100).toFixed(2) + '%',
-            samples: floatArray.slice(0, 20),
-            min: minVal,
-            max: maxVal
-        });
 
         xyCache = { t: actualTimeIndex, varName, portion, data: [...floatArray] };
 
@@ -804,11 +777,6 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
                     columns: true,
                     skip_empty_lines: true
                 });
-                console.log(`[downloadXYbyRegion] varName="${varName}", timeIndex=${timeIndex}, records.length=${records.length}`);
-                console.log(`[downloadXYbyRegion] records[${timeIndex}]['times_mean'] =`, records[timeIndex] ? records[timeIndex]['times_mean'] : 'undefined');
-                if (varName.includes('beta_b0') && records[timeIndex]) {
-                    console.log(`[downloadXYbyRegion] beta_b0 for province '1' (Araba):`, records[timeIndex]['1']);
-                }
                 stResult = records[timeIndex]
                 // if (records.length == 1) stResult = records[0];
                 // else {
@@ -841,8 +809,6 @@ export function downloadXYbyRegionMultiPortion(
     const promises = portions.map(portion => {
         return new Promise((resolve, reject) => {
             const csvPath = `./regData/${folder}/${varName}${portion}.csv`;
-            console.log("  📥 Downloading:", csvPath);
-            
             downloadUrl(csvPath, (status: number, response) => {
                 if (status == 200) {
                     try {
