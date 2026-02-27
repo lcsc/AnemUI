@@ -1139,24 +1139,30 @@ async updateRender(support: string): Promise<void> {
     const currentCenter = this.map.getView().getCenter();
     const currentResolution = this.map.getView().getResolution();
 
-    // Paso 1: Capturar Península + Baleares
-    // Padding asimétrico: [top, right, bottom, left] - más a la izquierda para dejar espacio al recuadro de Canarias
-    const peninsulaExtent4326 = [-10.0, 35.0, 5.0, 44.5];
-    const peninsulaExtent = transformExtent(peninsulaExtent4326, 'EPSG:4326', proj);
-    const mapSize0 = this.map.getSize();
-    const insetLeftPad = mapSize0 ? Math.round(mapSize0[0] * 0.22) : 200;
-    this.map.getView().fit(peninsulaExtent, { padding: [10, 35, 10, insetLeftPad] });
+    // Promesa que espera rendercomplete de forma fiable
+    const waitForRender = (): Promise<void> => {
+      return new Promise<void>((resolve) => {
+        this.map.once('rendercomplete', () => resolve());
+        this.map.renderSync();
+      });
+    };
 
-    this.map.once('rendercomplete', () => {
+    const doExport = async () => {
+      // Paso 1: Capturar Península + Baleares
+      const peninsulaExtent4326 = [-10.0, 35.0, 5.0, 44.5];
+      const peninsulaExtent = transformExtent(peninsulaExtent4326, 'EPSG:4326', proj);
+      const mapSize0 = this.map.getSize();
+      const insetLeftPad = mapSize0 ? Math.round(mapSize0[0] * 0.22) : 200;
+      this.map.getView().fit(peninsulaExtent, { padding: [10, 35, 10, insetLeftPad] });
+
+      await waitForRender();
+
       const mapSize = this.map.getSize();
       if (!mapSize) return;
       const mainWidth = mapSize[0];
       const mainHeight = mapSize[1];
 
-      // Capturar canvas OL de la península
       const mainOlCanvas = this.captureOlCanvas(mainWidth, mainHeight);
-
-      // Obtener bbox para WMS de la península
       const mainViewExtent = this.map.getView().calculateExtent(mapSize);
       const mainBbox4326 = transformExtent(mainViewExtent, proj, 'EPSG:4326');
 
@@ -1165,36 +1171,31 @@ async updateRender(support: string): Promise<void> {
       const canariasExtent = transformExtent(canariasExtent4326, 'EPSG:4326', proj);
       this.map.getView().fit(canariasExtent, { padding: [5, 5, 5, 5] });
 
-      this.map.once('rendercomplete', () => {
-        // Capturar canvas OL de Canarias
-        const insetWidth = Math.round(mainWidth * 0.30);
-        const insetHeight = Math.round(mainHeight * 0.28);
-        const canariasOlCanvas = this.captureOlCanvas(mapSize[0], mapSize[1]);
+      await waitForRender();
 
-        // Obtener bbox para WMS de Canarias
-        const canariasViewExtent = this.map.getView().calculateExtent(mapSize);
-        const canariasBbox4326 = transformExtent(canariasViewExtent, proj, 'EPSG:4326');
+      const insetWidth = Math.round(mainWidth * 0.30);
+      const insetHeight = Math.round(mainHeight * 0.28);
+      const canariasOlCanvas = this.captureOlCanvas(mapSize[0], mapSize[1]);
+      const canariasViewExtent = this.map.getView().calculateExtent(mapSize);
+      const canariasBbox4326 = transformExtent(canariasViewExtent, proj, 'EPSG:4326');
 
-        // Restaurar vista original
-        this.map.getView().setCenter(currentCenter);
-        this.map.getView().setResolution(currentResolution);
+      // Restaurar vista original
+      this.map.getView().setCenter(currentCenter);
+      this.map.getView().setResolution(currentResolution);
 
-        // Paso 3: Pedir ambas imágenes WMS al IGN y componer
-        this.loadWmsImages(mainBbox4326, mainWidth, mainHeight, canariasBbox4326, insetWidth, insetHeight,
-          (mainBg, canBg) => {
-            this.composeExportImage(
-              mainBg, mainOlCanvas, mainWidth, mainHeight,
-              canBg, canariasOlCanvas, insetWidth, insetHeight,
-              state, timesJs, app
-            );
-          }
-        );
-      });
+      // Paso 3: Pedir ambas imágenes WMS al IGN y componer
+      this.loadWmsImages(mainBbox4326, mainWidth, mainHeight, canariasBbox4326, insetWidth, insetHeight,
+        (mainBg, canBg) => {
+          this.composeExportImage(
+            mainBg, mainOlCanvas, mainWidth, mainHeight,
+            canBg, canariasOlCanvas, insetWidth, insetHeight,
+            state, timesJs, app
+          );
+        }
+      );
+    };
 
-      this.map.renderSync();
-    });
-
-    this.map.renderSync();
+    doExport();
   }
 
   private captureOlCanvas(width: number, height: number): HTMLCanvasElement {
