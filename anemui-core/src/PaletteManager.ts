@@ -162,7 +162,6 @@ export class NiceSteps {
     }
 }
 
-// Debug helper - add this to CategoryRangePainter for better debugging
 
 export class CategoryRangePainter implements Painter {
     protected ranges: { a: number, b: number }[]
@@ -360,7 +359,6 @@ export class GradientPainter implements Painter {
         if (index >= 0) return paletteStr[index]
         return "#000000"//black
     }
-
 }
 
 export class CsDynamicPainter implements Painter {

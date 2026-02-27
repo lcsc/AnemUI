@@ -1,111 +1,54 @@
+
 div.GraphContainer {
-    @include bgFrame(12px);
-    
-    position: absolute;
-    left: 50%;
-    top: 30%;
-    transform: translate(-50%, -30%);
-    padding: 0.8em 1.5em;
-    background-color: rgba(255, 255, 255, 1);
-    background: white;
-    color: #333;
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
-    z-index: 2000;
-    width: fit-content;
-    position: relative;
+    @include bgFrame($radius-lg);
+    position: absolute; left: 50%; top: 30%; transform: translate(-50%, -30%);
+    padding: 1.1em 1.8em;
+    background-color: $bg-panel; color: $text-primary;
+    border: 2px solid $accent-forest; box-shadow: $shadow-strong;
+    z-index: 2000; width: fit-content; position: relative; font-family: $font-body;
 
     a.popup-close-button {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 300;
+        position: absolute; top: 10px; right: 10px; z-index: 300;
+        i.bi {
+            width: 34px; height: 34px; font-size: 1.5rem; color: $text-muted;
+            padding: 5px; cursor: pointer; border-radius: $radius-pill;
+            transition: all $transition-fast; display: flex; align-items: center; justify-content: center;
+            &:hover { color: $accent-primary; background: $bg-elevated; }
+        }
     }
 
-    a.popup-close-button i.bi {
-        width: 40px;
-        height: 40px;
-        font-size: 2rem;
-        color: #2c6d9a;
-        padding: 5px;
-        cursor: pointer;
-    }
+    div.popup-content-wrapper { padding: 1px; text-align: left; border-radius: $radius-lg; }
 
-    a.popup-close-button i.bi:hover {
-        color: #aeddff;
-    }
-
-    div.popup-content-wrapper {
-        padding: 1px;
-        text-align: left;
-        border-radius: 12px;
-    }
-
-    .dygraph-label {
-        color: #064d87;
-        font-size: 1.1em;
-        font-weight: 500;
-        padding: 0.2rem 0rem;
-    }
+    .dygraph-label { color: $text-primary; font-size: 0.95em; font-weight: $fw-semibold; font-family: $font-body; padding: 0.2rem 0; }
 
     .dygraph-title {
-        margin-bottom: 15px; /* Ajusta este valor para aumentar o disminuir la separación */
-        text-align: center;
-        font-size: 20px;
-        color: gray 2px 2px 2px;
+        margin-bottom: 14px; text-align: center; font-size: 1.15em;
+        font-weight: $fw-bold; font-family: $font-body; color: $accent-forest; letter-spacing: 0.01em;
     }
 
-    .dygraph-ylabel {
-        font-size: 18px;
-        color: gray -2px 2px 2px;
-    }
+    .dygraph-ylabel { font-size: 0.8em; color: $text-secondary; font-weight: $fw-medium; font-family: $font-body; }
+    .dygraph-ylabel, .dygraph-axis-label-y { overflow: visible; padding-right: 8px; }
 
-    .dygraph-ylabel, .dygraph-axis-label-y {
-        // width: 100px !important; /* Adjust this value as needed */
-        overflow: visible;
-        padding-right: 10px;
-      }
+    .dygraph-axis-label {
+        font-family: $font-mono; font-size: 0.68em; font-weight: $fw-medium;
+        color: $text-muted; letter-spacing: 0.03em;
+    }
 
     .dygraph-legend {
-        text-align: center;
-        width: 1024px;
-        background-color: transparent !important;
-        left: 0px !important;
+        text-align: center; width: 1024px; background-color: transparent !important;
+        left: 0 !important; font-family: $font-mono; font-size: 0.78em; color: $text-primary;
     }
 
-    .chart {
-        border: 1px dashed black;
-        margin: 5px 5px 5px 50px;
-        padding: 2px;
-    }
+    .chart { border: 1px dashed $border-color; margin: 5px 5px 5px 50px; padding: 2px; }
+    .labels-content { min-height: 36px; padding-top: 8px; }
+    #labels { text-align: center; }
+    #scaleSelectorsContainer { margin: 10px 0; display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 
-    .labels-content {
-        min-height: 40px;
-        padding-top: 10px;
+    #graphTooltip {
+        position: absolute; display: none;
+        background-color: $accent-forest; color: $text-on-dark;
+        padding: 5px 10px; border-radius: $radius-sm;
+        pointer-events: none; font-size: 11px; font-family: $font-mono;
+        z-index: 1000; white-space: nowrap; box-shadow: $shadow-medium; letter-spacing: 0.03em;
     }
-
-    #labels {
-        text-align: center;
-    }
-
-    #scaleSelectorsContainer {
-        margin: 10px 0;
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    #graphTooltip{
-        position: absolute;
-        display: none;
-        background-color: $title_color;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-        pointer-events: none;
-        font-size-adjust: 12px;
-        z-index: 1000;
-        white-space: nowrap
-    }
-        
 }

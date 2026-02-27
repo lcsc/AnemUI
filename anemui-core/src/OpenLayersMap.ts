@@ -468,13 +468,20 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
     return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', pixelIndex, portion, value);
   }
 
-   public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
+public onFeatureClick(feature: GeoJSON.Feature, folder: string, event: any) {
     let state = this.parent.getParent().getState()
-    if(typeof state.times === 'string' && !computedDataTilesLayer) return 1
+    if (typeof state.times === 'string' && !computedDataTilesLayer) return 1
     if (feature) {
-        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'], 'folder': folder };
-        if (state.support== this.renderers[0])  this.parent.getParent().showGraph({ type: 'station', stParams })
-        this.parent.getParent().showGraph({ type: 'region', stParams })
+      let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'], 'folder': folder };
+      if (state.support == this.renderers[0]) {
+        // Estaciones: necesita lastLlData, verificar que existe
+        if (this.parent.getParent().getLastLlData()) {
+          this.parent.getParent().showGraph({ type: 'station', stParams });
+        }
+      } else {
+        // Regiones (CCAA, Provincia): usar showGraphByRegion
+        this.parent.getParent().showGraphByRegion(folder, stParams);
+      }
     }
   }
 
@@ -810,6 +817,8 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
 
     if (this.featureLayer) {
       this.featureLayer.indexData = null;
+      // FIX: actualizar lastSupport ANTES para que show() use el renderer correcto
+      this.lastSupport = support;
       let times = typeof (state.times) === 'string' ? state.times : state.times[state.selectedTimeIndex];
       await this.initializeFeatureLayer(times, dataFolder, state.varId);
       this.setupInteractions();
@@ -817,7 +826,6 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
       console.warn("featureLayer is undefined for dataFolder:", dataFolder);
     }
   }
-
   private selectDataFolder(folders: string[]): string {
     if (folders.length <= 1) {
       return folders[0];
@@ -865,13 +873,18 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
     }
   }
 
-  async initializeFeatureLayer(time: string, folder: string, varName: string): Promise<void> {
+async initializeFeatureLayer(time: string, folder: string, varName: string): Promise<void> {
     return new Promise((resolve, reject) => {
       let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
         if (this.featureLayer) {
           this.featureLayer.indexData = data;
           if (this.featureLayer.show) {
             this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+          }
+          // FIX: Forzar repintado tras asignar datos para que setFeatureStyle
+          // use indexData real en vez del placeholder gris
+          if (this.featureLayer.refresh) {
+            this.featureLayer.refresh();
           }
           resolve();
         } else {
@@ -881,13 +894,10 @@ public buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): void 
       };
 
       if (computedDataTilesLayer) {
-        // Build calculated Layer
         this.computeFeatureLayerData(time, folder, varName, openSt);
       } else {
-        // Download and build new data layers
         downloadXYbyRegion(time, folder, varName, openSt);
       }
-
     });
   }
 
@@ -1193,7 +1203,12 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     if (this.geoLayerShown) this.geoLayer.changed()
   }
 
-  public setStationStyle(state: CsViewerData, feature: FeatureLike, timesJs: CsTimesJsData): Style {
+ public setStationStyle(state: CsViewerData, feature: FeatureLike, timesJs: CsTimesJsData): Style {
+    // Guard: si aún no hay datos, devolver estilo por defecto
+    if (!this.indexData) {
+      return DEF_STYLE_STATIONS;
+    }
+
     let ptr = PaletteManager.getInstance().getPainter();
     let minValue = timesJs.varMin[state.varId][state.selectedTimeIndex];
     let maxValue = timesJs.varMax[state.varId][state.selectedTimeIndex];
@@ -1221,7 +1236,17 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     return new Style({ image: imgStation, })
   }
 
-  public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
+
+
+ public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
+    // Guard: si aún no hay datos, devolver estilo placeholder
+    if (!this.indexData) {
+      return new Style({
+        fill: new Fill({ color: '#cccccc' }),
+        stroke: new Stroke({ color: '#999', width: 1 }),
+      });
+    }
+
     let min: number = Number.MAX_VALUE;
     let max: number = Number.MIN_VALUE;
 
@@ -1264,6 +1289,13 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   }
 
   public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
+    // Guard: si no hay datos cargados, ocultar popup
+    if (!data) {
+      this.csMap.popupContent.style.visibility = 'hidden';
+      this.csMap.popup.hidden = true;
+      return;
+    }
+
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
     let value: string;
@@ -1294,6 +1326,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     }
     this.currentFeature = feature;
   };
+
 
   public highLightColor(hex: string, lum: number): string {
     hex = String(hex).replace(/[^0-9a-f]/gi, '');

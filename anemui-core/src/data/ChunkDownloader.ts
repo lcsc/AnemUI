@@ -689,7 +689,7 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
 export function downloadCSVbyRegion(folder: string, varName: string, doneCb: CsvDownloadDone): void {
     downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let result: string
+            let result: any
             try {
                 result = parse(response as Buffer, {
                     columns: true,
@@ -707,48 +707,121 @@ export function downloadTimebyRegion(folder: string, id: string, varName: string
     downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
             let rgResult: string[] = []
-            let rgCSV = 'date;' + varName +'\r\n';
+            let rgCSV = 'date;' + varName + '\r\n';
             try {
                 let result = parse(response as Buffer, {
                     columns: true,
                     skip_empty_lines: true
                 });
-                result.forEach( (dataRow: any) => {
-                    rgResult[dataRow['times_mean']] = dataRow[id]
-                    rgCSV += dataRow['times_mean'] + ';' + dataRow[id] +'\r\n';
-                })
+                result.forEach((dataRow: any) => {
+                    const dateKey = dataRow['times_mean'] || dataRow['times_ini'];
+                    const value = dataRow[id];
+                    if (dateKey) {
+                        rgResult[dateKey] = value;
+                        rgCSV += dateKey + ';' + (value || '') + '\r\n';
+                    }
+                });
             } catch (e) {
                 rgCSV = '';
             }
-            doneCb(rgCSV, 'data', 'text/plain') ;
+            doneCb(rgCSV, 'data', 'text/plain');
         }
-    },undefined,'text');
+    }, undefined, 'text');
 }
 
 export function downloadXYbyRegion(time: string, folder: string, varName: string, doneCb: CsvDownloadDone) {
-    downloadUrl("./regData/" + folder +  "/" + varName + ".csv", (status: number, response) => {
+    downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let stResult: [];
+            let stResult: any = undefined;
             try {
                 const records = parse(response as Buffer, {
                     columns: true,
                     skip_empty_lines: true
                 });
-                if (records.length == 1) stResult = records[0];
-                else {
+
+                // Extraer el año del time solicitado (p.ej. "2023-01-01" → "2023")
+                const requestedYear = time.substring(0, 4);
+
+                console.log('downloadXYbyRegion:', {
+                    time,
+                    requestedYear,
+                    folder,
+                    varName,
+                    recordCount: records.length,
+                    sampleTimesMean: records.length > 0 ? (records[0] as any)['times_mean'] : 'N/A',
+                    sampleTimesIni: records.length > 0 ? (records[0] as any)['times_ini'] : 'N/A'
+                });
+
+                if (records.length == 1) {
+                    stResult = records[0];
+                } else {
+                    // Intentar match exacto primero (times_mean == time)
                     records.forEach((record: any) => {
-                        if (record['times_mean'] == time)
+                        if (record['times_mean'] == time) {
                             stResult = record;
+                        }
+                    });
+
+                    // Si no hay match exacto, intentar por times_ini
+                    if (!stResult) {
+                        records.forEach((record: any) => {
+                            if (record['times_ini'] == time) {
+                                stResult = record;
+                            }
+                        });
+                    }
+
+                    // Si tampoco, intentar por año
+                    if (!stResult) {
+                        records.forEach((record: any) => {
+                            const recordYear = (record['times_mean'] || record['times_ini'] || '').substring(0, 4);
+                            if (recordYear === requestedYear) {
+                                stResult = record;
+                            }
+                        });
+                    }
+                }
+
+                // Convertir valores de string a number
+                // Las columnas times_ini, times_end, times_mean son fechas, el resto son datos
+                if (stResult) {
+                    const numericResult: any = {};
+                    Object.keys(stResult).forEach(key => {
+                        if (key === 'times_ini' || key === 'times_end' || key === 'times_mean') {
+                            // No convertir fechas
+                            numericResult[key] = stResult[key];
+                        } else {
+                            const val = stResult[key];
+                            if (val === '' || val === null || val === undefined) {
+                                numericResult[key] = NaN;
+                            } else {
+                                const num = parseFloat(val);
+                                numericResult[key] = isNaN(num) ? NaN : num;
+                            }
+                        }
+                    });
+                    stResult = numericResult;
+
+                    console.log('downloadXYbyRegion: data found, sample values:', 
+                        Object.entries(stResult)
+                            .filter(([k]) => !k.startsWith('times_'))
+                            .slice(0, 5)
+                            .map(([k, v]) => `${k}=${v}`)
+                    );
+                } else {
+                    console.warn('downloadXYbyRegion: no matching record found for', {
+                        time, requestedYear, folder, varName
                     });
                 }
+
             } catch (e) {
                 console.error("Error parsing CSV:", e);
-                stResult = [];
+                stResult = undefined;
             }
             doneCb(stResult, varName, 'text/plain');
         } else {
             console.error("Error downloading CSV. Status:", status);
-            doneCb([], varName, 'text/plain');
+            doneCb(undefined, varName, 'text/plain');
         }
     }, undefined, 'text');
 }

@@ -1,837 +1,250 @@
-@import "media-queries.scss";
 
-/* ---------------------------------------------------
-    SIDEBAR STYLE
------------------------------------------------------ */
-
-#logoDiv {
-    width: 160px;
-}
+#logoDiv { width: 160px; }
 
 .side-bar {
-    a {
-        color: $color_1;
-        text-decoration: none;
-    }
+    height: fit-content; min-width: 220px; max-width: 220px;
+    background: transparent; position: fixed; top: 6.5rem; z-index: 50;
+    color: $text-primary; transition: all $transition-smooth; margin-top: 0.75rem;
 
-    .basicBtn, .droppDownBtn{
-        box-shadow: 0.5px 1px 5px $color_3;
-        border-radius: 15px;
+    a { color: $text-primary; text-decoration: none; font-family: $font-body; }
+
+    .basicBtn, .droppDownBtn {
+        background-color: $bg-panel; border: 1.5px solid $border-color;
+        box-shadow: $shadow-soft; border-radius: $radius-lg;
+        transition: box-shadow $transition-base, border-color $transition-base;
+        &:hover { box-shadow: $shadow-medium; border-color: $accent-secondary; }
     }
 
     .dropdown-menu {
-        max-height: 300px;
-        overflow-y: scroll;
+        max-height: 300px; overflow-y: auto; border-radius: $radius-md;
+        border: 1.5px solid $border-color; box-shadow: $shadow-medium; background: $bg-panel;
     }
 
-    a.dropdown-item {
-        color: $color_3
-    }
+    a.dropdown-item { color: $text-secondary; }
+    a.cs-disabled   { color: $text-muted; }
 
-    a.cs-disabled {
-        color: $title_bgcolor
-    }
+    .sub-active a { color: $accent-primary !important; background: $bg-elevated; }
 
-    .sub-active {
+    ul li {
+        position: relative; display: block;
         a {
-            color: $color_2 !important;
-            background: $color_4;
+            text-align: left; padding: 5px 12px; font-size: 0.85em;
+            display: block; border-radius: $radius-sm;
+            transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
+            border-left: 3px solid transparent;
+            &:hover { color: $accent-forest; background: $bg-elevated; border-left-color: $accent-forest; }
+            i { margin-right: 10px; } img { width: 38px; margin: 2px auto; }
         }
     }
 
-    height: fit-content;
-    min-width: 250px;
-    max-width: 250px;
-    background: #ffffff00;
-    position: fixed;
-    top: 7rem; 
-    z-index: 50;
-    color: $color_4;
-    transition: all 0.3s;
-    margin-top: 1rem;
-    
-    ul {
-        li {
-            position: relative;
-            display: block;
+    ul ul li .label-small { display: none; }
 
-            a {
-                text-align: left;
-                padding: 4px 10px;
-                font-size: .9em;
-                display: block;
-
-                &:hover {
-                    color: $color_5;
-                    background: $color_4;
-                }
-
-                i {
-                    margin-right: 10px;
-                }
-
-                img {
-                    width: 38px;
-                    margin: 2px auto;
-                }
-            }
-        }
-
-        ul {
-            li {
-                .label-small {
-                    display: none;
-                }
-            }
-        }
-
-        li.active {
-            >a {
-                color: $color_4;
-                background: $color_5;
-            }
-        }
+    ul li.active > a {
+        color: $accent-forest; background: $bg-elevated;
+        font-weight: $fw-semibold; border-left: 3px solid $accent-primary;
     }
 
-    #SideBarHeader {
-        padding: 10px;
-        text-align: left;
-
-        strong {
-            display: none;
-            font-size: 1.8em;
-        }
-    }
-
-    ul.components {
-        padding-bottom: 20px;
-    }
-
-    .selected {
-        margin-left: 20px;
-    }
+    #SideBarHeader { padding: 10px; text-align: left; strong { display: none; font-size: 1.8em; } }
+    ul.components { padding-bottom: 16px; }
+    .selected { margin-left: 16px; }
 
     #BasicButtons {
         flex-direction: column;
-        #SpatialSupportDD {
-            order: 1;
-        }
-        #VariableDD {
-            order: 2;
-        }
-        #SubVariableDD {
-            order: 3;
-        }
-        #TemporalSupportDD {
-            order: 4;
-        }
-        #SelectionDD {
-            order: 5;
-        }
+        #SpatialSupportDD { order: 1; } #VariableDD { order: 2; }
+        #SubVariableDD { order: 3; } #TemporalSupportDD { order: 4; } #SelectionDD { order: 5; }
     }
 
     #bottom-logos {
-        position: fixed;
-        bottom: 20px;
-        left: 2%;
-        width: auto;
-        max-width: 100%;
-        img {
-            height: 5rem; 
-        }
+        position: fixed; bottom: 20px; left: 2%; width: auto; max-width: 100%;
+        img { height: 4.5rem; }
     }
 
-    @include tablet {
-        top: 6rem;
-        min-width: 200px;
-        max-width: 200px;
-        margin-top: 0.5rem;
-        
-        #bottom-logos {
-            img {
-                height: 4rem;
-            }
-        }
-    }
-
-    @include md-desktop {
-        top: 7rem; 
-        margin-top: 1rem;
-    }
-
-    @include xl-desktop {
-        top: 8rem; 
-        margin-top: 1rem;
-    }
+    @include tablet { top: 5.5rem; min-width: 200px; max-width: 200px; margin-top: 0.5rem; #bottom-logos img { height: 3.5rem; } }
+    @include md-desktop { top: 6.5rem; margin-top: 0.75rem; }
+    @include xl-desktop { top: 7rem; margin-top: 0.75rem; }
 }
 
+/* ── Right Bar ────────────────────────────────────────────── */
 #RightBar {
-    right: 1%;    
-    text-align: right;
-    top: 7rem; 
-    margin-top: 1rem; 
-
-    .rightbar-item {
-        display: block;
-    }
-    .paletteFrame{
-        order: 1
-    }
-    .downloadFrame{
-        order:2
-    }
+    right: 1%; text-align: right; top: 6.5rem; margin-top: 0.75rem;
+    .rightbar-item { display: block; } .paletteFrame { order: 1; } .downloadFrame { order: 2; }
 
     #latLong {
-        display: inline-block; 
-        white-space: nowrap; 
-        width: 100%;
-        margin-bottom: 0.5em;
-        padding: 0.2em 0.4em;
-        border-radius: 5px;
-        color: $title_color;
-        background-color: $title_bgcolor;
-        font-size: 14px;
-        font-weight: 400;
-        box-shadow: 0.5px 0.5px 3px $color_3;
+        display: inline-block; white-space: nowrap; width: 100%;
+        margin-bottom: 0.5em; padding: 0.3em 0.7em; border-radius: $radius-md;
+        color: $text-on-dark; background: $accent-forest;
+        font-size: 12px; font-weight: $fw-medium; font-family: $font-mono;
+        box-shadow: $shadow-soft; letter-spacing: 0.04em;
     }
 
-    @include tablet {
-        top: 6rem;
-        margin-top: 0.5rem;
-        right: 2%;
-    }
-
-    @include md-desktop {
-        top: 7rem;
-        margin-top: 1rem;
-    }
-
-    @include xl-desktop {
-        top: 8rem;
-        margin-top: 1rem;
-    }
+    @include tablet { top: 5.5rem; margin-top: 0.5rem; right: 2%; }
+    @include md-desktop { top: 6.5rem; margin-top: 0.75rem; }
+    @include xl-desktop { top: 7rem; margin-top: 0.75rem; }
 }
 
+/* ── Left Bar ─────────────────────────────────────────────── */
 #LeftBar {
-    left: 1%;
-    top: 7rem; 
-    margin-top: 1rem; 
-
-    @include tablet {
-        top: 6rem;
-        margin-top: 0.5rem;
-        left: 2%;
-    }
-
-    @include md-desktop {
-        top: 7rem;
-        margin-top: 1rem;
-    }
-
-    @include xl-desktop {
-        top: 8rem;
-        margin-top: 1rem;
-    }
+    left: 1%; top: 6.5rem; margin-top: 0.75rem;
+    @include tablet { top: 5.5rem; margin-top: 0.5rem; left: 2%; }
+    @include md-desktop { top: 6.5rem; margin-top: 0.75rem; }
+    @include xl-desktop { top: 7rem; margin-top: 0.75rem; }
 }
 
+/* ── Loading ──────────────────────────────────────────────── */
 @keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: 0; }
-    100% { opacity: 1; }
+    0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; }
 }
+.blinking-text { animation: blink 1.8s ease-in-out infinite; font-family: $font-mono; }
+.data-error-text { margin: 1rem; color: $accent-primary; font-weight: $fw-semibold; font-family: $font-mono; }
 
-.blinking-text {
-    animation: blink 2s infinite;
-}
-
-.data-error-text {
-    margin: 1rem 1rem;
-}
-
+/* ── Floating menu ────────────────────────────────────────── */
 div.menu {
-    min-width: 40%;
-    max-width: fit-content;
-    left:0;
-    right:0;
-    margin-left:auto;
-    margin-right:auto;
-    margin-top: 1rem; 
-    @include blurBgFrame(3rem);
+    min-width: 40%; max-width: fit-content; left: 0; right: 0;
+    margin: 0.75rem auto 0;
+    @include blurBgFrame($radius-xl);
 
-    div.menu-container{
-        min-height: 1rem; 
-        max-width: fit-content;
-    }
+    div.menu-container { min-height: 1rem; max-width: fit-content; }
     div.menu-title {
-        min-height: 1rem; 
-        padding: 0.5rem 1rem; 
-        background-color: $color_1;
-    
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        min-height: 1rem; padding: 0.5rem 1rem;
+        background-color: $accent-forest; border-radius: $radius-md $radius-md 0 0;
+        display: flex; align-items: center; justify-content: center;
+        color: $text-on-dark; font-family: $font-body; font-weight: $fw-bold;
     }
-    
-    button {
-        margin-left: 0.625rem; 
-    }
-    div.spinner-grow{
-        margin-top: 0.125rem; 
-        margin-left: 1rem;
-    }
-
-    @include tablet {
-        min-width: 60%;
-        margin-top: 0.5rem;
-    }
-
-    @include mobile {
-        min-width: 90%;
-        margin-top: 0.25rem;
-    }
+    button { margin-left: 0.625rem; }
+    div.spinner-grow { margin-top: 0.125rem; margin-left: 1rem; }
+    @include tablet { min-width: 60%; margin-top: 0.5rem; }
+    @include mobile { min-width: 90%; margin-top: 0.25rem; }
 }
 
+/* ── Navbar buttons ───────────────────────────────────────── */
 .navbar-btn {
-    box-shadow: none;
-    outline: none !important;
-    display: block;
-    text-shadow: none;
-    background-color: $color_8;
-    color: $color_4 !important;
-    border-radius: 50px;
-    border-color: $color_4;
+    box-shadow: none; outline: none !important; display: block; text-shadow: none;
+    font-family: $font-body; font-weight: $fw-semibold;
+    background: $bg-panel; color: $text-primary !important;
+    border-radius: $radius-pill; border: 1.5px solid $border-color;
+    transition: all $transition-fast;
+    &:hover, &:focus, &:active { background: $bg-elevated; border-color: $accent-forest; color: $accent-forest; cursor: pointer; }
+    &:disabled { background: $bg-input; color: $text-muted !important; border-color: $border-color; }
 }
 
-.navbar-btn-title {
-    min-width: 180px;
-    border-right: none;
-}
-
-.navbar-btn-split {
-    border-left: none;
-}
-
-.navbar-btn:hover,
-.navbar-btn:focus,
-.navbar-btn:active {
-    background-color: $color_6;
-    color: $color_8;
-    cursor: pointer;
-}
-
-.navbar-btn:disabled {
-    background-color: $color_1;
-    color: $border-color !important;
-}
+.navbar-btn-title { min-width: 180px; border-right: none; }
+.navbar-btn-split { border-left: none; }
 
 .navbar-sm-btn, .navbar-md-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 25px;
-    cursor: pointer;
-    background-color: $color_8;
-    color: $color_4;
-    border: 1px solid $color_4;
-    font-size: 1.6rem !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 32px; height: 32px; border-radius: $radius-pill; cursor: pointer;
+    background: $bg-panel; color: $accent-forest; border: 1.5px solid $border-color;
+    font-size: 1.4rem !important; display: flex; align-items: center; justify-content: center;
+    transition: all $transition-fast; box-shadow: $shadow-soft;
+    &:hover { background: $bg-elevated; border-color: $accent-primary; box-shadow: $shadow-medium; color: $accent-primary; }
 }
+.navbar-md-btn { width: 38px; height: 38px; }
 
-.navbar-md-btn {
-    width: 40px;
-    height: 40px;
-}
-
-.navbar-sm-btn:hover, 
-.navbar-md-btn:hover {
-    background-color: $color_6;
-    color: $color_8;
-    cursor: pointer;
-}
-
-.header {
-    background: $color_4;
-    color: $color_3;
-}
-
-.line {
-    width: 100%;
-    height: 1px;
-    border-bottom: 1px dashed $border-color;
-    margin: 2.5rem 0; 
-}
-
-.hide {
-    display: none !important;
-}
-
-.wrapper {
-    display: flex;
-    align-items: stretch;
-}
-
-.side-bar.active {
-    min-width: 50%;
-    max-width: 50%;
-    text-align: center;
-
-    .sidebar-header {
-        h3 {
-            display: none;
-        }
-
-        strong {
-            display: block;
-        }
-    }
-
-    .CTAs {
-        display: none;
-    }
-
-    ul {
-        ul {
-            li {
-                .label-big {
-                    display: none;
-                }
-
-                .label-small {
-                    display: inline-block;
-                    width: 100%;
-                    text-align: left;
-                }
-            }
-
-            a {
-                padding: 10px !important;
-            }
-        }
-
-        li {
-            a {
-                text-align: left;
-                font-size: 0.85em;
-
-                span {
-                    display: none;
-                }
-
-                i {
-                    margin-right: 0;
-                    display: block;
-                    font-size: 1.5em;
-                    margin-bottom: 5px;
-                }
-            }
-        }
-    }
-
-    @include tablet {
-        min-width: 180px;
-        max-width: 180px;
-    }
-
-    // @include md-desktop {
-    //     min-width: 226px;
-    //     max-width: 226px;
-    // }
-}
-
-a[aria-expanded="true"] {
-    color: $color_4;
-    background: #1E95FA;
-}
-
-a[data-toggle="collapse"] {
-    position: relative;
-}
-
-ul {
-    ul {
-        a {
-            font-size: 0.9em !important;
-            padding-left: 30px !important;
-        }
-    }
-}
-
-ul.CTAs {
-    padding: 20px;
-
-    a {
-        text-align: center;
-        font-size: 0.9em !important;
-        display: block;
-        border-radius: 5px;
-        margin-bottom: 5px;
-    }
-}
-
-a.download {
-    background: $color_4;
-    color: $color_6;
-}
-
-a.article {
-    background: #ffa012 !important;
-    color: $color_4 !important;
-
-    &:hover {
-        background: #ffa012 !important;
-        color: $color_4 !important;
-    }
-}
-
-#content {
-    width: 100%;
-    padding: 20px;
-    min-height: 100vh;
-    transition: all 0.3s;
-}
-
-.container {
-    margin-top: 5rem; 
-
-    @include tablet {
-        margin-top: 4rem;
-    }
-
-    @include mobile {
-        margin-top: 3rem;
-    }
-}
-
-#SideBarCollapse {
-    img {
-        width: 30px; 
-        cursor: pointer;
-    }
-}
-
-.no-wrap {
-    flex-wrap: nowrap !important;
-}
-
-.orange-nav {
-    color: $color_7 !important;
-}
-
-.alone {
-    padding: 1.2rem 0rem!important;
-}
+.header { background: $accent-forest; color: $text-on-dark; }
+.line { width: 100%; height: 1px; border-bottom: 1px dashed $border-color; margin: 2rem 0; }
+.wrapper { display: flex; align-items: stretch; }
 
 .smallBar {
-    width: 70% !important;
-    left: 50% !important;
-    transform: translate(-50%, 0%);
-
-    #logo {
-        display: none;
-    }
-
-    #central {
-        width: 100% !important;
-    }
-
-    #SubBar {
-        width: 100% !important;
-    }
-
-    #inputs {
-        margin: 1.2rem auto;
-    }
-
-    @include tablet {
-        width: 80% !important;
-    }
-
-    @include md-desktop {
-        width: 40% !important;
-    }
+    width: 70% !important; left: 50% !important; transform: translate(-50%, 0%); transition: all $transition-smooth;
+    #logo { display: none; } #central { width: 100% !important; } #SubBar { width: 100% !important; }
+    #inputs { margin: 1rem auto; }
+    @include tablet { width: 80% !important; } @include md-desktop { width: 40% !important; }
 }
 
-#SubBar {
-    display: inline-block !important;
-    padding-top: 0.4rem;
+#SubBar { display: inline-block !important; padding-top: 0.4rem; #info { padding: 0; } .TopRightFrame { float: right; } }
+.Input-group-end { border-top-right-radius: 0.25rem !important; border-bottom-right-radius: 0.25rem !important; }
+ul .two-columns { columns: 2; -webkit-columns: 2; -moz-columns: 2; }
 
-    #info {
-        padding-left: 0px;
-        padding-right: 0px;
-    }
-
-    .TopRightFrame {
-        float: right;
-    }
-}
-
-.Input-group-end {
-    border-top-right-radius: 0.25rem !important;
-    border-bottom-right-radius: 0.25rem !important;
-}
-
-ul .two-columns {
-    columns: 2;
-    -webkit-columns: 2;
-    -moz-columns: 2;
-}
-
-/* ---------------------------------------------------
-    SELECTORES DE CAPAS
------------------------------------------------------ */
-
-div.row.selectDiv{
-    width: 200px;
-    margin: 0.45rem 0rem; 
-}
+/* ── Layer selectors ──────────────────────────────────────── */
+div.row.selectDiv { width: 200px; margin: 0.4rem 0; }
 
 .uncDiv input.form-check-input {
-    visibility: visible;
-    margin: 0px auto;
-    width: 4rem !important; 
-    height: 2rem !important;
-    background-color: $color_8;
-    box-shadow: 0.5px 0.5px 3px $color_3;
-    cursor:pointer;
+    visibility: visible; margin: 0 auto; width: 3.5rem !important; height: 1.8rem !important;
+    background-color: $bg-elevated; border: 1.5px solid $border-color; box-shadow: none; cursor: pointer;
+    transition: background $transition-fast, border-color $transition-fast;
+    &:checked { background-color: $accent-secondary; border-color: $accent-secondary; }
 }
 
-.slider.slider-horizontal {
-    width: 80%;
-    height: auto;
-}
+.slider.slider-horizontal { width: 80%; height: auto; }
+div.slider.visible { display: inline-block; margin: 0 auto; width: 80%; cursor: pointer; }
 
-div.slider.visible {
-    display: inline-block;
-    margin: 0px auto;
-    width: 80%;
-    cursor: pointer;
-}
-
-.selectDiv  {
-    .slider-track {
-        height: 1px !important;
-        width: 100% !important;
-        margin-top: 0px !important;
-    }
-    
-    .slider-handle {
-        top: 7px;
-        width: 15px;
-        height: 15px;
-    }
-    
-    .inputDiv{
-        background-color:$color_1;
-        border-radius: 10px;
-        box-shadow: 0.5px 1px 5px $color_3;
-    }
-}
-
-.hidden {
-    display: none;
+.selectDiv {
+    .slider-track { height: 2px !important; width: 100% !important; margin-top: 0 !important; background: $border-color; }
+    .slider-handle { top: 6px; width: 14px; height: 14px; background: $accent-primary; border: 2px solid $bg-panel; box-shadow: $shadow-soft; }
+    .inputDiv { background: $bg-panel; border-radius: $radius-md; border: 1.5px solid $border-color; box-shadow: $shadow-soft; }
 }
 
 .closeDiv .icon {
-    height: 30px;
-    width: 30px;
-    font-size: 1.8rem !important; 
-    box-shadow: 0.5px 1px 5px $color_3;
-    background-color: $color_8;
-    color: $color_4 !important;
-    border-radius: 50px;
-    border: solid 1px $color_4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: 28px; width: 28px; font-size: 1.5rem !important;
+    background: $bg-panel; color: $text-secondary !important; border-radius: $radius-pill;
+    border: 1.5px solid $border-color; box-shadow: $shadow-soft;
+    display: flex; align-items: center; justify-content: center; transition: all $transition-fast;
+    &:hover { cursor: pointer; background: $bg-elevated; border-color: $accent-primary; color: $accent-primary !important; }
 }
 
-.closeDiv .icon:hover {
-    cursor:pointer;
-    background-color: $color_6;
-    color: $color_8;
-}
-
-// ----------------- CHECKBOX
+/* ── Radio/Checkbox ───────────────────────────────────────── */
 .radio {
-    width:100%;
-    margin: 0.5rem;
-    text-align: left;
-    font-size: 0.8rem; 
-    color: $color_3;
+    width: 100%; margin: 0.5rem; text-align: left; font-size: 0.82rem;
+    color: $text-primary; font-family: $font-body;
     input[type="checkbox"] {
-        position: absolute;
-        opacity: 0;
-        cursor: pointer;
-        + .radio-label {
-            &:before {
-                content: '';
-                background: $color_1;
-                border-radius: 100%;
-                border: 1px solid darken($color_1, 25%);
-                display: inline-block;
-                width: 1.1rem; 
-                height: 1.1rem; 
-                position: relative;
-                top: 0.25rem; 
-                margin-right: 0.6rem !important; 
-                vertical-align: top;
-                cursor: pointer;
-                text-align: left;
-                transition: all 250ms ease;
-            }
+        position: absolute; opacity: 0; cursor: pointer;
+        + .radio-label::before {
+            content: ''; background: $bg-panel; border-radius: 50%; border: 1.5px solid $border-color;
+            display: inline-block; width: 1.1rem; height: 1.1rem; position: relative; top: 0.25rem;
+            margin-right: 0.5rem !important; vertical-align: top; cursor: pointer; transition: all 200ms ease;
         }
-        &:checked {
-            + .radio-label {
-                &:before {
-                    background-color: $color_8;
-                    box-shadow: inset 0 0 0 2px $color_1;
-                }
-            }
-        }
-        + .radio-label {
-            &:empty {
-                &:before {
-                    margin-right: 0;
-                }
-            }
-        }
+        &:checked + .radio-label::before { background-color: $accent-secondary; border-color: $accent-secondary; box-shadow: inset 0 0 0 2.5px $bg-panel; }
+        + .radio-label:empty::before { margin-right: 0; }
     }
 }
 
-/* ---------------------------------------------------
-    ESTILOS POPOVERS
------------------------------------------------------ */
-
-/* .popover {
-    max-width: 40% !important;
-    background-color: $color_8;
-    border-color: $color_4;
-    font-size: 0.75rem; 
-    margin-left: 1.25rem !important;
-    z-index: 1500;
-
-    @include tablet {
-        max-width: 60% !important;
-        font-size: 0.875rem;
-        margin-left: 1rem !important;
-    }
-
-    @include mobile {
-        max-width: 90% !important;
-        font-size: 1rem;
-        margin-left: 0.5rem !important;
-    }
-}
-
-.popover-header {
-    color: $title_color;
-    background-color: $title_bgcolor;
-}
-
-.popover-body {
-    color: $color_4 !important;
-} */
-
+/* ── Popovers ─────────────────────────────────────────────── */
 .popover {
-    max-width: 40% !important;
-    background-color: $color_8;
-    border-color: $color_4;
-    font-size: 12px;
-    margin-left: 20px !important;
-    z-index: 1500;
+    max-width: 40% !important; background: $bg-panel; border: 1.5px solid $border-color;
+    border-radius: $radius-md; font-size: 13px; font-family: $font-body;
+    margin-left: 16px !important; z-index: 1500; box-shadow: $shadow-medium; color: $text-primary;
 }
-
 .popover-header {
-    color: $title_color;
-    background-color: $title_bgcolor;
+    color: $text-on-dark; background: $accent-forest;
+    border-bottom: none; font-weight: $fw-bold; border-radius: $radius-md $radius-md 0 0;
+}
+.popover-body { color: $text-primary !important; line-height: 1.5; }
+
+/* ── Sidebar collapsed ────────────────────────────────────── */
+.side-bar.active {
+    min-width: 50%; max-width: 50%; text-align: center;
+    .sidebar-header h3 { display: none; } .sidebar-header strong { display: block; } .CTAs { display: none; }
+    ul ul li { .label-big { display: none; } .label-small { display: inline-block; width: 100%; text-align: left; } }
+    ul ul a { padding: 10px !important; }
+    ul li a { text-align: left; font-size: 0.85em; span { display: none; } i { margin-right: 0; display: block; font-size: 1.5em; margin-bottom: 5px; } }
+    @include tablet { min-width: 180px; max-width: 180px; }
 }
 
-.popover-body {
-    color: $color_4 !important;
-}
+a[aria-expanded="true"] { color: $text-on-dark; background: $accent-forest; }
+a[data-toggle="collapse"] { position: relative; }
+ul ul a { font-size: 0.9em !important; padding-left: 28px !important; }
+ul.CTAs { padding: 20px; a { text-align: center; font-size: 0.9em !important; display: block; border-radius: $radius-sm; margin-bottom: 5px; } }
+a.download { background: $accent-forest; color: $text-on-dark; }
+a.article { background: $accent-tertiary !important; color: $text-primary !important; }
+
+#content { width: 100%; padding: 20px; min-height: 100vh; transition: all $transition-smooth; }
+.container { margin-top: 4.5rem; @include tablet { margin-top: 3.5rem; } @include mobile { margin-top: 2.5rem; } }
+#SideBarCollapse img { width: 30px; cursor: pointer; }
+.no-wrap { flex-wrap: nowrap !important; }
+.orange-nav { color: $accent-tertiary !important; }
+.alone { padding: 1.2rem 0 !important; }
 
 @media (max-width: 768px) {
     .side-bar {
-        min-width: 80px;
-        max-width: 80px;
-        text-align: center;
-        margin-left: -80px !important;
-        top: 5rem;
-        margin-top: 0.5rem;
-
-        &.active {
-            margin-left: 0 !important;
-        }
-
-        .dropdown-toggle {
-            &::after {
-                top: auto;
-                bottom: 10px;
-                right: 50%;
-                -webkit-transform: translateX(50%);
-                -ms-transform: translateX(50%);
-                transform: translateX(50%);
-            }
-        }
-
-        .sidebar-header {
-            h3 {
-                display: none;
-            }
-
-            strong {
-                display: block;
-            }
-        }
-
-        .CTAs {
-            display: none;
-        }
-
-        ul {
-            li {
-                a {
-                    padding: 20px 10px;
-
-                    span {
-                        font-size: 0.85rem; 
-                    }
-
-                    i {
-                        margin-right: 0;
-                        display: block;
-                        font-size: 1.3rem;
-                    }
-                }
-            }
-
-            ul {
-                a {
-                    padding: 10px !important;
-                }
-            }
-        }
-
-        #bottom-logos {
-            img {
-                height: 3rem;
-            }
-        }
+        min-width: 80px; max-width: 80px; text-align: center;
+        margin-left: -80px !important; top: 4.5rem; margin-top: 0.5rem;
+        &.active { margin-left: 0 !important; }
+        .dropdown-toggle::after { top: auto; bottom: 10px; right: 50%; transform: translateX(50%); }
+        .sidebar-header h3 { display: none; } .sidebar-header strong { display: block; } .CTAs { display: none; }
+        ul li a { padding: 16px 10px; span { font-size: 0.85rem; } i { margin-right: 0; display: block; font-size: 1.3rem; } }
+        ul ul a { padding: 10px !important; }
+        #bottom-logos img { height: 3rem; }
     }
-
-    #RightBar, #LeftBar {
-        top: 5rem;
-        margin-top: 0.5rem;
-    }
-
-    .container {
-        margin-top: 2rem;
-    }
-
-    #SideBarCollapse {
-        span {
-            display: none;
-        }
-    }
+    #RightBar, #LeftBar { top: 4.5rem; margin-top: 0.5rem; }
+    .container { margin-top: 2rem; }
+    #SideBarCollapse span { display: none; }
 }

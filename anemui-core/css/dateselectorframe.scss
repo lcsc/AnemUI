@@ -1,157 +1,83 @@
-@import "media-queries.scss";
 
-div.DateSelectorFrame.small{
-    max-width: fit-content;
-    div.slider-horizontal,button{
-        display: none;
-    }
-}
+div.DateSelectorFrame.small { max-width: fit-content; div.slider-horizontal, button { display: none; } }
 
-div.DateSelectorFrame{
-    // @include blurBgFrame();
-    @include mbBgFrame();
-    width: 90%;
-    left:0;
-    right:0;
-    bottom: 0.25em;
-    margin-left:auto;
-    margin-right:auto;
+div.DateSelectorFrame {
+    @include mbBgFrame($radius-xl);
+    width: 92%; left: 0; right: 0; bottom: 0.5em;
+    margin-left: auto; margin-right: auto;
+    background-color: $bg-panel; border: 1.5px solid $border-color; box-shadow: $shadow-medium;
 
-    div.datePickerGroup{
-        position: relative;
-        display: flex;
-        width: fit-content;
-        margin-left:auto;
-        margin-right:auto;
-        left: 0;
-        right: 0;
-    }
-    div#datePicker{
-        width: fit-content;
-        margin-left:auto;
-        margin-right:auto;
-        left: 0;
-        right: 0;
-    }
-    // div#yearPicker,  div#monthSeasonPicker{
-    //     width: 50%!important;
-    // }
+    div.datePickerGroup { position: relative; display: flex; width: fit-content; margin: 0 auto; }
+    div#datePicker { width: fit-content; margin: 0 auto; }
 
-    div#climPicker{
-        background-color: #2c3e50;
-        border: 1px solid #fff;
-        border-radius: 6px;
-        width: fit-content !important;
-        p {
-            margin: 5px !important;
-            font: bold 12px !important; 
-            color: #fff;
-        }
+    div#climPicker {
+        background-color: $accent-forest; border: none; border-radius: $radius-md; width: fit-content !important;
+        p { margin: 5px !important; font: bold 12px $font-mono !important; color: $text-on-dark; letter-spacing: 0.04em; }
     }
 
-    div.input-group-min{
-        width: 50%;
+    div.input-group-min { width: 50%; }
+    div.leftButtons, div.rightButtons { display: flex; width: 100%; padding: 0; }
+    div.leftButtons { justify-content: flex-end; } div.rightButtons { justify-content: flex-start; }
+    button.navbar-btn-title { min-width: 130px; }
+
+    // ── Slider ───────────────────────────────────────────────
+    div.slider-horizontal { width: 100%; }
+    div.slider-track { height: 4px !important; margin-top: -2px !important; background: $border-color !important; border-radius: 2px; }
+    div.slider-selection { background: $accent-primary !important; border-radius: 2px; }
+
+    div.slider-handle {
+        width: 18px; height: 18px; top: -9px;
+        background: $accent-primary; border: 3px solid $bg-panel; border-radius: 50%;
+        box-shadow: 0 0 0 1.5px $accent-primary, $shadow-soft;
+        transition: transform $transition-fast, box-shadow $transition-fast;
+        &:hover, &:active { transform: scale(1.2); box-shadow: 0 0 0 2px $accent-hover, $shadow-colored; }
     }
 
-    div.leftButtons, div.rightButtons {
-        display: flex;
-        width: 100%;
-        padding: 0;
-    }
-
-    div.leftButtons{
-        justify-content: flex-end;
-    }
-
-    div.rightButtons {
-        justify-content: flex-start;
-    }
-
-    button.navbar-btn-title {
-        min-width: 130px;
-    }
-
-    div.slider-horizontal{
-        width: 100%;
-    }
-
-    div.slider-track{
-        height: 5px !important;
-        margin-top: -3px !important;
-    }
-
-    div.slider-handle{
-        border: 1px solid #fff;
-        top: -10px;
-    }
-
-    div.tooltip{
-        max-width: fit-content;
-    }
+    div.tooltip { max-width: fit-content; font-family: $font-mono; }
 
     @include desktop {
-        @include bgFrame();
-        width: 60%;
+        @include bgFrame($radius-xl);
+        width: 55%; background-color: $bg-panel; border: 1.5px solid $border-color; box-shadow: $shadow-medium;
     }
-
-    // @include md-desktop {
-    //     width: 40%;
-    //     #title {
-    //         font-size: 1.5em;
-    //         font-weight: 600;
-    //     }
-    // }
 }
 
+/* ── Datepicker ───────────────────────────────────────────── */
 .datepicker {
-    border-radius: 0.5em!important;
-    color: $title_color;
-    background-color: $title_bgcolor;
-    position: fixed !important;
-    // top: 70% !important;
-    left: 50% !important;
-    transform: translate(-50%, 0%) !important;
-    display: block !important;
+    border-radius: $radius-lg !important; color: $text-primary;
+    background-color: $bg-panel; position: fixed !important;
+    left: 50% !important; transform: translate(-50%, 0%) !important;
+    display: block !important; box-shadow: $shadow-strong; font-family: $font-mono;
+    border: 2px solid $accent-forest;
 }
 
-.datepicker table tr td, .datepicker table tr th {
-    border: 3px solid $title_bgcolor !important;
+.datepicker table tr td,
+.datepicker table tr th { border: 2px solid $bg-panel !important; border-radius: $radius-sm; }
+
+.datepicker table tr th {
+    color: $text-on-dark !important; font-weight: $fw-bold; font-size: 0.85em;
+    background-color: $accent-forest;
 }
 
-.datepicker table tr td.day, 
+.datepicker table tr td.day,
 .datepicker table tr td span {
-    color: #fff !important;
-    background-color: #2c6d9a !important;
+    color: $text-primary !important; background-color: $bg-input !important;
+    border-radius: $radius-sm; transition: background $transition-fast; font-size: 0.85em;
 }
 
 .datepicker table tr td.disabled,
-.datepicker table tr td span.disabled {
-    color: #2b3d33 !important;
-    background-color: #B9B9B9 !important;
+.datepicker table tr td span.disabled { color: $text-muted !important; background-color: $bg-base !important; }
+
+.datepicker table tr td:hover, .datepicker table tr td:focus, .datepicker table tr td:active,
+.datepicker table tr td span:hover, .datepicker table tr td span:focus, .datepicker table tr td span:active {
+    background-color: rgba($accent-tertiary, 0.3) !important; color: $text-primary !important;
 }
 
-// .datepicker table tr td.active {
-//     // color: #2b3d33 !important;
-//     // background: #c4f3e3 !important;    
-//     color: #a89b9b !important;
-//     background-color: #b5cdde !important;
-//     border-color: #f7ebeb !important;
-// }
-
-.datepicker table tr td:hover,
-.datepicker table tr td:focus,
-.datepicker table tr td:active, 
-.datepicker table tr td span:hover, 
-.datepicker table tr td span:focus,
-.datepicker table tr td span:active {
-    background-color: #b5cdde !important;
-    // border-color: $color_4 !important;
+.datepicker table tr td.active,
+.datepicker table tr td span.active {
+    background-color: $accent-primary !important; color: $text-on-accent !important; font-weight: $fw-bold;
 }
 
-.datepicker table tr td.old, 
-.datepicker table tr td.new,
-.datepicker table tr td span.old,
-.datepicker table tr td span.new {
-    color: #2c6d9a !important;
-    background: $title_bgcolor !important;
+.datepicker table tr td.old, .datepicker table tr td.new,
+.datepicker table tr td span.old, .datepicker table tr td span.new {
+    color: $text-muted !important; background-color: $bg-base !important;
 }

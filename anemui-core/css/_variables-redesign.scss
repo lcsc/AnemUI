@@ -1,0 +1,87 @@
+// ── Core palette ─────────────────────────────────────────────
+$color_1:        #FFFFFF;           // panel / dropdown bg
+$color_2:        #E8573A;           // accent (rojo amapola)
+$color_3:        #3C3C3C;           // deep dark text
+$color_4:        #2D5A3D;           // header / navbar (verde bosque)
+$color_5:        #3A8FB7;           // secondary (azul cielo)
+$color_6:        #EBE7E0;           // hover bg (lino más cálido)
+$color_7:        #F2A735;           // tertiary/warning (girasol)
+$color_8:        #FFFFFF;           // card surface
+$color_9:        #6B7C72;           // secondary text (verde gris)
+$color_10:       #F4F1EC;           // input bg (lino)
+$color_11:       #2A2A2A;           // strong text
+
+// ── Semantic tokens ──────────────────────────────────────────
+$title_color:    #FFFFFF;           // top bar bg
+$title_bgcolor:  #2D5A3D;          // header bg (verde bosque)
+$border-color:   #C8C2B8;          // borders (lino oscuro)
+$navbar_bgcolor: #2D5A3D;
+
+// ── Extended tokens ──────────────────────────────────────────
+$accent-primary:    #E8573A;        // amapola
+$accent-hover:      #F06A4F;        // amapola claro
+$accent-deep:       #C94830;        // amapola oscuro
+$accent-secondary:  #3A8FB7;        // azul cielo
+$accent-sec-hover:  #4BA3CA;        // azul cielo claro
+$accent-tertiary:   #F2A735;        // girasol
+$accent-forest:     #2D5A3D;        // verde bosque
+$accent-forest-lt:  #3D7550;        // verde bosque claro
+
+$bg-base:           #F4F1EC;        // fondo lino
+$bg-panel:          #FFFFFF;        // paneles blancos
+$bg-elevated:       #EBE7E0;        // hover / elevated
+$bg-input:          #F4F1EC;        // input bg
+$bg-dropdown:       #FFFFFF;        // dropdown
+$bg-dropdown-hover: #F0EDE6;        // dropdown hover
+$bg-header:         #2D5A3D;        // header oscuro
+
+$text-primary:   #2A2A2A;          // texto principal
+$text-secondary: #6B7C72;          // texto secundario
+$text-muted:     #9EA69E;          // texto apagado
+$text-on-dark:   #FFFFFF;          // texto sobre fondo oscuro
+$text-on-accent: #FFFFFF;          // texto sobre acento
+
+$shadow-soft:    0 2px 8px rgba(60, 60, 60, 0.08);
+$shadow-medium:  0 4px 16px rgba(60, 60, 60, 0.12);
+$shadow-strong:  0 8px 28px rgba(60, 60, 60, 0.18);
+$shadow-colored: 0 4px 14px rgba(232, 87, 58, 0.15);
+
+$radius-sm:   5px;
+$radius-md:   10px;
+$radius-lg:   14px;
+$radius-xl:   20px;
+$radius-pill:  50px;
+
+$transition-fast:   0.12s ease;
+$transition-base:   0.2s ease;
+$transition-smooth: 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+
+// ── Typography ───────────────────────────────────────────────
+$font-body:    'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif;
+$font-mono:    'Source Code Pro', 'Consolas', monospace;
+$fw-normal:    400;
+$fw-medium:    500;
+$fw-semibold:  600;
+$fw-bold:      700;
+
+@mixin sm-mobile {
+    @media only screen and (max-width: 576px) { @content; }
+}
+@mixin mobile {
+    @media only screen and (min-width: 576px) { @content; }
+}
+@mixin tablet {
+    @media only screen and (min-width: 768px) { @content; }
+}
+@mixin laptop {
+    @media only screen and (min-width: 992px) { @content; }
+}
+@mixin desktop {
+    @media only screen and (min-width: 1200px) { @content; }
+}
+@mixin md-desktop {
+    @media only screen and (min-width: 1500px) { @content; }
+}
+@mixin xl-desktop {
+    @media only screen and (min-width: 1920px) { @content; }
+}

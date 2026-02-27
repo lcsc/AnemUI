@@ -472,6 +472,10 @@ public async update(): Promise<void> {
 
     data.innerHTML += "<div id='legendBottom'></div>";
 
+      const legendEl = this.container?.querySelector('.info.legend') as any;
+        if (legendEl) legendEl.__paletteTooltipBound = false;
+        this.addPaletteHoverTooltip();
+
     let uncertaintyLayer = this.parent.getState().uncertaintyLayer;
 
 this.uncertaintyFrame = this.container.querySelector("#unc-div");
@@ -536,6 +540,8 @@ if (uncertaintyLayer && this.uncertaintyFrame) {
 
     public build() {
         this.container = document.getElementById("PaletteFrame") as HTMLDivElement
+
+             this.addPaletteHoverTooltip();
         
         // El slider de uncertainty se inicializa en update() cuando sea necesario
     }
@@ -569,4 +575,147 @@ if (uncertaintyLayer && this.uncertaintyFrame) {
         
         return luminance > 0.5;
     }
+
+     private addPaletteHoverTooltip(): void {
+        // Buscar el contenedor de la leyenda (el div ".info.legend")
+        const legendContainer = this.container?.querySelector('.info.legend') as HTMLElement;
+        if (!legendContainer) return;
+
+        // Evitar duplicar listeners
+        if ((legendContainer as any).__paletteTooltipBound) return;
+        (legendContainer as any).__paletteTooltipBound = true;
+
+        // Crear o reusar el tooltip
+        let tooltip = document.getElementById('palette-value-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'palette-value-tooltip';
+            Object.assign(tooltip.style, {
+                position: 'fixed',
+                background: 'rgba(0, 0, 0, 0.85)',
+                color: '#fff',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                pointerEvents: 'none',
+                zIndex: '10000',
+                display: 'none',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+            });
+            document.body.appendChild(tooltip);
+        }
+
+        const self = this;
+
+        legendContainer.addEventListener('mousemove', (e: MouseEvent) => {
+            const app = window.CsViewerApp;
+            if (!app) return;
+
+            const state = app.getState();
+            const timesJs = app.getTimesJs();
+            if (!state || !timesJs) return;
+
+            const mgr = PaletteManager.getInstance();
+            const ptr = mgr.getPainter();
+            if (!ptr) return;
+
+            const currentPalette = mgr.getSelected();
+            if (currentPalette !== 'cambio' && currentPalette !== 'continua_cambio') {
+                tooltip.style.display = 'none';
+                return;
+            }
+
+            // Obtener los valores y textos de la leyenda de la app
+            const legendValues = self.parent.getLegendValues();
+            const legendTexts = self.parent.getLegendText();
+            if (!legendValues || legendValues.length === 0) return;
+
+            // Calcular el rango de la leyenda
+            const minVal = Math.min(...legendValues);
+            const maxVal = Math.max(...legendValues);
+
+            // Obtener el rect de la zona con color (excluir #units y #legendBottom)
+            const colorDivs = Array.from(legendContainer.children).filter((el: HTMLElement) => {
+                // Los divs de color no tienen id, o tienen class gradient-legend-container
+                const hasId = el.id === 'units' || el.id === 'legendBottom';
+                return !hasId;
+            }) as HTMLElement[];
+
+            if (colorDivs.length === 0) return;
+
+            // Calcular el bounding rect de todos los divs de color combinados
+            const firstRect = colorDivs[0].getBoundingClientRect();
+            const lastRect = colorDivs[colorDivs.length - 1].getBoundingClientRect();
+
+            const colorAreaTop = firstRect.top;
+            const colorAreaBottom = lastRect.bottom;
+            const colorAreaHeight = colorAreaBottom - colorAreaTop;
+
+            if (colorAreaHeight <= 0) return;
+
+            // Verificar que el cursor está en la zona de color
+            if (e.clientY < colorAreaTop || e.clientY > colorAreaBottom) {
+                tooltip.style.display = 'none';
+                return;
+            }
+
+            // Posición relativa (0 = arriba = max, 1 = abajo = min)
+            // La leyenda se pinta de arriba (valores altos) a abajo (valores bajos)
+            const relativePos = (e.clientY - colorAreaTop) / colorAreaHeight;
+            const clampedPos = Math.max(0, Math.min(1, relativePos));
+
+            // Interpolar valor (arriba = max, abajo = min)
+            const value = maxVal - clampedPos * (maxVal - minVal);
+
+            // Obtener color del painter
+            let colorStr = '';
+            try {
+                colorStr = ptr.getColorString(value, minVal, maxVal);
+            } catch (err) {
+                // Fallback: sin indicador de color
+            }
+
+            // Construir tooltip
+            let html = '';
+            if (colorStr) {
+                html += '<span style="display:inline-block;width:12px;height:12px;' +
+                    'border-radius:2px;background:' + colorStr + ';' +
+                    'margin-right:6px;vertical-align:middle;' +
+                    'border:1px solid rgba(255,255,255,0.3)"></span>';
+            }
+            html += value.toFixed(3);
+
+            tooltip.innerHTML = html;
+            tooltip.style.display = 'block';
+
+            // Posicionar a la izquierda del panel (la leyenda está a la derecha)
+            const legendRect = legendContainer.getBoundingClientRect();
+            const tooltipX = legendRect.left - tooltip.offsetWidth - 8;
+            const tooltipY = e.clientY - 12;
+
+            // Si no cabe a la izquierda, ponerlo a la derecha
+            if (tooltipX < 5) {
+                tooltip.style.left = (legendRect.right + 8) + 'px';
+            } else {
+                tooltip.style.left = tooltipX + 'px';
+            }
+            tooltip.style.top = tooltipY + 'px';
+
+            // Evitar desbordamiento vertical
+            const tooltipRect = tooltip.getBoundingClientRect();
+            if (tooltipRect.bottom > window.innerHeight) {
+                tooltip.style.top = (window.innerHeight - tooltipRect.height - 5) + 'px';
+            }
+            if (tooltipRect.top < 0) {
+                tooltip.style.top = '5px';
+            }
+        });
+
+        legendContainer.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+    }
+
 }

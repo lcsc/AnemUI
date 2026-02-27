@@ -1,80 +1,95 @@
-@import "media-queries.scss";
+@import "_variables-redesign.scss";
+
 @import "~bootstrap/scss/bootstrap";
 
-$bootstrap-icons-font-src: url("~bootstrap-icons/font/fonts/bootstrap-icons.woff2") format("woff2"), url("~bootstrap-icons/font/fonts/bootstrap-icons.woff") format("woff");
+$bootstrap-icons-font-src: url("~bootstrap-icons/font/fonts/bootstrap-icons.woff2") format("woff2"),
+                           url("~bootstrap-icons/font/fonts/bootstrap-icons.woff") format("woff");
 @import "~bootstrap-icons/font/bootstrap-icons.scss";
 @import "~bootstrap-slider/src/sass/bootstrap-slider.scss";
 
-* { margin: 0; padding: 0; }
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
-body.noscroll{
-    position:fixed;
-    overflow:hidden;
+/* ── Reset & Base ─────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-html,
-body,
-#map {
+body {
+    margin: 0 !important;
+    font-family: $font-body;
+    color: $text-primary;
+    background-color: $bg-base;
+    line-height: 1.55;
+}
+
+body.noscroll {
+    position: fixed;
+    overflow: hidden;
+}
+
+html, body, #map {
     height: 100%;
     width: 100%;
 }
 
 #map {
     position: absolute;
-    top: 60px;
-
-    @include desktop {
-        top: 80px;
-    }
-}
-
-#download_iframe {
-    display: none;
-}
-
-#map {
+    top: 58px;
     z-index: 0;
+    @include desktop { top: 76px; }
 }
 
-body {
-    margin: 0px !important;
-}
+#download_iframe { display: none; }
 
 #MainFrame {
-    width: 98%;
-    margin: 0px auto;
+    width: 100%;
+    margin: 0 auto;
 }
 
-@mixin mbBgFrame($b_radius: 1em) {
+/* ── Frame Mixins (solid) ─────────────────────────────────── */
+@mixin mbBgFrame($b_radius: $radius-lg) {
     z-index: 10;
     border-radius: $b_radius;
     padding: 0.5em 0.25em;
     position: absolute;
 }
 
-@mixin bgFrame($b_radius: 1em) {
+@mixin bgFrame($b_radius: $radius-lg) {
     z-index: 10;
     border-radius: $b_radius;
-    padding-left: 1.5em;
-    padding-right: 1.5em;
-    padding-top: 0.25em;
-    padding-bottom: 0.5em;
+    padding: 0.25em 1.5em 0.5em;
     position: absolute;
 }
 
-@mixin blurBgFrame($b_radius: 1em) {
+@mixin blurBgFrame($b_radius: $radius-lg) {
     @include bgFrame($b_radius);
-    background-color: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(10px) dropshadow(4px 4px 10px blue);
+    background-color: $bg-panel;
+    border: 1.5px solid $border-color;
+    box-shadow: $shadow-soft;
 }
 
-@mixin topBgFrame($b_radius: 1em) {
+@mixin topBgFrame($b_radius: $radius-lg) {
     @include bgFrame($b_radius);
-    // background-color: rgb(220, 220, 220);
-
 }
 
-// @import "menubar.scss";
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: $bg-base; }
+::-webkit-scrollbar-thumb {
+    background: $border-color;
+    border-radius: 4px;
+    &:hover { background: $text-muted; }
+}
+
+/* ── Utility ──────────────────────────────────────────────── */
+.hide   { display: none !important; }
+.hidden { display: none; }
+
 @import "cookies.scss";
 @import "topbar.scss";
 @import "sidebar.scss";
@@ -87,12 +102,4 @@ body {
 @import "open-layers-map.scss";
 @import "buttons.scss";
 
-
-// Shared 
-// div.topLeftFrame{
-//     max-width: fit-content;
-//     top:0.25em;
-//     right:0.25em;
-//     position: absolute;
-// }
-
+@import "sams-overrides.scss";
