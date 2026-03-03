@@ -687,7 +687,8 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
             return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
         } else {
             let cb: ArrayDownloadDone = (data: number[]) => {
-                let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
+                const raw = data[chunkIndex - 1];
+                let value = (raw !== undefined && !isNaN(raw)) ? parseFloat(raw.toPrecision(ncSignif)) : NaN;
                 return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
             }
             // Use the original requested time index, downloadXYArrayChunked will handle the conversion
