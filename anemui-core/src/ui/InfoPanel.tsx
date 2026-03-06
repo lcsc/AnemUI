@@ -35,7 +35,7 @@ export class InfoDiv extends BaseFrame {
 
     protected renderLicense():JSX.Element{
         return (<div>
-                <strong>Licencias</strong>
+                <h6>Licencias</h6>
                 <p>Los datos de esta web están disponibles bajo la licencia Open Database License. Cualquier derecho sobre los contenidos individuales de la base de datos está licenciado bajo la Database Contents License.</p>
                 <p>Lo que sigue es un resumen legible de la licencia ODbL 1.0. Por favor, lea el texto completo de la licencia ODbL 1.0 para conocer los términos exactos que se aplican.
                     Los usuarios del conjunto de datos pueden:</p>

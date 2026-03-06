@@ -48,9 +48,16 @@ $color_11: #737374;
     }
 }
 
- /* min-width 1400px, xlarge screens */
+ /* min-width 1200px, small desktop */
 @mixin desktop {
-    @media only screen and (min-width: 1400px)  {
+    @media only screen and (min-width: 1200px)  {
+        @content;
+    }
+}
+
+/* min-width 1200px and max-width 1399px, intermediate desktop */
+@mixin sm-desktop {
+    @media only screen and (min-width: 1200px) and (max-width: 1399px) {
         @content;
     }
 }

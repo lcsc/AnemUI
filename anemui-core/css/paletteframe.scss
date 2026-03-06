@@ -292,8 +292,7 @@ div.paletteFrame div.legend .gradient-legend-bar {
 }
 // -----------------
 
-    @include md-desktop {
-        top: 8.6em;
+    @include laptop {
         div.legend {
             line-height: 14px;
             max-width: fit-content;
@@ -303,7 +302,11 @@ div.paletteFrame div.legend .gradient-legend-bar {
         div.legend .legendText{
             visibility:visible;
         }
-    
+
+    }
+
+    @include md-desktop {
+        top: 8.6em;
     }
 
     @include xl-desktop {
