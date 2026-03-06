@@ -202,6 +202,13 @@
             }
         }
 
+        @include sm-desktop {
+            width: 35%;
+            #title {
+                font-size: 0.85em;
+            }
+        }
+
         @include md-desktop {
             width: 40%;
             #title {
@@ -220,6 +227,9 @@
         @include desktop {
             width: 55%;
         }
+        @include sm-desktop {
+            width: 65%;
+        }
         @include md-desktop {
             width: 50%;
         }
@@ -236,6 +246,12 @@
         img {
             width: 50px;
         }
+
+        @include sm-desktop {
+            img {
+                width: 35px;
+            }
+        }
     }
 
     .allScrLogo {
@@ -243,6 +259,12 @@
         img {
             height: auto;
             max-width: 100%;
+        }
+
+        @include sm-desktop {
+            img {
+                max-height: 35px;
+            }
         }
     }
 
@@ -256,6 +278,12 @@
             padding-left: 0;
             img {
                 height: 50px;
+            }
+        }
+
+        @include sm-desktop {
+            img {
+                height: 35px;
             }
         }
     }
@@ -581,7 +609,7 @@
         .longLogo, .shortLogo, .allScrLogo {
             padding-left: 0;
         }
-        
+
 
         .allScrLogo img {
             height: 50px;
@@ -590,11 +618,11 @@
         .inputDiv .title {
             font-size: 0.8em;
         }
-        
+
         .inputDiv .sub-title {
             font-size: 0.8em;
         }
-        
+
 
         #menu-central {
             display:block
@@ -614,6 +642,20 @@
             display: none;
         }
         // width: 97%;
+    }
+
+    @include sm-desktop {
+        .allScrLogo img {
+            height: 35px;
+        }
+
+        .longLogo img {
+            height: 35px;
+        }
+
+        .shortLogo img {
+            width: 35px;
+        }
     }
 
     @include xl-desktop {
