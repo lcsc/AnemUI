@@ -196,8 +196,8 @@
     }
 
     @include tablet {
-        top: 6rem;
-        margin-top: 0.5rem;
+        // top: 6rem;
+        // margin-top: 0.5rem;
         right: 2%;
     }
 
@@ -218,8 +218,8 @@
     margin-top: 1rem; 
 
     @include tablet {
-        top: 6rem;
-        margin-top: 0.5rem;
+        // top: 6rem;
+        // margin-top: 0.5rem;
         left: 2%;
     }
 
@@ -701,58 +701,6 @@ div.slider.visible {
             }
         }
     }
-}
-
-/* ---------------------------------------------------
-    ESTILOS POPOVERS
------------------------------------------------------ */
-
-/* .popover {
-    max-width: 40% !important;
-    background-color: $color_8;
-    border-color: $color_4;
-    font-size: 0.75rem; 
-    margin-left: 1.25rem !important;
-    z-index: 1500;
-
-    @include tablet {
-        max-width: 60% !important;
-        font-size: 0.875rem;
-        margin-left: 1rem !important;
-    }
-
-    @include mobile {
-        max-width: 90% !important;
-        font-size: 1rem;
-        margin-left: 0.5rem !important;
-    }
-}
-
-.popover-header {
-    color: $title_color;
-    background-color: $title_bgcolor;
-}
-
-.popover-body {
-    color: $color_4 !important;
-} */
-
-.popover {
-    max-width: 40% !important;
-    background-color: $color_8;
-    border-color: $color_4;
-    font-size: 12px;
-    margin-left: 20px !important;
-    z-index: 1500;
-}
-
-.popover-header {
-    color: $title_color;
-    background-color: $title_bgcolor;
-}
-
-.popover-body {
-    color: $color_4 !important;
 }
 
 @media (max-width: 768px) {

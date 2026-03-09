@@ -93,6 +93,7 @@ export type CsViewerData={
     legendTitle:string,
     climatology:boolean,
     uncertaintyLayer:boolean,
+    overlayVarId?:string,
     season:string,
     month:string,
     xyValue:number,
@@ -121,7 +122,9 @@ export type CsGeoJsonData={
 
 export enum CsTimeSpan{
     Date,
+    Day,      // 365/366 días del año (climatología diaria)
     Month,
     Season,
-    Year
+    Year,
+    YearSeries
 }

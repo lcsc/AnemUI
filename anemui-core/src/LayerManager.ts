@@ -69,6 +69,7 @@ export class LayerManager {
     private topLayerVector:Layer;
     private topLayerImage:Image<ImageWMS>;
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
+     private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
         // CAPAS BASE
@@ -96,8 +97,10 @@ export class LayerManager {
         this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
         this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
         
-        this.topSelected="Límites estatales (mapbox)";
+        const topNames = Object.keys(this.topLayers);
+        this.topSelected = topNames.length > 0 ? topNames[0] : "";
         this.uncertaintyLayer = [];
+         this.uncertaintyLayerVisible = false; 
     }
 
     // Base Layer
@@ -113,7 +116,19 @@ export class LayerManager {
     }
 
     public initBaseSelected(zoom: number): number{
-        this.baseSelected = zoom >=6.00? ["Capa fondo global EUMETSAT","Ortofoto nacional (PNOA)"]:["ARCGIS"];
+        const baseNames = Object.keys(this.baseLayers);
+        const globalLayers = baseNames.filter(name => this.baseLayers[name].global);
+        const nationalLayers = baseNames.filter(name => !this.baseLayers[name].global);
+        if (zoom >= 6.00) {
+            // Zoom nacional: primera global + primera nacional (si existen)
+            this.baseSelected = [];
+            if (globalLayers.length > 2) this.baseSelected.push(globalLayers[2]); // EUMETSAT (3ª global)
+            if (nationalLayers.length > 1) this.baseSelected.push(nationalLayers[1]); // Ortofoto (2ª nacional)
+            if (this.baseSelected.length === 0) this.baseSelected = [baseNames[0]];
+        } else {
+            // Zoom global: primera capa global
+            this.baseSelected = globalLayers.length > 0 ? [globalLayers[0]] : [baseNames[0]];
+        }
         return this.baseSelected.length - 1
     } 
 
@@ -138,13 +153,15 @@ export class LayerManager {
             switch(bLayer.type) {
                 case AL_TYPE_OSM:
                         this.baseLayers[this.baseSelected[layer]].source = new OSM({
-                            url: this.baseLayers[this.baseSelected[layer]].url
+                            url: this.baseLayers[this.baseSelected[layer]].url,
+                            crossOrigin: 'anonymous'
                         })
                     break;
                 case AL_TYPE_WMS:
                         this.baseLayers[this.baseSelected[layer]].source = new TileWMS({
                             url: this.baseLayers[this.baseSelected[layer]].url,
-                            params: { 'LAYERS': this.baseLayers[this.baseSelected[layer]].layer }
+                            params: { 'LAYERS': this.baseLayers[this.baseSelected[layer]].layer },
+                            crossOrigin: 'anonymous'
                         })
                     break;
                 case AL_TYPE_WMTS:
@@ -262,9 +279,38 @@ export class LayerManager {
 
     public showUncertaintyLayer(show: boolean) {
         if (this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+            const duration = 150; // ms
+            const steps = 10;
+            const stepTime = duration / steps;
+
             this.uncertaintyLayer.forEach((layer) => {
-                layer.setVisible(show);
-                layer.changed(); // Forzar re-renderizado
+                if (show) {
+                    // Fade-in
+                    layer.setOpacity(0);
+                    layer.setVisible(true);
+                    let step = 0;
+                    const fadeIn = setInterval(() => {
+                        step++;
+                        layer.setOpacity(step / steps);
+                        if (step >= steps) {
+                            clearInterval(fadeIn);
+                            layer.setOpacity(1);
+                        }
+                    }, stepTime);
+                } else {
+                    // Fade-out
+                    let step = steps;
+                    const fadeOut = setInterval(() => {
+                        step--;
+                        layer.setOpacity(step / steps);
+                        if (step <= 0) {
+                            clearInterval(fadeOut);
+                            layer.setVisible(false);
+                            layer.setOpacity(1);
+                        }
+                    }, stepTime);
+                }
+                layer.changed();
             });
         }
     }

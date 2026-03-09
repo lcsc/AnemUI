@@ -7,10 +7,10 @@ import { inflate } from 'pako';
 import { parse } from 'csv-parse/sync';
 import proj4 from 'proj4';
 import { fromLonLat } from "ol/proj";
-import { CategoryRangePainter, PaletteManager } from "../PaletteManager";
+import { CategoryRangePainter, Painter, PaletteManager } from "../PaletteManager";
 import { BaseApp } from "../BaseApp";
 import Static from "ol/source/ImageStatic";
-import { ncSignif, dataSource, computedDataTilesLayer, olProjection } from "../Env";
+import { ncSignif, dataSource, globalMap, olProjection } from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestedArray, openArray, TypedArray } from 'zarr';
@@ -95,6 +95,12 @@ async function rangeRequest(url: string, startByte: bigint, endByte: bigint): Pr
         const response = await fetch(url, { headers: headers });
         if (response.status === 206) {
             return new Uint8Array(await response.arrayBuffer());
+        } else if (response.status === 200) {
+            // Server doesn't support Range requests, extract the needed slice
+            const fullBuffer = await response.arrayBuffer();
+            const start = Number(startByte);
+            const end = Number(endByte) + 1; // endByte is inclusive in Range header
+            return new Uint8Array(fullBuffer.slice(start, end));
         } else if (response.status === 416) {
             console.error(`Range not satisfiable: requested bytes ${startByte}-${endByte} from ${url}`);
             throw new Error(`Range not satisfiable: requested bytes ${startByte}-${endByte} from ${url}`);
@@ -268,6 +274,9 @@ async function downloadTChunkZarr(x: number, varName: string, portion: string, t
     return promise;
 }
 
+// Almacena los datos de la capa principal para usarlos como máscara en la capa de incertidumbre
+let mainLayerData: number[][] = [];
+
 export async function buildImages(promises: Promise<number[]>[], dataTilesLayer: any, status: CsViewerData, timesJs: CsTimesJsData, app: BaseApp, ncExtents: Array4Portion, uncertaintyLayer: boolean) {
     try {
         const floatArrays = await Promise.all(promises);
@@ -275,12 +284,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         const validFloatArrays = floatArrays.filter(arr => arr !== undefined && arr !== null);
         
         if (validFloatArrays.length === 0) {
+            console.warn('No valid float arrays received');
             return;
         }
 
         const actualTimeIndex = getActualTimeIndex(status.selectedTimeIndex, status.varId, timesJs);
 
-       
         if (!Array.isArray(timesJs.varMin[status.varId])) {
             timesJs.varMin[status.varId] = [];
         }
@@ -293,6 +302,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         for (let i = 0; i < validFloatArrays.length; i++) {
             const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
             filteredArrays.push(filteredArray);
+        }
+
+        // Guardar datos de la capa principal para usar como máscara en incertidumbre
+        if (!uncertaintyLayer) {
+            // Copia profunda para evitar problemas con referencias
+            mainLayerData = filteredArrays.map(arr => [...arr]);
         }
 
         let minArray: number = Number.MAX_VALUE;
@@ -349,6 +364,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             maxArray = 100;
         }
 
+
         try {
             (timesJs.varMin[status.varId] as number[])[actualTimeIndex] = minArray;
             (timesJs.varMax[status.varId] as number[])[actualTimeIndex] = maxArray;
@@ -362,10 +378,17 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
 
         app.notifyMaxMinChanged();
 
-        // Si es capa de incertidumbre, usar el painter específico de uncertainty
-        let painterInstance = uncertaintyLayer
-            ? PaletteManager.getInstance()['painters']['uncertainty'] || PaletteManager.getInstance().getPainter()
-            : PaletteManager.getInstance().getPainter();
+        // Si es capa overlay, usar el painter específico según tipo (pvalue o uncertainty)
+        let painterInstance: Painter;
+        if (uncertaintyLayer) {
+            const overlayVarId = status.overlayVarId || '';
+            const painterKey = overlayVarId.includes('_pvalue') ? 'significance' : 'uncertainty';
+            painterInstance = PaletteManager.getInstance().getNamedPainter(painterKey)
+                || PaletteManager.getInstance().getNamedPainter('uncertainty')
+                || PaletteManager.getInstance().getPainter(true);
+        } else {
+            painterInstance = PaletteManager.getInstance().getPainter();
+        }
 
         // Para datos computados, precalcular breaks con todos los datos combinados
         if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
@@ -375,11 +398,26 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         // Obtener el nivel de zoom actual del mapa
         const currentZoom = app.getMap()?.getZoom() || 6;
 
-        // Para capas de incertidumbre, usar el varId con sufijo '_uncertainty'
-        const uncertaintyVarId = uncertaintyLayer ? status.varId + '_uncertainty' : status.varId;
+        // Para capas overlay (incertidumbre/significación), usar el overlayVarId resuelto
+        const uncertaintyVarId = uncertaintyLayer ? (status.overlayVarId || status.varId + '_uncertainty') : status.varId;
 
         for (let i = 0; i < filteredArrays.length; i++) {
-            const filteredArray = filteredArrays[i];
+            let filteredArray = filteredArrays[i];
+
+            // Para capa de incertidumbre, filtrar píxeles donde la capa principal es NaN (mar/otros países)
+            if (uncertaintyLayer) {
+                if (mainLayerData[i] && mainLayerData[i].length === filteredArray.length) {
+                    filteredArray = filteredArray.map((val, idx) => {
+                        const mainVal = mainLayerData[i][idx];
+                        if (isNaN(mainVal) || !isFinite(mainVal)) {
+                            return 0;
+                        }
+                        return val;
+                    });
+                } else {
+                    console.warn(`[buildImages] No se puede aplicar máscara en porción ${i}: mainLayerData no disponible o longitudes no coinciden`);
+                }
+            }
 
             const width = timesJs.lonNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
             const height = timesJs.latNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
@@ -408,9 +446,8 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     } else {
                         dataTilesLayer[i].setZIndex(100 + i); // Capas de datos
                     }
-                    dataTilesLayer[i].setVisible(uncertaintyLayer ? false : true);
+                    dataTilesLayer[i].setVisible(true);
                     dataTilesLayer[i].setOpacity(1.0);
-
                     dataTilesLayer[i].changed();
 
                     await new Promise(resolve => setTimeout(resolve, 50));
@@ -443,15 +480,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             if (window.CsViewerApp && (window.CsViewerApp as any).csMap) {
                 const map = (window.CsViewerApp as any).csMap.map;
                 if (map) {
-        
                     map.render();
-                    
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    
                     if (map.renderSync) {
                         map.renderSync();
                     }
-                                    } else {
+                } else {
                     console.warn('Map not available');
                 }
             }
@@ -488,7 +522,6 @@ let xyCache: {
 } = undefined
 
 async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-
     let app = window.CsViewerApp;
     const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
 
@@ -525,7 +558,6 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
         const uncompressedArray = inflate(chunk);
    
-      
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
         if (!Array.isArray(floatArray) || floatArray.length === 0) {
@@ -536,7 +568,6 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
 
         let ret = [...floatArray];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
-
 
         return ret;
 
@@ -648,7 +679,7 @@ export function extractValueChunkedFromT(latlng: CsLatLong, functionValue: TileA
 export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false): void {
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
-    if (portion != '') {
+    if (portion != '' || globalMap) { 
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
 
         if (status.computedLayer) {
@@ -656,7 +687,8 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
             return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
         } else {
             let cb: ArrayDownloadDone = (data: number[]) => {
-                let value = parseFloat(data[chunkIndex - 1].toPrecision(ncSignif));
+                const raw = data[chunkIndex - 1];
+                let value = (raw !== undefined && !isNaN(raw)) ? parseFloat(raw.toPrecision(ncSignif)) : NaN;
                 return functionValue(value, [chunkIndex - 1, portion == '_can'? 0:1]);
             }
             // Use the original requested time index, downloadXYArrayChunked will handle the conversion
@@ -746,11 +778,6 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
                     columns: true,
                     skip_empty_lines: true
                 });
-                console.log(`[downloadXYbyRegion] varName="${varName}", timeIndex=${timeIndex}, records.length=${records.length}`);
-                console.log(`[downloadXYbyRegion] records[${timeIndex}]['times_mean'] =`, records[timeIndex] ? records[timeIndex]['times_mean'] : 'undefined');
-                if (varName.includes('beta_b0') && records[timeIndex]) {
-                    console.log(`[downloadXYbyRegion] beta_b0 for province '1' (Araba):`, records[timeIndex]['1']);
-                }
                 stResult = records[timeIndex]
                 // if (records.length == 1) stResult = records[0];
                 // else {
@@ -769,6 +796,60 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
             doneCb([], varName, 'text/plain');
         }
     }, undefined, 'text');
+}
+
+export function downloadXYbyRegionMultiPortion(
+    time: string, 
+    timeIndex: number, 
+    folder: string, 
+    varName: string, 
+    portions: string[],
+    doneCb: (mergedData: any, filename: string, type: string) => void
+) {
+    
+    const promises = portions.map(portion => {
+        return new Promise((resolve, reject) => {
+            const csvPath = `./regData/${folder}/${varName}${portion}.csv`;
+            downloadUrl(csvPath, (status: number, response) => {
+                if (status == 200) {
+                    try {
+                        const records = parse(response as Buffer, {
+                            columns: true,
+                            skip_empty_lines: true
+                        });
+                        resolve({ portion, data: records[timeIndex] || {} });
+                    } catch (e) {
+                        console.error(`Error parsing CSV ${varName}${portion}:`, e);
+                        reject(e);
+                    }
+                } else {
+                    console.error(`HTTP ${status} for ${csvPath}`);
+                    reject(new Error(`HTTP ${status}`));
+                }
+            }, undefined, 'text');
+        });
+    });
+
+    Promise.all(promises)
+        .then((results: any[]) => {
+            
+            const mergedData: any = {};
+            results.forEach(({ portion, data }) => {
+                Object.keys(data).forEach(key => {
+                    if (key !== 'times_ini' && key !== 'times_end' && key !== 'times_mean') {
+                        if (!mergedData[key] || isNaN(mergedData[key])) {
+                            mergedData[key] = data[key];
+                        }
+                    }
+                });
+            });
+            
+            doneCb(mergedData, varName, 'text/plain');
+        })
+        .catch(error => {
+            console.error("Error loading region portions:", error);
+            doneCb({}, varName, 'text/plain');
+        });
 }
 
 export function downloadHistoricalDataForPercentile(

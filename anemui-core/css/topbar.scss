@@ -5,10 +5,11 @@
 
 #menu-title{
     padding: 0rem 0rem;
-    min-height: 1rem; 
+    min-height: 1rem;
+    border-top: 1px solid $border-color;
     background-color: $title_color;
-    box-shadow: 0.5px 0.5px 3px $color_3;
-    @include desktop { 
+    box-shadow: 0px 3px 3px -2px $color_3;
+    @include desktop {
         padding: 0rem 1.5rem;
     }
 }
@@ -16,6 +17,7 @@
 #TopBar {
         padding: 0px !important;
         z-index: 1000;
+        background-color: $title_bgcolor;
 
     // Mobile first: show mobile, hide desktop
     .topbar-mobile {
@@ -32,6 +34,7 @@
         }
         .topbar-desktop {
             display: block;
+            position: relative;
         }
     }
 
@@ -41,7 +44,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background-color: $title_color;
+            background-color: $title_bgcolor;
             border-bottom: 1px solid $border-color;
         }
 
@@ -60,43 +63,20 @@
         }
 
         .mobile-menu-central {
-            flex: 1;
+            position: relative;
             display: flex;
-            justify-content: center;
+            align-items: center;
+            padding-left: 0.5rem;
         }
 
-        .mobile-menu-info {
+        .mobile-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             padding-right: 0.5rem;
+            flex-shrink: 0;
         }
 
-        .collapse-menu-mb {
-            display: block;
-            cursor: pointer;
-            padding: 0.4rem;
-        }
-    
-        .collapse-menu-mb span {
-            display: block;
-            width: 25px;
-            height: 3px;
-            border-radius: 1px;
-            margin: 5px auto;
-            -webkit-transition: all 0.3s ease-in-out;
-            transition: all 0.3s ease-in-out;
-            background-color: $color_4;
-        }
-    
-        .collapse-menu-mb.active span:nth-child(2) {
-            opacity: 0;
-        }
-    
-        .collapse-menu-mb.active span:nth-child(1) {
-            transform: translateY(8px) rotate(-45deg);
-        }
-    
-        .collapse-menu-mb.active span:nth-child(3) {
-            transform: translateY(-8px) rotate(45deg);
-        }
     }
    
     #header-central {
@@ -107,9 +87,34 @@
         margin: 0;
     }    
     
-    #info {
-        display:flex;
+    #home, #info {
+        flex: 0 0 auto;
+        width: auto;
+        display: flex;
         align-items: center;
+        padding: 0 4px;
+    }
+
+    #info {
+        margin-right: 40px;
+    }
+
+    .topbar-icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        color: #555;
+        font-size: 1.4rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s, color 0.2s;
+        &:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #222;
+        }
     }
     
     #inputs {
@@ -175,6 +180,8 @@
     .col-title {
         float:left;
         width: 100%;
+        display: flex;
+        align-items: center;
         #title {
             width: auto !important;
             text-decoration: none;
@@ -188,10 +195,17 @@
             width: 45%;
             #title {
                 font-size: 0.95em;
-                padding: 0.7rem 1rem;
+                padding: 0rem 1rem;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+            }
+        }
+
+        @include sm-desktop {
+            width: 35%;
+            #title {
+                font-size: 0.85em;
             }
         }
 
@@ -213,6 +227,9 @@
         @include desktop {
             width: 55%;
         }
+        @include sm-desktop {
+            width: 65%;
+        }
         @include md-desktop {
             width: 50%;
         }
@@ -229,40 +246,161 @@
         img {
             width: 50px;
         }
+
+        @include sm-desktop {
+            img {
+                width: 35px;
+            }
+        }
     }
 
     .allScrLogo {
-        padding-left: 0.5em;
+        padding-left: 0;
         img {
             height: auto;
             max-width: 100%;
         }
+
+        @include sm-desktop {
+            img {
+                max-height: 35px;
+            }
+        }
     }
 
     .longLogo {
-        padding-left: 0.5em;
+        padding-left: 0;
         img {
             height: 30px;
         }
 
         @include desktop {
-            padding-left: 2.5em;
+            padding-left: 0;
             img {
                 height: 50px;
             }
+        }
+
+        @include sm-desktop {
+            img {
+                height: 35px;
+            }
+        }
+    }
+
+    .logo-container {
+        position: relative;
+        display: inline-block;
+        a.logo-link {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            z-index: 1;
+        }
+    }
+
+    // Submenu de inputs (solo desktop)
+    .inputs-submenu {
+        display: none;
+
+        @include desktop {
+            // display: flex;
+            // position: absolute;
+            // top: 100%;
+            // left: 0;
+            // right: 0;
+            // background-color: #4875b9;
+            // padding: 8px 1.5rem;
+            // margin: 0;
+            // list-style: none;
+            // z-index: 999;
+            // box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            // gap: 15px;
+            // align-items: center;
+
+            display: flex;
+            position: absolute;
+            top: 100%;
+            left: 40%;
+            right: 37%;
+            background-color: #4875b9fc;
+            padding: 8px 1.5rem;
+            margin: 5px;
+            list-style: none;
+            z-index: 999;
+            gap: 15px;
+            align-items: center;
+            border-radius: 5px;
+
+            li.inputDiv {
+                background: transparent !important;
+                box-shadow: none !important;
+                min-width: auto;
+
+                .dpdown-button, .menu-input {
+                    color: #fff;
+                }
+
+                .title {
+                    color: rgba(255, 255, 255, 0.8);
+                }
+
+                .sub-title {
+                    color: #fff;
+                }
+
+                .input-group-text {
+                    background: transparent;
+                    border-color: rgba(255, 255, 255, 0.3);
+                    color: #fff;
+                }
+
+                input {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-color: rgba(255, 255, 255, 0.3);
+                    color: #fff;
+
+                    &::placeholder {
+                        color: rgba(255, 255, 255, 0.5);
+                    }
+                }
+            }
+        }
+    }
+
+    .topbar-desktop > .row {
+        --bs-gutter-x: 0;
+        margin-left: 0;
+        margin-right: 0;
+
+        > .col:first-child {
+            padding-left: 0;
         }
     }
 
     .topbar-desktop .navbar {
         width: 100%;
-        background-color: $color_4;
-        border-bottom: 1px solid $border-color;
+        // border-bottom: 1px solid $border-color;
         justify-content: left;
     }
 
     .topbar-mobile .navbar {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
         justify-content: center;
+    }
+
+    .topbar-mobile .navbar img {
+        max-width: 100%;
+        height: auto;
+        max-height: 40px;
+        object-fit: contain;
+    }
+
+    .topbar-mobile .mobile-menu-central,
+    .topbar-mobile .mobile-actions {
+        flex-shrink: 0;
     }
 
     .col.shortLogo {
@@ -270,7 +408,8 @@
     }
 
     .col.longLogo, .col.allScrLogo {
-        background-color: transparent !important;
+        --bs-navbar-padding-y: 0px;
+        // background-color: transparent !important;
     }
 
     a.cs-disabled {
@@ -285,7 +424,85 @@
         }
     }
 
-    .nav-menu, .nav-menu-mb {
+    // Estilos del menú móvil slide-in (solo .nav-menu-mb)
+    .nav-menu-mb {
+        transform: translate3d(-344px, 0, 0);
+        position: fixed;
+        z-index: 9999;
+        width: 344px;
+        min-height: 100vh;
+        background-color: #4875b9;
+        left: 0;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+        transition: all 0.4s;
+        padding: 0;
+        padding-top: 50px;
+        margin: 0;
+        list-style: none;
+    }
+
+    .nav-menu-mb.active {
+        transform: translate3d(0, 0, 0);
+    }
+
+    .nav-menu-mb li {
+        display: block;
+        width: 100%;
+        background-color: #4875b9;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-menu-mb .inputDiv {
+        background: transparent !important;
+        box-shadow: none !important;
+        width: 100%;
+        padding: 0;
+    }
+
+    .nav-menu-mb .dpdown-button {
+        color: #fff;
+        padding: 12px 15px;
+    }
+
+    .nav-menu-mb .title {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.85em;
+    }
+
+    .nav-menu-mb .sub-title {
+        color: #fff;
+        font-size: 1em;
+    }
+
+    .nav-menu-mb .dpdown-menu {
+        position: relative !important;
+        top: 0 !important;
+        width: 100%;
+        background-color: #5987CC;
+    }
+
+    .nav-menu-mb .dropdown-item {
+        color: #fff !important;
+        padding: 10px 20px !important;
+        text-indent: 20px;
+    }
+
+    .nav-menu-mb .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    // Mostrar dropdown en móvil al hacer click (clase .active añadida por JS)
+    .nav-menu-mb .inputDiv.active .dpdown-menu {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    // Estilos base del menú desktop (se sobrescriben en @include desktop)
+    .nav-menu {
         position: fixed;
         left: -100%;
         top: 4.7rem;
@@ -297,7 +514,7 @@
         transition: 0.3s;
     }
 
-    .nav-menu.active, .nav-menu-mb.active {
+    .nav-menu.active {
         left: 0%;
         transform: translateX(0%);
     }
@@ -312,19 +529,43 @@
 
     .collapse-menu {
         display: block;
+        width: 40px;
+        height: 40px;
         cursor: pointer;
-        padding: 0.4rem;
+        position: relative;
+        z-index: 10000;
+        transition: transform 0.4s;
+        border-radius: 4px;
     }
 
     .collapse-menu span {
         display: block;
-        width: 25px;
-        height: 3px;
+        width: 20px;
+        height: 2px;
         border-radius: 1px;
-        margin: 5px auto;
+        margin: 4px auto;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
         -webkit-transition: all 0.3s ease-in-out;
         transition: all 0.3s ease-in-out;
-        background-color: $color_4;
+        background-color: #fff;
+    }
+
+    .collapse-menu span:nth-child(1) {
+        top: 10px;
+    }
+
+    .collapse-menu span:nth-child(2) {
+        top: 18px;
+    }
+
+    .collapse-menu span:nth-child(3) {
+        top: 26px;
+    }
+
+    .collapse-menu.active {
+        transform: rotate(180deg);
     }
 
     .collapse-menu.active span:nth-child(2) {
@@ -332,11 +573,24 @@
     }
 
     .collapse-menu.active span:nth-child(1) {
-        transform: translateY(8px) rotate(-45deg);
+        top: 18px;
+        transform: translateX(-50%) rotate(-45deg);
     }
 
     .collapse-menu.active span:nth-child(3) {
-        transform: translateY(-8px) rotate(45deg);
+        top: 18px;
+        transform: translateX(-50%) rotate(45deg);
+    }
+
+    // Hamburguesa móvil: usa topbar-icon-btn con icono Bootstrap
+    .collapse-menu-mb {
+        z-index: 10000;
+        i::before {
+            content: "\f479"; // bi-list
+        }
+        &.active i::before {
+            content: "\f62a"; // bi-x-lg
+        }
     }
     
     @include tablet {
@@ -351,11 +605,11 @@
     }
 
     @include desktop {
-        
+
         .longLogo, .shortLogo, .allScrLogo {
-            padding-left: 2.2rem;
+            padding-left: 0;
         }
-        
+
 
         .allScrLogo img {
             height: 50px;
@@ -364,11 +618,11 @@
         .inputDiv .title {
             font-size: 0.8em;
         }
-        
+
         .inputDiv .sub-title {
             font-size: 0.8em;
         }
-        
+
 
         #menu-central {
             display:block
@@ -390,12 +644,26 @@
         // width: 97%;
     }
 
+    @include sm-desktop {
+        .allScrLogo img {
+            height: 35px;
+        }
+
+        .longLogo img {
+            height: 35px;
+        }
+
+        .shortLogo img {
+            width: 35px;
+        }
+    }
+
     @include xl-desktop {
         // width: 97%;
         padding-top: 0em;
 
         .longLogo, .shortLogo, .allScrLogo {
-            padding-left: 2.5rem;
+            padding-left: 0;
         }
         
         #logo img {
@@ -494,7 +762,7 @@ input.selection-param-input {
     position: absolute;
     width: 100%;
     left: 0;
-    top: 53px;
+    top: 100%;
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
 }
@@ -534,6 +802,7 @@ input.selection-param-input {
 
 .menu-checkbox {
     padding: 0;
+    margin-left: 15px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -740,3 +1009,26 @@ $elements: 15;
         transform: translate(360px, 0);
     }
 }
+
+/* ---------------------------------------------------
+    ESTILOS POPOVERS
+----------------------------------------------------- */
+
+.popover {
+    max-width: 40% !important;
+    background-color: $color_8;
+    border-color: $color_4;
+    font-size: 12px;
+    margin-left: 20px !important;
+    z-index: 1500;
+}
+
+.popover-header {
+    color: $title_color;
+    background-color: $title_bgcolor;
+}
+
+.popover-body {
+    color: $color_4 !important;
+}
+

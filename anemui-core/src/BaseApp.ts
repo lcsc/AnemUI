@@ -7,7 +7,7 @@ import LayerFrame from './ui/LayerFrame'
 import PaletteFrame from "./ui/PaletteFrame";
 import { CsLatLong, CsMapEvent, CsMapListener } from "./CsMapTypes";
 import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
-import { loadLatLongData } from "./data/CsDataLoader";
+import { loadLatLongData, loadPopData, PopDataItem } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData, CsTimeSpan } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
 import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods } from "./Env";
@@ -62,6 +62,8 @@ const INITIAL_STATE: CsViewerData = {
 
 export const TP_SUPPORT_CLIMATOLOGY = 'Climatología'
 export const UNCERTAINTY_LAYER = '_uncertainty'
+export const PVALUE_LAYER = '_pvalue'
+export const OVERLAY_SUFFIXES = [UNCERTAINTY_LAYER, PVALUE_LAYER]
 const LEYEND_TITLE = "Leyenda"
 const STR_ALL = "Todo"
 
@@ -195,7 +197,32 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     
     public setLanguage(lang:string): void {
         this.language.setDefault(lang) ;
-    } 
+    }
+
+    /**
+     * Carga y procesa los datos de popup desde popData.json
+     * Utiliza el idioma configurado en Language para seleccionar los campos correctos
+     * @param url - URL del archivo popData.json (por defecto 'popData.json')
+     * @returns Promise con los datos procesados para el popup
+     */
+    public async getPopData(url: string = 'popData.json'): Promise<PopDataItem[]> {
+        const langPrefix = this.language.getDefault() + '_'; // 'es_' o 'en_'
+
+        const rawData = await loadPopData(url);
+
+        return rawData.map(item => ({
+            id: item.id,
+            data: {
+                [this.language.getTranslation('pop_name')]: item.data[langPrefix + 'name'],
+                [this.language.getTranslation('pop_description')]: item.data[langPrefix + 'description'],
+                // [this.language.getTranslation('pop_importance')]: item.data[langPrefix + 'importance_of_index'],
+                [this.language.getTranslation('pop_time_scale')]: item.data[langPrefix + 'time_scale_applicable'],
+                // [this.language.getTranslation('pop_geographic')]: item.data[langPrefix + 'geographic_limitation'],
+                [this.language.getTranslation('pop_formula')]: item.data[langPrefix + 'formula'],
+                // [this.language.getTranslation('pop_reference')]: item.data[langPrefix + 'reference']
+            }
+        }));
+    }
 
     public abstract configure(): void;
 
@@ -578,7 +605,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         //TODO on change
         let timeSpan = this.getTimeSpan(_timesJs.times[varId])
         // let timeIndex = typeof _timesJs.times[varId] === 'string'? 0:_timesJs.times[varId].length - 1
-        let timeIndex = timeSpan == CsTimeSpan.Year? 0:_timesJs.times[varId].length - 1
+        let timeIndex = timeSpan == CsTimeSpan.Year? 0 : _timesJs.times[varId].length - 1
         let legendTitle: string;
         if (_timesJs.legendTitle[varId] != undefined) {
             legendTitle = _timesJs.legendTitle[varId]
@@ -592,7 +619,14 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             varName = varId
         }
         
-        let uncertainty = _timesJs.times[varId  + UNCERTAINTY_LAYER] != undefined
+        // Detectar capa overlay (incertidumbre o significación)
+        let overlayVarId: string | undefined = undefined;
+        for (const suffix of OVERLAY_SUFFIXES) {
+            if (_timesJs.times[varId + suffix] != undefined) {
+                overlayVarId = varId + suffix;
+                break;
+            }
+        }
 
         if (this.state == undefined) this.state = INITIAL_STATE;
         this.state = {
@@ -605,7 +639,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             legendTitle: legendTitle,
             selection: "",
             selectionParamEnable: false,
-            uncertaintyLayer: uncertainty
+            uncertaintyLayer: overlayVarId != undefined,
+            overlayVarId: overlayVarId
         }
     }
 
@@ -616,6 +651,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public getTimeSpan (time:string[]): CsTimeSpan {
         if(typeof time === 'string') return CsTimeSpan.Year
         let number
+        let yearCount = 1
         if (time.length<=12) number = time.length
         else {
             const result = time.reduce((acc, curr) => {
@@ -625,15 +661,25 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 }
                 return acc;
             }, []);
+            yearCount = result.length
             number = time.length / result.length;
         }
+        // Caso especial: si hay exactamente 365 o 366 elementos totales, es día juliano
+        // independientemente de si las fechas cruzan dos años
+        if (time.length === 365 || time.length === 366) {
+            return CsTimeSpan.Day;
+        }
+
         switch (number) {
-            case 1: 
-                return CsTimeSpan.Year;
+            case 1:
+                return yearCount > 1 ? CsTimeSpan.YearSeries : CsTimeSpan.Year;
             case 4:
                 return CsTimeSpan.Season;
             case 12:
                 return CsTimeSpan.Month;
+            case 365:
+            case 366:
+                return CsTimeSpan.Day;
             default:
                 return CsTimeSpan.Date;
         }
@@ -697,6 +743,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             // Continue with update even if there's an error
             if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
+             this.layerFrame.update();
             this.changeUrl();
         }
     }
@@ -749,6 +796,31 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return ret
     }
 
+    /**
+     * Devuelve el texto del título para la exportación del mapa.
+     * Los visores pueden sobreescribirlo para incluir campos específicos.
+     */
+    public getExportTitle(): string {
+        const state = this.state;
+        const varName = state.varName || '';
+        const subVarName = state.subVarName || '';
+        const tpSupport = state.tpSupport || '';
+        let dateStr = '';
+        if (state.times && state.times[state.selectedTimeIndex] !== undefined) {
+            dateStr = state.times[state.selectedTimeIndex];
+        }
+        return [tpSupport, varName, subVarName, dateStr].filter(s => s.length > 0).join(' - ');
+    }
+
+    /**
+     * Devuelve el título de la leyenda para la exportación del mapa.
+     * Los visores pueden sobreescribirlo para adaptar el texto.
+     */
+    public getExportLegendTitle(): string {
+        const timesTitle = this.timesJs?.legendTitle?.[this.state.varId];
+        return timesTitle || this.state.legendTitle || '';
+    }
+
     public async filterValues(values: number[], t: number, varName: string, portion: string): Promise<number[]> {
         if (this.state.selection==STR_ALL)return values;
         for (let i = 0; i < values.length; i++) {
@@ -780,7 +852,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
      */
     protected isClimatologyCyclicMode(): boolean {
         return this.state.climatology &&
-               (this.state.timeSpan === CsTimeSpan.Month || this.state.timeSpan === CsTimeSpan.Season);
+               (this.state.timeSpan === CsTimeSpan.Day || this.state.timeSpan === CsTimeSpan.Month || this.state.timeSpan === CsTimeSpan.Season);
     }
 
     public dateDateBack(): void {
