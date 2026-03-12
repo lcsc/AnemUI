@@ -384,7 +384,7 @@ export class OpenLayerMap implements CsMapController {
     if (state.support != this.defaultRenderer) {
       this.parent.getParent().update();
     }
-       
+
     // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad
     if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
       const zoom = this.getZoom();
@@ -458,13 +458,13 @@ export class OpenLayerMap implements CsMapController {
     return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', pixelIndex, portion, value);
   }
 
-   public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
+  public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
     let state = this.parent.getParent().getState()
     if(typeof state.times === 'string' && !computedDataTilesLayer) return 1
     if (feature) {
-        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'], 'folder': folder };
-        if (state.support== this.renderers[0])  this.parent.getParent().showGraph({ type: 'station', stParams })
-        this.parent.getParent().showGraph({ type: 'region', stParams })
+      let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'], 'folder': folder };
+      if (state.support== this.renderers[0])  this.parent.getParent().showGraph({ type: 'station', stParams })
+      this.parent.getParent().showGraph({ type: 'region', stParams })
     }
   }
 
@@ -475,7 +475,7 @@ export class OpenLayerMap implements CsMapController {
   }
 
 
-public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
+  public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let app = window.CsViewerApp;
 
     // Guardar referencia a las capas antiguas (se eliminan después del fade-in de las nuevas)
@@ -486,35 +486,35 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
     this.uncertaintyLayer = [];
 
     if (!timesJs.portions[state.varId]) {
-        console.warn('No portions found for varId:', state.varId);
-        // Limpiar capas antiguas si no hay datos
-        this.dataTilesLayer = oldDataLayers;
-        this.safelyRemoveDataLayers();
-        if (oldUncertaintyLayers.length > 0) {
-            this.uncertaintyLayer = oldUncertaintyLayers;
-            this.safelyRemoveUncertaintyLayers();
-        }
-        return;
+      console.warn('No portions found for varId:', state.varId);
+      // Limpiar capas antiguas si no hay datos
+      this.dataTilesLayer = oldDataLayers;
+      this.safelyRemoveDataLayers();
+      if (oldUncertaintyLayers.length > 0) {
+        this.uncertaintyLayer = oldUncertaintyLayers;
+        this.safelyRemoveUncertaintyLayers();
+      }
+      return;
     }
 
     timesJs.portions[state.varId].forEach((portion: string, index, array) => {
-        let imageLayer: ImageLayer<Static> = new ImageLayer({
-            visible: true,
-            opacity: 1.0,
-            zIndex: 100,
-            source: null
-        });
+      let imageLayer: ImageLayer<Static> = new ImageLayer({
+        visible: true,
+        opacity: 1.0,
+        zIndex: 100,
+        source: null
+      });
 
-        this.dataTilesLayer.push(imageLayer);
+      this.dataTilesLayer.push(imageLayer);
 
-        // Insertar la capa antes de la capa política (no al final)
-        const layers = this.map.getLayers();
-        const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
-        if (politicalIndex !== -1) {
-            layers.insertAt(politicalIndex, imageLayer);
-        } else {
-            layers.push(imageLayer);
-        }
+      // Insertar la capa antes de la capa política (no al final)
+      const layers = this.map.getLayers();
+      const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
+      if (politicalIndex !== -1) {
+        layers.insertAt(politicalIndex, imageLayer);
+      } else {
+        layers.push(imageLayer);
+      }
 
     });
 
@@ -526,60 +526,60 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
         promises.push(this.computeLayerData(state.selectedTimeIndex, state.varId, portion));
       });
     } else {
-        timesJs.portions[state.varId].forEach((portion: string, index, array) => {
-            promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
-        });
+      timesJs.portions[state.varId].forEach((portion: string, index, array) => {
+        promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
+      });
     }
 
     if (this.dataTilesLayer.length > 0 && promises.length > 0) {
-        // PRIMERO construir la capa de datos principal (esto guarda mainLayerData)
-        await buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
+      // PRIMERO construir la capa de datos principal (esto guarda mainLayerData)
+      await buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
 
-        // Eliminar capas antiguas AHORA que las nuevas están listas
-        oldDataLayers.forEach((layer) => {
-            if (layer && this.map) {
-                try {
-                    layer.setVisible(false);
-                    if (layer.setSource) layer.setSource(null);
-                    const layers = this.map.getLayers();
-                    if (layers && layers.getArray().includes(layer)) {
-                        layers.remove(layer);
-                    }
-                    if (typeof layer.dispose === 'function') layer.dispose();
-                } catch (e) { /* ignore */ }
+      // Eliminar capas antiguas AHORA que las nuevas están listas
+      oldDataLayers.forEach((layer) => {
+        if (layer && this.map) {
+          try {
+            layer.setVisible(false);
+            if (layer.setSource) layer.setSource(null);
+            const layers = this.map.getLayers();
+            if (layers && layers.getArray().includes(layer)) {
+              layers.remove(layer);
             }
-        });
-        if (oldUncertaintyLayers.length > 0) {
-            oldUncertaintyLayers.forEach((layer) => {
-                if (layer && this.map) {
-                    try {
-                        layer.setVisible(false);
-                        const layers = this.map.getLayers();
-                        if (layers && layers.getArray().includes(layer)) {
-                            layers.remove(layer);
-                        }
-                        if (typeof layer.dispose === 'function') layer.dispose();
-                    } catch (e) { /* ignore */ }
-                }
-            });
+            if (typeof layer.dispose === 'function') layer.dispose();
+          } catch (e) { /* ignore */ }
         }
-
-        // Mostrar las capas de datos directamente
-        this.dataTilesLayer.forEach((layer) => {
-            layer.setVisible(true);
-            layer.changed();
+      });
+      if (oldUncertaintyLayers.length > 0) {
+        oldUncertaintyLayers.forEach((layer) => {
+          if (layer && this.map) {
+            try {
+              layer.setVisible(false);
+              const layers = this.map.getLayers();
+              if (layers && layers.getArray().includes(layer)) {
+                layers.remove(layer);
+              }
+              if (typeof layer.dispose === 'function') layer.dispose();
+            } catch (e) { /* ignore */ }
+          }
         });
+      }
 
-        // Renderizar el mapa
-        this.map.render();
-        this.map.renderSync();
+      // Mostrar las capas de datos directamente
+      this.dataTilesLayer.forEach((layer) => {
+        layer.setVisible(true);
+        layer.changed();
+      });
 
-        // DESPUÉS construir la capa de incertidumbre (usa mainLayerData como máscara)
-        if (state.uncertaintyLayer) {
-            await this.buildUncertaintyLayer(state, timesJs);
-        }
+      // Renderizar el mapa
+      this.map.render();
+      this.map.renderSync();
+
+      // DESPUÉS construir la capa de incertidumbre (usa mainLayerData como máscara)
+      if (state.uncertaintyLayer) {
+        await this.buildUncertaintyLayer(state, timesJs);
+      }
     }
-}
+  }
 
   // Safe layer removal method
   private safelyRemoveDataLayers(): void {
@@ -616,7 +616,7 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
   }
 
   // Fix for uncertainty layer with proper initialization
-    public async buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
+  public async buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
 
@@ -704,24 +704,24 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
   }
 
   public buildFeatureLayers () {
-        this.glmgr = GeoLayerManager.getInstance();
-        let self = this
-        Object.entries(this.renderers).forEach(([key, renderer]) => {
-            // if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
-            if(!renderer.startsWith("-") && renderer != this.defaultRenderer){  
-              const folders = this.parent.getParent().getFolders(renderer)
-              folders.forEach( folder =>{
-                loadGeoJsonData(folder)
-                .then(GeoJsonData => { 
-                    self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
-                })
-                .catch(error => {
-                    console.error('Error: ', error);
-                });
-              })
-            }
-        } )
+    this.glmgr = GeoLayerManager.getInstance();
+    let self = this
+    Object.entries(this.renderers).forEach(([key, renderer]) => {
+      // if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
+      if(!renderer.startsWith("-") && renderer != this.defaultRenderer){
+        const folders = this.parent.getParent().getFolders(renderer)
+        folders.forEach( folder =>{
+          loadGeoJsonData(folder)
+            .then(GeoJsonData => {
+              self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
+            })
+            .catch(error => {
+              console.error('Error: ', error);
+            });
+        })
       }
+    } )
+  }
 
   public async setDate(dateIndex: number, state: CsViewerData): Promise<void> {
     try {
@@ -743,50 +743,60 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
   }
 
   // Enhanced updateRender with better error handling
-async updateRender(support: string): Promise<void> {
+  async updateRender(support: string): Promise<void> {
     try {
-        let state = this.parent.getParent().getState();
+      let state = this.parent.getParent().getState();
 
-        // Safely hide existing layers
-        if (this.featureLayer && typeof this.featureLayer.hide === 'function') {
-            this.featureLayer.hide();
-            this.featureLayer = null;
-        }
+      // Safely hide existing layers
+      if (this.featureLayer && typeof this.featureLayer.hide === 'function') {
+        this.featureLayer.hide();
+        this.featureLayer = null;
+      }
 
-        if (this.contourLayer && typeof this.contourLayer.hide === 'function') {
-            this.contourLayer.hide();
-            this.contourLayer = null;
-        }
+      if (this.contourLayer && typeof this.contourLayer.hide === 'function') {
+        this.contourLayer.hide();
+        this.contourLayer = null;
+      }
 
-        switch (support) {
-            case this.renderers[1]:
-                break;
+      switch (support) {
+        case this.renderers[1]:
+          break;
 
-            case this.renderers[0]:
-                await this.setupStationRenderer(state, support);
-                break;
+        case this.renderers[0]:
+          await this.setupStationRenderer(state, support);
+          break;
 
-            case this.renderers[2]:
-            case this.renderers[3]:
-            case this.renderers[4]:
-            case this.renderers[5]:
-                await this.setupRegionRenderer(state, support);
-                break;
+        case this.renderers[2]:
+        case this.renderers[3]:
+        case this.renderers[4]:
+        case this.renderers[5]:
+          await this.setupRegionRenderer(state, support);
+          break;
 
-            default:
-                console.error("Render " + support + " not supported");
-                return;
-        }
+        default:
+          console.error("Render " + support + " not supported");
+          return;
+      }
 
-        this.lastSupport = support;
-        await this.finalizeRenderUpdate();
+      this.lastSupport = support;
+      await this.finalizeRenderUpdate();
 
     } catch (error) {
-        console.error('Error in updateRender:', error);
+      console.error('Error in updateRender:', error);
     }
-}
+  }
 
   private async setupStationRenderer(state: CsViewerData, support: string): Promise<void> {
+
+    if (this.selectInteraction) {
+      this.map.removeInteraction(this.selectInteraction);
+      this.selectInteraction = null;
+    }
+    if (this.hoverInteraction) {
+      this.map.removeInteraction(this.hoverInteraction);
+      this.hoverInteraction = null;
+    }
+
     this.safelyRemoveDataLayers();
 
     const remainingLayers = this.map.getLayers().getArray().filter(layer => {
@@ -925,6 +935,15 @@ async updateRender(support: string): Promise<void> {
   }
 
   private async setupRegionRenderer(state: CsViewerData, support: string): Promise<void> {
+    if (this.selectInteraction) {
+      this.map.removeInteraction(this.selectInteraction);
+      this.selectInteraction = null;
+    }
+    if (this.hoverInteraction) {
+      this.map.removeInteraction(this.hoverInteraction);
+      this.hoverInteraction = null;
+    }
+
     this.safelyRemoveDataLayers();
 
     let folders = this.parent.getParent().getFolders(support);
@@ -1517,6 +1536,8 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   protected currentFeature: Feature;
   public indexData: ArrayData;
 
+  public rendererIndex: number = -1;
+
   constructor(_name: string, _geoData: CsGeoJsonData, _map: Map, _csMap: OpenLayerMap, _isContour: boolean, _onClick: CsGeoJsonClick = undefined) {
     super(_geoData)
     this.name = _name;
@@ -1560,7 +1581,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
 
   public show(renderer: number): void {
     if (this.geoLayerShown) return;
-
+    this.rendererIndex = renderer;
     let vectorSource: VectorSource;
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
@@ -1685,21 +1706,70 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
 
   public setStationStyle(state: CsViewerData, feature: FeatureLike, timesJs: CsTimesJsData): Style {
     let ptr = PaletteManager.getInstance().getPainter();
-    let minValue = timesJs.varMin[state.varId][state.selectedTimeIndex];
-    let maxValue = timesJs.varMax[state.varId][state.selectedTimeIndex];
-    let targetMin: number = 5
-    let targetMax: number = 20
+    let minValue = timesJs.varMin[state.varId]?.[state.selectedTimeIndex];
+    let maxValue = timesJs.varMax[state.varId]?.[state.selectedTimeIndex];
+
+    // Si no hay min/max de la rejilla, calcular desde los datos de estaciones
+    if (minValue == null || maxValue == null || isNaN(minValue) || isNaN(maxValue) || !isFinite(minValue) || !isFinite(maxValue)) {
+      minValue = Number.MAX_VALUE;
+      maxValue = -Number.MAX_VALUE;
+      Object.values(this.indexData).forEach((v: any) => {
+        const num = parseFloat(v);
+        if (!isNaN(num) && isFinite(num)) {
+          minValue = Math.min(minValue, num);
+          maxValue = Math.max(maxValue, num);
+        }
+      });
+      if (minValue === Number.MAX_VALUE) { minValue = -3; maxValue = 3; }
+    }
+
+    let targetMin: number = 5;
+    let targetMax: number = 20;
     let currentRange = maxValue - minValue;
     let targetRange = targetMax - targetMin;
-    let color: string = '#fff';
-    let radius: number = 10.0;
-    let id = feature.getProperties()['id']
-    Object.keys(this.indexData).forEach(key => {
-      if (key == id) {
-        color = ptr.getColorString(this.indexData[key], minValue, maxValue)
-        radius = Math.abs(targetMin + ((this.indexData[key] - minValue) / currentRange) * targetRange)
+    let color: string = '#aaaaaa';
+    let radius: number = 6;
+    let id = feature.getProperties()['id'];
+    let id_ant = feature.getProperties()['id_ant'];
+
+    // ── Buscar el valor con fallbacks de ID (igual que setFeatureStyle) ──
+    let dataValue = undefined;
+
+    if (this.indexData[id] !== undefined) {
+      dataValue = this.indexData[id];
+    }
+    else if (id_ant && this.indexData[id_ant] !== undefined) {
+      dataValue = this.indexData[id_ant];
+    }
+    else if (id && id.length === 1 && this.indexData['0' + id] !== undefined) {
+      dataValue = this.indexData['0' + id];
+    }
+    else if (id && id.startsWith('0') && this.indexData[id.substring(1)] !== undefined) {
+      dataValue = this.indexData[id.substring(1)];
+    }
+    else if (id_ant && id_ant.length >= 2) {
+      const shortCode = id_ant.substring(0, 2);
+      if (this.indexData[shortCode] !== undefined) {
+        dataValue = this.indexData[shortCode];
       }
-    });
+    }
+    // ── Fallback: buscar coincidencia parcial (ej: CSV "3129" ↔ GeoJSON "3129A") ──
+    if (dataValue === undefined && id) {
+      // Buscar si alguna key del CSV es prefijo del id del GeoJSON
+      const matchKey = Object.keys(this.indexData).find(key =>
+        id.startsWith(key) || key.startsWith(id)
+      );
+      if (matchKey !== undefined) {
+        dataValue = this.indexData[matchKey];
+      }
+    }
+
+    const val = dataValue !== undefined ? parseFloat(String(dataValue)) : NaN;
+    if (!isNaN(val) && isFinite(val) && currentRange !== 0) {
+      color = ptr.getColorString(val, minValue, maxValue);
+      radius = Math.abs(targetMin + ((val - minValue) / currentRange) * targetRange);
+      if (isNaN(radius) || radius < 3) radius = 3;
+    }
 
     const isHovered = feature.get('hover');
 
@@ -1708,7 +1778,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
       stroke: new Stroke({ color: '#999', width: 1 }),
     });
-    return new Style({ image: imgStation, })
+    return new Style({ image: imgStation });
   }
 
   public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
@@ -1793,7 +1863,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
 
     if (feature) {
-      if (state.support == this.csMap.renderers[0]) {
+      if (this.rendererIndex === 0) {
         feature.setStyle(this.setStationStyle(state, feature, timesJs));
       } else {
         feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
@@ -1847,7 +1917,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     }
 
     if (this.currentFeature instanceof Feature) {
-      if (state.support == this.csMap.renderers[0]) {
+      if (this.rendererIndex === 0) {
         this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs));
       } else {
         this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));

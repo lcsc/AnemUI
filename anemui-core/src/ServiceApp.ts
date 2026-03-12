@@ -39,6 +39,11 @@ export class CsOptionsService {
     public isSelectionVisible(state: CsViewerData): boolean {
         return true
     }
+
+    public isSelectionParamVisible(state: CsViewerData): boolean {
+        return this.isSelectionVisible(state);
+    }
+
     public isTpSupportVisible(state: CsViewerData): boolean {
         return false
     }
@@ -87,7 +92,7 @@ export abstract class DataServiceApp extends BaseApp {
         mb.configSubVariables(!svc.isSubVarVisible(state), undefined, svc.subVarText(state))
         mb.configTpSupport(!svc.isTpSupportVisible(state), undefined, svc.tpSupportText(state))
         mb.configSelection(!svc.isSelectionVisible(state), undefined, svc.selectionText(state))
-        mb.configSelectionParam(!svc.isSelectionVisible(state), svc.selectionParamText(state))
+        mb.configSelectionParam(!svc.isSelectionParamVisible(state), svc.selectionParamText(state))
 
         // Actualizar el minValue y maxValue del selector según el tipo de extremo
         mb.setSelectionParamMinValue(svc.getSelectionParamMinValue(state))
