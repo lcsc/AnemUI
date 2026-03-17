@@ -36,6 +36,7 @@ export default class Language {
             "modelo_mg_fr":"Frequency-Magnitude distribution",
             "base_layer":"Base Layer",
             "top_layer":"Data Layer",
+            "opciones_visualizacion": "Visualization Options",
             "imprimir_mapa":"Print map",
             "transparency":"Transparency",
             "uncertainty":"Uncertainty",
@@ -81,7 +82,19 @@ export default class Language {
             'months': ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
             'monthsShort': ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
             'today': "Today",
-            'clear': "Clear"
+            'clear': "Clear",
+            'legendValues': {
+                '%': '%',
+                'celsius': '°C',
+                'days': 'Days',
+                'hours': 'Hours',
+                'mm': 'mm',
+                'm/s': 'm/s',
+                'adim': 'adim',
+                'index units': 'Index units',
+                'Terciles': 'Terciles',
+                'Anomalías': 'Anomalies'
+            }
         },
         es: {
             // PopData fields
@@ -107,6 +120,7 @@ export default class Language {
             "modelo_mg_fr":"Curva de magnitud-frecuencia",
             "base_layer":"Capa Base",
             "top_layer":"Capa Info",
+            "opciones_visualizacion": "Opciones de visualización",
             "imprimir_mapa":"Imprimir mapa",
             "transparency":"Transparencia",
             "uncertainty":"Incertidumbre",
@@ -152,7 +166,19 @@ export default class Language {
             'months': ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
             'monthsShort': ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
             'today': "Hoy",
-            'clear': "Borrar"
+            'clear': "Borrar",
+            'legendValues': {
+                '%': '%',
+                'celsius': '°C',
+                'days': 'Días',
+                'hours': 'Horas',
+                'mm': 'mm',
+                'm/s': 'm/s',
+                'adim': 'adim',
+                'index units': 'Unidades del índice',
+                'Terciles': 'Terciles',
+                'Anomalías': 'Anomalías'
+            }
         }
     }
 

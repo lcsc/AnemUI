@@ -608,7 +608,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         let timeIndex = timeSpan == CsTimeSpan.Year? 0 : _timesJs.times[varId].length - 1
         let legendTitle: string;
         if (_timesJs.legendTitle[varId] != undefined) {
-            legendTitle = _timesJs.legendTitle[varId]
+            const rawTitle = _timesJs.legendTitle[varId];
+            const legendValues = Language.getInstance().getTranslation('legendValues');
+            legendTitle = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
         } else {
             legendTitle = LEYEND_TITLE
         }
@@ -817,8 +819,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
      * Los visores pueden sobreescribirlo para adaptar el texto.
      */
     public getExportLegendTitle(): string {
-        const timesTitle = this.timesJs?.legendTitle?.[this.state.varId];
-        return timesTitle || this.state.legendTitle || '';
+        const rawTitle = this.timesJs?.legendTitle?.[this.state.varId];
+        if (rawTitle) {
+            const legendValues = Language.getInstance().getTranslation('legendValues');
+            return (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
+        }
+        return this.state.legendTitle || '';
     }
 
     public async filterValues(values: number[], t: number, varName: string, portion: string): Promise<number[]> {
