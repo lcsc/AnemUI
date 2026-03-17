@@ -3,6 +3,7 @@ import { BaseFrame, mouseOverFrame } from './BaseFrame';
 import { GradientPainter, CsDynamicPainter, PaletteManager } from '../PaletteManager';
 import Slider from 'bootstrap-slider';
 import { LayerManager } from '../LayerManager';
+import Language from '../language/language';
 
 export default class PaletteFrame extends BaseFrame {
 
@@ -57,35 +58,6 @@ public render(): JSX.Element {
                 }
                 <div id="legendBottom"></div>
             </div>
-            {palettes.length > 2 &&
-                <div className='paletteSelect btnSelect right'>
-                    <div id="palette-div">
-                        <div className="buttonDiv paletteDiv visible" onClick={() => this.toggleSelect('paletteDiv')}>
-                            <span className="icon"><i className="bi bi-palette"></i></span>
-                            <span className="text" aria-label='paleta'>
-                                {this.parent.getTranslation('paleta')}: {mgr.getSelected()}
-                            </span>
-                        </div>
-                        <div className='row selectDiv paletteDiv hidden'>
-                            <div className='col closeDiv p-0' onClick={() => this.toggleSelect('paletteDiv')}>
-                                <span className="icon"><i className="bi bi-x"></i></span>
-                            </div>
-                            <div className='col-9 p-0 inputDiv'>
-                                <select className="form-select form-select-sm" aria-label="Change Palette" onChange={(event) => { self.changePalette(event.target.value) }}>
-                                    {palettes.map((val, index) => {
-                                        if (val != 'uncertainty') {
-                                            if (mgr.getSelected() == val) {
-                                                return (<option key={index} value={val} selected>{val}</option>)
-                                            }
-                                            return (<option key={index} value={val}>{val}</option>)
-                                        }
-                                    })}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
         </div>
     );
     return element;
@@ -213,7 +185,9 @@ public render(): JSX.Element {
         name = this.parent.getState().legendTitle;
     } else {
         if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined) {
-            name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+            const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+            const legendValues = Language.getInstance().getTranslation('legendValues');
+            name = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
         } else {
             name = this.parent.getState().legendTitle;
         }

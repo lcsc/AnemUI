@@ -77,12 +77,14 @@ div.DateSelectorFrame{
 
     div.slider-track{
         height: 5px !important;
-        margin-top: -3px !important;
+        top: 50% !important;
+        margin-top: -2px !important;
     }
 
     div.slider-handle{
         border: 1px solid #fff;
-        top: -10px;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     div.tooltip{

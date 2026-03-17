@@ -5,6 +5,7 @@ import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
 import { LayerManager } from '../LayerManager';
 import { showLayers, initialZoom }  from "../Env";
+import Language from '../language/language';
 
 export default class LayerFrame  extends BaseFrame {
 
@@ -24,6 +25,9 @@ export default class LayerFrame  extends BaseFrame {
         let element=
         (
             <div id="layer-frame" className='layerFrame btnSelect left'>
+                <div className="layer-frame-header">
+                    {this.parent.getTranslation('opciones_visualizacion')}
+                </div>
                 <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
                         <span className="icon"><i className="bi bi-globe-europe-africa"></i></span>
@@ -32,10 +36,7 @@ export default class LayerFrame  extends BaseFrame {
                         </span>
                     </div>
                     <div className='row selectDiv baseDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('baseDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 ms-1 p-0 inputDiv'>
+                        <div className='col p-0 inputDiv'>
                                 { baseLayers.map((val,index)=>{
                                     i++;
                                     if(selected.includes(val)){
@@ -55,7 +56,9 @@ export default class LayerFrame  extends BaseFrame {
                                     </label>
                                 )
                                 })}
-                           
+                        </div>
+                        <div className='col-auto closeDiv p-0' onClick={()=>this.toggleSelect('baseDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
                     </div>
                 </div>
@@ -67,11 +70,11 @@ export default class LayerFrame  extends BaseFrame {
                         </span>
                     </div>
                     <div className='row selectDiv trpDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
+                        <div className='col p-0 inputDiv d-flex justify-content-center'>
                             <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
+                        </div>
+                        <div className='col-auto closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
                     </div>
                 </div>
@@ -83,10 +86,7 @@ export default class LayerFrame  extends BaseFrame {
                         </span>
                     </div>
                     <div className='row selectDiv polDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('polDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 p-0 inputDiv'>
+                        <div className='col p-0 inputDiv'>
                             <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}>
                                 {topLayers.map((val,index)=>{
                                     let trVal = this.parent.getTranslation(val)
@@ -96,6 +96,9 @@ export default class LayerFrame  extends BaseFrame {
                                     return (<option value={val}>{val}</option>)
                                 })}
                             </select>
+                        </div>
+                        <div className='col-auto closeDiv p-0' onClick={()=>this.toggleSelect('polDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
                     </div>
                 </div>
@@ -178,7 +181,9 @@ export default class LayerFrame  extends BaseFrame {
         // let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let name:string; 
         if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
-            name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+            const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+            const legendValues = Language.getInstance().getTranslation('legendValues');
+            name = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
         }else {
             name = 'Unidades';
         }

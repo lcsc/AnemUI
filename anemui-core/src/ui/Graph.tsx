@@ -191,45 +191,47 @@ export class CsGraph extends BaseFrame {
     let startLeft = 0;
     let startTop = 0;
 
+    let pendingDrag = false;
+    const DRAG_THRESHOLD = 5;
+
     const onMouseDown = (e: MouseEvent) => {
-      // No iniciar drag si se hace clic en botones, inputs o el área del gráfico
       const target = e.target as HTMLElement;
       if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' ||
-          target.tagName === 'SELECT' || target.tagName === 'A' ||
-          target.closest('#popGraph') || target.closest('.dygraph-legend') ||
-          target.closest('canvas')) {
+          target.tagName === 'SELECT' || target.tagName === 'A') {
         return;
       }
 
-      isDragging = true;
+      pendingDrag = true;
       startX = e.clientX;
       startY = e.clientY;
 
-      // Obtener posición actual
       const rect = this.container.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
-
-      // Remover transform para usar posición absoluta
-      this.container.style.transform = 'none';
-      this.container.style.left = startLeft + 'px';
-      this.container.style.top = startTop + 'px';
-
-      e.preventDefault();
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
+      if (!pendingDrag && !isDragging) return;
 
       const deltaX = e.clientX - startX;
       const deltaY = e.clientY - startY;
 
+      if (!isDragging) {
+        if (Math.abs(deltaX) < DRAG_THRESHOLD && Math.abs(deltaY) < DRAG_THRESHOLD) return;
+        isDragging = true;
+        this.container.style.transform = 'none';
+        this.container.style.left = startLeft + 'px';
+        this.container.style.top = startTop + 'px';
+      }
+
       this.container.style.left = (startLeft + deltaX) + 'px';
       this.container.style.top = (startTop + deltaY) + 'px';
+      e.preventDefault();
     };
 
     const onMouseUp = () => {
       isDragging = false;
+      pendingDrag = false;
     };
 
     this.container.addEventListener('mousedown', onMouseDown);
