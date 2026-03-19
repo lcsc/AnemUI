@@ -16,6 +16,10 @@
     box-shadow: 0.5px 0.5px 3px $color_3;
     margin-bottom: 0.4rem;
 
+    @include sm-mobile {
+        display: none;
+    }
+
     // &::before {
     //     content: "▾";
     //     font-size: 1.1em;

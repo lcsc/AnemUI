@@ -13,7 +13,11 @@ div.DateSelectorFrame{
     width: 90%;
     left:0;
     right:0;
-    bottom: 0.25em;
+    bottom: 44px; // dejar espacio para el #mobile-footer en móvil
+
+    @include tablet {
+        bottom: 0.25em;
+    }
     margin-left:auto;
     margin-right:auto;
 
