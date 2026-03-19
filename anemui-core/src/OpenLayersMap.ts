@@ -371,7 +371,6 @@ export class OpenLayerMap implements CsMapController {
 
   public handleMapMove() {
     let state = this.parent.getParent().getState();
-    console.log('[handleMapMove] support:', state.support, 'defaultRenderer:', this.defaultRenderer, 'equal:', state.support === this.defaultRenderer, '| zoom:', this.map?.getView()?.getZoom()?.toFixed(2));
     //  if (state.support == renderers[2]) {
     if (state.support != this.defaultRenderer) {
       this.parent.getParent().update();
