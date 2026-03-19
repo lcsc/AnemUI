@@ -39,10 +39,11 @@ export default class LayerFrame  extends BaseFrame {
                         <div className='col p-0 inputDiv'>
                                 { baseLayers.map((val,index)=>{
                                     i++;
+                                    const group = index < 4 ? 'A' : 'B';
                                     if(selected.includes(val)){
                                         return (
                                             <label className="radio">
-                                                <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)} checked></input>
+                                                <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" data-group={group} onChange={(event)=>self.changeBaseLayer(event.target.value)} checked></input>
                                                 <span className="radio-label"></span>
                                                 {val}
                                             </label>
@@ -50,7 +51,7 @@ export default class LayerFrame  extends BaseFrame {
                                     }
                                 return (
                                     <label className="radio">
-                                        <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)}></input>
+                                        <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" data-group={group} onChange={(event)=>self.changeBaseLayer(event.target.value)}></input>
                                         <span className="radio-label"></span>
                                         {val}
                                     </label>
@@ -123,13 +124,21 @@ export default class LayerFrame  extends BaseFrame {
     }
 
     public changeBaseLayer(value:string):void{
-        let values: string[] = [];
-        let inputs = Array.from(document.getElementsByClassName("baseLayer"));
-        inputs.forEach((input: HTMLInputElement) => {
-            if (input.checked)  values.push(input.value)
-        }) 
-        let mgr=LayerManager.getInstance();
-        mgr.setBaseSelected(values);
+        const inputs = Array.from(document.getElementsByClassName("baseLayer")) as HTMLInputElement[];
+        const clicked = inputs.find(inp => inp.value === value);
+
+        // Si se acaba de marcar, desmarcar las demás del mismo grupo (exclusión mutua por grupo)
+        if (clicked?.checked) {
+            const group = clicked.dataset.group;
+            inputs.forEach(inp => {
+                if (inp.dataset.group === group && inp.value !== value) {
+                    inp.checked = false;
+                }
+            });
+        }
+
+        const values = inputs.filter(inp => inp.checked).map(inp => inp.value);
+        LayerManager.getInstance().setBaseSelected(values);
         this.parent.update();
     }
 

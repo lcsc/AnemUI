@@ -271,11 +271,6 @@ export class MenuBar extends BaseFrame {
                                 <ul id="inputs-mobile" className="nav-menu-mb">
                                 </ul>
                             </div>
-                            <div className={"navbar " + logoStyle}>
-                                <div className="logo-container" id="logo-container-mobile">
-                                    <img src={'./images/'+logo}></img>
-                                </div>
-                            </div>
                             <div className="mobile-actions">
                                 <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
                                     <i className="bi bi-box-arrow-left"></i>
@@ -316,7 +311,19 @@ export class MenuBar extends BaseFrame {
         this.collapseMenuMb = document.querySelector(".collapse-menu-mb");
         this.navMenuMb = document.querySelector(".nav-menu-mb");
         this.logoContainer = document.getElementById('logo-container') as HTMLElement;
-        this.logoContainerMobile = document.getElementById('logo-container-mobile') as HTMLElement;
+
+        // Crear footer móvil con los logos
+        const mobileFooter = document.createElement('div');
+        mobileFooter.id = 'mobile-footer';
+        const logoContainerMobile = document.createElement('div');
+        logoContainerMobile.className = 'logo-container';
+        logoContainerMobile.id = 'logo-container-mobile';
+        const logoImg = document.createElement('img');
+        logoImg.src = './images/' + logo;
+        logoContainerMobile.appendChild(logoImg);
+        mobileFooter.appendChild(logoContainerMobile);
+        document.body.appendChild(mobileFooter);
+        this.logoContainerMobile = logoContainerMobile;
 
         let height = this.loading.parentElement.getBoundingClientRect().height;
 

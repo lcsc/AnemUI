@@ -229,6 +229,7 @@
     top: 7rem;
     margin-top: 1rem;
     overflow: visible;
+    z-index: 51;
 
     @include tablet {
         // top: 6rem;
@@ -648,6 +649,7 @@ div.row.selectDiv.trpDiv:not(.hidden) {
 
 // #3 top layer: botón de cierre a mitad de altura
 div.row.selectDiv.polDiv {
+    padding-right: calc(1.6rem + 15px);
     .closeDiv {
         top: 50%;
         transform: translateY(-50%);

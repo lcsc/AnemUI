@@ -107,6 +107,7 @@ export class OpenLayerMap implements CsMapController {
   protected politicalLayer: Layer;
   protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
   private lastUncertaintyZoomLevel: number = 0; // 0=normal, 1=4X, 2=9X
+  private initialFitExtent: [number, number, number, number] | null = null;
   protected currentFeature: Feature;
   protected glmgr: GeoLayerManager;
   protected featureLayer: CsOpenLayerGeoJsonLayer;
@@ -142,37 +143,25 @@ export class OpenLayerMap implements CsMapController {
   }
 
   /**
-   * Ajusta la vista inicial del mapa para mostrar todo el territorio español
-   * (Península, Baleares y Canarias) adaptándose al tamaño de la pantalla
+   * Calcula el extent combinado de todas las porciones para una variable dada.
    */
-  protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
-    // Calcular el extent combinado de todas las porciones
+  protected computeCombinedExtent(timesJs: CsTimesJsData, varId: string): [number, number, number, number] | null {
     let combinedExtent: [number, number, number, number] | null = null;
-
     timesJs.portions[varId].forEach((portion: string) => {
       const extent = this.ncExtents[portion];
       if (extent) {
         if (!combinedExtent) {
           combinedExtent = [...extent] as [number, number, number, number];
         } else {
-          // Expandir el extent para incluir esta porción
-          combinedExtent[0] = Math.min(combinedExtent[0], extent[0]); // minX
-          combinedExtent[1] = Math.min(combinedExtent[1], extent[1]); // minY
-          combinedExtent[2] = Math.max(combinedExtent[2], extent[2]); // maxX
-          combinedExtent[3] = Math.max(combinedExtent[3], extent[3]); // maxY
+          combinedExtent[0] = Math.min(combinedExtent[0], extent[0]);
+          combinedExtent[1] = Math.min(combinedExtent[1], extent[1]);
+          combinedExtent[2] = Math.max(combinedExtent[2], extent[2]);
+          combinedExtent[3] = Math.max(combinedExtent[3], extent[3]);
         }
       }
     });
-
-    // Ajustar la vista para mostrar el extent combinado
-    if (combinedExtent && this.map) {
-      this.map.getView().fit(combinedExtent, {
-        padding: [50, 50, 50, 50], // Padding en píxeles alrededor del extent
-        duration: 0 // Sin animación en la carga inicial
-      });
-    }
+    return combinedExtent;
   }
-
 
   init(_parent: CsMap): void {
     this.parent = _parent;
@@ -196,8 +185,10 @@ export class OpenLayerMap implements CsMapController {
 
     this.map = new Map(options);
 
-    // Ajustar la vista inicial para mostrar todo el territorio español
-    this.fitInitialView(timesJs, state.varId);
+    // Guardar el extent combinado para aplicar el fit inicial en buildDataTilesLayers,
+    // una vez que el mapa esté completamente renderizado y no haya nada pendiente
+    // que pueda resetear la vista.
+    this.initialFitExtent = this.computeCombinedExtent(timesJs, state.varId);
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
@@ -577,6 +568,19 @@ export class OpenLayerMap implements CsMapController {
       // DESPUÉS construir la capa de incertidumbre (usa mainLayerData como máscara)
       if (state.uncertaintyLayer) {
         await this.buildUncertaintyLayer(state, timesJs);
+      }
+
+      // Ajustar la vista inicial para mostrar todo el territorio (Península + Canarias).
+      // Se aplica aquí, una vez que todos los renders han terminado, para evitar snap-back.
+      if (this.initialFitExtent) {
+        this.map.updateSize();
+        // Padding que compensa los elementos de UI superpuestos:
+        // top ~80px: barra de menú; bottom ~150px: DateSelectorFrame; sides ~20px
+        this.map.getView().fit(this.initialFitExtent, {
+          padding: [80, 20, 150, 20],
+          duration: 0
+        });
+        this.initialFitExtent = null;
       }
     }
   }
