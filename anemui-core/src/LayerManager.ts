@@ -1,13 +1,15 @@
 import { Source } from "ol/source";
 import { OSM, Vector, ImageStatic, ImageWMS} from "ol/source";
 import { TopoJSON } from "ol/format"
-import { mapboxAccessToken, mapboxMapID } from "./Env";
 import {Image, Layer, WebGLTile} from "ol/layer";
 import TileWMS from 'ol/source/TileWMS';
 import VectorLayer from "ol/layer/Vector";
 import DataTileSource from "ol/source/DataTile";
 import VectorSource from "ol/source/Vector";
-import { Stroke, Style } from "ol/style";
+import { Stroke, Style, Text, Fill } from "ol/style";
+import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
+import { all as strategyAll, bbox as strategyBbox } from 'ol/loadingstrategy';
 
 import WMTS from 'ol/source/WMTS.js';
 import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
@@ -25,16 +27,17 @@ export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"|"ImageLayer"|"WMS"|"WMT
 
 export type AnemuiLayer={
     name:string,
-    url:string, 
+    url:string,
     type:string,
-    global: boolean, 
-    source?:Source, 
-    layer?: string 
+    global: boolean,
+    source?:Source,
+    layer?: string,
+    credit?: string
 }
 
 const baseStyle= new Style({
     stroke: new Stroke({
-      color: 'lightgray',
+      color: '#444444',
       width: 2
     })
   });
@@ -68,34 +71,36 @@ export class LayerManager {
     private topLayerTile:WebGLTile;
     private topLayerVector:Layer;
     private topLayerImage:Image<ImageWMS>;
+    private nomenclatorLayers: VectorLayer<VectorSource>[] = [];
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
      private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
+        const ign  = '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>';
+        const miteco = '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>';
+
         // CAPAS BASE
-        // ------ Global ()
-        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true})
-        this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true})
-        this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true})
-        // ------ Estatal ()
-        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false})
-        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false})
-        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false})
-  
+        // ------ Global
+        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>, Maxar, Earthstar Geographics'})
+        this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
+        this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true, credit:'© <a href="https://www.eumetsat.int" target="_blank">EUMETSAT</a>'})
+        // ------ Estatal
+        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false, credit:ign})
+        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign+' — PNOA cedido por © Administración General del Estado'})
+        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign+' — PNOA cedido por © Administración General del Estado'})
+
         // CAPAS SUPERPUESTAS
-        // ------ Global ()
-        this.addTopLayer({name:"Límites estatales (mapbox)",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM, global:true})   
-        this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true})
-        // ------ Estatal ()
-        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false})
-        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false})
-        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
-        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
-        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        // ------ Global
+        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign})
+        this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true, credit:'© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> — EuroGeographics'})
+        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco})
+        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco})
+        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco})
+        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
+        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
+        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
         
         const topNames = Object.keys(this.topLayers);
         this.topSelected = topNames.length > 0 ? topNames[0] : "";
@@ -150,24 +155,27 @@ export class LayerManager {
             return null;
         }
         if(bLayer.source==undefined){
+            const bl = this.baseLayers[this.baseSelected[layer]];
             switch(bLayer.type) {
                 case AL_TYPE_OSM:
-                        this.baseLayers[this.baseSelected[layer]].source = new OSM({
-                            url: this.baseLayers[this.baseSelected[layer]].url,
-                            crossOrigin: 'anonymous'
+                        bl.source = new OSM({
+                            url: bl.url,
+                            crossOrigin: 'anonymous',
+                            attributions: bl.credit
                         })
                     break;
                 case AL_TYPE_WMS:
-                        this.baseLayers[this.baseSelected[layer]].source = new TileWMS({
-                            url: this.baseLayers[this.baseSelected[layer]].url,
-                            params: { 'LAYERS': this.baseLayers[this.baseSelected[layer]].layer },
-                            crossOrigin: 'anonymous'
+                        bl.source = new TileWMS({
+                            url: bl.url,
+                            params: { 'LAYERS': bl.layer },
+                            crossOrigin: 'anonymous',
+                            attributions: bl.credit
                         })
                     break;
                 case AL_TYPE_WMTS:
-                    this.baseLayers[this.baseSelected[layer]].source = new WMTS({
-                        url: this.baseLayers[this.baseSelected[layer]].url,
-                        layer: this.baseLayers[this.baseSelected[layer]].layer,
+                    bl.source = new WMTS({
+                        url: bl.url,
+                        layer: bl.layer,
                         matrixSet: 'GoogleMapsCompatible',
                         format: 'image/png',
                         projection: projection,
@@ -178,7 +186,8 @@ export class LayerManager {
                         }),
                         style: 'default',
                         wrapX: true,
-                        crossOrigin: 'anonymous' 
+                        crossOrigin: 'anonymous',
+                        attributions: bl.credit
                     })
                    
                 break;
@@ -242,31 +251,199 @@ export class LayerManager {
     }
 
     public getTopLayerSource():Source {
-        if(this.topLayers[this.topSelected].source==undefined){
-            switch (this.topLayers[this.topSelected].type) {
+        const tl = this.topLayers[this.topSelected];
+        if(tl.source==undefined){
+            switch (tl.type) {
                 case AL_TYPE_OSM:
-                    this.topLayers[this.topSelected].source = new OSM({
-                        url: this.topLayers[this.topSelected].url
+                    tl.source = new OSM({
+                        url: tl.url,
+                        attributions: tl.credit
                     })
                     break;
                 case AL_TYPE_TOPO_JSON:
-                    this.topLayers[this.topSelected].source = new Vector({
-                        format: new TopoJSON({
-                          dataProjection: 'EPSG:3857'
-                        }),
-                        url: this.topLayers[this.topSelected].url,
-                        attributions: '© EuroGeographics for the administrative boundaries'
-                    });                
+                    tl.source = new Vector({
+                        format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
+                        url: tl.url,
+                        attributions: tl.credit
+                    });
                     break;
                 case AL_TYPE_IMG_LAYER:
-                    this.topLayers[this.topSelected].source = new ImageWMS({
-                        url: this.topLayers[this.topSelected].url,
-                        params: { 'LAYERS': this.topLayers[this.topSelected].layer }
-                    })
+                    tl.source = new ImageWMS({
+                        url: tl.url,
+                        params: { 'LAYERS': tl.layer },
+                        attributions: tl.credit
+                    });
                     break;
             }
         }
-        return this.topLayers[this.topSelected].source
+        return tl.source
+    }
+
+    private static readonly NGBE_WFS = '/wfs-ign/wfs-inspire/ngbe';
+    private static readonly GN_NS  = 'http://inspire.ec.europa.eu/schemas/gn/4.0';
+    private static readonly GML_NS = 'http://www.opengis.net/gml/3.2';
+
+    private buildNgbeLayer(
+        filterInner: string,
+        minZoom: number,
+        maxZoom: number | undefined,
+        useBbox: boolean,
+        nominalPx: number,
+        bold: boolean,
+        nominalRes: number
+    ): VectorLayer<VectorSource> {
+        const ngbeCredit = '© <a href="https://www.ign.es" target="_blank">IGN</a> — Nomenclátor Geográfico Básico de España';
+        const source = new VectorSource({
+            attributions: ngbeCredit,
+            strategy: useBbox ? strategyBbox : strategyAll,
+            loader: (extent, _res, viewProj, success, failure) => {
+                const mapProj = (viewProj as any).getCode ? (viewProj as any).getCode() : String(viewProj);
+                // Transformar extensión del mapa a EPSG:3857 para el filtro BBOX del WFS
+                const wfsExtent = (useBbox && mapProj !== 'EPSG:3857')
+                    ? proj.transformExtent(extent, mapProj, 'EPSG:3857')
+                    : extent;
+                const bboxXml = useBbox ? `
+                    <fes:BBOX>
+                        <fes:ValueReference>gn:geometry</fes:ValueReference>
+                        <gml:Envelope srsName="EPSG:3857">
+                            <gml:lowerCorner>${wfsExtent[0]} ${wfsExtent[1]}</gml:lowerCorner>
+                            <gml:upperCorner>${wfsExtent[2]} ${wfsExtent[3]}</gml:upperCorner>
+                        </gml:Envelope>
+                    </fes:BBOX>` : '';
+                const filterContent = useBbox
+                    ? `<fes:And>${filterInner}${bboxXml}</fes:And>`
+                    : filterInner;
+                const body =
+                    `<wfs:GetFeature xmlns:wfs="http://www.opengis.net/wfs/2.0"` +
+                    ` xmlns:gn="http://inspire.ec.europa.eu/schemas/gn/4.0"` +
+                    ` xmlns:gmd="http://www.isotc211.org/2005/gmd"` +
+                    ` xmlns:fes="http://www.opengis.net/fes/2.0"` +
+                    ` xmlns:gml="http://www.opengis.net/gml/3.2"` +
+                    ` service="WFS" version="2.0.0">` +
+                    `<wfs:Query typeNames="gn:NamedPlace" srsName="EPSG:3857">` +
+                    `<fes:Filter>${filterContent}</fes:Filter>` +
+                    `</wfs:Query></wfs:GetFeature>`;
+
+                console.log('[NGBE] Fetching px='+nominalPx+' filter='+filterInner.slice(0, 80));
+                fetch(LayerManager.NGBE_WFS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/xml' },
+                    body
+                })
+                .then(r => { console.log('[NGBE] HTTP', r.status); return r.text(); })
+                .then(xml => {
+                    console.log('[NGBE] Response (200 chars):', xml.slice(0, 200));
+                    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+                    const GN  = LayerManager.GN_NS;
+                    const GML = LayerManager.GML_NS;
+                    const members = doc.getElementsByTagNameNS(GN, 'NamedPlace');
+                    console.log('[NGBE] NamedPlace elements found:', members.length);
+                    const features: Feature<Point>[] = [];
+
+                    for (let i = 0; i < members.length; i++) {
+                        const m = members[i];
+
+                        // Nombre (primer <gn:text>)
+                        const textEls = m.getElementsByTagNameNS(GN, 'text');
+                        const label = textEls.length > 0 ? textEls[0].textContent?.trim() : null;
+                        if (!label) continue;
+
+                        // Posición: primero gml:pos (Point), luego primer par de gml:posList
+                        let coords: [number, number] | null = null;
+                        const posEls = m.getElementsByTagNameNS(GML, 'pos');
+                        if (posEls.length > 0) {
+                            const p = posEls[0].textContent?.trim().split(/\s+/).map(Number);
+                            if (p && p.length >= 2 && !isNaN(p[0])) coords = [p[0], p[1]];
+                        }
+                        if (!coords) {
+                            const pl = m.getElementsByTagNameNS(GML, 'posList');
+                            if (pl.length > 0) {
+                                const n = pl[0].textContent?.trim().split(/\s+/).map(Number);
+                                if (n && n.length >= 2) coords = [n[0], n[1]];
+                            }
+                        }
+                        if (!coords) continue;
+
+                        // Transformar de EPSG:3857 (WFS) a la proyección del mapa
+                        const mapCoords = mapProj !== 'EPSG:3857'
+                            ? proj.transform(coords, 'EPSG:3857', mapProj) as [number, number]
+                            : coords;
+                        features.push(new Feature({ geometry: new Point(mapCoords), label }));
+                    }
+
+                    console.log('[NGBE] Features created:', features.length,
+                        features.length > 0 ? '| sample: label=' + features[0].get('label')
+                            + ' coords=' + (features[0].getGeometry() as Point).getCoordinates() : '');
+                    source.addFeatures(features);
+                    success(features);
+                })
+                .catch(e => { console.error('[NGBE] Error:', e); failure(); });
+            }
+        });
+
+        const opts: any = {
+            source,
+            declutter: true,
+            style: (feature: any, resolution: number) => {
+                const px = Math.round(
+                    Math.max(8, Math.min(18, nominalPx * Math.pow(nominalRes / resolution, 0.3)))
+                );
+                return new Style({
+                    text: new Text({
+                        text: feature.get('label') || '',
+                        font: `${bold ? 'bold ' : ''}${px}px sans-serif`,
+                        fill: new Fill({ color: '#1a1a1a' }),
+                        stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 3 }),
+                        overflow: true
+                    })
+                });
+            },
+            zIndex: 6000,
+            minZoom
+        };
+        if (maxZoom !== undefined) opts.maxZoom = maxZoom;
+        return new VectorLayer(opts);
+    }
+
+    public getNomenclatorLayers(): VectorLayer<VectorSource>[] {
+        if (this.nomenclatorLayers.length > 0) return this.nomenclatorLayers;
+
+        const eq = (val: string) =>
+            `<fes:PropertyIsEqualTo>` +
+            `<fes:ValueReference>gn:localType/gmd:LocalisedCharacterString</fes:ValueReference>` +
+            `<fes:Literal>${val}</fes:Literal>` +
+            `</fes:PropertyIsEqualTo>`;
+
+        // CCAA (zoom 5–7): carga única — nominalRes ~zoom 6, 13px bold
+        this.nomenclatorLayers.push(this.buildNgbeLayer(
+            `<fes:Or>${eq('Comunidad autónoma')}${eq('Ciudad con estatuto de autonomía')}</fes:Or>`,
+            5, 7, false, 13, true, 0.002
+        ));
+
+        // Provincias (zoom 7–9): carga única — nominalRes ~zoom 8, 11px bold
+        this.nomenclatorLayers.push(this.buildNgbeLayer(
+            eq('Provincia'), 7, 9, false, 11, true, 0.001
+        ));
+
+        // Municipios (zoom 9+): carga por bbox — nominalRes ~zoom 10, 10px normal
+        this.nomenclatorLayers.push(this.buildNgbeLayer(
+            eq('Municipio'), 9, undefined, true, 10, false, 0.0004
+        ));
+
+        return this.nomenclatorLayers;
+    }
+
+    public getSelectedCredit(): string {
+        const credits: string[] = [];
+        const top = this.topLayers[this.topSelected];
+        if (top?.credit) credits.push(top.credit);
+        if (this.baseSelected) {
+            this.baseSelected.forEach(name => {
+                const bl = this.baseLayers[name];
+                if (bl?.credit && !credits.includes(bl.credit)) credits.push(bl.credit);
+            });
+        }
+        return credits.join(' &nbsp;|&nbsp; ');
     }
 
     public getUncertaintyLayer():(Image<ImageStatic> | WebGLTile)[] {

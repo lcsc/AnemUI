@@ -102,6 +102,46 @@
   display:none;
 }
 
+.ol-attribution {
+  position: absolute;
+  bottom: 0.5em;
+  right: 0.5em;
+  max-width: calc(100% - 1.3em);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  padding: 2px;
+
+  button {
+    display: none;
+  }
+
+  ul {
+    margin: 0;
+    padding: 1px 0.5em;
+    color: #000;
+    font-size: 12px;
+    list-style: none;
+  }
+
+  li {
+    display: inline;
+    font-size: 12px;
+
+    &:not(:last-child)::after {
+      content: " | ";
+    }
+  }
+
+  a {
+    color: #333;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
 #mapInfo {
   position: absolute;
   display: inline-block;
