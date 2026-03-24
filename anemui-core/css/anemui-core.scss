@@ -22,6 +22,8 @@ body,
 #map {
     position: absolute;
     top: 60px;
+    bottom: 0;
+    height: auto;
 
     @include desktop {
         top: 80px;

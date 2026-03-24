@@ -105,6 +105,7 @@ export class OpenLayerMap implements CsMapController {
 
   protected terrainLayer: Layer;
   protected politicalLayer: Layer;
+  private attributionEl: HTMLElement | null = null;
   protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
   private lastUncertaintyZoomLevel: number = 0; // 0=normal, 1=4X, 2=9X
   private initialFitExtent: [number, number, number, number] | null = null;
@@ -176,6 +177,7 @@ export class OpenLayerMap implements CsMapController {
     let options: MapOptions = {
       target: 'map',
       layers: layers,
+      controls: [],
       view: new View({
         center: center,
         zoom: initialZoom,
@@ -184,6 +186,7 @@ export class OpenLayerMap implements CsMapController {
     };
 
     this.map = new Map(options);
+    this.createAttributionEl();
 
     // Guardar el extent combinado para aplicar el fit inicial en buildDataTilesLayers,
     // una vez que el mapa esté completamente renderizado y no haya nada pendiente
@@ -272,6 +275,10 @@ export class OpenLayerMap implements CsMapController {
     this.uncertaintyLayer = lmgr.getUncertaintyLayer();
 
     layers.push(political);
+    const nomLayers = lmgr.getNomenclatorLayers();
+    console.log('[NGBE] Añadiendo', nomLayers.length, 'capas al mapa. minZoom/maxZoom:',
+        nomLayers.map(l => `${(l as any).getMinZoom()}/${(l as any).getMaxZoom()}`));
+    nomLayers.forEach(l => layers.push(l as any));
 
     if (isTileDebugEnabled)
       layers.push(new TileLayer({
@@ -984,6 +991,22 @@ export class OpenLayerMap implements CsMapController {
     }
   }
 
+  private createAttributionEl(): void {
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return;
+    const el = document.createElement('ul');
+    el.className = 'ol-attribution';
+    mapEl.appendChild(el);
+    this.attributionEl = el;
+    this.updateAttribution();
+  }
+
+  private updateAttribution(): void {
+    if (!this.attributionEl) return;
+    const credit = LayerManager.getInstance().getSelectedCredit();
+    this.attributionEl.innerHTML = credit ? `<li>${credit}</li>` : '';
+  }
+
   private async finalizeRenderUpdate(): Promise<void> {
     if (this.featureLayer && typeof this.featureLayer.refresh === 'function') {
       this.featureLayer.refresh();
@@ -1016,6 +1039,8 @@ export class OpenLayerMap implements CsMapController {
       this.politicalLayer.setSource(pSource);
       this.politicalLayer.setZIndex(5000);
     }
+
+    this.updateAttribution();
   }
 
   async initializeFeatureLayer(time: string, timeIndex: number, folder: string, varName: string): Promise<void> {
