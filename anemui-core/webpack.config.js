@@ -245,6 +245,17 @@ const development={
         "logger": console,
         changeOrigin:true,
         "target": "https://yesa.eead.csic.es/"
+      },
+      "/wfs-ign": {
+        "secure": false,
+        changeOrigin: true,
+        "target": "https://www.ign.es",
+        pathRewrite: { "^/wfs-ign": "" },
+        onProxyReq: (proxyReq) => {
+          proxyReq.removeHeader('origin');
+          proxyReq.removeHeader('referer');
+          proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        }
       }
 
     },
