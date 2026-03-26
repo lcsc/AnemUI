@@ -499,10 +499,10 @@ export class PaletteManager {
     }
 
     public removePalette(names: string[]): void {
-        let palettes = this.palettes;
-        names.forEach(function (value) {
-            delete palettes[value]
-        })
+        names.forEach(name => {
+            delete this.palettes[name];
+            delete this.painters[name];
+        });
     }
 
     public updatePaletteStrings():string[]{
@@ -775,15 +775,23 @@ export class CrossPatternPainter implements Painter {
     private strokeColor: string = '#555555';
     private strokeOpacity: number = 0.7;
     private cellSize: number = 8;
+    private adaptiveCellSize: boolean = false;
+    private dataWidth: number = 0; // resolución de la capa de datos principal (para calcular stride)
 
     constructor(
         color: string = '#555555',
         opacity: number = 0.7,
-        cellSize: number = 8
+        cellSize: number = 8,
+        adaptiveCellSize: boolean = false
     ) {
         this.strokeColor = color;
         this.strokeOpacity = opacity;
-        this.cellSize = Math.max(2, cellSize);
+        this.cellSize = Math.max(1, cellSize);
+        this.adaptiveCellSize = adaptiveCellSize;
+    }
+
+    public setDataWidth(w: number): void {
+        this.dataWidth = w;
     }
 
     public async paintValues(
@@ -804,11 +812,46 @@ export class CrossPatternPainter implements Painter {
             width = 1; height = 1;
         }
 
-        // Canvas proporcional a los datos: cada dato ocupa cellSize x cellSize píxeles
-        // Al tener la misma proporción width:height, OpenLayers lo estira igual que la capa de datos
-        const cs = this.cellSize;
-        const canvasW = width * cs;
-        const canvasH = height * cs;
+        const nonZeroCount = floatArray.filter(v => !isNaN(v) && isFinite(v) && v > 0).length;
+        console.log('[CrossPattern] paintValues called: width='+width+' height='+height+' dataWidth='+this.dataWidth+' cellSize='+this.cellSize+' adaptiveCellSize='+this.adaptiveCellSize+' floatLen='+floatArray.length+' nonZero='+nonZeroCount);
+
+        // Canvas proporcional a los datos: cada dato ocupa effectiveCs x effectiveCs píxeles.
+        // OL estira el canvas para cubrir el mismo extent geográfico que la capa de datos,
+        // por lo que cada celda del canvas se alinea exactamente con un pixel de dato.
+        //
+        // El cap MAX_CANVAS_W sólo se aplica cuando adaptiveCellSize=true (CrossPatternPainter
+        // de incertidumbre). Para SignificancePainter (adaptiveCellSize=false) se mantiene
+        // siempre effectiveCs=cellSize para que la X no sea demasiado gruesa visualmente.
+        //
+        // Cuando effectiveCs se reduce por el cap, lineWidth se escala proporcionalmente para
+        // que las líneas de la X sigan siendo delgadas respecto al tamaño de la celda.
+        const TARGET_CANVAS = 1100; // ancho de canvas "natural" (zoom base ≈ 6, Predicción)
+        const BASE_ZOOM = 6;
+        const MAX_CANVAS_W = 2048;
+
+        // Stride: 1 si no hay info de resolución de datos, o si ambas capas tienen la misma resolución
+        const stride = (this.adaptiveCellSize && this.dataWidth > 0)
+            ? Math.max(1, Math.round(width / this.dataWidth))
+            : 1;
+
+        const drawWidth = Math.ceil(width / stride);
+        const drawHeight = Math.ceil(height / stride);
+
+        // effectiveCs = cellSize siempre (sin cap).
+        // El bug original "4X por pixel" se debía a ficheros de datos con lonNum incorrecto
+        // (stale) que causaba stride=4. Con datos regenerados (lonNum=545) el stride=1 y
+        // effectiveCs=cellSize=8 produce la X delgada correcta en cada celda de dato.
+        const effectiveCs = this.cellSize;
+
+        const canvasW = drawWidth * effectiveCs;
+        const canvasH = drawHeight * effectiveCs;
+        const half = effectiveCs / 2;
+
+        // lineWidth adaptativo al zoom en modo adaptivo
+        const zoomFactor = zoom !== undefined ? Math.pow(2, zoom - BASE_ZOOM) : 1;
+        const lineWidth = this.adaptiveCellSize
+            ? Math.max(1, Math.round(canvasW / (TARGET_CANVAS * zoomFactor)))
+            : 1;
 
         let canvas: HTMLCanvasElement = document.createElement('canvas');
         let context: CanvasRenderingContext2D = canvas.getContext('2d');
@@ -817,22 +860,22 @@ export class CrossPatternPainter implements Painter {
 
         context.clearRect(0, 0, canvasW, canvasH);
         context.strokeStyle = this.strokeColor;
-        context.lineWidth = 1;
+        context.lineWidth = lineWidth;
         context.globalAlpha = this.strokeOpacity;
 
         context.beginPath();
 
-        const half = cs / 2;
-
-        // Una X por cada dato con valor > 0
-        for (let dy = 0; dy < height; dy++) {
-            for (let dx = 0; dx < width; dx++) {
+        // Una X por cada dato, submuestreando con stride si la resolución de incertidumbre es mayor
+        for (let dy = 0; dy < height; dy += stride) {
+            for (let dx = 0; dx < width; dx += stride) {
                 const ncIndex = dx + dy * width;
                 const value = floatArray[ncIndex];
 
                 if (!isNaN(value) && isFinite(value) && value > 0) {
-                    const px = dx * cs;
-                    const py = ((height - 1) - dy) * cs;
+                    const drawDx = Math.floor(dx / stride);
+                    const drawDy = Math.floor(dy / stride);
+                    const px = drawDx * effectiveCs;
+                    const py = ((drawHeight - 1) - drawDy) * effectiveCs;
                     const cx = px + half;
                     const cy = py + half;
 
@@ -845,6 +888,12 @@ export class CrossPatternPainter implements Painter {
         }
 
         context.stroke();
+        const stride2 = (this.adaptiveCellSize && this.dataWidth > 0) ? Math.max(1, Math.round(width / this.dataWidth)) : 1;
+        const drawWidth2 = Math.ceil(width / stride2);
+        const canvasW2 = drawWidth2 * this.cellSize;
+        const canvasH2 = Math.ceil(height / stride2) * this.cellSize;
+        const dataUrl = canvas.toDataURL('image/png');
+        console.log('[CrossPattern] canvas='+canvasW2+'x'+canvasH2+' stride='+stride2+' lineWidth='+context.lineWidth+' dataUrlLen='+dataUrl.length);
         return canvas;
     }
 

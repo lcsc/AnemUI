@@ -422,6 +422,13 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             const width = timesJs.lonNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
             const height = timesJs.latNum[uncertaintyVarId + timesJs.portions[uncertaintyVarId][i]];
 
+            // Informar al painter de la resolución de la capa de datos principal para calcular stride
+            if (uncertaintyLayer && (painterInstance as any).setDataWidth) {
+                const dataPortion = timesJs.portions[status.varId]?.[i] ?? timesJs.portions[uncertaintyVarId][i];
+                const dataWidth = timesJs.lonNum[status.varId + dataPortion] || width;
+                (painterInstance as any).setDataWidth(dataWidth);
+            }
+
             let canvas: HTMLCanvasElement | null = null;
             try {
                 canvas = await painterInstance.paintValues(filteredArray, width, height, minArray, maxArray, pxTransparent, uncertaintyLayer, currentZoom);
