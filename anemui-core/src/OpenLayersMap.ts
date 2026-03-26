@@ -9,7 +9,7 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
 import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
@@ -186,12 +186,40 @@ export class OpenLayerMap implements CsMapController {
     };
 
     this.map = new Map(options);
+
     this.createAttributionEl();
 
-    // Guardar el extent combinado para aplicar el fit inicial en buildDataTilesLayers,
-    // una vez que el mapa esté completamente renderizado y no haya nada pendiente
-    // que pueda resetear la vista.
-    this.initialFitExtent = this.computeCombinedExtent(timesJs, state.varId);
+    if (mapExtent) {
+      const viewExtent = olProjection === 'EPSG:4326'
+        ? mapExtent
+        : transformExtent(mapExtent, 'EPSG:4326', olProjection) as [number, number, number, number];
+      this.initialFitExtent = viewExtent;
+      const doFit = () => {
+        this.map.updateSize();
+        const sz = this.map.getSize();
+        const view = this.map.getView();
+        view.fit(viewExtent, { padding: [10, 10, 10, 10], duration: 0 });
+        // Lock pan/zoom limits to the initial viewport bounds
+        const fittedZoom = view.getZoom()!;
+        const fittedCenter = view.getCenter()!;
+        const fittedViewportExtent = view.calculateExtent(sz);
+        this.map.setView(new View({
+          center: fittedCenter,
+          zoom: fittedZoom,
+          minZoom: fittedZoom,
+          projection: olProjection,
+          extent: fittedViewportExtent
+        }));
+      };
+      const size = this.map.getSize();
+      if (size && size[0] > 0 && size[1] > 0) {
+        doFit();
+      } else {
+        this.map.once('rendercomplete', doFit);
+      }
+    } else {
+      this.initialFitExtent = this.computeCombinedExtent(timesJs, state.varId);
+    }
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
@@ -276,8 +304,6 @@ export class OpenLayerMap implements CsMapController {
 
     layers.push(political);
     const nomLayers = lmgr.getNomenclatorLayers();
-    console.log('[NGBE] Añadiendo', nomLayers.length, 'capas al mapa. minZoom/maxZoom:',
-        nomLayers.map(l => `${(l as any).getMinZoom()}/${(l as any).getMaxZoom()}`));
     nomLayers.forEach(l => layers.push(l as any));
 
     if (isTileDebugEnabled)
@@ -581,10 +607,8 @@ export class OpenLayerMap implements CsMapController {
       // Se aplica aquí, una vez que todos los renders han terminado, para evitar snap-back.
       if (this.initialFitExtent) {
         this.map.updateSize();
-        // Padding que compensa los elementos de UI superpuestos:
-        // top ~80px: barra de menú; bottom ~150px: DateSelectorFrame; sides ~20px
         this.map.getView().fit(this.initialFitExtent, {
-          padding: [80, 20, 150, 20],
+          padding: [10, 10, 10, 10],
           duration: 0
         });
         this.initialFitExtent = null;
@@ -992,11 +1016,9 @@ export class OpenLayerMap implements CsMapController {
   }
 
   private createAttributionEl(): void {
-    const mapEl = document.getElementById('map');
-    if (!mapEl) return;
     const el = document.createElement('ul');
     el.className = 'ol-attribution';
-    mapEl.appendChild(el);
+    document.body.appendChild(el);
     this.attributionEl = el;
     this.updateAttribution();
   }

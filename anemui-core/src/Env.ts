@@ -47,6 +47,8 @@ export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoSt
 export const maxPaletteValue = ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
 export const maxPaletteSteps = ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
 export const globalMap = ENV.globalMap !== 'undefined'? ENV.globalMap:false;
+export const mapExtent: [number, number, number, number] | undefined =
+    Array.isArray(ENV.mapExtent) ? ENV.mapExtent as [number, number, number, number] : undefined;
 
 // Factory Method Pattern
 // true = usar factory method (permite override en subclases)

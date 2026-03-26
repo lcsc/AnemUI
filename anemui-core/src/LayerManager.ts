@@ -32,7 +32,9 @@ export type AnemuiLayer={
     global: boolean,
     source?:Source,
     layer?: string,
-    credit?: string
+    credit?: string,
+    wmsParams?: { [key: string]: string },
+    cssFilter?: string
 }
 
 const baseStyle= new Style({
@@ -77,21 +79,23 @@ export class LayerManager {
     
     private constructor() {
         const ign  = '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>';
+        const ign_pnoa  = '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>';
         const miteco = '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>';
 
         // CAPAS BASE
         // ------ Global
+        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:true, credit:ign})
         this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>, Maxar, Earthstar Geographics'})
         this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
         this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true, credit:'© <a href="https://www.eumetsat.int" target="_blank">EUMETSAT</a>'})
         // ------ Estatal
-        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false, credit:ign})
-        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign+' — PNOA cedido por © Administración General del Estado'})
-        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign+' — PNOA cedido por © Administración General del Estado'})
+        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://pnoa.ign.es/',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
+        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign_pnoa})
 
         // CAPAS SUPERPUESTAS
         // ------ Global
-        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign})
+        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign, cssFilter:'grayscale(1) brightness(1.5)'})
+        this.addTopLayer({name:"Límites políticos y topónimos globales (ArcGIS)",url:"https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
         this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true, credit:'© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> — EuroGeographics'})
         this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco})
         this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco})
@@ -127,8 +131,8 @@ export class LayerManager {
         if (zoom >= 6.00) {
             // Zoom nacional: primera global + primera nacional (si existen)
             this.baseSelected = [];
-            if (globalLayers.length > 2) this.baseSelected.push(globalLayers[2]); // EUMETSAT (3ª global)
-            if (nationalLayers.length > 1) this.baseSelected.push(nationalLayers[1]); // Ortofoto (2ª nacional)
+            if (globalLayers.length > 2) this.baseSelected.push(globalLayers[0]); // IGN (1ª global)
+            if (nationalLayers.length > 1) this.baseSelected.push(nationalLayers[0]); // Ortofoto (1ª nacional)
             if (this.baseSelected.length === 0) this.baseSelected = [baseNames[0]];
         } else {
             // Zoom global: primera capa global
@@ -207,10 +211,18 @@ export class LayerManager {
         return this.topSelected;
     }
 
+    private static readonly IGN_ADMIN_LAYER = "Unidad administrativa (IGN)";
+
     public setTopSelected(_selected:string){
         if(this.topLayers[_selected]!=undefined){
             this.topSelected=_selected;
+            this.syncNomenclatorVisibility();
         }
+    }
+
+    private syncNomenclatorVisibility(): void {
+        const visible = this.topSelected === LayerManager.IGN_ADMIN_LAYER;
+        this.nomenclatorLayers.forEach(l => l.setVisible(visible));
     }
 
     public getTopLayerOlLayer():Layer{
@@ -267,13 +279,31 @@ export class LayerManager {
                         attributions: tl.credit
                     });
                     break;
-                case AL_TYPE_IMG_LAYER:
+                case AL_TYPE_IMG_LAYER: {
+                    const cssFilter = tl.cssFilter;
                     tl.source = new ImageWMS({
                         url: tl.url,
-                        params: { 'LAYERS': tl.layer },
-                        attributions: tl.credit
+                        params: { 'LAYERS': tl.layer, ...(tl.wmsParams || {}) },
+                        attributions: tl.credit,
+                        ...(cssFilter ? {
+                            imageLoadFunction: (image: any, src: string) => {
+                                const img = new window.Image();
+                                img.crossOrigin = 'anonymous';
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.filter = cssFilter;
+                                    ctx.drawImage(img, 0, 0);
+                                    image.getImage().src = canvas.toDataURL();
+                                };
+                                img.src = src;
+                            }
+                        } : {})
                     });
                     break;
+                }
             }
         }
         return tl.source
@@ -324,20 +354,17 @@ export class LayerManager {
                     `<fes:Filter>${filterContent}</fes:Filter>` +
                     `</wfs:Query></wfs:GetFeature>`;
 
-                console.log('[NGBE] Fetching px='+nominalPx+' filter='+filterInner.slice(0, 80));
                 fetch(LayerManager.NGBE_WFS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/xml' },
                     body
                 })
-                .then(r => { console.log('[NGBE] HTTP', r.status); return r.text(); })
+                .then(r => r.text())
                 .then(xml => {
-                    console.log('[NGBE] Response (200 chars):', xml.slice(0, 200));
                     const doc = new DOMParser().parseFromString(xml, 'application/xml');
                     const GN  = LayerManager.GN_NS;
                     const GML = LayerManager.GML_NS;
                     const members = doc.getElementsByTagNameNS(GN, 'NamedPlace');
-                    console.log('[NGBE] NamedPlace elements found:', members.length);
                     const features: Feature<Point>[] = [];
 
                     for (let i = 0; i < members.length; i++) {
@@ -371,13 +398,10 @@ export class LayerManager {
                         features.push(new Feature({ geometry: new Point(mapCoords), label }));
                     }
 
-                    console.log('[NGBE] Features created:', features.length,
-                        features.length > 0 ? '| sample: label=' + features[0].get('label')
-                            + ' coords=' + (features[0].getGeometry() as Point).getCoordinates() : '');
                     source.addFeatures(features);
                     success(features);
                 })
-                .catch(e => { console.error('[NGBE] Error:', e); failure(); });
+                .catch(e => { console.error(e); failure(); });
             }
         });
 
@@ -430,6 +454,7 @@ export class LayerManager {
             eq('Municipio'), 9, undefined, true, 10, false, 0.0004
         ));
 
+        this.syncNomenclatorVisibility();
         return this.nomenclatorLayers;
     }
 
