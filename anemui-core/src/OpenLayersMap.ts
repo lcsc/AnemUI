@@ -1783,7 +1783,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     let id = feature.getProperties()['id'];
     let id_ant = feature.getProperties()['id_ant'];
 
-    // ── Buscar el valor con fallbacks de ID (igual que setFeatureStyle) ──
     let dataValue = undefined;
 
     if (this.indexData[id] !== undefined) {
@@ -1804,7 +1803,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
         dataValue = this.indexData[shortCode];
       }
     }
-    // ── Fallback: buscar coincidencia parcial (ej: CSV "3129" ↔ GeoJSON "3129A") ──
+
     if (dataValue === undefined && id) {
       // Buscar si alguna key del CSV es prefijo del id del GeoJSON
       const matchKey = Object.keys(this.indexData).find(key =>
@@ -1818,7 +1817,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     const val = dataValue !== undefined ? parseFloat(String(dataValue)) : NaN;
     if (!isNaN(val) && isFinite(val) && currentRange !== 0) {
       color = ptr.getColorString(val, minValue, maxValue);
-      radius = Math.abs(targetMin + ((val - minValue) / currentRange) * targetRange);
+      radius = 10;
       if (isNaN(radius) || radius < 3) radius = 3;
     }
 
