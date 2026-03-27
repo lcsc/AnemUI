@@ -812,8 +812,6 @@ export class CrossPatternPainter implements Painter {
             width = 1; height = 1;
         }
 
-        const nonZeroCount = floatArray.filter(v => !isNaN(v) && isFinite(v) && v > 0).length;
-        console.log('[CrossPattern] paintValues called: width='+width+' height='+height+' dataWidth='+this.dataWidth+' cellSize='+this.cellSize+' adaptiveCellSize='+this.adaptiveCellSize+' floatLen='+floatArray.length+' nonZero='+nonZeroCount);
 
         // Canvas proporcional a los datos: cada dato ocupa effectiveCs x effectiveCs píxeles.
         // OL estira el canvas para cubrir el mismo extent geográfico que la capa de datos,

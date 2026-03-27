@@ -78,7 +78,7 @@ export class LayerManager {
      private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
-        const ign  = '© <a href="https://www.ign.es" target="_blank">Instituto Geográfico Nacional</a>';
+        const ign  = '© CC-BY 4.0 <a href="https://www.ign.es" target="_blank">ign.es</a>';
         const ign_pnoa  = '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>';
         const miteco = '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>';
 
@@ -89,7 +89,7 @@ export class LayerManager {
         this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
         this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true, credit:'© <a href="https://www.eumetsat.int" target="_blank">EUMETSAT</a>'})
         // ------ Estatal
-        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://pnoa.ign.es/',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
+        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://servicios-climaticos.pti-clima.csic.es/proxy-pnoa/',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
         this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign_pnoa})
 
         // CAPAS SUPERPUESTAS
@@ -309,7 +309,7 @@ export class LayerManager {
         return tl.source
     }
 
-    private static readonly NGBE_WFS = '/wfs-ign/wfs-inspire/ngbe';
+    private static readonly NGBE_WFS = 'https://servicios-climaticos.pti-clima.csic.es/wfs-ign/wfs-inspire/ngbe';
     private static readonly GN_NS  = 'http://inspire.ec.europa.eu/schemas/gn/4.0';
     private static readonly GML_NS = 'http://www.opengis.net/gml/3.2';
 
