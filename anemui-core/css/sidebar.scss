@@ -630,6 +630,12 @@ div.row.selectDiv.baseDiv .closeDiv {
     top: 0.4rem;
 }
 
+.layer-group-separator {
+    height: 0;
+    margin: 0.4rem 0.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+}
+
 // #2 transparency: contenedor alto, slider y botón centrados verticalmente
 div.row.selectDiv.trpDiv:not(.hidden) {
     min-height: 3rem;
@@ -647,12 +653,17 @@ div.row.selectDiv.trpDiv:not(.hidden) {
     }
 }
 
-// #3 top layer: botón de cierre a mitad de altura
+// #3 top layer: ancho ampliado y nombres en una sola línea
 div.row.selectDiv.polDiv {
+    width: max-content;
+    max-width: 450px;
     padding-right: calc(1.6rem + 15px);
     .closeDiv {
-        top: 50%;
-        transform: translateY(-50%);
+        top: 0.4rem;
+        transform: none;
+    }
+    label.radio {
+        white-space: nowrap;
     }
 }
 
@@ -734,7 +745,8 @@ div.slider.visible {
     text-align: left;
     font-size: 0.8rem; 
     color: $color_3;
-    input[type="checkbox"] {
+    input[type="checkbox"],
+    input[type="radio"] {
         position: absolute;
         opacity: 0;
         cursor: pointer;
@@ -745,11 +757,11 @@ div.slider.visible {
                 border-radius: 100%;
                 border: 1px solid darken($color_1, 25%);
                 display: inline-block;
-                width: 1.1rem; 
-                height: 1.1rem; 
+                width: 1.1rem;
+                height: 1.1rem;
                 position: relative;
-                top: 0.25rem; 
-                margin-right: 0.6rem !important; 
+                top: 0.25rem;
+                margin-right: 0.6rem !important;
                 vertical-align: top;
                 cursor: pointer;
                 text-align: left;

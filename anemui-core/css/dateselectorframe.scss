@@ -109,6 +109,44 @@ div.DateSelectorFrame{
     // }
 }
 
+// Aviso informativo encima del calendario o del input de fecha
+div.date-hint {
+    position: fixed;   // JS establece top/left dinámicamente
+    z-index: 20000;    // Por encima del datepicker (que es fixed también)
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 0.5em;
+    border: 1px solid $border-color;
+    background-color: $title_bgcolor;
+    color: $title_color;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;  // No intercepta hover del calendario
+
+    &::before {
+        content: 'i';
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 1.15em;
+        height: 1.15em;
+        border-radius: 50%;
+        border: 1.5px solid currentColor;
+        font-size: 0.78em;
+        font-weight: 700;
+        font-style: italic;
+        line-height: 1;
+    }
+
+    &.hidden {
+        display: none;
+    }
+}
+
 .datepicker {
     border-radius: 0.5em!important;
     color: $title_color;

@@ -1,7 +1,8 @@
 import { Source } from "ol/source";
-import { OSM, Vector, ImageStatic, ImageWMS} from "ol/source";
+import { OSM, Vector, ImageStatic } from "ol/source";
 import { TopoJSON } from "ol/format"
 import {Image, Layer, WebGLTile} from "ol/layer";
+import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
 import VectorLayer from "ol/layer/Vector";
 import DataTileSource from "ol/source/DataTile";
@@ -15,6 +16,7 @@ import WMTS from 'ol/source/WMTS.js';
 import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
+import { initialZoom } from './Env';
 
 export const AL_TYPE_OSM="OSM"
 export const AL_TYPE_TOPO_JSON="TopoJson"
@@ -67,12 +69,12 @@ export class LayerManager {
     }
 
     protected baseLayers: { [key: string]: AnemuiLayer } = {}
-    private baseSelected:string[];
+    private baseSelected:string[] = [];
     protected topLayers: { [key: string]: AnemuiLayer } = {}
     private topSelected:string;
     private topLayerTile:WebGLTile;
     private topLayerVector:Layer;
-    private topLayerImage:Image<ImageWMS>;
+    private topLayerWMS: TileLayer<TileWMS>;
     private nomenclatorLayers: VectorLayer<VectorSource>[] = [];
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
      private uncertaintyLayerVisible: boolean = false;
@@ -109,7 +111,8 @@ export class LayerManager {
         const topNames = Object.keys(this.topLayers);
         this.topSelected = topNames.length > 0 ? topNames[0] : "";
         this.uncertaintyLayer = [];
-         this.uncertaintyLayerVisible = false; 
+        this.uncertaintyLayerVisible = false;
+        this.initBaseSelected(initialZoom);
     }
 
     // Base Layer
@@ -119,6 +122,9 @@ export class LayerManager {
 
     public getBaseLayerNames():string[]{
         return Object.keys(this.baseLayers);
+    }
+    public isBaseLayerGlobal(name: string): boolean {
+        return this.baseLayers[name]?.global ?? true;
     }
     public getBaseSelected():string[]{
         return this.baseSelected;
@@ -251,14 +257,14 @@ export class LayerManager {
                 return this.topLayerVector;
 
             case AL_TYPE_IMG_LAYER:
-                if(this.topLayerImage==undefined){
-                    this.topLayerImage=new Image<ImageWMS>({
-                        source: this.getTopLayerSource() as ImageWMS,
+                if(this.topLayerWMS==undefined){
+                    this.topLayerWMS = new TileLayer({
+                        source: this.getTopLayerSource() as TileWMS,
                         zIndex: 5000
                     })
                 }
-                this.topLayerImage.setZIndex(5000);
-                return this.topLayerImage;
+                this.topLayerWMS.setZIndex(5000);
+                return this.topLayerWMS;
         }
     }
 
@@ -281,12 +287,13 @@ export class LayerManager {
                     break;
                 case AL_TYPE_IMG_LAYER: {
                     const cssFilter = tl.cssFilter;
-                    tl.source = new ImageWMS({
+                    tl.source = new TileWMS({
                         url: tl.url,
                         params: { 'LAYERS': tl.layer, ...(tl.wmsParams || {}) },
                         attributions: tl.credit,
+                        crossOrigin: 'anonymous',
                         ...(cssFilter ? {
-                            imageLoadFunction: (image: any, src: string) => {
+                            tileLoadFunction: (tile: any, src: string) => {
                                 const img = new window.Image();
                                 img.crossOrigin = 'anonymous';
                                 img.onload = () => {
@@ -296,7 +303,7 @@ export class LayerManager {
                                     const ctx = canvas.getContext('2d');
                                     ctx.filter = cssFilter;
                                     ctx.drawImage(img, 0, 0);
-                                    image.getImage().src = canvas.toDataURL();
+                                    tile.getImage().src = canvas.toDataURL();
                                 };
                                 img.src = src;
                             }

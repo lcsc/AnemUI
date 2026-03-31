@@ -83,6 +83,8 @@ export default class Language {
             'monthsShort': ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
             'today': "Today",
             'clear': "Clear",
+            'no_data_day': "No data available for this date",
+            'nearest_date_hint': "Nearest date with data to the one selected",
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',
@@ -167,6 +169,8 @@ export default class Language {
             'monthsShort': ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
             'today': "Hoy",
             'clear': "Borrar",
+            'no_data_day': "Sin datos disponibles para esta fecha",
+            'nearest_date_hint': "Fecha con datos más cercana a la seleccionada",
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',
@@ -204,6 +208,15 @@ export default class Language {
 
     public setDefault(locale: string){
         this.defaultLocale = locale;
+    }
+
+    /**
+     * Permite a cada visor añadir o sobreescribir claves de traducción.
+     * Útil para mensajes específicos de dominio (ej: "Día sin precipitación reseñable").
+     */
+    public addTranslations(locale: string, translations: { [key: string]: string }): void {
+        if (!this.locales[locale]) this.locales[locale] = {};
+        Object.assign(this.locales[locale], translations);
     }
 
     public getMonthName(monthIndex: number, short: boolean = false): string {
