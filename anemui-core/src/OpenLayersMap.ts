@@ -103,7 +103,7 @@ export class OpenLayerMap implements CsMapController {
   protected ncExtents: Array4Portion = {};
   protected lastSupport: string;
 
-  protected terrainLayer: Layer;
+  protected terrainLayers: Layer[] = [];
   protected politicalLayer: Layer;
   private attributionEl: HTMLElement | null = null;
   protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
@@ -285,13 +285,14 @@ export class OpenLayerMap implements CsMapController {
     let lmgr = LayerManager.getInstance();
     let layers: (ImageLayer<Static> | TileLayer)[] = [];
 
-    let layersLength = lmgr.initBaseSelected(initialZoom)
+    let layersLength = lmgr.getBaseSelected().length - 1;
 
+    this.terrainLayers = [];
     for (let i = 0; i <= layersLength; i++) {
       let terrain = new TileLayer({
         source: lmgr.getBaseLayerSource(i) as DataTileSource
       });
-      this.terrainLayer = terrain;
+      this.terrainLayers.push(terrain);
       layers.push(terrain);
     }
 
@@ -1036,12 +1037,20 @@ export class OpenLayerMap implements CsMapController {
 
     let lmgr = LayerManager.getInstance();
 
-    // Safely update terrain layer
+    // Safely update terrain layers: show/update selected, hide deselected
     let layersLength = lmgr.getBaseSelected().length;
-    for (let i = 0; i < layersLength; i++) {
-      let tSource = lmgr.getBaseLayerSource(i);
-      if (this.terrainLayer && this.terrainLayer.getSource() !== tSource) {
-        this.terrainLayer.setSource(tSource);
+    for (let i = 0; i < this.terrainLayers.length; i++) {
+      const tLayer = this.terrainLayers[i];
+      if (!tLayer) continue;
+      if (i < layersLength) {
+        let tSource = lmgr.getBaseLayerSource(i);
+        if (tLayer.getSource() !== tSource) {
+          tLayer.setSource(tSource);
+        }
+        tLayer.setVisible(true);
+      } else {
+        // Esta capa ya no está seleccionada: ocultarla
+        tLayer.setVisible(false);
       }
     }
 

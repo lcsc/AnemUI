@@ -361,18 +361,19 @@
             // align-items: center;
 
             display: flex;
-            position: absolute;
-            top: 100%;
-            left: 40%;
-            right: 37%;
+            position: fixed;
+            bottom: 50px;
+            right: 10px;
+            width: fit-content;
             background-color: #4875b9fc;
-            padding: 8px 1.5rem;
-            margin: 5px;
+            padding: 10px 1.2rem;
+            margin: 0;
             list-style: none;
             z-index: 999;
             gap: 15px;
-            align-items: center;
-            border-radius: 5px;
+            align-items: flex-start;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 
             li.inputDiv {
                 background: transparent !important;
@@ -381,10 +382,19 @@
 
                 .dpdown-button, .menu-input {
                     color: #fff;
+                    display: flex;
+                    flex-direction: column;
+                    width: fit-content !important;
+                    min-width: 120px !important;
+                    max-width: 160px !important;
                 }
 
                 .title {
-                    color: rgba(255, 255, 255, 0.8);
+                    color: rgba(255, 255, 255, 0.85);
+                    font-size: 0.75em;
+                    font-style: italic;
+                    margin-bottom: 3px;
+                    display: block;
                 }
 
                 .sub-title {

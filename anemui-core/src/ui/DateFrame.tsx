@@ -69,6 +69,8 @@ export class DateSelectorFrame extends BaseFrame {
     private month: CsDropdown;
     private listener: DateFrameListener;
     private pickerNotClicked: boolean;
+    private dateHintEl: HTMLElement;
+    private _hintTimeout: ReturnType<typeof setTimeout>;
     
     constructor(_parent: BaseApp, _listener: DateFrameListener) {
         super(_parent)
@@ -316,6 +318,103 @@ export class DateSelectorFrame extends BaseFrame {
         }
     }
 
+    /**
+     * Parsea una fecha desde el valor de texto del input según el formato del locale.
+     * Fallback para cuando event.date no está disponible en entrada manual.
+     */
+    private parseDateFromInput(value: string): Date | undefined {
+        if (!value) return undefined;
+        if (locale === 'en') {
+            // yyyy-mm-dd
+            const parts = value.split('-');
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                return isNaN(d.getTime()) ? undefined : d;
+            }
+        } else {
+            // dd/mm/yyyy
+            const parts = value.split('/');
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                return isNaN(d.getTime()) ? undefined : d;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Muestra un aviso de texto encima del calendario o del selector de fecha.
+     * Si hay un datepicker dropdown visible lo posiciona 15px por encima de él;
+     * si no, usa la posición por defecto (junto al input).
+     */
+    public showDateHint(msg: string, autohideMs: number = 4000): void {
+        if (!this.dateHintEl) return;
+        this.dateHintEl.textContent = msg;
+
+        // Mostrar oculto para poder medir el alto
+        this.dateHintEl.style.visibility = 'hidden';
+        this.dateHintEl.classList.remove('hidden');
+        const hintH = this.dateHintEl.offsetHeight || 34;
+
+        const picker = document.querySelector('.datepicker.datepicker-dropdown') as HTMLElement;
+        if (picker) {
+            const r = picker.getBoundingClientRect();
+            this.dateHintEl.style.position = 'fixed';
+            this.dateHintEl.style.top  = (r.top - hintH - 15) + 'px';
+            this.dateHintEl.style.left = (r.left + r.width / 2) + 'px';
+            this.dateHintEl.style.transform = 'translateX(-50%)';
+            this.dateHintEl.style.margin = '0';
+        } else {
+            // Sin calendario abierto (entrada manual): encima del input del picker
+            const input = this.datepickerEl?.querySelector('input') as HTMLElement;
+            if (input) {
+                const r = input.getBoundingClientRect();
+                this.dateHintEl.style.position = 'fixed';
+                this.dateHintEl.style.top  = (r.top - hintH - 15) + 'px';
+                this.dateHintEl.style.left = (r.left + r.width / 2) + 'px';
+                this.dateHintEl.style.transform = 'translateX(-50%)';
+                this.dateHintEl.style.margin = '0';
+            }
+        }
+
+        this.dateHintEl.style.visibility = '';
+        clearTimeout(this._hintTimeout);
+        this._hintTimeout = setTimeout(() => {
+            if (this.dateHintEl) this.dateHintEl.classList.add('hidden');
+        }, autohideMs);
+    }
+
+    /**
+     * Navega a un índice de fecha: actualiza slider, estado y carga los datos.
+     */
+    private navigateToIndex(index: number): void {
+        if (index >= 0 && index !== this.parent.getState().selectedTimeIndex) {
+            this.slider.setValue(index, false, false);
+            this.parent.getState().selectedTimeIndex = index;
+            this.parent.update(true);
+        }
+    }
+
+    /**
+     * Busca el índice de la fecha válida más cercana en this.dates.
+     * Usado cuando el usuario escribe una fecha sin datos (gris).
+     */
+    private findNearestDateIndex(date: Date): number {
+        if (!this.dates || this.dates.length === 0) return -1;
+        const target = date.getTime();
+        let nearestIndex = 0;
+        let minDiff = Infinity;
+        for (let i = 0; i < this.dates.length; i++) {
+            const d = new Date(this.dates[i]);
+            const diff = Math.abs(d.getTime() - target);
+            if (diff < minDiff) {
+                minDiff = diff;
+                nearestIndex = i;
+            }
+        }
+        return nearestIndex;
+    }
+
     private indexOfDate(date:Date):number{
         if (date==undefined) return -1;
         let year: string;
@@ -543,26 +642,71 @@ export class DateSelectorFrame extends BaseFrame {
             document.getElementById("SeasonDD").classList.remove("navbar-btn-title");
         }
 
+        // Aviso al pulsar día sin datos: bindeamos mousedown directamente sobre el picker
+        // via el evento 'show' del datepicker (cuando el dropdown ya está en el DOM).
+        // mousedown se dispara siempre, incluso en días disabled donde bootstrap-datepicker
+        // suprime el click.
+        if (this.mode === DateFrameMode.DateFrameDate) {
+            const noDataMsg = this.parent.getTranslation('no_data_day');
+            this.datepicker.on('show', () => {
+                const dpInst = (this.datepicker as any).data('datepicker');
+                const picker: JQuery = dpInst?.picker;
+                if (picker) {
+                    picker.off('mouseenter.nodata mouseleave.nodata')
+                        .on('mouseenter.nodata', 'td.disabled', () => {
+                            this.showDateHint(noDataMsg, 60000); // larga duración, se corta con mouseleave
+                        })
+                        .on('mouseleave.nodata', 'td.disabled', () => {
+                            clearTimeout(this._hintTimeout);
+                            if (this.dateHintEl) this.dateHintEl.classList.add('hidden');
+                        });
+                }
+            });
+        }
+
         this.datepicker.on("changeDate", (event:DatepickerEventObject) => {
             if (this.mode == DateFrameMode.DateFrameSeason && this.pickerNotClicked) {
                 this.pickerNotClicked = false;
                 let index = this.parent.getState().selectedTimeIndex
                 this.slider.setValue(index,false,false)
-                this.parent.update( true ); 
+                this.parent.update( true );
                 return 0
             }
-            //Set the action
-            let index = this.indexOfDate(event.date)
-            if (index>=0 && index!=this.parent.getState().selectedTimeIndex) {
-                this.slider.setValue(index,false,false)
-                this.parent.getState().selectedTimeIndex=index;
-                this.parent.update( true );
+            let index = this.indexOfDate(event.date);
+            // Fecha sin datos (gris): buscar la más cercana con datos
+            if (index < 0 && event.date) {
+                index = this.findNearestDateIndex(event.date);
             }
+            this.navigateToIndex(index);
             if (this.mode == DateFrameMode.DateFrameSeason && !this.pickerNotClicked) {
                 let [, selectedMonth, ] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
                 this.setSeason(selectedMonth)
             }
         })
+
+        // Manejar entrada manual de fechas (blur y Enter) que no siempre disparan changeDate
+        const inputEl = this.datepickerEl ? this.datepickerEl.querySelector('input') as HTMLInputElement : null;
+        if (inputEl) {
+            const handleManualInput = () => {
+                const parsed = this.parseDateFromInput(inputEl.value);
+                if (!parsed) return;
+                let index = this.indexOfDate(parsed);
+                const wasSnapped = index < 0;
+                if (index < 0) index = this.findNearestDateIndex(parsed);
+                if (index >= 0) {
+                    // Sincronizar el datepicker con la fecha real (por si era una fecha gris)
+                    this.datepicker.datepicker('setDate', this.formatDateForDisplay(this.dates[index]));
+                    this.navigateToIndex(index);
+                    if (wasSnapped) {
+                        this.showDateHint(this.parent.getTranslation('nearest_date_hint'));
+                    }
+                }
+            };
+            inputEl.addEventListener('blur', handleManualInput);
+            inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
+                if (e.key === 'Enter') handleManualInput();
+            });
+        }
     }
 
     public renderPicker(id:string):JSX.Element {
@@ -622,6 +766,7 @@ export class DateSelectorFrame extends BaseFrame {
                 <div id="sliderFrame">
                     <input id="datesSlider" data-slider-id='ex1Slider' type="text" data-slider-step="1"/>
                 </div>
+                <div id="date-hint" className="date-hint hidden"></div>
             </div>);
         return element;
     }
@@ -634,6 +779,7 @@ export class DateSelectorFrame extends BaseFrame {
         this.climatologyFrame = document.getElementById("ClimatologyFrame") as HTMLElement;
         this.climTitle = document.getElementById("climTitle") as HTMLElement;
         this.sliderFrame = document.getElementById("sliderFrame") as HTMLElement;
+        this.dateHintEl = document.getElementById("date-hint") as HTMLElement;
         this.periods = [1,4,12]
 
         // Configurar locale del datepicker ahora que parent está completamente inicializado
@@ -774,6 +920,7 @@ export class DateSelectorFrame extends BaseFrame {
     }
 
     public showAdvanceButtons(visible:boolean=true){
+        if (!this.container) return;
         this.container.querySelectorAll("[role=event-btn]").forEach((value:HTMLButtonElement)=>value.hidden=!visible);
     }
 
