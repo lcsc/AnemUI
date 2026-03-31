@@ -361,9 +361,10 @@
             // align-items: center;
 
             display: flex;
-            position: fixed;
-            bottom: 50px;
-            right: 10px;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
             width: fit-content;
             background-color: #4875b9fc;
             padding: 10px 1.2rem;
@@ -374,6 +375,17 @@
             align-items: flex-start;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+
+            .drag-handle {
+                cursor: grab;
+                color: rgba(255, 255, 255, 0.5);
+                font-size: 1.1em;
+                line-height: 1;
+                padding: 0 4px 4px 0;
+                align-self: flex-start;
+                user-select: none;
+                &:active { cursor: grabbing; }
+            }
 
             li.inputDiv {
                 background: transparent !important;
