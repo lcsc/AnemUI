@@ -1089,34 +1089,19 @@ export class OpenLayerMap implements CsMapController {
         }
       };
 
-      // Detectar si hay múltiples porciones
       const timesJs = this.parent.getParent().getTimesJs();
       const portions = timesJs.portions[varName] || [];
 
-
-      // Si hay múltiples porciones, usar la función que combina
-      if (portions.length > 1) {
-
-        // Importar la función desde ChunkDownloader
+      if (computedDataTilesLayer) {
+        // Los datos se calculan en la App (p.ej. distribución Gumbel en EPM).
+        // Las porciones son para la capa de tiles, no para la feature layer.
+        this.computeFeatureLayerData(time, folder, varName, openSt);
+      } else if (portions.length > 1) {
+        // Múltiples porciones geográficas: descargar y combinar
         const { downloadXYbyRegionMultiPortion } = require('./data/ChunkDownloader');
-
-        downloadXYbyRegionMultiPortion(
-          time,
-          timeIndex,
-          folder,
-          varName,
-          portions,
-          openSt
-        );
+        downloadXYbyRegionMultiPortion(time, timeIndex, folder, varName, portions, openSt);
       } else {
-
-        if (computedDataTilesLayer) {
-          // Build calculated Layer
-          this.computeFeatureLayerData(time, folder, varName, openSt);
-        } else {
-          // Download and build new data layers
-          downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
-        }
+        downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
       }
     });
   }
@@ -1134,14 +1119,15 @@ export class OpenLayerMap implements CsMapController {
 
     const self = this;
 
+    const validLayer = (layer: any) => layer != null && typeof layer.getRenderer === 'function' && layer.getRenderer() != null;
+
     this.hoverInteraction = new Select({
       condition: pointerMove,
       style: null,
+      layers: validLayer,
       filter: function (feature, layer) {
         const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
-        if (!contourGeoLayer) {
-          return true;
-        }
+        if (!contourGeoLayer) return true;
         return layer !== contourGeoLayer;
       }
     });
@@ -1158,13 +1144,12 @@ export class OpenLayerMap implements CsMapController {
       });
     });
 
-    const layerFilter = function (feature: any, layer: any) {
-      const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
-      return !contourGeoLayer || layer !== contourGeoLayer;
-    };
-
     this.selectInteraction = new Select({
-      filter: layerFilter
+      layers: validLayer,
+      filter: function (feature: any, layer: any) {
+        const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
+        return !contourGeoLayer || layer !== contourGeoLayer;
+      }
     });
 
     this.map.addInteraction(this.selectInteraction);
@@ -1841,15 +1826,22 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   }
 
   public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
-    let min: number = Number.MAX_VALUE;
-    let max: number = Number.MIN_VALUE;
-
-    Object.values(this.indexData).forEach((value) => {
-      if (!isNaN(value)) {
-        min = Math.min(min, value);
-        max = Math.max(max, value);
-      }
-    });
+    // Usar los mismos min/max que la leyenda para que los colores coincidan
+    const legendValues = this.csMap.getParent().getParent().getLegendValues();
+    let min: number, max: number;
+    if (legendValues && legendValues.length > 0) {
+      min = Math.min(...legendValues);
+      max = Math.max(...legendValues);
+    } else {
+      min = Number.MAX_VALUE;
+      max = Number.MIN_VALUE;
+      Object.values(this.indexData).forEach((value) => {
+        if (!isNaN(value as number)) {
+          min = Math.min(min, value as number);
+          max = Math.max(max, value as number);
+        }
+      });
+    }
 
     let color: string = '#fff';
     let id = feature.getProperties()['id'];
