@@ -1079,12 +1079,6 @@ export class OpenLayerMap implements CsMapController {
       let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
         if (this.featureLayer) {
           this.featureLayer.indexData = data;
-          // Sync data into App state so getLegendValues() can use it
-          const app = this.parent.getParent() as any;
-          if (app && app.state && 'computedDataByFeature' in app.state) {
-            app.state.computedDataByFeature = data;
-            if ('legendValuesCache' in app) app.legendValuesCache = null;
-          }
           if (this.featureLayer.show) {
             this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
           }
