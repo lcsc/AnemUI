@@ -96,7 +96,7 @@ export class LayerManager {
 
         // CAPAS SUPERPUESTAS
         // ------ Global
-        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign, cssFilter:'grayscale(1) brightness(1.5)'})
+        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign, cssFilter:'grayscale(1) brightness(0.3)'})
         this.addTopLayer({name:"Límites políticos y topónimos globales (ArcGIS)",url:"https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
         this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true, credit:'© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> — EuroGeographics'})
         this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco})
@@ -294,6 +294,7 @@ export class LayerManager {
                         crossOrigin: 'anonymous',
                         ...(cssFilter ? {
                             tileLoadFunction: (tile: any, src: string) => {
+                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
                                 const img = new window.Image();
                                 img.crossOrigin = 'anonymous';
                                 img.onload = () => {
@@ -301,8 +302,32 @@ export class LayerManager {
                                     canvas.width = img.width;
                                     canvas.height = img.height;
                                     const ctx = canvas.getContext('2d');
-                                    ctx.filter = cssFilter;
-                                    ctx.drawImage(img, 0, 0);
+                                    if (!isSafari) {
+                                        ctx.filter = cssFilter;
+                                        ctx.drawImage(img, 0, 0);
+                                    } else {
+                                        // ctx.filter not supported in Safari < 18; apply manually
+                                        ctx.drawImage(img, 0, 0);
+                                        const grayscaleMatch = cssFilter.match(/grayscale\(([^)]+)\)/);
+                                        const brightnessMatch = cssFilter.match(/brightness\(([^)]+)\)/);
+                                        const grayscale = grayscaleMatch ? parseFloat(grayscaleMatch[1]) : 0;
+                                        const brightness = brightnessMatch ? parseFloat(brightnessMatch[1]) : 1;
+                                        if (grayscale > 0 || brightness !== 1) {
+                                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                            const d = imageData.data;
+                                            for (let i = 0; i < d.length; i += 4) {
+                                                let r = d[i], g = d[i + 1], b = d[i + 2];
+                                                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                                                r = r + (gray - r) * grayscale;
+                                                g = g + (gray - g) * grayscale;
+                                                b = b + (gray - b) * grayscale;
+                                                d[i]     = Math.min(255, r * brightness);
+                                                d[i + 1] = Math.min(255, g * brightness);
+                                                d[i + 2] = Math.min(255, b * brightness);
+                                            }
+                                            ctx.putImageData(imageData, 0, 0);
+                                        }
+                                    }
                                     tile.getImage().src = canvas.toDataURL();
                                 };
                                 img.src = src;
