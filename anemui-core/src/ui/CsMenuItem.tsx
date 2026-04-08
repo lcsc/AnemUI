@@ -316,6 +316,12 @@ export class CsMenuInput extends BaseUiElement {
       this.value = this.minValue;
       this.listener.valueChanged(this, this.value);
     }
+    if (this.container) {
+      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.min = _minValue !== undefined ? _minValue.toString() : undefined;
+      }
+    }
   }
 
   public getMinValue(): number {
@@ -327,6 +333,12 @@ export class CsMenuInput extends BaseUiElement {
     if (this.value !== null && _maxValue !== undefined && this.value > this.maxValue) {
       this.value = this.maxValue;
       this.listener.valueChanged(this, this.value);
+    }
+    if (this.container) {
+      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.max = _maxValue !== undefined ? _maxValue.toString() : undefined;
+      }
     }
   }
 
