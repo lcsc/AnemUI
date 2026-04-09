@@ -1177,6 +1177,7 @@ export class OpenLayerMap implements CsMapController {
     });
 
     this.selectInteraction = new Select({
+      style: null,
       layers: validLayer,
       filter: function (feature: any, layer: any) {
         const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
@@ -1611,6 +1612,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   public source?: VectorSource;
   public isContour: boolean;
   protected currentFeature: Feature;
+  protected selectedFeature: Feature;
   public indexData: ArrayData;
 
   public rendererIndex: number = -1;
@@ -1633,7 +1635,29 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       this.geoLayer.getFeatures(evt.pixel).then((features: FeatureLike[]) => {
         if (this.popupOverlay != undefined) this.popupOverlay.setPosition(undefined)
         if (features.length >= 0 && features[0] != undefined) {
-          this.onClick(this.getFeature(features[0].get('id')), evt)
+          const rawClicked = this.getFeature(features[0].get('id'));
+          // OL Feature real (tiene .set y .setStyle); getFeature devuelve GeoJSON plano
+          const olFeature = features[0] as any as Feature;
+          const state = this.csMap.getParent().getParent().getState();
+          const timesJs = this.csMap.getParent().getParent().getTimesJs();
+          // Restaurar estilo de la feature previamente seleccionada
+          if (this.selectedFeature && this.selectedFeature !== olFeature) {
+            this.selectedFeature.set('selected', false);
+            this.selectedFeature.setStyle(
+              this.rendererIndex === 0
+                ? this.setStationStyle(state, this.selectedFeature, timesJs)
+                : this.setFeatureStyle(state, this.selectedFeature, timesJs)
+            );
+          }
+          // Marcar y resaltar la feature clicada
+          olFeature.set('selected', true);
+          olFeature.setStyle(
+            this.rendererIndex === 0
+              ? this.setStationStyle(state, olFeature, timesJs)
+              : this.setFeatureStyle(state, olFeature, timesJs)
+          );
+          this.selectedFeature = olFeature;
+          this.onClick(rawClicked, evt)
         }
       })
     })
@@ -1847,7 +1871,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       if (isNaN(radius) || radius < 3) radius = 3;
     }
 
-    const isHovered = feature.get('hover');
+    const isHovered = feature.get('hover') || feature.get('selected');
 
     let imgStation: CircleStyle = new CircleStyle({
       radius: radius,
@@ -1919,9 +1943,9 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       color = ptr.getColorString(dataValue, min, max);
     }
 
-    const isHovered = feature.get('hover');
+    const isHovered = feature.get('hover') || feature.get('selected');
 
-    if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
+    if (feature.get('hover')) this.map.getTargetElement().style.cursor = 'pointer';
     else this.map.getTargetElement().style.cursor = '';
 
     return new Style({
