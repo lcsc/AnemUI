@@ -227,7 +227,7 @@
         #title {
             width: auto !important;
             text-decoration: none;
-            color: $title_bgcolor;
+            color: $font_color;
             font-size: 1.0em;
             font-weight: 500;
             margin-bottom: 0px;
@@ -366,7 +366,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: fit-content;
-            background-color: #4875b9fc;
+            background-color: $title_color;
             padding: .5rem;
             margin: 0;
             list-style: none;
@@ -393,7 +393,7 @@
                 min-width: auto;
 
                 .dpdown-button, .menu-input {
-                    color: #fff;
+                    color: $font_color;
                     display: flex;
                     flex-direction: column;
                     width: fit-content !important;
@@ -402,7 +402,7 @@
                 }
 
                 .title {
-                    color: rgba(255, 255, 255, 0.85);
+                    color: $font_color;
                     font-size: 0.75em;
                     font-style: italic;
                     margin-bottom: 3px;
@@ -759,7 +759,7 @@
     min-width: fit-content;
     width: fit-content;
     // font-size: 0.8rem;
-    color: $color_4;
+    color: $font_color;
     
 }
 
