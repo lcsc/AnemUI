@@ -532,6 +532,13 @@ export class OpenLayerMap implements CsMapController {
 
       this.dataTilesLayer.push(imageLayer);
 
+      imageLayer.on('change:opacity', () => {
+    const newOpacity = imageLayer.getOpacity();
+    if (this.featureLayer?.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(newOpacity);
+    }
+});
+
       // Insertar la capa antes de la capa política (no al final)
       const layers = this.map.getLayers();
       const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
@@ -616,6 +623,17 @@ export class OpenLayerMap implements CsMapController {
       }
     }
   }
+
+  public setDataLayerOpacity(opacity: number): void {
+    if (this.dataTilesLayer) {
+        this.dataTilesLayer.forEach(layer => {
+            if (layer) layer.setOpacity(opacity);
+        });
+    }
+    if (this.featureLayer?.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(opacity);
+    }
+}
 
   // Safe layer removal method
   private safelyRemoveDataLayers(): void {
@@ -922,8 +940,16 @@ export class OpenLayerMap implements CsMapController {
                 // Mostrar la capa de estaciones
                 this.featureLayer.show(rendererIndex);
 
+                
+
                 if (this.dataTilesLayer && this.dataTilesLayer.length > 0) {
-                  const mapLayers = this.map.getLayers();
+                 
+                   const currentOpacity = this.dataTilesLayer[0]?.getOpacity?.() ?? 1;
+                          const mapLayers = this.map.getLayers();
+    if (this.featureLayer.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(currentOpacity);
+    }
+           
 
                   this.dataTilesLayer.forEach((layer, i) => {
                     if (layer) {
@@ -1081,6 +1107,12 @@ export class OpenLayerMap implements CsMapController {
           this.featureLayer.indexData = data;
           if (this.featureLayer.show) {
             this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+            if (this.dataTilesLayer && this.dataTilesLayer.length > 0) {
+    const currentOpacity = this.dataTilesLayer[0]?.getOpacity?.() ?? 1;
+    if (this.featureLayer.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(currentOpacity);
+    }
+}
           }
           resolve();
         } else {
