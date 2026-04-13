@@ -871,11 +871,15 @@ export class MenuBar extends BaseFrame {
                 this.extraMenuInputs.forEach((inp) => {
                     if (inp.id == dspRole) {
                         inp.setTitle(displayTitle)
-                        // Si options[0] está definido, actualizar el valor del input
-                        if (options && options.length > 0 && options[0] !== undefined && options[0] !== '') {
-                            const newValue = parseFloat(options[0]);
-                            if (!isNaN(newValue)) {
-                                inp.setValue(newValue);
+                        if (options && options.length > 0 && options[0] !== undefined) {
+                            if (options[0] === '') {
+                                // String vacío → limpiar el campo (mapa vacío hasta nueva entrada)
+                                inp.clearValue();
+                            } else {
+                                const newValue = parseFloat(options[0]);
+                                if (!isNaN(newValue)) {
+                                    inp.setValue(newValue);
+                                }
                             }
                         }
                         // Controlar visibilidad usando el método config
