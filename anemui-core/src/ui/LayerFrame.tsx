@@ -132,7 +132,6 @@ export default class LayerFrame  extends BaseFrame {
     public toggleSelect(select: string){
         const isOpening = this.container.querySelector(".selectDiv." + select).classList.contains("hidden");
         if (isOpening) {
-            // Cerrar todos los demás selectores antes de abrir éste
             ['baseDiv', 'polDiv', 'trpDiv'].forEach(other => {
                 if (other !== select) {
                     const sel = this.container.querySelector(".selectDiv." + other);
@@ -158,13 +157,11 @@ export default class LayerFrame  extends BaseFrame {
         const group = clicked?.dataset.group;
 
         if (group === 'A') {
-            // Globales: radio — siempre una seleccionada, no se puede desmarcar
             inputs.forEach(inp => {
                 if (inp.dataset.group === 'A') inp.checked = inp.value === value;
             });
             clicked.checked = true;
         } else {
-            // Estatales: checkbox opcional — máximo una; se puede desmarcar
             if (clicked?.checked) {
                 inputs.forEach(inp => {
                     if (inp.dataset.group === group && inp.value !== value) inp.checked = false;
@@ -181,7 +178,27 @@ export default class LayerFrame  extends BaseFrame {
         let mgr=LayerManager.getInstance();
         mgr.setTopSelected(value);
         this.parent.update();
-        // this.container.querySelector("div.layerFrame").classList.remove("visible")
+    }
+
+    private applyOpacityToAllDataLayers(transparencyValue: number): void {
+        const opacity = (100 - transparencyValue) / 100;
+        const csMap = this.parent.getMap();
+        const controller = (csMap as any).controller || (csMap as any).olMap || (csMap as any).mapController;
+        if (!controller) return;
+
+        // Capas ráster (ImageLayer de datos)
+        if (controller.dataTilesLayer && Array.isArray(controller.dataTilesLayer)) {
+            controller.dataTilesLayer.forEach((layer: any) => {
+                if (layer && typeof layer.setOpacity === 'function') {
+                    layer.setOpacity(opacity);
+                }
+            });
+        }
+
+        // Feature layer (VectorLayer de provincias / CCAA / estaciones)
+        if (controller.featureLayer?.geoLayer && typeof controller.featureLayer.geoLayer.setOpacity === 'function') {
+            controller.featureLayer.geoLayer.setOpacity(opacity);
+        }
     }
 
     public build(){
@@ -191,17 +208,27 @@ export default class LayerFrame  extends BaseFrame {
         this.trpDiv = document.getElementById('trp-div') as HTMLElement;
         this.slider=new Slider(document.getElementById("transparencySlider"),{
             natural_arrow_keys: true,
-            //tooltip: "always",
             min: 0,
             max: 100,
             value: 0,
         })
-        this.slider.on('slideStop',(val:number)=>{
-            let mgr=PaletteManager.getInstance();
-            if(val==mgr.getTransparency())return;
-            mgr.setTransparency(val)
-            this.parent.update();
-        })
+
+        // Mientras arrastra: feedback visual inmediato (solo opacidad, sin rebuild)
+        this.slider.on('slide', (val: number) => {
+            const label = this.container.querySelector(".layerFrame span[aria-label=transparency]") as HTMLElement;
+            if (label) {
+                label.textContent = this.parent.getTranslation('transparency') + ": " + val;
+            }
+            this.applyOpacityToAllDataLayers(val);
+        });
+
+      
+        this.slider.on('slideStop', (val: number) => {
+            let mgr = PaletteManager.getInstance();
+            if (val === mgr.getTransparency()) return;
+            mgr.setTransparency(val);
+            this.applyOpacityToAllDataLayers(val);
+        });
 
         if (!showLayers){
             this.baseDiv.hidden = true;
@@ -225,8 +252,6 @@ export default class LayerFrame  extends BaseFrame {
     public update(): void {
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();
-        // let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        // let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let name:string; 
         if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
             const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
@@ -241,5 +266,12 @@ export default class LayerFrame  extends BaseFrame {
         this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+(this.parent.getTranslation(topSelected) || topSelected);
         (Array.from(this.container.querySelectorAll("input.topLayer")) as HTMLInputElement[])
             .forEach(inp => { inp.checked = inp.value === topSelected; });
+
+        const currentTransparency = mgr.getTransparency();
+        if (currentTransparency > 0) {
+            setTimeout(() => {
+                this.applyOpacityToAllDataLayers(currentTransparency);
+            }, 400);
+        }
     }
 }
