@@ -72,7 +72,7 @@ export class LayerManager {
     private baseSelected:string[] = [];
     protected topLayers: { [key: string]: AnemuiLayer } = {}
     private topSelected:string;
-    private topLayerTile:WebGLTile;
+    private topLayerTile:TileLayer<any>;
     private topLayerVector:Layer;
     private topLayerWMS: TileLayer<TileWMS>;
     private nomenclatorLayers: VectorLayer<VectorSource>[] = [];
@@ -99,14 +99,14 @@ export class LayerManager {
         this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign, cssFilter:'grayscale(1) brightness(0.3)'})
         this.addTopLayer({name:"Límites políticos y topónimos globales (ArcGIS)",url:"https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
         this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true, credit:'© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> — EuroGeographics'})
-        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco})
-        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco})
-        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco})
-        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
-        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
-        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco})
+        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
         
         const topNames = Object.keys(this.topLayers);
         this.topSelected = topNames.length > 0 ? topNames[0] : "";
@@ -205,6 +205,15 @@ export class LayerManager {
         }
         return this.baseLayers[this.baseSelected[layer]].source
     }
+
+    /** Returns the WMS-capable selected base layers in order (bottom to top), for use in map export */
+    public getBaseLayerWmsInfo(): Array<{url: string, layer: string, transparent: boolean}> {
+        return this.baseSelected
+            .map(name => this.baseLayers[name])
+            .filter(l => l && l.type === AL_TYPE_WMS)
+            .map((l, idx) => ({ url: l.url, layer: l.layer, transparent: idx > 0 }));
+    }
+
     //TopLayer
     public addTopLayer(layer:AnemuiLayer){
         this.topLayers[layer.name]=layer;
@@ -236,8 +245,8 @@ export class LayerManager {
         switch(tLayer.type) {
             case AL_TYPE_OSM:
                 if(this.topLayerTile==undefined){
-                    this.topLayerTile=new WebGLTile({
-                        source: this.getTopLayerSource() as DataTileSource,
+                    this.topLayerTile = new TileLayer({
+                        source: this.getTopLayerSource() as OSM,
                         zIndex: 5000
                     })
                 }
@@ -272,12 +281,54 @@ export class LayerManager {
         const tl = this.topLayers[this.topSelected];
         if(tl.source==undefined){
             switch (tl.type) {
-                case AL_TYPE_OSM:
+                case AL_TYPE_OSM: {
+                    const osmCssFilter = tl.cssFilter;
                     tl.source = new OSM({
                         url: tl.url,
-                        attributions: tl.credit
+                        attributions: tl.credit,
+                        ...(osmCssFilter ? {
+                            tileLoadFunction: (tile: any, src: string) => {
+                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                const img = new window.Image();
+                                img.crossOrigin = 'anonymous';
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    const ctx = canvas.getContext('2d');
+                                    if (!isSafari) {
+                                        ctx.filter = osmCssFilter;
+                                        ctx.drawImage(img, 0, 0);
+                                    } else {
+                                        ctx.drawImage(img, 0, 0);
+                                        const grayscaleMatch = osmCssFilter.match(/grayscale\(([^)]+)\)/);
+                                        const brightnessMatch = osmCssFilter.match(/brightness\(([^)]+)\)/);
+                                        const grayscale = grayscaleMatch ? parseFloat(grayscaleMatch[1]) : 0;
+                                        const brightness = brightnessMatch ? parseFloat(brightnessMatch[1]) : 1;
+                                        if (grayscale > 0 || brightness !== 1) {
+                                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                            const d = imageData.data;
+                                            for (let i = 0; i < d.length; i += 4) {
+                                                let r = d[i], g = d[i + 1], b = d[i + 2];
+                                                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                                                r = r + (gray - r) * grayscale;
+                                                g = g + (gray - g) * grayscale;
+                                                b = b + (gray - b) * grayscale;
+                                                d[i]     = Math.min(255, r * brightness);
+                                                d[i + 1] = Math.min(255, g * brightness);
+                                                d[i + 2] = Math.min(255, b * brightness);
+                                            }
+                                            ctx.putImageData(imageData, 0, 0);
+                                        }
+                                    }
+                                    tile.getImage().src = canvas.toDataURL();
+                                };
+                                img.src = src;
+                            }
+                        } : {})
                     })
                     break;
+                }
                 case AL_TYPE_TOPO_JSON:
                     tl.source = new Vector({
                         format: new TopoJSON({ dataProjection: 'EPSG:3857' }),

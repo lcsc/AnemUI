@@ -207,7 +207,11 @@ export default class LayerFrame  extends BaseFrame {
             this.baseDiv.hidden = true;
             this.polDiv.hidden = true;
             this.trpDiv.hidden = true;
-        } 
+        }
+
+        const topSelected = LayerManager.getInstance().getTopSelected();
+        (Array.from(this.container.querySelectorAll("input.topLayer")) as HTMLInputElement[])
+            .forEach(inp => { inp.checked = inp.value === topSelected; });
     }
 
     public minimize():void{
