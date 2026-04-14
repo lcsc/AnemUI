@@ -2046,7 +2046,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       });
     }
 
-    let color: string = '#fff';
+    let color: string = 'rgba(0,0,0,0)'; // Transparente por defecto (sin dato → no pinta)
     let id = feature.getProperties()['id'];
     let id_ant = feature.getProperties()['id_ant'];
     let name = feature.getProperties()['name'];
@@ -2095,8 +2095,13 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     if (feature.get('hover')) this.map.getTargetElement().style.cursor = 'pointer';
     else this.map.getTargetElement().style.cursor = '';
 
+    const hasData = color !== 'rgba(0,0,0,0)' && color !== '#ffffff00';
+    const hoverColor = isHovered
+      ? (hasData ? this.highLightColor(color, 0.2) : 'rgba(255,255,255,0.35)')
+      : color;
+
     return new Style({
-      fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+      fill: new Fill({ color: hoverColor }),
       stroke: new Stroke({
         color: '#999',
       }),
@@ -2123,11 +2128,17 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
         feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
       }
 
-      this.csMap.popupContent.style.left = pixel[0] + 'px';
-      this.csMap.popupContent.style.top = pixel[1] + 'px';
+      const rect = this.map.getViewport().getBoundingClientRect();
+      this.csMap.popup.style.left = (rect.left + pixel[0]) + 'px';
+      this.csMap.popup.style.top  = (rect.top  + pixel[1]) + 'px';
       this.csMap.popup.hidden = false;
 
-      if (feature !== this.currentFeature) {
+      // Si no hay datos computados, mostrar hint de la app (ej: "Seleccione rango")
+      const hint = this.csMap.getParent().getParent().getHoverHintText();
+      if (hint && (!data || Object.keys(data).length === 0)) {
+        this.csMap.popupContent.innerHTML = `<div>${hint}</div>`;
+        this.csMap.popupContent.style.visibility = 'visible';
+      } else if (feature !== this.currentFeature) {
         let id = feature.getProperties()['id'];
         let id_ant = feature.getProperties()['id_ant'];
         let name = feature.getProperties()['name'];
@@ -2163,7 +2174,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
 
         this.csMap.popupContent.style.visibility = 'visible';
         this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(name, id, value);
-        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]));
       }
     } else {
       this.csMap.popupContent.style.visibility = 'hidden';
