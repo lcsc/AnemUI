@@ -134,15 +134,23 @@ export class LayerManager {
         const baseNames = Object.keys(this.baseLayers);
         const globalLayers = baseNames.filter(name => this.baseLayers[name].global);
         const nationalLayers = baseNames.filter(name => !this.baseLayers[name].global);
+
+        const DEFAULT_GLOBAL   = "Capa fondo global EUMETSAT";
+        const DEFAULT_NATIONAL = "Mapa LIDAR nacional (PNOA)";
+
         if (zoom >= 6.00) {
-            // Zoom nacional: primera global + primera nacional (si existen)
+            // Zoom nacional: EUMETSAT + LIDAR por defecto
             this.baseSelected = [];
-            if (globalLayers.length > 2) this.baseSelected.push(globalLayers[0]); // IGN (1ª global)
-            if (nationalLayers.length > 1) this.baseSelected.push(nationalLayers[0]); // Ortofoto (1ª nacional)
+            const globalDefault   = this.baseLayers[DEFAULT_GLOBAL]   ? DEFAULT_GLOBAL   : (globalLayers[0]   ?? '');
+            const nationalDefault = this.baseLayers[DEFAULT_NATIONAL] ? DEFAULT_NATIONAL : (nationalLayers[0] ?? '');
+            if (globalDefault)   this.baseSelected.push(globalDefault);
+            if (nationalDefault) this.baseSelected.push(nationalDefault);
             if (this.baseSelected.length === 0) this.baseSelected = [baseNames[0]];
         } else {
-            // Zoom global: primera capa global
-            this.baseSelected = globalLayers.length > 0 ? [globalLayers[0]] : [baseNames[0]];
+            // Zoom global: EUMETSAT por defecto
+            this.baseSelected = this.baseLayers[DEFAULT_GLOBAL]
+                ? [DEFAULT_GLOBAL]
+                : (globalLayers.length > 0 ? [globalLayers[0]] : [baseNames[0]]);
         }
         return this.baseSelected.length - 1
     } 
