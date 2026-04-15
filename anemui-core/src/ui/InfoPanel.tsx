@@ -35,21 +35,30 @@ export class InfoDiv extends BaseFrame {
 
     protected renderLicense():JSX.Element{
         return (<div>
+                <h6>Cobertura de cartografía de referencia</h6>
+                <ul>
+                    <li><strong>Imagen global arcGIS:</strong> <a href="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" target="_blank">https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer</a></li>
+                    <li><strong>Mapa global OpenStreetMap:</strong> <a href="https://planet.openstreetmap.org/" target="_blank">https://planet.openstreetmap.org/</a></li>
+                    <li><strong>Imagen global EUMETSAT:</strong> <a href="https://view.eumetsat.int/geoserver/wms" target="_blank">https://view.eumetsat.int/geoserver/wms</a></li>
+                    <li><strong>Mapa Topográfico Nacional del IGN:</strong> <a href="https://www.ign.es/wmts/ign-base" target="_blank">https://www.ign.es/wmts/ign-base</a></li>
+                    <li><strong>Ortofoto PNOA:</strong> <a href="https://www.ign.es/wms-inspire/pnoa-ma" target="_blank">https://www.ign.es/wms-inspire/pnoa-ma</a></li>
+                    <li><strong>Mapa Lidar PNOA:</strong> <a href="https://wmts-mapa-lidar.idee.es/lidar" target="_blank">https://wmts-mapa-lidar.idee.es/lidar</a></li>
+                </ul>
                 <h6>Licencias</h6>
                 <p>Los datos de esta web están disponibles bajo la licencia Open Database License. Cualquier derecho sobre los contenidos individuales de la base de datos está licenciado bajo la Database Contents License.</p>
                 <p>Lo que sigue es un resumen legible de la licencia ODbL 1.0. Por favor, lea el texto completo de la licencia ODbL 1.0 para conocer los términos exactos que se aplican.
                     Los usuarios del conjunto de datos pueden:</p>
                 <p>
                     <ul>
-                        <li>Compartir: copiar, distribuir y utilizar la base de datos, con o sin fines comerciales.</li>
-                        <li>Crear: producir obras derivadas a partir de la base de datos.</li>
-                        <li>Adaptar: modificar, transformar y construir a partir de la base de datos.</li>
+                        <li><strong>Compartir:</strong> copiar, distribuir y utilizar la base de datos, con o sin fines comerciales.</li>
+                        <li><strong>Crear:</strong> producir obras derivadas a partir de la base de datos.</li>
+                        <li><strong>Adaptar:</strong> modificar, transformar y construir a partir de la base de datos.</li>
                     </ul>
                 </p>
                 <p>Bajo las condiciones siguientes:</p>
                     <ul>
-                        <li>Atribución: Debe atribuir cualquier uso público de la base de datos, o trabajos producidos a partir de la base de datos, citando uno o más de los artículos a los que se hace referencia en la sección Referencias más abajo. Para cualquier uso o redistribución de la base de datos, o de los trabajos producidos a partir de ella, debe dejar claro a los demás la licencia de la base de datos original.</li>
-                        <li>Compartir por igual: Si utiliza públicamente cualquier versión adaptada de esta base de datos, o trabajos producidos a partir de una base de datos adaptada, también debe ofrecer esa base de datos adaptada bajo la ODbL.</li>
+                        <li><strong>Atribución:</strong> Debe atribuir cualquier uso público de la base de datos, o trabajos producidos a partir de la base de datos, citando uno o más de los artículos a los que se hace referencia en la sección Referencias más abajo. Para cualquier uso o redistribución de la base de datos, o de los trabajos producidos a partir de ella, debe dejar claro a los demás la licencia de la base de datos original.</li>
+                        <li><strong>Compartir por igual:</strong> Si utiliza públicamente cualquier versión adaptada de esta base de datos, o trabajos producidos a partir de una base de datos adaptada, también debe ofrecer esa base de datos adaptada bajo la ODbL.</li>
                     </ul>
                 <h6>Financiación</h6>
                 <p>Este trabajo de investigación ha sido financiado por el Ministerio para la Transición Ecológica y el Reto Demográfico (MITECO) y la Comisión Europea - NextGenerationEU (Reglamento UE 2020/2094), a través de la Plataforma Temática Interdisciplinar Clima (PTI Clima) / Desarrollo de Servicios Climáticos Operativos del CSIC.</p>
