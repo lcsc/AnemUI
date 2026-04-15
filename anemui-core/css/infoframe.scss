@@ -13,6 +13,7 @@ div.infoFrame.min{
 // ── Modal de información (tingle.js) ──
 
 div.tingle-modal {
+    z-index: 3000;
     background: rgba(0, 0, 0, .5);
     font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
 

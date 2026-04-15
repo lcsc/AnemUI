@@ -203,12 +203,21 @@ export class OpenLayerMap implements CsMapController {
         const fittedZoom = view.getZoom()!;
         const fittedCenter = view.getCenter()!;
         const fittedViewportExtent = view.calculateExtent(sz);
+        // Ampliar el extent vertical para que se pueda centrar en Canarias (sur)
+        // y en el norte de España (norte), manteniendo los límites horizontales.
+        const vph = (fittedViewportExtent[3] - fittedViewportExtent[1]) / 2;
+        const panExtent: [number, number, number, number] = [
+          fittedViewportExtent[0],
+          fittedViewportExtent[1] - vph * 0.5, // sur: +media altura para llegar a Canarias
+          fittedViewportExtent[2],
+          fittedViewportExtent[3] + vph * 0.5, // norte: margen pequeño (Santander ya está cerca del borde)
+        ];
         this.map.setView(new View({
           center: fittedCenter,
           zoom: fittedZoom,
           minZoom: fittedZoom,
           projection: olProjection,
-          extent: fittedViewportExtent
+          extent: panExtent
         }));
       };
       const size = this.map.getSize();
@@ -230,17 +239,36 @@ export class OpenLayerMap implements CsMapController {
       element: document.createElement('div'),
       stopEvent: false,
     })
-    this.popup = document.getElementById('popUp') as HTMLElement,
-      this.value = new Overlay({
-        positioning: 'center-center',
-        element: this.popup,
-        stopEvent: false,
-      })
+    // El popup (#popUp) se mantiene en document.body para que su z-index opere en el
+    // stacking context raíz y no quede tapado por la barra de menú (#map z-index:0).
+    this.popup = document.getElementById('popUp') as HTMLElement;
+    if (this.popup && this.popup.parentElement !== document.body) {
+      document.body.appendChild(this.popup);
+    }
+    // this.value se usa solo para poder llamar removeOverlay en el cleanup; el posicionado
+    // real se hace manualmente en showValue() con coordenadas de pantalla (position: fixed).
+    this.value = new Overlay({
+      positioning: 'top-left',
+      element: document.createElement('div'),
+      stopEvent: false,
+    });
     this.map.addOverlay(this.marker);
     this.map.addOverlay(this.value);
     this.marker.getElement().classList.add("marker")
     this.buildPopUp()
     this.map.on('pointermove', (event) => self.onMouseMove(event))
+    // Ocultar el popup cuando el cursor sale del canvas del mapa (incluyendo widgets superpuestos).
+    // Se usa mousemove global porque el widget del selector puede solapar visualmente el viewport
+    // y el evento mouseleave del viewport no llega en ese caso.
+    // Además se cancela el debounce de onMouseMove para que no reaparezca tras el hide.
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      const viewport = self.map.getViewport();
+      if (!viewport.contains(e.target as Node)) {
+        if (self.mouseMoveTo) { clearTimeout(self.mouseMoveTo); self.mouseMoveTo = undefined; }
+        self.popup.hidden = true;
+        self.hideMarker();
+      }
+    })
     this.lastSupport = this.parent.getParent().getDefaultRenderer()
     this.buildFeatureLayers();
     if (!isWmsEnabled) {
@@ -467,15 +495,25 @@ export class OpenLayerMap implements CsMapController {
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
     if (Number.isNaN(value)) {
-      this.parent.getParent().getState().xyValue = NaN
-      this.value.setPosition(undefined)
+      this.parent.getParent().getState().xyValue = NaN;
+      this.popup.hidden = true;
       return;
     }
-    this.parent.getParent().getState().xyValue = value
+    this.parent.getParent().getState().xyValue = value;
     this.popupContent.innerHTML = this.formatPopupValue(pos, pixelIndex, portion, value, int);
-    this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+
+    // Posicionar el popup con coordenadas de pantalla (position:fixed) para que su
+    // z-index opere en el stacking context raíz y supere al menú.
+    const coord = proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]);
+    const pixel = this.map.getPixelFromCoordinate(coord);
+    if (pixel) {
+      const rect = this.map.getViewport().getBoundingClientRect();
+      this.popup.style.left = (rect.left + pixel[0]) + 'px';
+      this.popup.style.top  = (rect.top  + pixel[1]) + 'px';
+    }
+
     this.popupContent.style.visibility = 'visible';
-    this.popup.hidden = false
+    this.popup.hidden = false;
   }
 
   public formatPopupValue(pos: CsLatLong, pixelIndex: number, portion: string,  value: number, int: boolean = false): string {
@@ -531,6 +569,13 @@ export class OpenLayerMap implements CsMapController {
       });
 
       this.dataTilesLayer.push(imageLayer);
+
+      imageLayer.on('change:opacity', () => {
+    const newOpacity = imageLayer.getOpacity();
+    if (this.featureLayer?.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(newOpacity);
+    }
+});
 
       // Insertar la capa antes de la capa política (no al final)
       const layers = this.map.getLayers();
@@ -616,6 +661,17 @@ export class OpenLayerMap implements CsMapController {
       }
     }
   }
+
+  public setDataLayerOpacity(opacity: number): void {
+    if (this.dataTilesLayer) {
+        this.dataTilesLayer.forEach(layer => {
+            if (layer) layer.setOpacity(opacity);
+        });
+    }
+    if (this.featureLayer?.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(opacity);
+    }
+}
 
   // Safe layer removal method
   private safelyRemoveDataLayers(): void {
@@ -922,8 +978,16 @@ export class OpenLayerMap implements CsMapController {
                 // Mostrar la capa de estaciones
                 this.featureLayer.show(rendererIndex);
 
+                
+
                 if (this.dataTilesLayer && this.dataTilesLayer.length > 0) {
-                  const mapLayers = this.map.getLayers();
+                 
+                   const currentOpacity = this.dataTilesLayer[0]?.getOpacity?.() ?? 1;
+                          const mapLayers = this.map.getLayers();
+    if (this.featureLayer.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(currentOpacity);
+    }
+           
 
                   this.dataTilesLayer.forEach((layer, i) => {
                     if (layer) {
@@ -1081,6 +1145,12 @@ export class OpenLayerMap implements CsMapController {
           this.featureLayer.indexData = data;
           if (this.featureLayer.show) {
             this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+            if (this.dataTilesLayer && this.dataTilesLayer.length > 0) {
+    const currentOpacity = this.dataTilesLayer[0]?.getOpacity?.() ?? 1;
+    if (this.featureLayer.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(currentOpacity);
+    }
+}
           }
           resolve();
         } else {
@@ -1212,8 +1282,50 @@ export class OpenLayerMap implements CsMapController {
       });
     };
 
+    // Overlay que oculta la navegación temporal del mapa durante la captura
+    const mapEl = this.map.getTargetElement() as HTMLElement;
+
+    // Inyectar keyframes solo la primera vez
+    if (!document.getElementById('_epm_spinner_style')) {
+      const st = document.createElement('style');
+      st.id = '_epm_spinner_style';
+      st.textContent = '@keyframes _epm_spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(st);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = [
+      'position:absolute', 'inset:0', 'z-index:9999',
+      'background:rgba(255,255,255,0.85)',
+      'display:flex', 'flex-direction:column',
+      'align-items:center', 'justify-content:center', 'gap:14px',
+      'pointer-events:all',
+    ].join(';');
+
+    const spinner = document.createElement('div');
+    spinner.style.cssText = [
+      'width:42px', 'height:42px',
+      'border:5px solid #d0d8e8',
+      'border-top-color:#2c3e50',
+      'border-radius:50%',
+      'animation:_epm_spin 0.8s linear infinite',
+    ].join(';');
+
+    const label = document.createElement('span');
+    label.style.cssText = 'font:bold 14px sans-serif;color:#2c3e50';
+    label.textContent = 'Generando imagen…';
+
+    overlay.appendChild(spinner);
+    overlay.appendChild(label);
+    mapEl.appendChild(overlay);
+
+    const removeOverlay = () => { if (overlay.parentNode) overlay.remove(); };
+    const setStatus  = (msg: string) => { label.textContent = msg; };
+
     const doExport = async () => {
+      try {
       // Paso 1: Capturar Península + Baleares
+      setStatus('Renderizando Península…  (1/4)');
       const peninsulaExtent4326 = [-10.0, 35.0, 5.0, 44.5];
       const peninsulaExtent = transformExtent(peninsulaExtent4326, 'EPSG:4326', proj);
       const mapSize0 = this.map.getSize();
@@ -1223,7 +1335,7 @@ export class OpenLayerMap implements CsMapController {
       await waitForRender();
 
       const mapSize = this.map.getSize();
-      if (!mapSize) return;
+      if (!mapSize) { removeOverlay(); return; }
       const mainWidth = mapSize[0];
       const mainHeight = mapSize[1];
 
@@ -1232,6 +1344,7 @@ export class OpenLayerMap implements CsMapController {
       const mainBbox4326 = transformExtent(mainViewExtent, proj, 'EPSG:4326');
 
       // Paso 2: Capturar Canarias
+      setStatus('Renderizando Canarias…  (2/4)');
       const canariasExtent4326 = [-18.5, 27.4, -13.2, 29.6];
       const canariasExtent = transformExtent(canariasExtent4326, 'EPSG:4326', proj);
       this.map.getView().fit(canariasExtent, { padding: [5, 5, 5, 5] });
@@ -1249,15 +1362,22 @@ export class OpenLayerMap implements CsMapController {
       this.map.getView().setResolution(currentResolution);
 
       // Paso 3: Pedir ambas imágenes WMS al IGN y componer
+      setStatus('Descargando fondo cartográfico…  (3/4)');
       this.loadWmsImages(mainBbox4326, mainWidth, mainHeight, canariasBbox4326, insetWidth, insetHeight,
         (mainBg, canBg) => {
+          setStatus('Componiendo imagen…  (4/4)');
           this.composeExportImage(
             mainBg, mainOlCanvas, mainWidth, mainHeight,
             canBg, canariasOlCanvas, insetWidth, insetHeight,
             state, timesJs, app
           );
+          removeOverlay();
         }
       );
+      } catch (e) {
+        removeOverlay();
+        throw e;
+      }
     };
 
     doExport();
@@ -1288,44 +1408,67 @@ export class OpenLayerMap implements CsMapController {
     return capture;
   }
 
-  private buildWmsUrl(bbox4326: number[], width: number, height: number): string {
-    return 'https://www.ign.es/wms-inspire/ign-base?' +
+  private buildWmsUrlForLayer(url: string, layer: string, bbox4326: number[], width: number, height: number, transparent: boolean): string {
+    return url +
       'SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap' +
-      '&LAYERS=IGNBaseTodo&STYLES=' +
+      '&LAYERS=' + encodeURIComponent(layer) + '&STYLES=' +
       '&SRS=EPSG:4326' +
       '&BBOX=' + bbox4326.join(',') +
       '&WIDTH=' + width + '&HEIGHT=' + height +
-      '&FORMAT=image/png&TRANSPARENT=false';
+      '&FORMAT=image/png&TRANSPARENT=' + (transparent ? 'true' : 'false');
   }
 
   private loadWmsImages(
     mainBbox: number[], mainW: number, mainH: number,
     canBbox: number[], canW: number, canH: number,
-    callback: (mainBg: HTMLImageElement | null, canBg: HTMLImageElement | null) => void
+    callback: (mainBg: CanvasImageSource | null, canBg: CanvasImageSource | null) => void
   ): void {
-    let mainBg: HTMLImageElement | null = null;
-    let canBg: HTMLImageElement | null = null;
-    let loaded = 0;
+    // Obtain WMS-capable selected base layers from LayerManager; fallback to IGN base if none
+    let wmsLayers = LayerManager.getInstance().getBaseLayerWmsInfo();
+    if (wmsLayers.length === 0) {
+      wmsLayers = [{ url: 'https://www.ign.es/wms-inspire/ign-base?', layer: 'IGNBaseTodo', transparent: false }];
+    }
 
-    const check = () => { if (++loaded >= 2) callback(mainBg, canBg); };
+    // Load all WMS images for a given bbox and composite them onto a canvas
+    const loadComposite = (bbox: number[], w: number, h: number, done: (result: CanvasImageSource | null) => void) => {
+      const urls = wmsLayers.map(l => this.buildWmsUrlForLayer(l.url, l.layer, bbox, w, h, l.transparent));
+      const images: (HTMLImageElement | null)[] = new Array(urls.length).fill(null);
+      let loaded = 0;
 
-    const img1 = new Image();
-    img1.crossOrigin = 'anonymous';
-    img1.onload = () => { mainBg = img1; check(); };
-    img1.onerror = () => { console.warn('Error cargando WMS península'); check(); };
-    img1.src = this.buildWmsUrl(mainBbox, mainW, mainH);
+      urls.forEach((src, i) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { images[i] = img; if (++loaded === urls.length) composite(); };
+        img.onerror = () => { images[i] = null; if (++loaded === urls.length) composite(); };
+        img.src = src;
+      });
 
-    const img2 = new Image();
-    img2.crossOrigin = 'anonymous';
-    img2.onload = () => { canBg = img2; check(); };
-    img2.onerror = () => { console.warn('Error cargando WMS Canarias'); check(); };
-    img2.src = this.buildWmsUrl(canBbox, canW, canH);
+      const composite = () => {
+        const cvs = document.createElement('canvas');
+        cvs.width = w;
+        cvs.height = h;
+        const ctx = cvs.getContext('2d');
+        let anyDrawn = false;
+        images.forEach(img => {
+          if (img) { ctx.drawImage(img, 0, 0, w, h); anyDrawn = true; }
+        });
+        done(anyDrawn ? cvs : null);
+      };
+    };
+
+    let mainBg: CanvasImageSource | null = null;
+    let canBg: CanvasImageSource | null = null;
+    let done = 0;
+    const check = () => { if (++done >= 2) callback(mainBg, canBg); };
+
+    loadComposite(mainBbox, mainW, mainH, result => { mainBg = result; check(); });
+    loadComposite(canBbox, canW, canH, result => { canBg = result; check(); });
   }
 
   private composeExportImage(
-    mainBg: HTMLImageElement | null, mainOl: HTMLCanvasElement,
+    mainBg: CanvasImageSource | null, mainOl: HTMLCanvasElement,
     mainW: number, mainH: number,
-    canBg: HTMLImageElement | null, canOl: HTMLCanvasElement,
+    canBg: CanvasImageSource | null, canOl: HTMLCanvasElement,
     insetW: number, insetH: number,
     state: any, timesJs: any, app: any
   ): void {
@@ -1363,7 +1506,7 @@ export class OpenLayerMap implements CsMapController {
 
     // Fondo WMS Canarias
     if (canBg) {
-      ctx.drawImage(canBg, 0, 0, canBg.width, canBg.height, insetX, insetY, insetW, insetH);
+      ctx.drawImage(canBg, 0, 0, insetW, insetH, insetX, insetY, insetW, insetH);
     }
 
     // Datos OL Canarias (reescalado al tamaño del recuadro)
@@ -1437,8 +1580,49 @@ export class OpenLayerMap implements CsMapController {
       }
     }
 
-    // --- 6) Barra de logos (pie) ---
+    // --- 6) Créditos dentro del mapa (esquina inferior derecha) ---
+    this.drawAttributionOverlay(ctx, mainW, mainH + titleHeight);
+
+    // --- 7) Barra de logos (pie) ---
     this.drawLogosAndDownload(exportCanvas, ctx, 'mapa.png');
+  }
+
+  /** Dibuja el bloque de créditos superpuesto en la esquina inferior derecha del mapa,
+   *  igual que el widget de atribución del visor. */
+  private drawAttributionOverlay(ctx: CanvasRenderingContext2D, mapW: number, mapBottom: number): void {
+    const pad = 6;
+    const fontSize = 10;
+    const lineH = fontSize + 4;
+
+    // Líneas de texto: copyright propio + créditos de capas (sin HTML)
+    const rawCredit = LayerManager.getInstance().getSelectedCredit();
+    const layerCredit = rawCredit.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    const lines: string[] = [];
+    lines.push('\u00A9 AEMET \u2013 CSIC PTI-Clima');
+    if (layerCredit) lines.push(layerCredit);
+
+    ctx.font = `${fontSize}px sans-serif`;
+    const maxTextW = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const boxW = maxTextW + pad * 2;
+    const boxH = lines.length * lineH + pad * 2;
+    const boxX = mapW - boxW - 4;
+    const boxY = mapBottom - boxH - 4;
+
+    // Fondo semitransparente
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.restore();
+
+    // Texto
+    ctx.fillStyle = '#333333';
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, boxX + pad, boxY + pad + i * lineH);
+    });
   }
 
   private drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string): void {
@@ -1457,8 +1641,16 @@ export class OpenLayerMap implements CsMapController {
   }
 
   private appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, srcCtx: CanvasRenderingContext2D, logoImg: HTMLImageElement, filename: string): void {
-    const logoBarHeight = 60;
     const pad = 10;
+
+    // Escalar el logo para que ocupe el ancho completo del canvas (máxima calidad).
+    // De este modo se aprovechan todos los píxeles de la imagen fuente (6060×246)
+    // en lugar de escalarla a una altura fija pequeña.
+    const availableW = srcCanvas.width - pad * 2;
+    const scaleByWidth = availableW / logoImg.naturalWidth;
+    const logoW = availableW;
+    const logoH = Math.round(logoImg.naturalHeight * scaleByWidth);
+    const logoBarHeight = logoH + pad * 2;
 
     // Crear canvas final con espacio para la barra de logos
     const finalCanvas = document.createElement('canvas');
@@ -1482,23 +1674,10 @@ export class OpenLayerMap implements CsMapController {
     fCtx.lineTo(finalCanvas.width, barY);
     fCtx.stroke();
 
-    // Dibujar logo escalado para que quepa en la barra
-    const maxLogoH = logoBarHeight - pad * 2;
-    const scale = maxLogoH / logoImg.naturalHeight;
-    const logoW = logoImg.naturalWidth * scale;
-    const logoH = maxLogoH;
-    const logoX = (finalCanvas.width - logoW) / 2;
+    // Dibujar logo centrado, escalado al ancho del canvas
+    const logoX = pad;
     const logoY = barY + pad;
     fCtx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-
-    // Copyright a la derecha
-    const copyrightText = '\u00A9 AEMET - CSIC PTI-Clima';
-    fCtx.font = '10px sans-serif';
-    fCtx.fillStyle = '#666666';
-    fCtx.textBaseline = 'bottom';
-    fCtx.textAlign = 'right';
-    fCtx.fillText(copyrightText, finalCanvas.width - pad, barY + logoBarHeight - 4);
-    fCtx.textAlign = 'left';
 
     this.downloadCanvas(finalCanvas, filename);
   }
@@ -1867,7 +2046,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       });
     }
 
-    let color: string = '#fff';
+    let color: string = 'rgba(0,0,0,0)'; // Transparente por defecto (sin dato → no pinta)
     let id = feature.getProperties()['id'];
     let id_ant = feature.getProperties()['id_ant'];
     let name = feature.getProperties()['name'];
@@ -1916,8 +2095,13 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     if (feature.get('hover')) this.map.getTargetElement().style.cursor = 'pointer';
     else this.map.getTargetElement().style.cursor = '';
 
+    const hasData = color !== 'rgba(0,0,0,0)' && color !== '#ffffff00';
+    const hoverColor = isHovered
+      ? (hasData ? this.highLightColor(color, 0.2) : 'rgba(255,255,255,0.35)')
+      : color;
+
     return new Style({
-      fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+      fill: new Fill({ color: hoverColor }),
       stroke: new Stroke({
         color: '#999',
       }),
@@ -1944,11 +2128,17 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
         feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
       }
 
-      this.csMap.popupContent.style.left = pixel[0] + 'px';
-      this.csMap.popupContent.style.top = pixel[1] + 'px';
+      const rect = this.map.getViewport().getBoundingClientRect();
+      this.csMap.popup.style.left = (rect.left + pixel[0]) + 'px';
+      this.csMap.popup.style.top  = (rect.top  + pixel[1]) + 'px';
       this.csMap.popup.hidden = false;
 
-      if (feature !== this.currentFeature) {
+      // Si no hay datos computados, mostrar hint de la app (ej: "Seleccione rango")
+      const hint = this.csMap.getParent().getParent().getHoverHintText();
+      if (hint && (!data || Object.keys(data).length === 0)) {
+        this.csMap.popupContent.innerHTML = `<div>${hint}</div>`;
+        this.csMap.popupContent.style.visibility = 'visible';
+      } else if (feature !== this.currentFeature) {
         let id = feature.getProperties()['id'];
         let id_ant = feature.getProperties()['id_ant'];
         let name = feature.getProperties()['name'];
@@ -1984,7 +2174,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
 
         this.csMap.popupContent.style.visibility = 'visible';
         this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(name, id, value);
-        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]));
       }
     } else {
       this.csMap.popupContent.style.visibility = 'hidden';
