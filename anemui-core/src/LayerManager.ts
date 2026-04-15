@@ -87,7 +87,7 @@ export class LayerManager {
         // CAPAS BASE
         // ------ Global
         this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:true, credit:ign})
-        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>, Maxar, Earthstar Geographics'})
+        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
         this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
         this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true, credit:'© <a href="https://www.eumetsat.int" target="_blank">EUMETSAT</a>'})
         // ------ Estatal
@@ -135,7 +135,7 @@ export class LayerManager {
         const globalLayers = baseNames.filter(name => this.baseLayers[name].global);
         const nationalLayers = baseNames.filter(name => !this.baseLayers[name].global);
 
-        const DEFAULT_GLOBAL   = "Capa fondo global EUMETSAT";
+        const DEFAULT_GLOBAL   = "Foto satélite global ARCGIS";
         const DEFAULT_NATIONAL = "Mapa LIDAR nacional (PNOA)";
 
         if (zoom >= 6.00) {
