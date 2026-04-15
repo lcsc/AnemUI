@@ -1,18 +1,22 @@
 import { Source } from "ol/source";
-import { OSM, Vector, ImageStatic, ImageWMS} from "ol/source";
+import { OSM, Vector, ImageStatic } from "ol/source";
 import { TopoJSON } from "ol/format"
-import { mapboxAccessToken, mapboxMapID } from "./Env";
 import {Image, Layer, WebGLTile} from "ol/layer";
+import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
 import VectorLayer from "ol/layer/Vector";
 import DataTileSource from "ol/source/DataTile";
 import VectorSource from "ol/source/Vector";
-import { Stroke, Style } from "ol/style";
+import { Stroke, Style, Text, Fill } from "ol/style";
+import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
+import { all as strategyAll, bbox as strategyBbox } from 'ol/loadingstrategy';
 
 import WMTS from 'ol/source/WMTS.js';
 import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
+import { initialZoom } from './Env';
 
 export const AL_TYPE_OSM="OSM"
 export const AL_TYPE_TOPO_JSON="TopoJson"
@@ -25,16 +29,19 @@ export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"|"ImageLayer"|"WMS"|"WMT
 
 export type AnemuiLayer={
     name:string,
-    url:string, 
+    url:string,
     type:string,
-    global: boolean, 
-    source?:Source, 
-    layer?: string 
+    global: boolean,
+    source?:Source,
+    layer?: string,
+    credit?: string,
+    wmsParams?: { [key: string]: string },
+    cssFilter?: string
 }
 
 const baseStyle= new Style({
     stroke: new Stroke({
-      color: 'lightgray',
+      color: '#444444',
       width: 2
     })
   });
@@ -62,42 +69,50 @@ export class LayerManager {
     }
 
     protected baseLayers: { [key: string]: AnemuiLayer } = {}
-    private baseSelected:string[];
+    private baseSelected:string[] = [];
     protected topLayers: { [key: string]: AnemuiLayer } = {}
     private topSelected:string;
-    private topLayerTile:WebGLTile;
+    private topLayerTile:TileLayer<any>;
     private topLayerVector:Layer;
-    private topLayerImage:Image<ImageWMS>;
+    private topLayerWMS: TileLayer<TileWMS>;
+    private nomenclatorLayers: VectorLayer<VectorSource>[] = [];
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
+     private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
+        const ign  = '© CC-BY 4.0 <a href="https://www.ign.es" target="_blank">ign.es</a>';
+        const ign_pnoa  = '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>';
+        const miteco = '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>';
+
         // CAPAS BASE
-        // ------ Global ()
-        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true})
-        this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true})
-        this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true})
-        // ------ Estatal ()
-        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:false})
-        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false})
-        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false})
-  
+        // ------ Global
+        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:true, credit:ign})
+        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>, Maxar, Earthstar Geographics'})
+        this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
+        this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true, credit:'© <a href="https://www.eumetsat.int" target="_blank">EUMETSAT</a>'})
+        // ------ Estatal
+        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
+        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign_pnoa})
+
         // CAPAS SUPERPUESTAS
-        // ------ Global ()
-        this.addTopLayer({name:"Límites estatales (mapbox)",url:'https://api.mapbox.com/styles/v1/'+mapboxMapID+'/tiles/{z}/{x}/{y}?access_token='+mapboxAccessToken,type:AL_TYPE_OSM, global:true})   
-        this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true})
-        // ------ Estatal ()
-        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false})
-        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false})
-        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
-        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false})
-        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false})
+        // ------ Global
+        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Límites políticos y topónimos globales (ArcGIS)",url:"https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
+        this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true, credit:'© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> — EuroGeographics'})
+        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
+        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
         
-        this.topSelected="Límites estatales (mapbox)";
+        const topNames = Object.keys(this.topLayers);
+        this.topSelected = topNames.length > 0 ? topNames[0] : "";
         this.uncertaintyLayer = [];
+        this.uncertaintyLayerVisible = false;
+        this.initBaseSelected(initialZoom);
     }
 
     // Base Layer
@@ -108,12 +123,35 @@ export class LayerManager {
     public getBaseLayerNames():string[]{
         return Object.keys(this.baseLayers);
     }
+    public isBaseLayerGlobal(name: string): boolean {
+        return this.baseLayers[name]?.global ?? true;
+    }
     public getBaseSelected():string[]{
         return this.baseSelected;
     }
 
     public initBaseSelected(zoom: number): number{
-        this.baseSelected = zoom >=6.00? ["Capa fondo global EUMETSAT","Ortofoto nacional (PNOA)"]:["ARCGIS"];
+        const baseNames = Object.keys(this.baseLayers);
+        const globalLayers = baseNames.filter(name => this.baseLayers[name].global);
+        const nationalLayers = baseNames.filter(name => !this.baseLayers[name].global);
+
+        const DEFAULT_GLOBAL   = "Capa fondo global EUMETSAT";
+        const DEFAULT_NATIONAL = "Mapa LIDAR nacional (PNOA)";
+
+        if (zoom >= 6.00) {
+            // Zoom nacional: EUMETSAT + LIDAR por defecto
+            this.baseSelected = [];
+            const globalDefault   = this.baseLayers[DEFAULT_GLOBAL]   ? DEFAULT_GLOBAL   : (globalLayers[0]   ?? '');
+            const nationalDefault = this.baseLayers[DEFAULT_NATIONAL] ? DEFAULT_NATIONAL : (nationalLayers[0] ?? '');
+            if (globalDefault)   this.baseSelected.push(globalDefault);
+            if (nationalDefault) this.baseSelected.push(nationalDefault);
+            if (this.baseSelected.length === 0) this.baseSelected = [baseNames[0]];
+        } else {
+            // Zoom global: EUMETSAT por defecto
+            this.baseSelected = this.baseLayers[DEFAULT_GLOBAL]
+                ? [DEFAULT_GLOBAL]
+                : (globalLayers.length > 0 ? [globalLayers[0]] : [baseNames[0]]);
+        }
         return this.baseSelected.length - 1
     } 
 
@@ -135,22 +173,27 @@ export class LayerManager {
             return null;
         }
         if(bLayer.source==undefined){
+            const bl = this.baseLayers[this.baseSelected[layer]];
             switch(bLayer.type) {
                 case AL_TYPE_OSM:
-                        this.baseLayers[this.baseSelected[layer]].source = new OSM({
-                            url: this.baseLayers[this.baseSelected[layer]].url
+                        bl.source = new OSM({
+                            url: bl.url,
+                            crossOrigin: 'anonymous',
+                            attributions: bl.credit
                         })
                     break;
                 case AL_TYPE_WMS:
-                        this.baseLayers[this.baseSelected[layer]].source = new TileWMS({
-                            url: this.baseLayers[this.baseSelected[layer]].url,
-                            params: { 'LAYERS': this.baseLayers[this.baseSelected[layer]].layer }
+                        bl.source = new TileWMS({
+                            url: bl.url,
+                            params: { 'LAYERS': bl.layer },
+                            crossOrigin: 'anonymous',
+                            attributions: bl.credit
                         })
                     break;
                 case AL_TYPE_WMTS:
-                    this.baseLayers[this.baseSelected[layer]].source = new WMTS({
-                        url: this.baseLayers[this.baseSelected[layer]].url,
-                        layer: this.baseLayers[this.baseSelected[layer]].layer,
+                    bl.source = new WMTS({
+                        url: bl.url,
+                        layer: bl.layer,
                         matrixSet: 'GoogleMapsCompatible',
                         format: 'image/png',
                         projection: projection,
@@ -161,7 +204,8 @@ export class LayerManager {
                         }),
                         style: 'default',
                         wrapX: true,
-                        crossOrigin: 'anonymous' 
+                        crossOrigin: 'anonymous',
+                        attributions: bl.credit
                     })
                    
                 break;
@@ -169,6 +213,15 @@ export class LayerManager {
         }
         return this.baseLayers[this.baseSelected[layer]].source
     }
+
+    /** Returns the WMS-capable selected base layers in order (bottom to top), for use in map export */
+    public getBaseLayerWmsInfo(): Array<{url: string, layer: string, transparent: boolean}> {
+        return this.baseSelected
+            .map(name => this.baseLayers[name])
+            .filter(l => l && l.type === AL_TYPE_WMS)
+            .map((l, idx) => ({ url: l.url, layer: l.layer, transparent: idx > 0 }));
+    }
+
     //TopLayer
     public addTopLayer(layer:AnemuiLayer){
         this.topLayers[layer.name]=layer;
@@ -181,10 +234,18 @@ export class LayerManager {
         return this.topSelected;
     }
 
+    private static readonly IGN_ADMIN_LAYER = "Unidad administrativa (IGN)";
+
     public setTopSelected(_selected:string){
         if(this.topLayers[_selected]!=undefined){
             this.topSelected=_selected;
+            this.syncNomenclatorVisibility();
         }
+    }
+
+    private syncNomenclatorVisibility(): void {
+        const visible = this.topSelected === LayerManager.IGN_ADMIN_LAYER;
+        this.nomenclatorLayers.forEach(l => l.setVisible(visible));
     }
 
     public getTopLayerOlLayer():Layer{
@@ -192,8 +253,8 @@ export class LayerManager {
         switch(tLayer.type) {
             case AL_TYPE_OSM:
                 if(this.topLayerTile==undefined){
-                    this.topLayerTile=new WebGLTile({
-                        source: this.getTopLayerSource() as DataTileSource,
+                    this.topLayerTile = new TileLayer({
+                        source: this.getTopLayerSource() as OSM,
                         zIndex: 5000
                     })
                 }
@@ -213,43 +274,292 @@ export class LayerManager {
                 return this.topLayerVector;
 
             case AL_TYPE_IMG_LAYER:
-                if(this.topLayerImage==undefined){
-                    this.topLayerImage=new Image<ImageWMS>({
-                        source: this.getTopLayerSource() as ImageWMS,
+                if(this.topLayerWMS==undefined){
+                    this.topLayerWMS = new TileLayer({
+                        source: this.getTopLayerSource() as TileWMS,
                         zIndex: 5000
                     })
                 }
-                this.topLayerImage.setZIndex(5000);
-                return this.topLayerImage;
+                this.topLayerWMS.setZIndex(5000);
+                return this.topLayerWMS;
         }
     }
 
     public getTopLayerSource():Source {
-        if(this.topLayers[this.topSelected].source==undefined){
-            switch (this.topLayers[this.topSelected].type) {
-                case AL_TYPE_OSM:
-                    this.topLayers[this.topSelected].source = new OSM({
-                        url: this.topLayers[this.topSelected].url
+        const tl = this.topLayers[this.topSelected];
+        if(tl.source==undefined){
+            switch (tl.type) {
+                case AL_TYPE_OSM: {
+                    const osmCssFilter = tl.cssFilter;
+                    tl.source = new OSM({
+                        url: tl.url,
+                        attributions: tl.credit,
+                        ...(osmCssFilter ? {
+                            tileLoadFunction: (tile: any, src: string) => {
+                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                const img = new window.Image();
+                                img.crossOrigin = 'anonymous';
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    const ctx = canvas.getContext('2d');
+                                    if (!isSafari) {
+                                        ctx.filter = osmCssFilter;
+                                        ctx.drawImage(img, 0, 0);
+                                    } else {
+                                        ctx.drawImage(img, 0, 0);
+                                        const grayscaleMatch = osmCssFilter.match(/grayscale\(([^)]+)\)/);
+                                        const brightnessMatch = osmCssFilter.match(/brightness\(([^)]+)\)/);
+                                        const grayscale = grayscaleMatch ? parseFloat(grayscaleMatch[1]) : 0;
+                                        const brightness = brightnessMatch ? parseFloat(brightnessMatch[1]) : 1;
+                                        if (grayscale > 0 || brightness !== 1) {
+                                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                            const d = imageData.data;
+                                            for (let i = 0; i < d.length; i += 4) {
+                                                let r = d[i], g = d[i + 1], b = d[i + 2];
+                                                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                                                r = r + (gray - r) * grayscale;
+                                                g = g + (gray - g) * grayscale;
+                                                b = b + (gray - b) * grayscale;
+                                                d[i]     = Math.min(255, r * brightness);
+                                                d[i + 1] = Math.min(255, g * brightness);
+                                                d[i + 2] = Math.min(255, b * brightness);
+                                            }
+                                            ctx.putImageData(imageData, 0, 0);
+                                        }
+                                    }
+                                    tile.getImage().src = canvas.toDataURL();
+                                };
+                                img.src = src;
+                            }
+                        } : {})
                     })
                     break;
+                }
                 case AL_TYPE_TOPO_JSON:
-                    this.topLayers[this.topSelected].source = new Vector({
-                        format: new TopoJSON({
-                          dataProjection: 'EPSG:3857'
-                        }),
-                        url: this.topLayers[this.topSelected].url,
-                        attributions: '© EuroGeographics for the administrative boundaries'
-                    });                
+                    tl.source = new Vector({
+                        format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
+                        url: tl.url,
+                        attributions: tl.credit
+                    });
                     break;
-                case AL_TYPE_IMG_LAYER:
-                    this.topLayers[this.topSelected].source = new ImageWMS({
-                        url: this.topLayers[this.topSelected].url,
-                        params: { 'LAYERS': this.topLayers[this.topSelected].layer }
-                    })
+                case AL_TYPE_IMG_LAYER: {
+                    const cssFilter = tl.cssFilter;
+                    tl.source = new TileWMS({
+                        url: tl.url,
+                        params: { 'LAYERS': tl.layer, ...(tl.wmsParams || {}) },
+                        attributions: tl.credit,
+                        crossOrigin: 'anonymous',
+                        ...(cssFilter ? {
+                            tileLoadFunction: (tile: any, src: string) => {
+                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                const img = new window.Image();
+                                img.crossOrigin = 'anonymous';
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    const ctx = canvas.getContext('2d');
+                                    if (!isSafari) {
+                                        ctx.filter = cssFilter;
+                                        ctx.drawImage(img, 0, 0);
+                                    } else {
+                                        // ctx.filter not supported in Safari < 18; apply manually
+                                        ctx.drawImage(img, 0, 0);
+                                        const grayscaleMatch = cssFilter.match(/grayscale\(([^)]+)\)/);
+                                        const brightnessMatch = cssFilter.match(/brightness\(([^)]+)\)/);
+                                        const grayscale = grayscaleMatch ? parseFloat(grayscaleMatch[1]) : 0;
+                                        const brightness = brightnessMatch ? parseFloat(brightnessMatch[1]) : 1;
+                                        if (grayscale > 0 || brightness !== 1) {
+                                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                            const d = imageData.data;
+                                            for (let i = 0; i < d.length; i += 4) {
+                                                let r = d[i], g = d[i + 1], b = d[i + 2];
+                                                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                                                r = r + (gray - r) * grayscale;
+                                                g = g + (gray - g) * grayscale;
+                                                b = b + (gray - b) * grayscale;
+                                                d[i]     = Math.min(255, r * brightness);
+                                                d[i + 1] = Math.min(255, g * brightness);
+                                                d[i + 2] = Math.min(255, b * brightness);
+                                            }
+                                            ctx.putImageData(imageData, 0, 0);
+                                        }
+                                    }
+                                    tile.getImage().src = canvas.toDataURL();
+                                };
+                                img.src = src;
+                            }
+                        } : {})
+                    });
                     break;
+                }
             }
         }
-        return this.topLayers[this.topSelected].source
+        return tl.source
+    }
+
+    private static readonly NGBE_WFS = 'https://servicios-climaticos.pti-clima.csic.es/wfs-ign/wfs-inspire/ngbe';
+    private static readonly GN_NS  = 'http://inspire.ec.europa.eu/schemas/gn/4.0';
+    private static readonly GML_NS = 'http://www.opengis.net/gml/3.2';
+
+    private buildNgbeLayer(
+        filterInner: string,
+        minZoom: number,
+        maxZoom: number | undefined,
+        useBbox: boolean,
+        nominalPx: number,
+        bold: boolean,
+        nominalRes: number
+    ): VectorLayer<VectorSource> {
+        const ngbeCredit = '© <a href="https://www.ign.es" target="_blank">IGN</a> — Nomenclátor Geográfico Básico de España';
+        const source = new VectorSource({
+            attributions: ngbeCredit,
+            strategy: useBbox ? strategyBbox : strategyAll,
+            loader: (extent, _res, viewProj, success, failure) => {
+                const mapProj = (viewProj as any).getCode ? (viewProj as any).getCode() : String(viewProj);
+                // Transformar extensión del mapa a EPSG:3857 para el filtro BBOX del WFS
+                const wfsExtent = (useBbox && mapProj !== 'EPSG:3857')
+                    ? proj.transformExtent(extent, mapProj, 'EPSG:3857')
+                    : extent;
+                const bboxXml = useBbox ? `
+                    <fes:BBOX>
+                        <fes:ValueReference>gn:geometry</fes:ValueReference>
+                        <gml:Envelope srsName="EPSG:3857">
+                            <gml:lowerCorner>${wfsExtent[0]} ${wfsExtent[1]}</gml:lowerCorner>
+                            <gml:upperCorner>${wfsExtent[2]} ${wfsExtent[3]}</gml:upperCorner>
+                        </gml:Envelope>
+                    </fes:BBOX>` : '';
+                const filterContent = useBbox
+                    ? `<fes:And>${filterInner}${bboxXml}</fes:And>`
+                    : filterInner;
+                const body =
+                    `<wfs:GetFeature xmlns:wfs="http://www.opengis.net/wfs/2.0"` +
+                    ` xmlns:gn="http://inspire.ec.europa.eu/schemas/gn/4.0"` +
+                    ` xmlns:gmd="http://www.isotc211.org/2005/gmd"` +
+                    ` xmlns:fes="http://www.opengis.net/fes/2.0"` +
+                    ` xmlns:gml="http://www.opengis.net/gml/3.2"` +
+                    ` service="WFS" version="2.0.0">` +
+                    `<wfs:Query typeNames="gn:NamedPlace" srsName="EPSG:3857">` +
+                    `<fes:Filter>${filterContent}</fes:Filter>` +
+                    `</wfs:Query></wfs:GetFeature>`;
+
+                fetch(LayerManager.NGBE_WFS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/xml' },
+                    body
+                })
+                .then(r => r.text())
+                .then(xml => {
+                    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+                    const GN  = LayerManager.GN_NS;
+                    const GML = LayerManager.GML_NS;
+                    const members = doc.getElementsByTagNameNS(GN, 'NamedPlace');
+                    const features: Feature<Point>[] = [];
+
+                    for (let i = 0; i < members.length; i++) {
+                        const m = members[i];
+
+                        // Nombre (primer <gn:text>)
+                        const textEls = m.getElementsByTagNameNS(GN, 'text');
+                        const label = textEls.length > 0 ? textEls[0].textContent?.trim() : null;
+                        if (!label) continue;
+
+                        // Posición: primero gml:pos (Point), luego primer par de gml:posList
+                        let coords: [number, number] | null = null;
+                        const posEls = m.getElementsByTagNameNS(GML, 'pos');
+                        if (posEls.length > 0) {
+                            const p = posEls[0].textContent?.trim().split(/\s+/).map(Number);
+                            if (p && p.length >= 2 && !isNaN(p[0])) coords = [p[0], p[1]];
+                        }
+                        if (!coords) {
+                            const pl = m.getElementsByTagNameNS(GML, 'posList');
+                            if (pl.length > 0) {
+                                const n = pl[0].textContent?.trim().split(/\s+/).map(Number);
+                                if (n && n.length >= 2) coords = [n[0], n[1]];
+                            }
+                        }
+                        if (!coords) continue;
+
+                        // Transformar de EPSG:3857 (WFS) a la proyección del mapa
+                        const mapCoords = mapProj !== 'EPSG:3857'
+                            ? proj.transform(coords, 'EPSG:3857', mapProj) as [number, number]
+                            : coords;
+                        features.push(new Feature({ geometry: new Point(mapCoords), label }));
+                    }
+
+                    source.addFeatures(features);
+                    success(features);
+                })
+                .catch(e => { console.error(e); failure(); });
+            }
+        });
+
+        const opts: any = {
+            source,
+            declutter: true,
+            style: (feature: any, resolution: number) => {
+                const px = Math.round(
+                    Math.max(8, Math.min(18, nominalPx * Math.pow(nominalRes / resolution, 0.3)))
+                );
+                return new Style({
+                    text: new Text({
+                        text: feature.get('label') || '',
+                        font: `${bold ? 'bold ' : ''}${px}px sans-serif`,
+                        fill: new Fill({ color: '#1a1a1a' }),
+                        stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 3 }),
+                        overflow: true
+                    })
+                });
+            },
+            zIndex: 6000,
+            minZoom
+        };
+        if (maxZoom !== undefined) opts.maxZoom = maxZoom;
+        return new VectorLayer(opts);
+    }
+
+    public getNomenclatorLayers(): VectorLayer<VectorSource>[] {
+        if (this.nomenclatorLayers.length > 0) return this.nomenclatorLayers;
+
+        const eq = (val: string) =>
+            `<fes:PropertyIsEqualTo>` +
+            `<fes:ValueReference>gn:localType/gmd:LocalisedCharacterString</fes:ValueReference>` +
+            `<fes:Literal>${val}</fes:Literal>` +
+            `</fes:PropertyIsEqualTo>`;
+
+        // CCAA (zoom 5–7): carga única — nominalRes ~zoom 6, 13px bold
+        this.nomenclatorLayers.push(this.buildNgbeLayer(
+            `<fes:Or>${eq('Comunidad autónoma')}${eq('Ciudad con estatuto de autonomía')}</fes:Or>`,
+            5, 7, false, 13, true, 0.002
+        ));
+
+        // Provincias (zoom 7–9): carga única — nominalRes ~zoom 8, 11px bold
+        this.nomenclatorLayers.push(this.buildNgbeLayer(
+            eq('Provincia'), 7, 9, false, 11, true, 0.001
+        ));
+
+        // Municipios (zoom 9+): carga por bbox — nominalRes ~zoom 10, 10px normal
+        this.nomenclatorLayers.push(this.buildNgbeLayer(
+            eq('Municipio'), 9, undefined, true, 10, false, 0.0004
+        ));
+
+        this.syncNomenclatorVisibility();
+        return this.nomenclatorLayers;
+    }
+
+    public getSelectedCredit(): string {
+        const credits: string[] = [];
+        const top = this.topLayers[this.topSelected];
+        if (top?.credit) credits.push(top.credit);
+        if (this.baseSelected) {
+            this.baseSelected.forEach(name => {
+                const bl = this.baseLayers[name];
+                if (bl?.credit && !credits.includes(bl.credit)) credits.push(bl.credit);
+            });
+        }
+        return credits.join(' &nbsp;|&nbsp; ');
     }
 
     public getUncertaintyLayer():(Image<ImageStatic> | WebGLTile)[] {
@@ -262,9 +572,38 @@ export class LayerManager {
 
     public showUncertaintyLayer(show: boolean) {
         if (this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+            const duration = 150; // ms
+            const steps = 10;
+            const stepTime = duration / steps;
+
             this.uncertaintyLayer.forEach((layer) => {
-                layer.setVisible(show);
-                layer.changed(); // Forzar re-renderizado
+                if (show) {
+                    // Fade-in
+                    layer.setOpacity(0);
+                    layer.setVisible(true);
+                    let step = 0;
+                    const fadeIn = setInterval(() => {
+                        step++;
+                        layer.setOpacity(step / steps);
+                        if (step >= steps) {
+                            clearInterval(fadeIn);
+                            layer.setOpacity(1);
+                        }
+                    }, stepTime);
+                } else {
+                    // Fade-out
+                    let step = steps;
+                    const fadeOut = setInterval(() => {
+                        step--;
+                        layer.setOpacity(step / steps);
+                        if (step <= 0) {
+                            clearInterval(fadeOut);
+                            layer.setVisible(false);
+                            layer.setOpacity(1);
+                        }
+                    }, stepTime);
+                }
+                layer.changed();
             });
         }
     }

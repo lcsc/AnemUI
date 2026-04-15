@@ -177,78 +177,70 @@ export class CategoryRangePainter implements Painter {
         this.ranges = ranges;
     }
 
-    public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
-        // Validar y asegurar que width y height sean enteros positivos válidos
-        width = Math.max(1, Math.floor(width));
-        height = Math.max(1, Math.floor(height));
+public async paintValues(floatArray: number[], width: number, height: number, minArray: number, maxArray: number, pxTransparent: number, uncertaintyLayer: boolean): Promise<HTMLCanvasElement> {
+    // Validar dimensiones
+    width = Math.max(1, Math.floor(width));
+    height = Math.max(1, Math.floor(height));
 
-        if (!isFinite(width) || !isFinite(height)) {
-            console.error('Invalid canvas dimensions:', width, height);
-            width = 1;
-            height = 1;
-        }
+    if (!isFinite(width) || !isFinite(height)) {
+        console.error('Invalid canvas dimensions:', width, height);
+        width = 1;
+        height = 1;
+    }
 
-        let canvas: HTMLCanvasElement = document.createElement('canvas');
-        let context: CanvasRenderingContext2D = canvas.getContext('2d');
-        canvas.width = width;
-        canvas.height = height;
-        let imgData: ImageData = context.getImageData(0, 0, width, height);
-        let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
+    let canvas: HTMLCanvasElement = document.createElement('canvas');
+    let context: CanvasRenderingContext2D = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+    let imgData: ImageData = context.getImageData(0, 0, width, height);
+    let gradient = PaletteManager.getInstance().updatePalete32(uncertaintyLayer);
+    const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
 
-        // VERIFICACIÓN CRÍTICA
-        if (gradient.length !== this.ranges.length) {
-            console.error('❌ CRITICAL: Gradient colors (' + gradient.length + ') != Ranges (' + this.ranges.length + ')');
-        }
+    for (let y: number = 0; y < height; y++) {
+        for (let x: number = 0; x < width; x++) {
+            let ncIndex: number = x + y * width;
+            let value: number = floatArray[ncIndex];
+            let pxIndex: number = x + ((height - 1) - y) * width;
 
-        const bitmap: Uint32Array = new Uint32Array(imgData.data.buffer);
+            if (!isNaN(value) && isFinite(value)) {
+                let index: number = this.getValIndex(value);
 
-        for (let y: number = 0; y < height; y++) {
-            for (let x: number = 0; x < width; x++) {
-                let ncIndex: number = x + y * width;
-                let value: number = floatArray[ncIndex];
-                let pxIndex: number = x + ((height - 1) - y) * width;
-
-                if (!isNaN(value) && isFinite(value)) {
-                    let index: number = this.getValIndex(value);
-
-                    if (index >= 0 && index < gradient.length) {
-                        bitmap[pxIndex] = gradient[index];
-                    } else {
-                        bitmap[pxIndex] = pxTransparent;
-                    }
+                if (index >= 0 && index < gradient.length) {
+                    bitmap[pxIndex] = gradient[index];
                 } else {
                     bitmap[pxIndex] = pxTransparent;
                 }
+            } else {
+                bitmap[pxIndex] = pxTransparent;
             }
         }
-
-        context.putImageData(imgData, 0, 0);
-        return canvas;
     }
 
-    getValIndex(val: number): number {
-        // Buscar el rango apropiado
-        for (let i = 0; i < this.ranges.length; i++) {
-            let range = this.ranges[i];
-            
-            // Rango con límite inferior indefinido: val < b
-            if (range.a === undefined && val < range.b) {
-                return i;
-            }
-            // Rango con límite superior indefinido: val >= a
-            else if (range.b === undefined && val >= range.a) {
-                return i;
-            }
-            // Rango normal: a <= val < b
-            else if (range.a !== undefined && range.b !== undefined) {
-                if (val >= range.a && val < range.b) {
-                    return i;
-                }
-            }
-        }
+    context.putImageData(imgData, 0, 0);
+    return canvas;
+}
+
+getValIndex(val: number): number {
+    if (isNaN(val) || !isFinite(val)) {
+        return -1;
+    }
+    
+    for (let i = 0; i < this.ranges.length; i++) {
+        let range = this.ranges[i];
         
-        return -1; // No encontrado
+        const a = (typeof range.a === 'number') ? range.a : -Infinity;
+        const b = (typeof range.b === 'number') ? range.b : Infinity;
+        
+        const isLastRange = (i === this.ranges.length - 1);
+        
+        if (val >= a && (val < b || (isLastRange && val <= b))) {
+            return i;
+        }
     }
+    
+    // Si llegamos aquí, el valor no cayó en ningún rango
+    return -1;
+}
 
     getColorString(val: number, min: number, max: number): string {
         let mgr = PaletteManager.getInstance();
@@ -261,6 +253,8 @@ export class CategoryRangePainter implements Painter {
         
         return "#000000";
     }
+
+    
 }
 
 export class GradientPainter implements Painter{
@@ -337,6 +331,14 @@ export class CsDynamicPainter implements Painter{
     public setPrecalculatedBreaks(dataForBreaks: number[]): void {
         let niceSteps = new NiceSteps();
         this.precalculatedBreaks = niceSteps.getRegularSteps(dataForBreaks.filter(v => !isNaN(v)), maxPaletteSteps, maxPaletteValue);
+    }
+
+    /**
+     * Método para establecer breaks directamente (sin usar getRegularSteps)
+     * Útil cuando los breaks ya están calculados (ej: getLegendValues)
+     */
+    public setDirectBreaks(breaks: number[]): void {
+        this.precalculatedBreaks = [...breaks];
     }
 
     /**
@@ -497,10 +499,10 @@ export class PaletteManager {
     }
 
     public removePalette(names: string[]): void {
-        let palettes = this.palettes;
-        names.forEach(function (value) {
-            delete palettes[value]
-        })
+        names.forEach(name => {
+            delete this.palettes[name];
+            delete this.painters[name];
+        });
     }
 
     public updatePaletteStrings():string[]{
@@ -596,9 +598,20 @@ export class PaletteManager {
         return Object.keys(this.palettes);
     }
 
-    public getPainter():Painter{
+    public getPainter(forUncertainty: boolean = false):Painter{
+        // Si es para capa de incertidumbre y hay un painter específico, usarlo
+        if(forUncertainty && this.painters['uncertainty'] != undefined) {
+            return this.painters['uncertainty'];
+        }
         if(this.painters[this.selected]!=undefined)return this.painters[this.selected]
         return this.painter;
+    }
+
+    /**
+     * Obtiene el painter registrado para un nombre de paleta específico
+     */
+    public getNamedPainter(name: string): Painter | undefined {
+        return this.painters[name];
     }
 
     public getTransparency():number{
@@ -753,3 +766,140 @@ export class DotPatternPainter implements Painter {
     }
 }
 
+/**
+ * CrossPatternPainter - Painter especializado para capa de incertidumbre con patrón de X
+ * Dibuja X con DENSIDAD VISUAL UNIFORME independientemente de la resolución de los datos.
+ * Muestrea los datos para mantener un número constante de X visibles en el mapa.
+ */
+export class CrossPatternPainter implements Painter {
+    private strokeColor: string = '#555555';
+    private strokeOpacity: number = 0.7;
+    private cellSize: number = 8;
+    private adaptiveCellSize: boolean = false;
+    private dataWidth: number = 0; // resolución de la capa de datos principal (para calcular stride)
+
+    constructor(
+        color: string = '#555555',
+        opacity: number = 0.7,
+        cellSize: number = 8,
+        adaptiveCellSize: boolean = false
+    ) {
+        this.strokeColor = color;
+        this.strokeOpacity = opacity;
+        this.cellSize = Math.max(1, cellSize);
+        this.adaptiveCellSize = adaptiveCellSize;
+    }
+
+    public setDataWidth(w: number): void {
+        this.dataWidth = w;
+    }
+
+    public async paintValues(
+        floatArray: number[],
+        width: number,
+        height: number,
+        minArray: number,
+        maxArray: number,
+        pxTransparent: number,
+        uncertaintyLayer: boolean,
+        zoom?: number
+    ): Promise<HTMLCanvasElement> {
+
+        width = Math.max(1, Math.floor(width));
+        height = Math.max(1, Math.floor(height));
+
+        if (!isFinite(width) || !isFinite(height)) {
+            width = 1; height = 1;
+        }
+
+
+        // Canvas proporcional a los datos: cada dato ocupa effectiveCs x effectiveCs píxeles.
+        // OL estira el canvas para cubrir el mismo extent geográfico que la capa de datos,
+        // por lo que cada celda del canvas se alinea exactamente con un pixel de dato.
+        //
+        // El cap MAX_CANVAS_W sólo se aplica cuando adaptiveCellSize=true (CrossPatternPainter
+        // de incertidumbre). Para SignificancePainter (adaptiveCellSize=false) se mantiene
+        // siempre effectiveCs=cellSize para que la X no sea demasiado gruesa visualmente.
+        //
+        // Cuando effectiveCs se reduce por el cap, lineWidth se escala proporcionalmente para
+        // que las líneas de la X sigan siendo delgadas respecto al tamaño de la celda.
+        const TARGET_CANVAS = 1100; // ancho de canvas "natural" (zoom base ≈ 6, Predicción)
+        const BASE_ZOOM = 6;
+        const MAX_CANVAS_W = 2048;
+
+        // Stride: 1 si no hay info de resolución de datos, o si ambas capas tienen la misma resolución
+        const stride = (this.adaptiveCellSize && this.dataWidth > 0)
+            ? Math.max(1, Math.round(width / this.dataWidth))
+            : 1;
+
+        const drawWidth = Math.ceil(width / stride);
+        const drawHeight = Math.ceil(height / stride);
+
+        // effectiveCs = cellSize siempre (sin cap).
+        // El bug original "4X por pixel" se debía a ficheros de datos con lonNum incorrecto
+        // (stale) que causaba stride=4. Con datos regenerados (lonNum=545) el stride=1 y
+        // effectiveCs=cellSize=8 produce la X delgada correcta en cada celda de dato.
+        const effectiveCs = this.cellSize;
+
+        const canvasW = drawWidth * effectiveCs;
+        const canvasH = drawHeight * effectiveCs;
+        const half = effectiveCs / 2;
+
+        // lineWidth adaptativo al zoom en modo adaptivo
+        const zoomFactor = zoom !== undefined ? Math.pow(2, zoom - BASE_ZOOM) : 1;
+        const lineWidth = this.adaptiveCellSize
+            ? Math.max(1, Math.round(canvasW / (TARGET_CANVAS * zoomFactor)))
+            : 1;
+
+        let canvas: HTMLCanvasElement = document.createElement('canvas');
+        let context: CanvasRenderingContext2D = canvas.getContext('2d');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+
+        context.clearRect(0, 0, canvasW, canvasH);
+        context.strokeStyle = this.strokeColor;
+        context.lineWidth = lineWidth;
+        context.globalAlpha = this.strokeOpacity;
+
+        context.beginPath();
+
+        // Una X por cada dato, submuestreando con stride si la resolución de incertidumbre es mayor
+        for (let dy = 0; dy < height; dy += stride) {
+            for (let dx = 0; dx < width; dx += stride) {
+                const ncIndex = dx + dy * width;
+                const value = floatArray[ncIndex];
+
+                if (!isNaN(value) && isFinite(value) && value > 0) {
+                    const drawDx = Math.floor(dx / stride);
+                    const drawDy = Math.floor(dy / stride);
+                    const px = drawDx * effectiveCs;
+                    const py = ((drawHeight - 1) - drawDy) * effectiveCs;
+                    const cx = px + half;
+                    const cy = py + half;
+
+                    context.moveTo(cx - half, cy - half);
+                    context.lineTo(cx + half, cy + half);
+                    context.moveTo(cx + half, cy - half);
+                    context.lineTo(cx - half, cy + half);
+                }
+            }
+        }
+
+        context.stroke();
+        const stride2 = (this.adaptiveCellSize && this.dataWidth > 0) ? Math.max(1, Math.round(width / this.dataWidth)) : 1;
+        const drawWidth2 = Math.ceil(width / stride2);
+        const canvasW2 = drawWidth2 * this.cellSize;
+        const canvasH2 = Math.ceil(height / stride2) * this.cellSize;
+        const dataUrl = canvas.toDataURL('image/png');
+        console.log('[CrossPattern] canvas='+canvasW2+'x'+canvasH2+' stride='+stride2+' lineWidth='+context.lineWidth+' dataUrlLen='+dataUrl.length);
+        return canvas;
+    }
+
+    public getColorString(val: number, min: number, max: number): string {
+        return this.strokeColor;
+    }
+
+    public getValIndex(val: number): number {
+        return 0;
+    }
+}

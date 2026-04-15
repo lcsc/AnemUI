@@ -1,31 +1,8 @@
+@import "media-queries.scss";
+
 div.infoFrame{
-    // @include blurBgFrame();
-    // max-width: fit-content;
-    // top:0.25em;
-    // right:0.25em;
-    // position: relative;
-    // margin-top: 0.25em;
-    // margin-bottom: 0.25em;
     margin: 0;
-    // position: absolute;
-    // top: 50%;
-    // transform: translateY(-50%);
-
-    /* i.bi:hover{
-        color:#aeddff;
-    } */
 }
-
-/* div.infoFrame.max{
-    i.bi{
-        font-size: 2rem;
-        color: #2c6d9a;
-        cursor: pointer;
-    }
-    i.bi:hover{
-        color:#aeddff;
-    }
-} */
 
 div.infoFrame.min{
     i.bi{
@@ -33,28 +10,137 @@ div.infoFrame.min{
     }
 }
 
+// ── Modal de información (tingle.js) ──
+
 div.tingle-modal {
-    background: rgba(0, 0, 0, .55);
+    z-index: 3000;
+    background: rgba(0, 0, 0, .5);
     font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+
+    // Caja del modal
+    .tingle-modal-box {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .tingle-modal-box__content {
+        padding: 0;
+    }
+
+    // Cabecera: franja azul corporativa (mismo estilo que #menu-title)
     .modal-header {
-        position: absolute;
-        top: -2rem;
-        left: -0rem;
-        background: wheat;
-       /* background: linear-gradient(150deg,wheat 80%,white 100%);*/
-        padding-left: 1em;
-        padding-right:  2em;
-        border-top-left-radius: 0.8em;
-        border-top-right-radius: 0.8em;
-        border-bottom-right-radius: 1em;
-      }
-      .modal-header h1{
-        margin-top: 0.5em;
-        margin-bottom: 0.25em;
-        font-size: 22px;
-      }
-      .modal-content{
         position: relative;
-        
-      }
+        top: 0;
+        left: 0;
+        background-color: $title_color;
+        padding: 0.8em 1.5em;
+        border-radius: 0;
+
+        h1 {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.4;
+        }
+    }
+
+    // Contenido
+    .modal-content {
+        position: relative;
+        padding: 1.2em 1.8em 1.5em;
+        max-height: 65vh;
+        overflow-y: auto;
+        color: #333;
+
+        // Cabeceras de sección
+        h6 {
+            color: $title_color;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-top: 1.4em;
+            margin-bottom: 0.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 2px solid lighten($title_color, 50%);
+
+            .modal-content > div:first-child > &:first-child {
+                margin-top: 0.2em;
+            }
+        }
+
+        // Párrafos
+        p {
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 0.5em;
+            text-align: justify;
+            color: #444;
+        }
+
+        // Listas
+        ul {
+            font-size: 13px;
+            line-height: 1.7;
+            margin-top: 0.2em;
+            margin-bottom: 0.6em;
+            padding-left: 1.4em;
+            color: #444;
+        }
+
+        li {
+            margin-bottom: 0.25em;
+        }
+
+        // Negritas dentro de listas y párrafos
+        strong {
+            color: #222;
+            font-weight: 600;
+        }
+
+        // Enlaces
+        a {
+            color: $color_8;
+            text-decoration: none;
+            border-bottom: 1px solid lighten($color_8, 20%);
+            transition: color 0.2s, border-color 0.2s;
+
+            &:hover {
+                color: darken($color_8, 10%);
+                border-bottom-color: $color_8;
+            }
+        }
+
+        // Cursivas
+        em {
+            font-style: italic;
+            color: #555;
+        }
+    }
+
+    // Footer: botón Cerrar
+    .tingle-modal-box__footer {
+        background-color: $title_bgcolor;
+        border-top: 1px solid darken($title_bgcolor, 8%);
+        padding: 0.8em 1.5em;
+
+        .tingle-btn {
+            border-radius: 5px;
+            padding: 0.5em 1.5em;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .tingle-btn--muted {
+            background-color: $color_8;
+            color: #fff;
+
+            &:hover {
+                background-color: darken($color_8, 10%);
+            }
+        }
+    }
 }

@@ -9,10 +9,10 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
-import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked } from "./data/ChunkDownloader";
+import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
@@ -103,9 +103,12 @@ export class OpenLayerMap implements CsMapController {
   protected ncExtents: Array4Portion = {};
   protected lastSupport: string;
 
-  protected terrainLayer: Layer;
+  protected terrainLayers: Layer[] = [];
   protected politicalLayer: Layer;
+  private attributionEl: HTMLElement | null = null;
   protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
+  private lastUncertaintyZoomLevel: number = 0; // 0=normal, 1=4X, 2=9X
+  private initialFitExtent: [number, number, number, number] | null = null;
   protected currentFeature: Feature;
   protected glmgr: GeoLayerManager;
   protected featureLayer: CsOpenLayerGeoJsonLayer;
@@ -114,64 +117,52 @@ export class OpenLayerMap implements CsMapController {
   protected hoverInteraction: Select;
   protected selectableLayers: CsOpenLayerGeoJsonLayer[]
 
-protected setExtents(timesJs: CsTimesJsData, varId: string): void {
+  protected setExtents(timesJs: CsTimesJsData, varId: string): void {
     timesJs.portions[varId].forEach((portion: string, index, array) => {
-        let selector = varId + portion;
-        let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
+      let selector = varId + portion;
+      let pxSize: number = (timesJs.lonMax[selector] - timesJs.lonMin[selector]) / (timesJs.lonNum[selector] - 1);
 
-        const dataExtent = [
-            timesJs.lonMin[selector] - pxSize / 2,
-            timesJs.latMin[selector] - pxSize / 2,
-            timesJs.lonMax[selector] + pxSize / 2,
-            timesJs.latMax[selector] + pxSize / 2
-        ];
+      const dataExtent = [
+        timesJs.lonMin[selector] - pxSize / 2,
+        timesJs.latMin[selector] - pxSize / 2,
+        timesJs.lonMax[selector] + pxSize / 2,
+        timesJs.latMax[selector] + pxSize / 2
+      ];
 
-        // Si el mapa está en una proyección diferente, transformar
-        if (timesJs.projection !== olProjection) {
-            const transformedExtent = transformExtent(
-                dataExtent,
-                timesJs.projection,
-                olProjection
-            );
-            this.ncExtents[portion] = transformedExtent;
-        } else {
-            this.ncExtents[portion] = dataExtent;
-        }
+      // Si el mapa está en una proyección diferente, transformar
+      if (timesJs.projection !== olProjection) {
+        const transformedExtent = transformExtent(
+          dataExtent,
+          timesJs.projection,
+          olProjection
+        );
+        this.ncExtents[portion] = transformedExtent;
+      } else {
+        this.ncExtents[portion] = dataExtent;
+      }
     });
-}
+  }
 
-/**
- * Ajusta la vista inicial del mapa para mostrar todo el territorio español
- * (Península, Baleares y Canarias) adaptándose al tamaño de la pantalla
- */
-protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
-    // Calcular el extent combinado de todas las porciones
+  /**
+   * Calcula el extent combinado de todas las porciones para una variable dada.
+   */
+  protected computeCombinedExtent(timesJs: CsTimesJsData, varId: string): [number, number, number, number] | null {
     let combinedExtent: [number, number, number, number] | null = null;
-
     timesJs.portions[varId].forEach((portion: string) => {
-        const extent = this.ncExtents[portion];
-        if (extent) {
-            if (!combinedExtent) {
-                combinedExtent = [...extent] as [number, number, number, number];
-            } else {
-                // Expandir el extent para incluir esta porción
-                combinedExtent[0] = Math.min(combinedExtent[0], extent[0]); // minX
-                combinedExtent[1] = Math.min(combinedExtent[1], extent[1]); // minY
-                combinedExtent[2] = Math.max(combinedExtent[2], extent[2]); // maxX
-                combinedExtent[3] = Math.max(combinedExtent[3], extent[3]); // maxY
-            }
+      const extent = this.ncExtents[portion];
+      if (extent) {
+        if (!combinedExtent) {
+          combinedExtent = [...extent] as [number, number, number, number];
+        } else {
+          combinedExtent[0] = Math.min(combinedExtent[0], extent[0]);
+          combinedExtent[1] = Math.min(combinedExtent[1], extent[1]);
+          combinedExtent[2] = Math.max(combinedExtent[2], extent[2]);
+          combinedExtent[3] = Math.max(combinedExtent[3], extent[3]);
         }
+      }
     });
-
-    // Ajustar la vista para mostrar el extent combinado
-    if (combinedExtent && this.map) {
-        this.map.getView().fit(combinedExtent, {
-            padding: [50, 50, 50, 50], // Padding en píxeles alrededor del extent
-            duration: 0 // Sin animación en la carga inicial
-        });
-    }
-}
-
+    return combinedExtent;
+  }
 
   init(_parent: CsMap): void {
     this.parent = _parent;
@@ -186,6 +177,7 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     let options: MapOptions = {
       target: 'map',
       layers: layers,
+      controls: [],
       view: new View({
         center: center,
         zoom: initialZoom,
@@ -195,8 +187,48 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
 
     this.map = new Map(options);
 
-    // Ajustar la vista inicial para mostrar todo el territorio español
-    this.fitInitialView(timesJs, state.varId);
+    this.createAttributionEl();
+
+    if (mapExtent) {
+      const viewExtent = olProjection === 'EPSG:4326'
+        ? mapExtent
+        : transformExtent(mapExtent, 'EPSG:4326', olProjection) as [number, number, number, number];
+      this.initialFitExtent = viewExtent;
+      const doFit = () => {
+        this.map.updateSize();
+        const sz = this.map.getSize();
+        const view = this.map.getView();
+        view.fit(viewExtent, { padding: [10, 10, 10, 10], duration: 0 });
+        // Lock pan/zoom limits to the initial viewport bounds
+        const fittedZoom = view.getZoom()!;
+        const fittedCenter = view.getCenter()!;
+        const fittedViewportExtent = view.calculateExtent(sz);
+        // Ampliar el extent vertical para que se pueda centrar en Canarias (sur)
+        // y en el norte de España (norte), manteniendo los límites horizontales.
+        const vph = (fittedViewportExtent[3] - fittedViewportExtent[1]) / 2;
+        const panExtent: [number, number, number, number] = [
+          fittedViewportExtent[0],
+          fittedViewportExtent[1] - vph * 0.5, // sur: +media altura para llegar a Canarias
+          fittedViewportExtent[2],
+          fittedViewportExtent[3] + vph * 0.5, // norte: margen pequeño (Santander ya está cerca del borde)
+        ];
+        this.map.setView(new View({
+          center: fittedCenter,
+          zoom: fittedZoom,
+          minZoom: fittedZoom,
+          projection: olProjection,
+          extent: panExtent
+        }));
+      };
+      const size = this.map.getSize();
+      if (size && size[0] > 0 && size[1] > 0) {
+        doFit();
+      } else {
+        this.map.once('rendercomplete', doFit);
+      }
+    } else {
+      this.initialFitExtent = this.computeCombinedExtent(timesJs, state.varId);
+    }
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
@@ -207,17 +239,36 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
       element: document.createElement('div'),
       stopEvent: false,
     })
-    this.popup = document.getElementById('popUp') as HTMLElement,
-      this.value = new Overlay({
-        positioning: 'center-center',
-        element: this.popup,
-        stopEvent: false,
-      })
+    // El popup (#popUp) se mantiene en document.body para que su z-index opere en el
+    // stacking context raíz y no quede tapado por la barra de menú (#map z-index:0).
+    this.popup = document.getElementById('popUp') as HTMLElement;
+    if (this.popup && this.popup.parentElement !== document.body) {
+      document.body.appendChild(this.popup);
+    }
+    // this.value se usa solo para poder llamar removeOverlay en el cleanup; el posicionado
+    // real se hace manualmente en showValue() con coordenadas de pantalla (position: fixed).
+    this.value = new Overlay({
+      positioning: 'top-left',
+      element: document.createElement('div'),
+      stopEvent: false,
+    });
     this.map.addOverlay(this.marker);
     this.map.addOverlay(this.value);
     this.marker.getElement().classList.add("marker")
     this.buildPopUp()
     this.map.on('pointermove', (event) => self.onMouseMove(event))
+    // Ocultar el popup cuando el cursor sale del canvas del mapa (incluyendo widgets superpuestos).
+    // Se usa mousemove global porque el widget del selector puede solapar visualmente el viewport
+    // y el evento mouseleave del viewport no llega en ese caso.
+    // Además se cancela el debounce de onMouseMove para que no reaparezca tras el hide.
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      const viewport = self.map.getViewport();
+      if (!viewport.contains(e.target as Node)) {
+        if (self.mouseMoveTo) { clearTimeout(self.mouseMoveTo); self.mouseMoveTo = undefined; }
+        self.popup.hidden = true;
+        self.hideMarker();
+      }
+    })
     this.lastSupport = this.parent.getParent().getDefaultRenderer()
     this.buildFeatureLayers();
     if (!isWmsEnabled) {
@@ -262,13 +313,14 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     let lmgr = LayerManager.getInstance();
     let layers: (ImageLayer<Static> | TileLayer)[] = [];
 
-    let layersLength = lmgr.initBaseSelected(initialZoom)
+    let layersLength = lmgr.getBaseSelected().length - 1;
 
+    this.terrainLayers = [];
     for (let i = 0; i <= layersLength; i++) {
       let terrain = new TileLayer({
         source: lmgr.getBaseLayerSource(i) as DataTileSource
       });
-      this.terrainLayer = terrain;
+      this.terrainLayers.push(terrain);
       layers.push(terrain);
     }
 
@@ -280,6 +332,8 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     this.uncertaintyLayer = lmgr.getUncertaintyLayer();
 
     layers.push(political);
+    const nomLayers = lmgr.getNomenclatorLayers();
+    nomLayers.forEach(l => layers.push(l as any));
 
     if (isTileDebugEnabled)
       layers.push(new TileLayer({
@@ -302,7 +356,7 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     if (this.mouseMoveTo) { clearTimeout(this.mouseMoveTo) }
     this.mouseMoveTo = setTimeout(() => {
       let mapEvent: CsMapEvent = this.toCsMapEvent(event)
-       this.parent.getParent().getRightBar().enableLatLng(mapEvent.latLong)
+      this.parent.getParent().getRightBar().enableLatLng(mapEvent.latLong)
       // this.onMouseMoveEnd(this.toCsMapEvent(event));
       this.onMouseMoveEnd(mapEvent);
     }, 100)
@@ -324,11 +378,11 @@ protected fitInitialView(timesJs: CsTimesJsData, varId: string): void {
     return ret;
   }
 
-public onMouseMoveEnd(event: CsMapEvent): void {
+  public onMouseMoveEnd(event: CsMapEvent): void {
     let self = this;
     const state = this.parent.getParent().getState();
     const timesJs = this.parent.getParent().getTimesJs();
-    
+
     // ELIMINAR toda la lógica de shouldShowPercentileClock de aquí
     // Solo mantener el flujo normal de hover
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
@@ -344,26 +398,22 @@ public onMouseMoveEnd(event: CsMapEvent): void {
 
           let selectableFeatureIDS: string[] = []
 
-                if (features.length > 0) {
-                    const selectableFeatures = self.featureLayer.getFeatures();
-                    selectableFeatures.forEach(feature => {
-                        selectableFeatureIDS.push(feature.properties['id'])
-                    })
-                    for (var i = 0; i < features.length; ++i) {
-                        if (selectableFeatureIDS.includes(features[i].getProperties()['id']))
-                            self.featureLayer.showFeatureValue(self.featureLayer.indexData, features[i], event.original.pixel, event.latLong)
-                    }
-                }
+          if (features.length > 0) {
+            const selectableFeatures = self.featureLayer.getFeatures();
+            selectableFeatures.forEach(feature => {
+              selectableFeatureIDS.push(feature.properties['id'])
+            })
+            for (var i = 0; i < features.length; ++i) {
+              if (selectableFeatureIDS.includes(features[i].getProperties()['id']))
+                self.featureLayer.showFeatureValue(self.featureLayer.indexData, features[i], event.original.pixel, event.latLong)
             }
-        })
-        .catch(reason => {
-            console.log("error: " + reason)
-        })
-}
-
-private shouldShowPercentileClock(state: CsViewerData): boolean {
-    return state.climatology && state.escala === 'Anual';
-}
+          }
+        }
+      })
+      .catch(reason => {
+        console.log("error: " + reason)
+      })
+  }
 
   public onDragStart(event: MapEvent) {
     let tileQueue = event.frameState["tileQueue"] as TileQueue
@@ -386,6 +436,20 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
     //  if (state.support == renderers[2]) {
     if (state.support != this.defaultRenderer) {
       this.parent.getParent().update();
+    }
+
+    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad
+    if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+      const zoom = this.getZoom();
+      const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
+      if (currentLevel !== this.lastUncertaintyZoomLevel) {
+        this.lastUncertaintyZoomLevel = currentLevel;
+        // Diferir al siguiente ciclo para no interferir con el render actual
+        setTimeout(() => {
+          let timesJs = this.parent.getParent().getTimesJs();
+          this.buildUncertaintyLayer(state, timesJs);
+        }, 0);
+      }
     }
   }
 
@@ -431,15 +495,25 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
     if (Number.isNaN(value)) {
-      this.parent.getParent().getState().xyValue = NaN
-      this.value.setPosition(undefined)
+      this.parent.getParent().getState().xyValue = NaN;
+      this.popup.hidden = true;
       return;
     }
-    this.parent.getParent().getState().xyValue = value
+    this.parent.getParent().getState().xyValue = value;
     this.popupContent.innerHTML = this.formatPopupValue(pos, pixelIndex, portion, value, int);
-    this.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+
+    // Posicionar el popup con coordenadas de pantalla (position:fixed) para que su
+    // z-index opere en el stacking context raíz y supere al menú.
+    const coord = proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]);
+    const pixel = this.map.getPixelFromCoordinate(coord);
+    if (pixel) {
+      const rect = this.map.getViewport().getBoundingClientRect();
+      this.popup.style.left = (rect.left + pixel[0]) + 'px';
+      this.popup.style.top  = (rect.top  + pixel[1]) + 'px';
+    }
+
     this.popupContent.style.visibility = 'visible';
-    this.popup.hidden = false
+    this.popup.hidden = false;
   }
 
   public formatPopupValue(pos: CsLatLong, pixelIndex: number, portion: string,  value: number, int: boolean = false): string {
@@ -447,13 +521,13 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
     return this.parent.getParent().formatPopupValue(' [' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ']: ', pixelIndex, portion, value);
   }
 
-   public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
+  public onFeatureClick(feature: GeoJSON.Feature, folder:string, event: any) {
     let state = this.parent.getParent().getState()
     if(typeof state.times === 'string' && !computedDataTilesLayer) return 1
     if (feature) {
-        let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'], 'folder': folder };
-        if (state.support== this.renderers[0])  this.parent.getParent().showGraph({ type: 'station', stParams })
-        this.parent.getParent().showGraph({ type: 'region', stParams })
+      let stParams = { 'id': feature.properties['id'], 'name': feature.properties['name'], 'folder': folder };
+      if (state.support== this.renderers[0])  this.parent.getParent().showGraph({ type: 'station', stParams })
+      this.parent.getParent().showGraph({ type: 'region', stParams })
     }
   }
 
@@ -464,45 +538,53 @@ private shouldShowPercentileClock(state: CsViewerData): boolean {
   }
 
 
-public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
+  public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let app = window.CsViewerApp;
 
-
-
-    this.safelyRemoveDataLayers();
+    // Guardar referencia a las capas antiguas (se eliminan después del fade-in de las nuevas)
+    const oldDataLayers = this.dataTilesLayer ? [...this.dataTilesLayer] : [];
+    const oldUncertaintyLayers = this.uncertaintyLayer ? [...this.uncertaintyLayer] : [];
 
     this.dataTilesLayer = [];
-
-    // Si la capa de incertidumbre está activa, reconstruirla con el nuevo varId
-    if (state.uncertaintyLayer) {
-        this.safelyRemoveUncertaintyLayers();
-        // Esperar a que se construyan las capas de incertidumbre
-        await this.buildUncertaintyLayer(state, timesJs);
-    }
+    this.uncertaintyLayer = [];
 
     if (!timesJs.portions[state.varId]) {
-        console.warn('No portions found for varId:', state.varId);
-        return;
+      console.warn('No portions found for varId:', state.varId);
+      // Limpiar capas antiguas si no hay datos
+      this.dataTilesLayer = oldDataLayers;
+      this.safelyRemoveDataLayers();
+      if (oldUncertaintyLayers.length > 0) {
+        this.uncertaintyLayer = oldUncertaintyLayers;
+        this.safelyRemoveUncertaintyLayers();
+      }
+      return;
     }
 
     timesJs.portions[state.varId].forEach((portion: string, index, array) => {
-        let imageLayer: ImageLayer<Static> = new ImageLayer({
-            visible: true,
-            opacity: 1.0,
-            zIndex: 100,
-            source: null
-        });
+      let imageLayer: ImageLayer<Static> = new ImageLayer({
+        visible: true,
+        opacity: 1.0,
+        zIndex: 100,
+        source: null
+      });
 
-        this.dataTilesLayer.push(imageLayer);
+      this.dataTilesLayer.push(imageLayer);
 
-        // Insertar la capa antes de la capa política (no al final)
-        const layers = this.map.getLayers();
-        const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
-        if (politicalIndex !== -1) {
-            layers.insertAt(politicalIndex, imageLayer);
-        } else {
-            layers.push(imageLayer);
-        }
+      imageLayer.on('change:opacity', () => {
+    const newOpacity = imageLayer.getOpacity();
+    if (this.featureLayer?.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(newOpacity);
+    }
+});
+
+      // Insertar la capa antes de la capa política (no al final)
+      const layers = this.map.getLayers();
+      const politicalIndex = layers.getArray().indexOf(this.politicalLayer);
+      if (politicalIndex !== -1) {
+        layers.insertAt(politicalIndex, imageLayer);
+      } else {
+        layers.push(imageLayer);
+      }
 
     });
 
@@ -514,27 +596,80 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
         promises.push(this.computeLayerData(state.selectedTimeIndex, state.varId, portion));
       });
     } else {
-        timesJs.portions[state.varId].forEach((portion: string, index, array) => {
-            promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
-        });
+      timesJs.portions[state.varId].forEach((portion: string, index, array) => {
+        promises.push(downloadXYChunk(state.selectedTimeIndex, state.varId, portion, timesJs));
+      });
     }
 
     if (this.dataTilesLayer.length > 0 && promises.length > 0) {
-        buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false)
-            .then(() => {
-                // FORZAR REFRESH COMPLETO
-                this.dataTilesLayer.forEach((layer, i) => {
-                    layer.setVisible(true);
-                    layer.changed();
-                });
+      // PRIMERO construir la capa de datos principal (esto guarda mainLayerData)
+      await buildImages(promises, this.dataTilesLayer, state, timesJs, app, this.ncExtents, false);
 
-                // Renderizar el mapa
-                this.map.render();
-                this.map.renderSync();
-            })
-            .catch(error => {
-                console.error('Error building images:', error);
-            });
+      // Eliminar capas antiguas AHORA que las nuevas están listas
+      oldDataLayers.forEach((layer) => {
+        if (layer && this.map) {
+          try {
+            layer.setVisible(false);
+            if (layer.setSource) layer.setSource(null);
+            const layers = this.map.getLayers();
+            if (layers && layers.getArray().includes(layer)) {
+              layers.remove(layer);
+            }
+            if (typeof layer.dispose === 'function') layer.dispose();
+          } catch (e) { /* ignore */ }
+        }
+      });
+      if (oldUncertaintyLayers.length > 0) {
+        oldUncertaintyLayers.forEach((layer) => {
+          if (layer && this.map) {
+            try {
+              layer.setVisible(false);
+              const layers = this.map.getLayers();
+              if (layers && layers.getArray().includes(layer)) {
+                layers.remove(layer);
+              }
+              if (typeof layer.dispose === 'function') layer.dispose();
+            } catch (e) { /* ignore */ }
+          }
+        });
+      }
+
+      // Mostrar las capas de datos directamente
+      this.dataTilesLayer.forEach((layer) => {
+        layer.setVisible(true);
+        layer.changed();
+      });
+
+      // Renderizar el mapa
+      this.map.render();
+      this.map.renderSync();
+
+      // DESPUÉS construir la capa de incertidumbre (usa mainLayerData como máscara)
+      if (state.uncertaintyLayer) {
+        await this.buildUncertaintyLayer(state, timesJs);
+      }
+
+      // Ajustar la vista inicial para mostrar todo el territorio (Península + Canarias).
+      // Se aplica aquí, una vez que todos los renders han terminado, para evitar snap-back.
+      if (this.initialFitExtent) {
+        this.map.updateSize();
+        this.map.getView().fit(this.initialFitExtent, {
+          padding: [10, 10, 10, 10],
+          duration: 0
+        });
+        this.initialFitExtent = null;
+      }
+    }
+  }
+
+  public setDataLayerOpacity(opacity: number): void {
+    if (this.dataTilesLayer) {
+        this.dataTilesLayer.forEach(layer => {
+            if (layer) layer.setOpacity(opacity);
+        });
+    }
+    if (this.featureLayer?.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(opacity);
     }
 }
 
@@ -583,9 +718,9 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
     // Siempre empezar con un array limpio
     this.uncertaintyLayer = [];
 
-    const uncertaintyVarId = state.varId + '_uncertainty';
+    const uncertaintyVarId = state.overlayVarId || (state.varId + '_uncertainty');
     if (!timesJs.portions[uncertaintyVarId]) {
-      console.warn('No uncertainty portions found for varId:', uncertaintyVarId);
+      console.warn('No overlay portions found for varId:', uncertaintyVarId);
       return;
     }
 
@@ -625,7 +760,15 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
 
       // Registrar las capas en LayerManager después de construirlas
       lmgr.setUncertaintyLayer(this.uncertaintyLayer);
-      lmgr.showUncertaintyLayer(false);
+
+      // Mostrar directamente sin fade (el fade es solo para toggle manual del usuario)
+      if (state.uncertaintyLayer) {
+        this.uncertaintyLayer.forEach(layer => {
+          layer.setOpacity(1);
+          layer.setVisible(true);
+          layer.changed();
+        });
+      }
     }
   }
 
@@ -653,24 +796,24 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
   }
 
   public buildFeatureLayers () {
-        this.glmgr = GeoLayerManager.getInstance();
-        let self = this
-        Object.entries(this.renderers).forEach(([key, renderer]) => {
-            // if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
-            if(!renderer.startsWith("-") && renderer != this.defaultRenderer){  
-              const folders = this.parent.getParent().getFolders(renderer)
-              folders.forEach( folder =>{
-                loadGeoJsonData(folder)
-                .then(GeoJsonData => { 
-                    self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
-                })
-                .catch(error => {
-                    console.error('Error: ', error);
-                });
-              })
-            }
-        } )
+    this.glmgr = GeoLayerManager.getInstance();
+    let self = this
+    Object.entries(this.renderers).forEach(([key, renderer]) => {
+      // if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
+      if(!renderer.startsWith("-") && renderer != this.defaultRenderer){
+        const folders = this.parent.getParent().getFolders(renderer)
+        folders.forEach( folder =>{
+          loadGeoJsonData(folder)
+            .then(GeoJsonData => {
+              self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
+            })
+            .catch(error => {
+              console.error('Error: ', error);
+            });
+        })
       }
+    } )
+  }
 
   public async setDate(dateIndex: number, state: CsViewerData): Promise<void> {
     try {
@@ -736,38 +879,171 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
   }
 
   private async setupStationRenderer(state: CsViewerData, support: string): Promise<void> {
+
+    if (this.selectInteraction) {
+      this.map.removeInteraction(this.selectInteraction);
+      this.selectInteraction = null;
+    }
+    if (this.hoverInteraction) {
+      this.map.removeInteraction(this.hoverInteraction);
+      this.hoverInteraction = null;
+    }
+
     this.safelyRemoveDataLayers();
 
+    const remainingLayers = this.map.getLayers().getArray().filter(layer => {
+      return this.dataTilesLayer.includes(layer as any);
+    });
+
+    if (remainingLayers.length > 0) {
+      remainingLayers.forEach(layer => {
+        this.map.getLayers().remove(layer);
+      });
+    }
+
+    if (this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+      this.uncertaintyLayer.forEach((layer) => {
+        if (layer) {
+          layer.setVisible(false);
+          const layers = this.map.getLayers();
+          if (layers && layers.getArray().includes(layer)) {
+            layers.remove(layer);
+          }
+        }
+      });
+    }
+
     const folders = this.parent.getParent().getFolders(support);
+
     if (!folders || folders.length === 0) {
+      console.error(' No folders found');
       throw new Error(`No folders found for support: ${support}`);
     }
 
-    this.featureLayer = this.glmgr.getGeoLayer(folders[0]);
+    const folder = folders[0];
+
+    this.featureLayer = this.glmgr.getGeoLayer(folder);
+
     if (!this.featureLayer) {
-      throw new Error(`Failed to get geo layer for ${folders[0]}`);
+      console.error('Failed to get geo layer');
+      throw new Error(`Failed to get geo layer for ${folder}`);
     }
 
     this.featureLayer.indexData = null;
 
     return new Promise((resolve, reject) => {
-      let openSt: CsvDownloadDone = (data: any, filename: string, type: string) => {
-        try {
-          if (this.featureLayer && typeof this.featureLayer.show === 'function') {
-            this.featureLayer.indexData = data;
-            this.featureLayer.show(this.renderers.indexOf(support));
-          }
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      };
+      const combinedData: any = {};
+      let filesLoaded = 0;
 
-      downloadXYbyRegion(state.times[state.selectedTimeIndex], state.selectedTimeIndex, folders[0], state.varId, openSt);
+      const timesJs = this.parent.getParent().getTimesJs();
+      const portions = timesJs.portions[state.varId] || ['_pen', '_can'];
+      const totalFiles = portions.length;
+
+      portions.forEach((portion: string) => {
+        const portionVarId = state.varId + portion;
+
+        const csvCallback: CsvDownloadDone = (data: any, filename: string, type: string) => {
+
+          if (data && Object.keys(data).length > 0) {
+            // Combinar los datos
+            Object.keys(data).forEach(key => {
+              combinedData[key] = data[key];
+            });
+          }
+
+          filesLoaded++;
+
+          // Cuando se hayan cargado todos los archivos
+          if (filesLoaded === totalFiles) {
+
+            if (Object.keys(combinedData).length === 0) {
+              console.error('No data received from any file');
+              reject('No data received');
+              return;
+            }
+
+            try {
+              if (this.featureLayer && typeof this.featureLayer.show === 'function') {
+                // Asignar datos combinados
+                this.featureLayer.indexData = combinedData;
+
+                // Obtener índice del renderer
+                const rendererIndex = this.renderers.indexOf(support);
+
+                if (rendererIndex === -1) {
+                  reject('Renderer not found');
+                  return;
+                }
+
+                // Mostrar la capa de estaciones
+                this.featureLayer.show(rendererIndex);
+
+                
+
+                if (this.dataTilesLayer && this.dataTilesLayer.length > 0) {
+                 
+                   const currentOpacity = this.dataTilesLayer[0]?.getOpacity?.() ?? 1;
+                          const mapLayers = this.map.getLayers();
+    if (this.featureLayer.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(currentOpacity);
+    }
+           
+
+                  this.dataTilesLayer.forEach((layer, i) => {
+                    if (layer) {
+                      layer.setVisible(false);
+                      layer.setOpacity(0);
+
+                      // Remover del mapa
+                      if (mapLayers && mapLayers.getArray().includes(layer)) {
+                        try {
+                          mapLayers.remove(layer);
+                        } catch (e) {
+                          console.warn('Could not remove layer', i);
+                        }
+                      }
+                    }
+                  });
+                }
+
+                // Forzar zIndex alto para la capa de estaciones
+                if (this.featureLayer.geoLayer) {
+                  this.featureLayer.geoLayer.setZIndex(9999);
+                  this.featureLayer.geoLayer.setVisible(true);
+                }
+
+                this.map.render();
+                setTimeout(() => {
+                  this.map.render();
+                }, 100);
+                resolve();
+              } else {
+                console.error('featureLayer.show not available');
+                reject('featureLayer.show not available');
+              }
+            } catch (error) {
+              console.error('[setupStationRenderer] ✗ ERROR in setup:', error);
+              reject(error);
+            }
+          }
+        };
+
+        const time = state.times[state.selectedTimeIndex];
+        downloadXYbyRegion(time, state.selectedTimeIndex, folder, portionVarId, csvCallback);
+      });
     });
   }
 
   private async setupRegionRenderer(state: CsViewerData, support: string): Promise<void> {
+    if (this.selectInteraction) {
+      this.map.removeInteraction(this.selectInteraction);
+      this.selectInteraction = null;
+    }
+    if (this.hoverInteraction) {
+      this.map.removeInteraction(this.hoverInteraction);
+      this.hoverInteraction = null;
+    }
+
     this.safelyRemoveDataLayers();
 
     let folders = this.parent.getParent().getFolders(support);
@@ -804,6 +1080,20 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
     }
   }
 
+  private createAttributionEl(): void {
+    const el = document.createElement('ul');
+    el.className = 'ol-attribution';
+    document.body.appendChild(el);
+    this.attributionEl = el;
+    this.updateAttribution();
+  }
+
+  private updateAttribution(): void {
+    if (!this.attributionEl) return;
+    const credit = LayerManager.getInstance().getSelectedCredit();
+    this.attributionEl.innerHTML = credit ? `<li>${credit}</li>` : '';
+  }
+
   private async finalizeRenderUpdate(): Promise<void> {
     if (this.featureLayer && typeof this.featureLayer.refresh === 'function') {
       this.featureLayer.refresh();
@@ -811,12 +1101,20 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
 
     let lmgr = LayerManager.getInstance();
 
-    // Safely update terrain layer
+    // Safely update terrain layers: show/update selected, hide deselected
     let layersLength = lmgr.getBaseSelected().length;
-    for (let i = 0; i < layersLength; i++) {
-      let tSource = lmgr.getBaseLayerSource(i);
-      if (this.terrainLayer && this.terrainLayer.getSource() !== tSource) {
-        this.terrainLayer.setSource(tSource);
+    for (let i = 0; i < this.terrainLayers.length; i++) {
+      const tLayer = this.terrainLayers[i];
+      if (!tLayer) continue;
+      if (i < layersLength) {
+        let tSource = lmgr.getBaseLayerSource(i);
+        if (tLayer.getSource() !== tSource) {
+          tLayer.setSource(tSource);
+        }
+        tLayer.setVisible(true);
+      } else {
+        // Esta capa ya no está seleccionada: ocultarla
+        tLayer.setVisible(false);
       }
     }
 
@@ -836,6 +1134,8 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
       this.politicalLayer.setSource(pSource);
       this.politicalLayer.setZIndex(5000);
     }
+
+    this.updateAttribution();
   }
 
   async initializeFeatureLayer(time: string, timeIndex: number, folder: string, varName: string): Promise<void> {
@@ -845,6 +1145,12 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
           this.featureLayer.indexData = data;
           if (this.featureLayer.show) {
             this.featureLayer.show(this.renderers.indexOf(this.lastSupport));
+            if (this.dataTilesLayer && this.dataTilesLayer.length > 0) {
+    const currentOpacity = this.dataTilesLayer[0]?.getOpacity?.() ?? 1;
+    if (this.featureLayer.geoLayer) {
+        this.featureLayer.geoLayer.setOpacity(currentOpacity);
+    }
+}
           }
           resolve();
         } else {
@@ -853,14 +1159,20 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
         }
       };
 
+      const timesJs = this.parent.getParent().getTimesJs();
+      const portions = timesJs.portions[varName] || [];
+
       if (computedDataTilesLayer) {
-        // Build calculated Layer
+        // Los datos se calculan en la App (p.ej. distribución Gumbel en EPM).
+        // Las porciones son para la capa de tiles, no para la feature layer.
         this.computeFeatureLayerData(time, folder, varName, openSt);
+      } else if (portions.length > 1) {
+        // Múltiples porciones geográficas: descargar y combinar
+        const { downloadXYbyRegionMultiPortion } = require('./data/ChunkDownloader');
+        downloadXYbyRegionMultiPortion(time, timeIndex, folder, varName, portions, openSt);
       } else {
-        // Download and build new data layers
         downloadXYbyRegion(time, timeIndex, folder, varName, openSt);
       }
-
     });
   }
 
@@ -877,14 +1189,15 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
 
     const self = this;
 
+    const validLayer = (layer: any) => layer != null && typeof layer.getRenderer === 'function' && layer.getRenderer() != null;
+
     this.hoverInteraction = new Select({
       condition: pointerMove,
       style: null,
+      layers: validLayer,
       filter: function (feature, layer) {
         const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
-        if (!contourGeoLayer) {
-          return true;
-        }
+        if (!contourGeoLayer) return true;
         return layer !== contourGeoLayer;
       }
     });
@@ -901,13 +1214,13 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
       });
     });
 
-    const layerFilter = function (feature: any, layer: any) {
-      const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
-      return !contourGeoLayer || layer !== contourGeoLayer;
-    };
-
     this.selectInteraction = new Select({
-      filter: layerFilter
+      style: null,
+      layers: validLayer,
+      filter: function (feature: any, layer: any) {
+        const contourGeoLayer = self.contourLayer?.getGeoLayer?.();
+        return !contourGeoLayer || layer !== contourGeoLayer;
+      }
     });
 
     this.map.addInteraction(this.selectInteraction);
@@ -950,6 +1263,454 @@ public async buildDataTilesLayers(state: CsViewerData, timesJs: CsTimesJsData): 
       console.warn('Error during disposal:', error);
     }
   }
+
+  public exportMap(): void {
+    const app = this.parent.getParent();
+    const state = app.getState();
+    const timesJs = app.getTimesJs();
+    const proj = this.map.getView().getProjection();
+
+    // Guardar vista actual para restaurarla después
+    const currentCenter = this.map.getView().getCenter();
+    const currentResolution = this.map.getView().getResolution();
+
+    // Promesa que espera rendercomplete de forma fiable
+    const waitForRender = (): Promise<void> => {
+      return new Promise<void>((resolve) => {
+        this.map.once('rendercomplete', () => resolve());
+        this.map.renderSync();
+      });
+    };
+
+    // Overlay que oculta la navegación temporal del mapa durante la captura
+    const mapEl = this.map.getTargetElement() as HTMLElement;
+
+    // Inyectar keyframes solo la primera vez
+    if (!document.getElementById('_epm_spinner_style')) {
+      const st = document.createElement('style');
+      st.id = '_epm_spinner_style';
+      st.textContent = '@keyframes _epm_spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(st);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = [
+      'position:absolute', 'inset:0', 'z-index:9999',
+      'background:rgba(255,255,255,0.85)',
+      'display:flex', 'flex-direction:column',
+      'align-items:center', 'justify-content:center', 'gap:14px',
+      'pointer-events:all',
+    ].join(';');
+
+    const spinner = document.createElement('div');
+    spinner.style.cssText = [
+      'width:42px', 'height:42px',
+      'border:5px solid #d0d8e8',
+      'border-top-color:#2c3e50',
+      'border-radius:50%',
+      'animation:_epm_spin 0.8s linear infinite',
+    ].join(';');
+
+    const label = document.createElement('span');
+    label.style.cssText = 'font:bold 14px sans-serif;color:#2c3e50';
+    label.textContent = 'Generando imagen…';
+
+    overlay.appendChild(spinner);
+    overlay.appendChild(label);
+    mapEl.appendChild(overlay);
+
+    const removeOverlay = () => { if (overlay.parentNode) overlay.remove(); };
+    const setStatus  = (msg: string) => { label.textContent = msg; };
+
+    const doExport = async () => {
+      try {
+      // Paso 1: Capturar Península + Baleares
+      setStatus('Renderizando Península…  (1/4)');
+      const peninsulaExtent4326 = [-10.0, 35.0, 5.0, 44.5];
+      const peninsulaExtent = transformExtent(peninsulaExtent4326, 'EPSG:4326', proj);
+      const mapSize0 = this.map.getSize();
+      const insetLeftPad = mapSize0 ? Math.round(mapSize0[0] * 0.22) : 200;
+      this.map.getView().fit(peninsulaExtent, { padding: [10, 35, 10, insetLeftPad] });
+
+      await waitForRender();
+
+      const mapSize = this.map.getSize();
+      if (!mapSize) { removeOverlay(); return; }
+      const mainWidth = mapSize[0];
+      const mainHeight = mapSize[1];
+
+      const mainOlCanvas = this.captureOlCanvas(mainWidth, mainHeight);
+      const mainViewExtent = this.map.getView().calculateExtent(mapSize);
+      const mainBbox4326 = transformExtent(mainViewExtent, proj, 'EPSG:4326');
+
+      // Paso 2: Capturar Canarias
+      setStatus('Renderizando Canarias…  (2/4)');
+      const canariasExtent4326 = [-18.5, 27.4, -13.2, 29.6];
+      const canariasExtent = transformExtent(canariasExtent4326, 'EPSG:4326', proj);
+      this.map.getView().fit(canariasExtent, { padding: [5, 5, 5, 5] });
+
+      await waitForRender();
+
+      const insetWidth = Math.round(mainWidth * 0.30);
+      const insetHeight = Math.round(mainHeight * 0.28);
+      const canariasOlCanvas = this.captureOlCanvas(mapSize[0], mapSize[1]);
+      const canariasViewExtent = this.map.getView().calculateExtent(mapSize);
+      const canariasBbox4326 = transformExtent(canariasViewExtent, proj, 'EPSG:4326');
+
+      // Restaurar vista original
+      this.map.getView().setCenter(currentCenter);
+      this.map.getView().setResolution(currentResolution);
+
+      // Paso 3: Pedir ambas imágenes WMS al IGN y componer
+      setStatus('Descargando fondo cartográfico…  (3/4)');
+      this.loadWmsImages(mainBbox4326, mainWidth, mainHeight, canariasBbox4326, insetWidth, insetHeight,
+        (mainBg, canBg) => {
+          setStatus('Componiendo imagen…  (4/4)');
+          this.composeExportImage(
+            mainBg, mainOlCanvas, mainWidth, mainHeight,
+            canBg, canariasOlCanvas, insetWidth, insetHeight,
+            state, timesJs, app
+          );
+          removeOverlay();
+        }
+      );
+      } catch (e) {
+        removeOverlay();
+        throw e;
+      }
+    };
+
+    doExport();
+  }
+
+  private captureOlCanvas(width: number, height: number): HTMLCanvasElement {
+    const capture = document.createElement('canvas');
+    capture.width = width;
+    capture.height = height;
+    const ctx = capture.getContext('2d');
+
+    const olCanvases = this.map.getViewport().querySelectorAll('.ol-layer canvas') as NodeListOf<HTMLCanvasElement>;
+    olCanvases.forEach((canvas) => {
+      if (canvas.width > 0) {
+        ctx.save();
+        const opacity = (canvas.parentNode as HTMLElement).style.opacity || '1';
+        ctx.globalAlpha = parseFloat(opacity);
+        const transform = canvas.style.transform;
+        const matrix = transform.match(/^matrix\(([^\(]*)\)$/);
+        if (matrix) {
+          const values = matrix[1].split(',').map(Number);
+          ctx.setTransform(values[0], values[1], values[2], values[3], values[4], values[5]);
+        }
+        ctx.drawImage(canvas, 0, 0);
+        ctx.restore();
+      }
+    });
+    return capture;
+  }
+
+  private buildWmsUrlForLayer(url: string, layer: string, bbox4326: number[], width: number, height: number, transparent: boolean): string {
+    return url +
+      'SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap' +
+      '&LAYERS=' + encodeURIComponent(layer) + '&STYLES=' +
+      '&SRS=EPSG:4326' +
+      '&BBOX=' + bbox4326.join(',') +
+      '&WIDTH=' + width + '&HEIGHT=' + height +
+      '&FORMAT=image/png&TRANSPARENT=' + (transparent ? 'true' : 'false');
+  }
+
+  private loadWmsImages(
+    mainBbox: number[], mainW: number, mainH: number,
+    canBbox: number[], canW: number, canH: number,
+    callback: (mainBg: CanvasImageSource | null, canBg: CanvasImageSource | null) => void
+  ): void {
+    // Obtain WMS-capable selected base layers from LayerManager; fallback to IGN base if none
+    let wmsLayers = LayerManager.getInstance().getBaseLayerWmsInfo();
+    if (wmsLayers.length === 0) {
+      wmsLayers = [{ url: 'https://www.ign.es/wms-inspire/ign-base?', layer: 'IGNBaseTodo', transparent: false }];
+    }
+
+    // Load all WMS images for a given bbox and composite them onto a canvas
+    const loadComposite = (bbox: number[], w: number, h: number, done: (result: CanvasImageSource | null) => void) => {
+      const urls = wmsLayers.map(l => this.buildWmsUrlForLayer(l.url, l.layer, bbox, w, h, l.transparent));
+      const images: (HTMLImageElement | null)[] = new Array(urls.length).fill(null);
+      let loaded = 0;
+
+      urls.forEach((src, i) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { images[i] = img; if (++loaded === urls.length) composite(); };
+        img.onerror = () => { images[i] = null; if (++loaded === urls.length) composite(); };
+        img.src = src;
+      });
+
+      const composite = () => {
+        const cvs = document.createElement('canvas');
+        cvs.width = w;
+        cvs.height = h;
+        const ctx = cvs.getContext('2d');
+        let anyDrawn = false;
+        images.forEach(img => {
+          if (img) { ctx.drawImage(img, 0, 0, w, h); anyDrawn = true; }
+        });
+        done(anyDrawn ? cvs : null);
+      };
+    };
+
+    let mainBg: CanvasImageSource | null = null;
+    let canBg: CanvasImageSource | null = null;
+    let done = 0;
+    const check = () => { if (++done >= 2) callback(mainBg, canBg); };
+
+    loadComposite(mainBbox, mainW, mainH, result => { mainBg = result; check(); });
+    loadComposite(canBbox, canW, canH, result => { canBg = result; check(); });
+  }
+
+  private composeExportImage(
+    mainBg: CanvasImageSource | null, mainOl: HTMLCanvasElement,
+    mainW: number, mainH: number,
+    canBg: CanvasImageSource | null, canOl: HTMLCanvasElement,
+    insetW: number, insetH: number,
+    state: any, timesJs: any, app: any
+  ): void {
+    const titleHeight = 40;
+    const padding = 10;
+    const insetMargin = 12;
+    const insetBorder = 2;
+
+    // Canvas final (sin columna extra a la derecha)
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = mainW;
+    exportCanvas.height = mainH + titleHeight;
+    const ctx = exportCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    // --- 1) Fondo WMS Península ---
+    if (mainBg) {
+      ctx.drawImage(mainBg, 0, titleHeight, mainW, mainH);
+    }
+
+    // --- 2) Datos OL Península ---
+    ctx.drawImage(mainOl, 0, titleHeight);
+
+    // --- 3) Recuadro Canarias (esquina inferior izquierda) ---
+    const insetX = insetMargin;
+    const insetY = titleHeight + mainH - insetH - insetMargin;
+
+    // Fondo blanco + borde
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = insetBorder;
+    ctx.strokeRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
+
+    // Fondo WMS Canarias
+    if (canBg) {
+      ctx.drawImage(canBg, 0, 0, insetW, insetH, insetX, insetY, insetW, insetH);
+    }
+
+    // Datos OL Canarias (reescalado al tamaño del recuadro)
+    ctx.drawImage(canOl, 0, 0, canOl.width, canOl.height, insetX, insetY, insetW, insetH);
+
+    // Etiqueta "Canarias"
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Canarias', insetX + 4, insetY + 3);
+
+    // --- 4) Título ---
+    const titleText = app.getExportTitle();
+
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(0, 0, exportCanvas.width, titleHeight);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(titleText, padding, titleHeight / 2);
+
+    // --- 5) Leyenda (superpuesta en la zona izquierda, encima del recuadro de Canarias) ---
+    const legendValues = app.getLegendValues();
+    const legendText = app.getLegendText();
+    if (legendValues && legendText) {
+      const mgr = PaletteManager.getInstance();
+      const painter = mgr.getPainter();
+      const min = Math.min(...legendValues);
+      const max = Math.max(...legendValues);
+
+      let legendTitle = app.getExportLegendTitle();
+
+      const legendBoxWidth = 150;
+      const itemHeight = Math.min(22, Math.max(14, (mainH * 0.4) / legendValues.length));
+      const legendBoxHeight = 24 + legendValues.length * itemHeight + padding;
+      const lx = insetMargin;
+      const ly = titleHeight + padding;
+
+      // Fondo semitransparente para la leyenda
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(lx, ly, legendBoxWidth, legendBoxHeight);
+      ctx.restore();
+
+      // Borde de la leyenda
+      ctx.strokeStyle = '#999999';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(lx, ly, legendBoxWidth, legendBoxHeight);
+
+      let curY = ly + padding;
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.fillText(legendTitle, lx + padding, curY);
+      curY += 18;
+
+      const colorBoxWidth = legendBoxWidth - padding * 2;
+
+      for (let i = 0; i < legendValues.length; i++) {
+        const colorStr = painter.getColorString(legendValues[i], min, max);
+        ctx.fillStyle = colorStr;
+        ctx.fillRect(lx + padding, curY, colorBoxWidth, itemHeight - 2);
+
+        const text = legendText[i] || '';
+        ctx.fillStyle = this.isLightColorForExport(colorStr) ? '#000000' : '#ffffff';
+        ctx.font = '10px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, lx + padding + 4, curY + (itemHeight - 2) / 2);
+        curY += itemHeight;
+      }
+    }
+
+    // --- 6) Créditos dentro del mapa (esquina inferior derecha) ---
+    this.drawAttributionOverlay(ctx, mainW, mainH + titleHeight);
+
+    // --- 7) Barra de logos (pie) ---
+    this.drawLogosAndDownload(exportCanvas, ctx, 'mapa.png');
+  }
+
+  /** Dibuja el bloque de créditos superpuesto en la esquina inferior derecha del mapa,
+   *  igual que el widget de atribución del visor. */
+  private drawAttributionOverlay(ctx: CanvasRenderingContext2D, mapW: number, mapBottom: number): void {
+    const pad = 6;
+    const fontSize = 10;
+    const lineH = fontSize + 4;
+
+    // Líneas de texto: copyright propio + créditos de capas (sin HTML)
+    const rawCredit = LayerManager.getInstance().getSelectedCredit();
+    const layerCredit = rawCredit.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    const lines: string[] = [];
+    lines.push('\u00A9 AEMET \u2013 CSIC PTI-Clima');
+    if (layerCredit) lines.push(layerCredit);
+
+    ctx.font = `${fontSize}px sans-serif`;
+    const maxTextW = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const boxW = maxTextW + pad * 2;
+    const boxH = lines.length * lineH + pad * 2;
+    const boxX = mapW - boxW - 4;
+    const boxY = mapBottom - boxH - 4;
+
+    // Fondo semitransparente
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.restore();
+
+    // Texto
+    ctx.fillStyle = '#333333';
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, boxX + pad, boxY + pad + i * lineH);
+    });
+  }
+
+  private drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string): void {
+    const logoImg = document.querySelector('#logo-container img') as HTMLImageElement;
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+      this.appendLogosBarAndDownload(exportCanvas, ctx, logoImg, filename);
+    } else if (logoImg) {
+      const clone = new Image();
+      clone.crossOrigin = 'anonymous';
+      clone.onload = () => this.appendLogosBarAndDownload(exportCanvas, ctx, clone, filename);
+      clone.onerror = () => this.downloadCanvas(exportCanvas, filename);
+      clone.src = logoImg.src;
+    } else {
+      this.downloadCanvas(exportCanvas, filename);
+    }
+  }
+
+  private appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, srcCtx: CanvasRenderingContext2D, logoImg: HTMLImageElement, filename: string): void {
+    const pad = 10;
+
+    // Escalar el logo para que ocupe el ancho completo del canvas (máxima calidad).
+    // De este modo se aprovechan todos los píxeles de la imagen fuente (6060×246)
+    // en lugar de escalarla a una altura fija pequeña.
+    const availableW = srcCanvas.width - pad * 2;
+    const scaleByWidth = availableW / logoImg.naturalWidth;
+    const logoW = availableW;
+    const logoH = Math.round(logoImg.naturalHeight * scaleByWidth);
+    const logoBarHeight = logoH + pad * 2;
+
+    // Crear canvas final con espacio para la barra de logos
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = srcCanvas.width;
+    finalCanvas.height = srcCanvas.height + logoBarHeight;
+    const fCtx = finalCanvas.getContext('2d');
+
+    // Copiar contenido original
+    fCtx.drawImage(srcCanvas, 0, 0);
+
+    // Barra de logos: fondo blanco
+    const barY = srcCanvas.height;
+    fCtx.fillStyle = '#ffffff';
+    fCtx.fillRect(0, barY, finalCanvas.width, logoBarHeight);
+
+    // Línea separadora
+    fCtx.strokeStyle = '#cccccc';
+    fCtx.lineWidth = 1;
+    fCtx.beginPath();
+    fCtx.moveTo(0, barY);
+    fCtx.lineTo(finalCanvas.width, barY);
+    fCtx.stroke();
+
+    // Dibujar logo centrado, escalado al ancho del canvas
+    const logoX = pad;
+    const logoY = barY + pad;
+    fCtx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+
+    this.downloadCanvas(finalCanvas, filename);
+  }
+
+  private downloadCanvas(canvas: HTMLCanvasElement, filename: string): void {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  private isLightColorForExport(color: string): boolean {
+    let r = 200, g = 200, b = 200;
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      r = parseInt(hex.substring(0, 2), 16);
+      g = parseInt(hex.substring(2, 4), 16);
+      b = parseInt(hex.substring(4, 6), 16);
+    } else if (color.startsWith('rgb')) {
+      const match = color.match(/(\d+)/g);
+      if (match) {
+        r = parseInt(match[0]);
+        g = parseInt(match[1]);
+        b = parseInt(match[2]);
+      }
+    }
+    return (r * 0.299 + g * 0.587 + b * 0.114) > 150;
+  }
 }
 
 export class GeoLayerManager {
@@ -987,7 +1748,7 @@ export class GeoLayerManager {
 export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   private map: Map;
   private csMap: OpenLayerMap;
-  private geoLayer: Layer;
+  public geoLayer: Layer;
   private onClick: CsGeoJsonClick;
 
   private popupOverlay: Overlay
@@ -998,7 +1759,10 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   public source?: VectorSource;
   public isContour: boolean;
   protected currentFeature: Feature;
+  protected selectedFeature: Feature;
   public indexData: ArrayData;
+
+  public rendererIndex: number = -1;
 
   constructor(_name: string, _geoData: CsGeoJsonData, _map: Map, _csMap: OpenLayerMap, _isContour: boolean, _onClick: CsGeoJsonClick = undefined) {
     super(_geoData)
@@ -1018,7 +1782,29 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
       this.geoLayer.getFeatures(evt.pixel).then((features: FeatureLike[]) => {
         if (this.popupOverlay != undefined) this.popupOverlay.setPosition(undefined)
         if (features.length >= 0 && features[0] != undefined) {
-          this.onClick(this.getFeature(features[0].get('id')), evt)
+          const rawClicked = this.getFeature(features[0].get('id'));
+          // OL Feature real (tiene .set y .setStyle); getFeature devuelve GeoJSON plano
+          const olFeature = features[0] as any as Feature;
+          const state = this.csMap.getParent().getParent().getState();
+          const timesJs = this.csMap.getParent().getParent().getTimesJs();
+          // Restaurar estilo de la feature previamente seleccionada
+          if (this.selectedFeature && this.selectedFeature !== olFeature) {
+            this.selectedFeature.set('selected', false);
+            this.selectedFeature.setStyle(
+              this.rendererIndex === 0
+                ? this.setStationStyle(state, this.selectedFeature, timesJs)
+                : this.setFeatureStyle(state, this.selectedFeature, timesJs)
+            );
+          }
+          // Marcar y resaltar la feature clicada
+          olFeature.set('selected', true);
+          olFeature.setStyle(
+            this.rendererIndex === 0
+              ? this.setStationStyle(state, olFeature, timesJs)
+              : this.setFeatureStyle(state, olFeature, timesJs)
+          );
+          this.selectedFeature = olFeature;
+          this.onClick(rawClicked, evt)
         }
       })
     })
@@ -1043,7 +1829,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
 
   public show(renderer: number): void {
     if (this.geoLayerShown) return;
-
+    this.rendererIndex = renderer;
     let vectorSource: VectorSource;
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
@@ -1168,65 +1954,154 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
 
   public setStationStyle(state: CsViewerData, feature: FeatureLike, timesJs: CsTimesJsData): Style {
     let ptr = PaletteManager.getInstance().getPainter();
-    let minValue = timesJs.varMin[state.varId][state.selectedTimeIndex];
-    let maxValue = timesJs.varMax[state.varId][state.selectedTimeIndex];
-    let targetMin: number = 5
-    let targetMax: number = 20
+    let minValue = timesJs.varMin[state.varId]?.[state.selectedTimeIndex];
+    let maxValue = timesJs.varMax[state.varId]?.[state.selectedTimeIndex];
+
+    // Si no hay min/max de la rejilla, calcular desde los datos de estaciones
+    if (minValue == null || maxValue == null || isNaN(minValue) || isNaN(maxValue) || !isFinite(minValue) || !isFinite(maxValue)) {
+      minValue = Number.MAX_VALUE;
+      maxValue = -Number.MAX_VALUE;
+      Object.values(this.indexData).forEach((v: any) => {
+        const num = parseFloat(v);
+        if (!isNaN(num) && isFinite(num)) {
+          minValue = Math.min(minValue, num);
+          maxValue = Math.max(maxValue, num);
+        }
+      });
+      if (minValue === Number.MAX_VALUE) { minValue = -3; maxValue = 3; }
+    }
+
+    let targetMin: number = 5;
+    let targetMax: number = 20;
     let currentRange = maxValue - minValue;
     let targetRange = targetMax - targetMin;
-    let color: string = '#fff';
-    let radius: number = 10.0;
-    let id = feature.getProperties()['id']
-    Object.keys(this.indexData).forEach(key => {
-      if (key == id) {
-        color = ptr.getColorString(this.indexData[key], minValue, maxValue)
-        radius = Math.abs(targetMin + ((this.indexData[key] - minValue) / currentRange) * targetRange)
-      }
-    });
+    let color: string = '#aaaaaa';
+    let radius: number = 6;
+    let id = feature.getProperties()['id'];
+    let id_ant = feature.getProperties()['id_ant'];
 
-    const isHovered = feature.get('hover');
+    let dataValue = undefined;
+
+    if (this.indexData[id] !== undefined) {
+      dataValue = this.indexData[id];
+    }
+    else if (id_ant && this.indexData[id_ant] !== undefined) {
+      dataValue = this.indexData[id_ant];
+    }
+    else if (id && id.length === 1 && this.indexData['0' + id] !== undefined) {
+      dataValue = this.indexData['0' + id];
+    }
+    else if (id && id.startsWith('0') && this.indexData[id.substring(1)] !== undefined) {
+      dataValue = this.indexData[id.substring(1)];
+    }
+    else if (id_ant && id_ant.length >= 2) {
+      const shortCode = id_ant.substring(0, 2);
+      if (this.indexData[shortCode] !== undefined) {
+        dataValue = this.indexData[shortCode];
+      }
+    }
+
+    if (dataValue === undefined && id) {
+      // Buscar si alguna key del CSV es prefijo del id del GeoJSON
+      const matchKey = Object.keys(this.indexData).find(key =>
+        id.startsWith(key) || key.startsWith(id)
+      );
+      if (matchKey !== undefined) {
+        dataValue = this.indexData[matchKey];
+      }
+    }
+
+    const val = dataValue !== undefined ? parseFloat(String(dataValue)) : NaN;
+    if (!isNaN(val) && isFinite(val) && currentRange !== 0) {
+      color = ptr.getColorString(val, minValue, maxValue);
+      radius = 10;
+      if (isNaN(radius) || radius < 3) radius = 3;
+    }
+
+    const isHovered = feature.get('hover') || feature.get('selected');
 
     let imgStation: CircleStyle = new CircleStyle({
       radius: radius,
       fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
       stroke: new Stroke({ color: '#999', width: 1 }),
     });
-    return new Style({ image: imgStation, })
+    return new Style({ image: imgStation });
   }
 
   public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
-    let min: number = Number.MAX_VALUE;
-    let max: number = Number.MIN_VALUE;
-
-    Object.values(this.indexData).forEach((value) => {
-      if (!isNaN(value)) {
-        min = Math.min(min, value);
-        max = Math.max(max, value);
-      }
-    });
-
-    let color: string = '#fff';
-    let id = feature.getProperties()['id'];
-    let id_ant = feature.getProperties()['id_ant'];
-    let ptr = PaletteManager.getInstance().getPainter();
-
-    // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
-    // Try with new id first, fallback to old id_ant if not found
-    let dataValue = this.indexData[id];
-    if (dataValue === undefined && id_ant !== undefined) {
-      dataValue = this.indexData[id_ant];
+    // Usar los mismos min/max que la leyenda para que los colores coincidan
+    const legendValues = this.csMap.getParent().getParent().getLegendValues();
+    let min: number, max: number;
+    if (legendValues && legendValues.length > 0) {
+      min = Math.min(...legendValues);
+      max = Math.max(...legendValues);
+    } else {
+      min = Number.MAX_VALUE;
+      max = Number.MIN_VALUE;
+      Object.values(this.indexData).forEach((value) => {
+        if (!isNaN(value as number)) {
+          min = Math.min(min, value as number);
+          max = Math.max(max, value as number);
+        }
+      });
     }
 
-    if (dataValue !== undefined) {
+    let color: string = 'rgba(0,0,0,0)'; // Transparente por defecto (sin dato → no pinta)
+    let id = feature.getProperties()['id'];
+    let id_ant = feature.getProperties()['id_ant'];
+    let name = feature.getProperties()['name'];
+    let ptr = PaletteManager.getInstance().getPainter();
+
+    if (id === null || id === undefined) {
+      const isHovered = feature.get('hover');
+      if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
+      else this.map.getTargetElement().style.cursor = '';
+
+      return new Style({
+        fill: new Fill({ color: '#ffffff00' }), // Transparente
+        stroke: new Stroke({
+          color: '#999',
+        }),
+      });
+    }
+
+    let dataValue = undefined;
+
+    if (this.indexData[id] !== undefined) {
+      dataValue = this.indexData[id];
+    }
+    else if (id_ant && this.indexData[id_ant] !== undefined) {
+      dataValue = this.indexData[id_ant];
+    }
+    else if (id.length === 1 && this.indexData['0' + id] !== undefined) {
+      dataValue = this.indexData['0' + id];
+    }
+    else if (id.startsWith('0') && this.indexData[id.substring(1)] !== undefined) {
+      dataValue = this.indexData[id.substring(1)];
+    }
+    else if (id_ant && id_ant.length >= 2) {
+      const shortCode = id_ant.substring(0, 2);
+      if (this.indexData[shortCode] !== undefined) {
+        dataValue = this.indexData[shortCode];
+      }
+    }
+
+    if (dataValue !== undefined && !isNaN(dataValue)) {
       color = ptr.getColorString(dataValue, min, max);
     }
 
-    const isHovered = feature.get('hover');
+    const isHovered = feature.get('hover') || feature.get('selected');
 
-    if (isHovered) this.map.getTargetElement().style.cursor = 'pointer';
+    if (feature.get('hover')) this.map.getTargetElement().style.cursor = 'pointer';
     else this.map.getTargetElement().style.cursor = '';
+
+    const hasData = color !== 'rgba(0,0,0,0)' && color !== '#ffffff00';
+    const hoverColor = isHovered
+      ? (hasData ? this.highLightColor(color, 0.2) : 'rgba(255,255,255,0.35)')
+      : color;
+
     return new Style({
-      fill: new Fill({ color: isHovered ? this.highLightColor(color, 0.2) : color }),
+      fill: new Fill({ color: hoverColor }),
       stroke: new Stroke({
         color: '#999',
       }),
@@ -1245,40 +2120,88 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {
     let state: CsViewerData = this.csMap.getParent().getParent().getState();
     let timesJs = this.csMap.getParent().getParent().getTimesJs();
-    let value: string;
+
     if (feature) {
-      if (state.support == this.csMap.renderers[0]) feature.setStyle(this.setStationStyle(state, feature, timesJs))
-      else feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
-      this.csMap.popupContent.style.left = pixel[0] + 'px';
-      this.csMap.popupContent.style.top = pixel[1] + 'px';
-      this.csMap.popup.hidden = false
-      if (feature !== this.currentFeature) {
-        let id = feature.getProperties()['id']
-        let id_ant = feature.getProperties()['id_ant']
-        // Use exact match instead of includes to avoid matching '1' with '10', '11', etc.
-        // Try with new id first, fallback to old id_ant if not found
-        value = data[id];
-        if (value === undefined && id_ant !== undefined) {
+      if (this.rendererIndex === 0) {
+        feature.setStyle(this.setStationStyle(state, feature, timesJs));
+      } else {
+        feature.setStyle(this.setFeatureStyle(state, feature, timesJs));
+      }
+
+      const rect = this.map.getViewport().getBoundingClientRect();
+      this.csMap.popup.style.left = (rect.left + pixel[0]) + 'px';
+      this.csMap.popup.style.top  = (rect.top  + pixel[1]) + 'px';
+      this.csMap.popup.hidden = false;
+
+      // Si no hay datos computados, mostrar hint de la app (ej: "Seleccione rango")
+      const hint = this.csMap.getParent().getParent().getHoverHintText();
+      if (hint && (!data || Object.keys(data).length === 0)) {
+        this.csMap.popupContent.innerHTML = `<div>${hint}</div>`;
+        this.csMap.popupContent.style.visibility = 'visible';
+      } else if (feature !== this.currentFeature) {
+        let id = feature.getProperties()['id'];
+        let id_ant = feature.getProperties()['id_ant'];
+        let name = feature.getProperties()['name'];
+
+        let value: any = undefined;
+
+        if (data[id] !== undefined) {
+          value = data[id];
+        }
+        else if (id_ant && data[id_ant] !== undefined) {
           value = data[id_ant];
         }
+        else if (id && id.length === 1 && data['0' + id] !== undefined) {
+          value = data['0' + id];
+        }
+        else if (id && id.startsWith('0') && data[id.substring(1)] !== undefined) {
+          value = data[id.substring(1)];
+        }
+        else if (id_ant && id_ant.length >= 2) {
+          const shortCode = id_ant.substring(0, 2);
+          if (data[shortCode] !== undefined) {
+            value = data[shortCode];
+          }
+        }
+
+        if (value === undefined) {
+          value = 'N/A';
+        } else if (isNaN(parseFloat(value))) {
+          value = 'N/A';
+        } else {
+          value = parseFloat(value);
+        }
+
         this.csMap.popupContent.style.visibility = 'visible';
-        this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(feature.get('name'), id, parseFloat(value));
-        this.csMap.value.setPosition(proj4('EPSG:4326', olProjection, [pos.lng, pos.lat]))
+        this.csMap.popupContent.innerHTML = this.formatFeaturePopupValue(name, id, value);
       }
     } else {
       this.csMap.popupContent.style.visibility = 'hidden';
-      this.csMap.popup.hidden = true
+      this.csMap.popup.hidden = true;
     }
+
     if (this.currentFeature instanceof Feature) {
-      if (state.support == this.csMap.renderers[0]) this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs))
-      else this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+      if (this.rendererIndex === 0) {
+        this.currentFeature.setStyle(this.setStationStyle(state, this.currentFeature, timesJs));
+      } else {
+        this.currentFeature.setStyle(this.setFeatureStyle(state, this.currentFeature, timesJs));
+      }
     }
     this.currentFeature = feature;
-  };
-
-  public formatFeaturePopupValue(featureName: string, featureId: any, value: number): string {
-    return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
   }
+
+  public formatFeaturePopupValue(featureName: string, featureId: any, value: number | string): string {
+    if (value === 'N/A' || value === undefined || value === null) {
+      return `${featureName}: Sin datos`;
+    }
+
+    if (typeof value === 'number') {
+      return this.csMap.getParent().getParent().formatPopupValue(featureName + ': ', featureId, '', value);
+    }
+
+    return `${featureName}: ${value}`;
+  }
+
 
   public highLightColor(hex: string, lum: number): string {
     hex = String(hex).replace(/[^0-9a-f]/gi, '');

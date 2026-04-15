@@ -1,6 +1,6 @@
 {
   "name": "@lcsc/anemui-test",
-  "version": "0.2.3",
+  "version": "0.2.3-SNAPSHOT",
   "description": "Climatic Services Test Suite",
   "main": "src/index.ts",
   "devDependencies": {},

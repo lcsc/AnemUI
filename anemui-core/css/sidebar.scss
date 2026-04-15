@@ -170,34 +170,46 @@
     text-align: right;
     top: 7rem; 
     margin-top: 1rem; 
+    margin-right: 1rem;
 
     .rightbar-item {
         display: block;
     }
     .paletteFrame{
-        order: 1
+        order: 1;
+        margin-top: calc(0.4rem + 3px);
     }
     .downloadFrame{
         order:2
     }
 
     #latLong {
-        display: inline-block; 
-        white-space: nowrap; 
-        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
+        white-space: nowrap;
+        // width: 100%;
+        height: 28px;
         margin-bottom: 0.5em;
-        padding: 0.2em 0.4em;
-        border-radius: 5px;
+        padding: 0 0.75em;
+        border-radius: 20px;
         color: $title_color;
         background-color: $title_bgcolor;
         font-size: 14px;
-        font-weight: 400;
+        font-weight: 700;
         box-shadow: 0.5px 0.5px 3px $color_3;
+
+        // &::before {
+        //     content: "▾";
+        //     font-size: 1.1em;
+        //     line-height: 1;
+        //     flex-shrink: 0;
+        // }
     }
 
     @include tablet {
-        top: 6rem;
-        margin-top: 0.5rem;
+        // top: 6rem;
+        // margin-top: 0.5rem;
         right: 2%;
     }
 
@@ -214,12 +226,14 @@
 
 #LeftBar {
     left: 1%;
-    top: 7rem; 
-    margin-top: 1rem; 
+    top: 7rem;
+    margin-top: 1rem;
+    overflow: visible;
+    z-index: 51;
 
     @include tablet {
-        top: 6rem;
-        margin-top: 0.5rem;
+        // top: 6rem;
+        // margin-top: 0.5rem;
         left: 2%;
     }
 
@@ -580,9 +594,77 @@ ul .two-columns {
 /* ---------------------------------------------------
     SELECTORES DE CAPAS
 ----------------------------------------------------- */
+#layer-frame {
+    padding-top: 0;
+}
+
 div.row.selectDiv{
-    width: 240px;
+    position: relative;
+    width: 275px;
     margin: 0.45rem 0rem;
+    background-color: $color_1;
+    border-radius: 10px;
+    box-shadow: 0.5px 1px 5px $color_3;
+    padding: 0.4rem 1.6rem 0.4rem 0.25rem;
+
+    .closeDiv {
+        position: absolute;
+        top: 0.3rem;
+        right: 0.3rem;
+
+        .icon {
+            width: 25px;
+            height: 25px;
+            font-size: 1.5rem !important;
+            box-shadow: none;
+        }
+    }
+
+    .inputDiv {
+        width: 100%;
+    }
+}
+
+// #1 base layers: close button a 1/4 de altura para alinearse con primera opción
+div.row.selectDiv.baseDiv .closeDiv {
+    top: 0.4rem;
+}
+
+.layer-group-separator {
+    height: 0;
+    margin: 0.4rem 0.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+// #2 transparency: contenedor alto, slider y botón centrados verticalmente
+div.row.selectDiv.trpDiv:not(.hidden) {
+    min-height: 3rem;
+    display: flex;
+    align-items: center;
+
+    .inputDiv {
+        display: flex;
+        align-items: center;
+    }
+
+    .closeDiv {
+        top: 50%;
+        transform: translateY(-50%);
+    }
+}
+
+// #3 top layer: ancho ampliado y nombres en una sola línea
+div.row.selectDiv.polDiv {
+    width: max-content;
+    max-width: 450px;
+    padding-right: calc(1.6rem + 15px);
+    .closeDiv {
+        top: 0.4rem;
+        transform: none;
+    }
+    label.radio {
+        white-space: nowrap;
+    }
 }
 
 .uncDiv input.form-check-input {
@@ -597,7 +679,7 @@ div.row.selectDiv{
 
 .slider.slider-horizontal {
     width: 80%;
-    height: auto;
+    height: 20px;
 }
 
 div.slider.visible {
@@ -611,19 +693,19 @@ div.slider.visible {
     .slider-track {
         height: 1px !important;
         width: 100% !important;
+        top: 50% !important;
         margin-top: 0px !important;
     }
-    
+
     .slider-handle {
-        top: 7px;
+        top: 50% !important;
+        margin-top: -7.5px !important;
         width: 15px;
         height: 15px;
     }
     
     .inputDiv{
-        background-color:$color_1;
-        border-radius: 10px;
-        box-shadow: 0.5px 1px 5px $color_3;
+        background-color: transparent;
     }
 }
 
@@ -663,7 +745,8 @@ div.slider.visible {
     text-align: left;
     font-size: 0.8rem; 
     color: $color_3;
-    input[type="checkbox"] {
+    input[type="checkbox"],
+    input[type="radio"] {
         position: absolute;
         opacity: 0;
         cursor: pointer;
@@ -674,11 +757,11 @@ div.slider.visible {
                 border-radius: 100%;
                 border: 1px solid darken($color_1, 25%);
                 display: inline-block;
-                width: 1.1rem; 
-                height: 1.1rem; 
+                width: 1.1rem;
+                height: 1.1rem;
                 position: relative;
-                top: 0.25rem; 
-                margin-right: 0.6rem !important; 
+                top: 0.25rem;
+                margin-right: 0.6rem !important;
                 vertical-align: top;
                 cursor: pointer;
                 text-align: left;
@@ -701,58 +784,6 @@ div.slider.visible {
             }
         }
     }
-}
-
-/* ---------------------------------------------------
-    ESTILOS POPOVERS
------------------------------------------------------ */
-
-/* .popover {
-    max-width: 40% !important;
-    background-color: $color_8;
-    border-color: $color_4;
-    font-size: 0.75rem; 
-    margin-left: 1.25rem !important;
-    z-index: 1500;
-
-    @include tablet {
-        max-width: 60% !important;
-        font-size: 0.875rem;
-        margin-left: 1rem !important;
-    }
-
-    @include mobile {
-        max-width: 90% !important;
-        font-size: 1rem;
-        margin-left: 0.5rem !important;
-    }
-}
-
-.popover-header {
-    color: $title_color;
-    background-color: $title_bgcolor;
-}
-
-.popover-body {
-    color: $color_4 !important;
-} */
-
-.popover {
-    max-width: 40% !important;
-    background-color: $color_8;
-    border-color: $color_4;
-    font-size: 12px;
-    margin-left: 20px !important;
-    z-index: 1500;
-}
-
-.popover-header {
-    color: $title_color;
-    background-color: $title_bgcolor;
-}
-
-.popover-body {
-    color: $color_4 !important;
 }
 
 @media (max-width: 768px) {

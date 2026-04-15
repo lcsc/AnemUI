@@ -5,6 +5,7 @@ import { ChangeEvent } from 'react';
 import Slider from 'bootstrap-slider';
 import { LayerManager } from '../LayerManager';
 import { showLayers, initialZoom }  from "../Env";
+import Language from '../language/language';
 
 export default class LayerFrame  extends BaseFrame {
 
@@ -19,11 +20,15 @@ export default class LayerFrame  extends BaseFrame {
         let lmgr = LayerManager.getInstance();
         let baseLayers=lmgr.getBaseLayerNames();
         let topLayers=lmgr.getTopLayerNames();
-        let selected = initialZoom >= 6.00? ["EUMETSAT","PNOA"]:["ARCGIS"]; // --- Provisional, ver la manera de configurar
+        let selected = lmgr.getBaseSelected() ?? [];
         let i: number = 0;
+        let prevGlobal: boolean | null = null;
         let element=
         (
             <div id="layer-frame" className='layerFrame btnSelect left'>
+                <div className="layer-frame-header">
+                    {this.parent.getTranslation('opciones_visualizacion')}
+                </div>
                 <div id="base-div">
                     <div className="buttonDiv baseDiv visible" onClick={()=>this.toggleSelect('baseDiv')}>
                         <span className="icon"><i className="bi bi-globe-europe-africa"></i></span>
@@ -32,30 +37,41 @@ export default class LayerFrame  extends BaseFrame {
                         </span>
                     </div>
                     <div className='row selectDiv baseDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('baseDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 ms-1 p-0 inputDiv'>
+                        <div className='col p-0 inputDiv'>
                                 { baseLayers.map((val,index)=>{
                                     i++;
+                                    const isGlobal = lmgr.isBaseLayerGlobal(val);
+                                    const group = isGlobal ? 'A' : 'B';
+                                    const separator = (prevGlobal !== null && prevGlobal !== isGlobal)
+                                        ? <div className="layer-group-separator"></div>
+                                        : null;
+                                    prevGlobal = isGlobal;
                                     if(selected.includes(val)){
                                         return (
-                                            <label className="radio">
-                                                <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)} checked></input>
-                                                <span className="radio-label"></span>
-                                                {val}
-                                            </label>
+                                            <div>
+                                                {separator}
+                                                <label className="radio">
+                                                    <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" data-group={group} onChange={(event)=>self.changeBaseLayer(event.target.value)} checked></input>
+                                                    <span className="radio-label"></span>
+                                                    {val}
+                                                </label>
+                                            </div>
                                         )
                                     }
                                 return (
-                                    <label className="radio">
-                                        <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" onChange={(event)=>self.changeBaseLayer(event.target.value)}></input>
-                                        <span className="radio-label"></span>
-                                        {val}
-                                    </label>
+                                    <div>
+                                        {separator}
+                                        <label className="radio">
+                                            <input id={"radio-" + i} className="baseLayer" value={val} type="checkbox" data-group={group} onChange={(event)=>self.changeBaseLayer(event.target.value)}></input>
+                                            <span className="radio-label"></span>
+                                            {val}
+                                        </label>
+                                    </div>
                                 )
                                 })}
-                           
+                        </div>
+                        <div className='col-auto closeDiv p-0' onClick={()=>this.toggleSelect('baseDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
                     </div>
                 </div>
@@ -67,11 +83,11 @@ export default class LayerFrame  extends BaseFrame {
                         </span>
                     </div>
                     <div className='row selectDiv trpDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
-                            <span className="icon"><i className="bi bi-x"></i></span>
-                        </div>
-                        <div className='col-9 p-0 inputDiv d-flex justify-content-center'>
+                        <div className='col p-0 inputDiv d-flex justify-content-center'>
                             <input className="selectDiv trpDiv" id="transparencySlider" data-slider-id='ex2Slider' type="text" data-slider-step="1"/>
+                        </div>
+                        <div className='col-auto closeDiv p-0' onClick={()=>this.toggleSelect('trpDiv')}>
+                            <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
                     </div>
                 </div>
@@ -79,24 +95,33 @@ export default class LayerFrame  extends BaseFrame {
                     <div className="buttonDiv polDiv visible" onClick={()=>this.toggleSelect('polDiv')}>
                         <span className="icon"><i className="bi bi-map"></i></span>
                         <span className="text" aria-label='top'>
-                            {this.parent.getTranslation('top_layer')}: {this.parent.getTranslation('politico')}
+                            {this.parent.getTranslation('top_layer')}: {this.parent.getTranslation(lmgr.getTopSelected()) || lmgr.getTopSelected()}
                         </span>
                     </div>
                     <div className='row selectDiv polDiv hidden'>
-                        <div className='col closeDiv p-0' onClick={()=>this.toggleSelect('polDiv')}>
+                        <div className='col p-0 inputDiv'>
+                            {topLayers.map((val, index) => {
+                                const isSelected = lmgr.getTopSelected() == val;
+                                return (
+                                    <label className="radio">
+                                        <input className="topLayer" value={val} type="radio" name="topLayer" onChange={(event) => self.changeTopLayer(event.target.value)} checked={isSelected}></input>
+                                        <span className="radio-label"></span>
+                                        {this.parent.getTranslation(val) || val}
+                                    </label>
+                                );
+                            })}
+                        </div>
+                        <div className='col-auto closeDiv p-0' onClick={()=>this.toggleSelect('polDiv')}>
                             <span className="icon"><i className="bi bi-x"></i></span>
                         </div>
-                        <div className='col-9 p-0 inputDiv'>
-                            <select className="form-select form-select-sm" aria-label="Change Base" onChange={(event)=>self.changeTopLayer(event.target.value)}>
-                                {topLayers.map((val,index)=>{
-                                    let trVal = this.parent.getTranslation(val)
-                                    if(lmgr.getTopSelected()==val){
-                                        return (<option value={val} selected>{this.parent.getTranslation(val)}</option>)
-                                    }
-                                    return (<option value={val}>{val}</option>)
-                                })}
-                            </select>
-                        </div>
+                    </div>
+                </div>
+                <div id="print-div">
+                    <div className="buttonDiv printDiv visible" onClick={()=>this.parent.getMap().exportMap()}>
+                        <span className="icon"><i className="bi bi-printer"></i></span>
+                        <span className="text">
+                            {this.parent.getTranslation('imprimir_mapa') || 'Imprimir mapa'}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -105,6 +130,21 @@ export default class LayerFrame  extends BaseFrame {
     }
 
     public toggleSelect(select: string){
+        const isOpening = this.container.querySelector(".selectDiv." + select).classList.contains("hidden");
+        if (isOpening) {
+            ['baseDiv', 'polDiv', 'trpDiv'].forEach(other => {
+                if (other !== select) {
+                    const sel = this.container.querySelector(".selectDiv." + other);
+                    const btn = this.container.querySelector(".buttonDiv." + other);
+                    if (sel && !sel.classList.contains("hidden")) {
+                        sel.classList.add("hidden");
+                        sel.classList.remove("visible");
+                        btn.classList.add("visible");
+                        btn.classList.remove("hidden");
+                    }
+                }
+            });
+        }
         this.container.querySelector(".buttonDiv." + select).classList.toggle("hidden")
         this.container.querySelector(".selectDiv." + select).classList.toggle("hidden")
         this.container.querySelector(".buttonDiv." + select).classList.toggle("visible")
@@ -112,13 +152,25 @@ export default class LayerFrame  extends BaseFrame {
     }
 
     public changeBaseLayer(value:string):void{
-        let values: string[] = [];
-        let inputs = Array.from(document.getElementsByClassName("baseLayer"));
-        inputs.forEach((input: HTMLInputElement) => {
-            if (input.checked)  values.push(input.value)
-        }) 
-        let mgr=LayerManager.getInstance();
-        mgr.setBaseSelected(values);
+        const inputs = Array.from(document.getElementsByClassName("baseLayer")) as HTMLInputElement[];
+        const clicked = inputs.find(inp => inp.value === value);
+        const group = clicked?.dataset.group;
+
+        if (group === 'A') {
+            inputs.forEach(inp => {
+                if (inp.dataset.group === 'A') inp.checked = inp.value === value;
+            });
+            clicked.checked = true;
+        } else {
+            if (clicked?.checked) {
+                inputs.forEach(inp => {
+                    if (inp.dataset.group === group && inp.value !== value) inp.checked = false;
+                });
+            }
+        }
+
+        const values = inputs.filter(inp => inp.checked).map(inp => inp.value);
+        LayerManager.getInstance().setBaseSelected(values);
         this.parent.update();
     }
 
@@ -126,7 +178,27 @@ export default class LayerFrame  extends BaseFrame {
         let mgr=LayerManager.getInstance();
         mgr.setTopSelected(value);
         this.parent.update();
-        // this.container.querySelector("div.layerFrame").classList.remove("visible")
+    }
+
+    private applyOpacityToAllDataLayers(transparencyValue: number): void {
+        const opacity = (100 - transparencyValue) / 100;
+        const csMap = this.parent.getMap();
+        const controller = (csMap as any).controller || (csMap as any).olMap || (csMap as any).mapController;
+        if (!controller) return;
+
+        // Capas ráster (ImageLayer de datos)
+        if (controller.dataTilesLayer && Array.isArray(controller.dataTilesLayer)) {
+            controller.dataTilesLayer.forEach((layer: any) => {
+                if (layer && typeof layer.setOpacity === 'function') {
+                    layer.setOpacity(opacity);
+                }
+            });
+        }
+
+        // Feature layer (VectorLayer de provincias / CCAA / estaciones)
+        if (controller.featureLayer?.geoLayer && typeof controller.featureLayer.geoLayer.setOpacity === 'function') {
+            controller.featureLayer.geoLayer.setOpacity(opacity);
+        }
     }
 
     public build(){
@@ -136,23 +208,41 @@ export default class LayerFrame  extends BaseFrame {
         this.trpDiv = document.getElementById('trp-div') as HTMLElement;
         this.slider=new Slider(document.getElementById("transparencySlider"),{
             natural_arrow_keys: true,
-            //tooltip: "always",
             min: 0,
             max: 100,
             value: 0,
         })
-        this.slider.on('slideStop',(val:number)=>{
-            let mgr=PaletteManager.getInstance();
-            if(val==mgr.getTransparency())return;
-            mgr.setTransparency(val)
-            this.parent.update();
-        })
+
+        // Mientras arrastra: feedback visual inmediato (solo opacidad, sin rebuild)
+        this.slider.on('slide', (val: number) => {
+            const label = this.container.querySelector(".layerFrame span[aria-label=transparency]") as HTMLElement;
+            if (label) {
+                label.textContent = this.parent.getTranslation('transparency') + ": " + val;
+            }
+            this.applyOpacityToAllDataLayers(val);
+        });
+
+      
+        this.slider.on('slideStop', (val: number) => {
+            let mgr = PaletteManager.getInstance();
+            if (val === mgr.getTransparency()) return;
+            mgr.setTransparency(val);
+            this.applyOpacityToAllDataLayers(val);
+        });
 
         if (!showLayers){
             this.baseDiv.hidden = true;
             this.polDiv.hidden = true;
             this.trpDiv.hidden = true;
-        } 
+        }
+
+        const topSelected = LayerManager.getInstance().getTopSelected();
+        (Array.from(this.container.querySelectorAll("input.topLayer")) as HTMLInputElement[])
+            .forEach(inp => { inp.checked = inp.value === topSelected; });
+
+        const baseSelected = LayerManager.getInstance().getBaseSelected();
+        (Array.from(this.container.querySelectorAll("input.baseLayer")) as HTMLInputElement[])
+            .forEach(inp => { inp.checked = baseSelected.includes(inp.value); });
     }
 
     public minimize():void{
@@ -166,16 +256,26 @@ export default class LayerFrame  extends BaseFrame {
     public update(): void {
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();
-        // let min = this.parent.getTimesJs().varMin[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
-        // let max = this.parent.getTimesJs().varMax[this.parent.getState().varId][this.parent.getState().selectedTimeIndex];
         let name:string; 
         if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
-            name = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+            const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+            const legendValues = Language.getInstance().getTranslation('legendValues');
+            name = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
         }else {
             name = 'Unidades';
         }
         this.container.querySelector(".layerFrame span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
         this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
-        this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+lmgr.getTopSelected();
+        const topSelected = lmgr.getTopSelected();
+        this.container.querySelector(".layerFrame span[aria-label=top]").textContent= this.parent.getTranslation('top_layer') +": "+(this.parent.getTranslation(topSelected) || topSelected);
+        (Array.from(this.container.querySelectorAll("input.topLayer")) as HTMLInputElement[])
+            .forEach(inp => { inp.checked = inp.value === topSelected; });
+
+        const currentTransparency = mgr.getTransparency();
+        if (currentTransparency > 0) {
+            setTimeout(() => {
+                this.applyOpacityToAllDataLayers(currentTransparency);
+            }, 400);
+        }
     }
 }

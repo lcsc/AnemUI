@@ -13,7 +13,11 @@ div.DateSelectorFrame{
     width: 90%;
     left:0;
     right:0;
-    bottom: 0.25em;
+    bottom: 44px; // dejar espacio para el #mobile-footer en móvil
+
+    @include tablet {
+        bottom: 0.25em;
+    }
     margin-left:auto;
     margin-right:auto;
 
@@ -77,12 +81,14 @@ div.DateSelectorFrame{
 
     div.slider-track{
         height: 5px !important;
-        margin-top: -3px !important;
+        top: 50% !important;
+        margin-top: -2px !important;
     }
 
     div.slider-handle{
         border: 1px solid #fff;
-        top: -10px;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     div.tooltip{
@@ -101,6 +107,44 @@ div.DateSelectorFrame{
     //         font-weight: 600;
     //     }
     // }
+}
+
+// Aviso informativo encima del calendario o del input de fecha
+div.date-hint {
+    position: fixed;   // JS establece top/left dinámicamente
+    z-index: 20000;    // Por encima del datepicker (que es fixed también)
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 0.5em;
+    border: 1px solid $border-color;
+    background-color: $title_bgcolor;
+    color: $title_color;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;  // No intercepta hover del calendario
+
+    &::before {
+        content: 'i';
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 1.15em;
+        height: 1.15em;
+        border-radius: 50%;
+        border: 1.5px solid currentColor;
+        font-size: 0.78em;
+        font-weight: 700;
+        font-style: italic;
+        line-height: 1;
+    }
+
+    &.hidden {
+        display: none;
+    }
 }
 
 .datepicker {

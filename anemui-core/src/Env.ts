@@ -9,8 +9,6 @@ export const CS_CONFIG:{[key:string]:any}=_CS_CONFIG;
 export const isWmsEnabled:boolean=ENV.isWmsEnabled;
 export const isKeyCloakEnabled:boolean=ENV.isKeyCloakEnabled;
 export const isTileDebugEnabled:boolean=ENV.isTileDebugEnabled;
-export const mapboxMapID:string=ENV.mapboxMapID;
-export const mapboxAccessToken:string=ENV.mapboxAccessToken;
 
 // General params
 export const olProjection:string=ENV.olProjection;
@@ -48,6 +46,9 @@ export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'?
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
 export const maxPaletteValue = ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
 export const maxPaletteSteps = ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
+export const globalMap = ENV.globalMap !== 'undefined'? ENV.globalMap:false;
+export const mapExtent: [number, number, number, number] | undefined =
+    Array.isArray(ENV.mapExtent) ? ENV.mapExtent as [number, number, number, number] : undefined;
 
 // Factory Method Pattern
 // true = usar factory method (permite override en subclases)
