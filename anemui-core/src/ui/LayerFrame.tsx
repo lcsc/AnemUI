@@ -239,6 +239,10 @@ export default class LayerFrame  extends BaseFrame {
         const topSelected = LayerManager.getInstance().getTopSelected();
         (Array.from(this.container.querySelectorAll("input.topLayer")) as HTMLInputElement[])
             .forEach(inp => { inp.checked = inp.value === topSelected; });
+
+        const baseSelected = LayerManager.getInstance().getBaseSelected();
+        (Array.from(this.container.querySelectorAll("input.baseLayer")) as HTMLInputElement[])
+            .forEach(inp => { inp.checked = baseSelected.includes(inp.value); });
     }
 
     public minimize():void{
