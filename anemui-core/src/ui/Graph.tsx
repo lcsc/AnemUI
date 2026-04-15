@@ -1861,15 +1861,25 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     select.style.border = '1px solid #ccc';
     select.style.borderRadius = '4px';
 
+    let linearSeleceted = true;
+    if (axis === 'x') {
+      linearSeleceted = !this.currentXLogScale;
+    } else {
+      linearSeleceted = !this.currentYLogScale;
+    }
+
+
     // Opciones del selector
     const linearOption = document.createElement('option');
     linearOption.value = 'linear';
     linearOption.textContent = 'Lineal';
-    linearOption.selected = true;
+    linearOption.selected = linearSeleceted;
 
     const logOption = document.createElement('option');
     logOption.value = 'logarithmic';
     logOption.textContent = 'Logarítmica';
+    logOption.selected = !linearSeleceted;
+
 
     select.appendChild(linearOption);
     select.appendChild(logOption);
