@@ -809,7 +809,7 @@ export class DateSelectorFrame extends BaseFrame {
             if (this.mode == DateFrameMode.DateFrameSeason) {
                 let season = this.getSeason(this.dates[val])
             }
-            this.parent.update();
+            this.parent.update(true);
         })
         this.slider.on('slide',(val)=>{
             this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
