@@ -61,8 +61,8 @@ export class InfoDiv extends BaseFrame {
                         <li><strong>Compartir por igual:</strong> Si utiliza públicamente cualquier versión adaptada de esta base de datos, o trabajos producidos a partir de una base de datos adaptada, también debe ofrecer esa base de datos adaptada bajo la ODbL.</li>
                     </ul>
                 <h6>Financiación</h6>
-                <p>Este trabajo de investigación ha sido financiado por el Ministerio para la Transición Ecológica y el Reto Demográfico (MITECO) y la Comisión Europea - NextGenerationEU (Reglamento UE 2020/2094), a través de la Plataforma Temática Interdisciplinar Clima (PTI Clima) / Desarrollo de Servicios Climáticos Operativos del CSIC.</p>
-                <p>El servicio ha sido desarrollado por la Plataforma Temática Interdisciplinar Clima y Servicios Climáticos (PTI Clima) del Consejo Superior de Investigaciones Científicas (CSIC) junto con la Agencia Estatal de Meteorología (AEMET).</p>    
+                <p>La Plataforma Estatal de Servicios Climáticos está financiada con el contrato CSC2023-02-00 por parte del Ministerio para la Transición Ecológica y el Reto Demográfico (MITECO) y la Comisión Europea NextGenerationEU (Reglamento UE 2020/2094).</p>
+                <p>El servicio ha sido desarrollado por la Plataforma Temática Interdisciplinar Clima y Servicios Climáticos (PTI Clima) del Consejo Superior de Investigaciones Científicas (CSIC) junto con la Agencia Estatal de Meteorología (AEMET).</p>
         </div>)
     }
 
