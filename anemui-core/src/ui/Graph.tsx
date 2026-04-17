@@ -495,7 +495,50 @@ export class CsGraph extends BaseFrame {
     this.drawLogosAndDownload(exportCanvas, ctx, 'grafico.png');
   }
 
-  private drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string): void {
+  /**
+   * Exporta un gráfico Chart.js con cabecera oscura multi-línea y barra de logos.
+   * Uso: cada visor Chart.js llama a este método desde su exportGraph() pasando
+   * las líneas de cabecera específicas (la estructura es común a todos los visores).
+   * @param chartCanvas  Canvas del gráfico Chart.js
+   * @param headerLines  Líneas de texto para la cabecera (primera en negrita)
+   * @param filename     Nombre del fichero de descarga
+   */
+  protected exportChartJsGraph(
+    chartCanvas: HTMLCanvasElement,
+    headerLines: string[],
+    filename: string
+  ): void {
+    const lineHeight = 18;
+    const padding = 12;
+    const headerHeight = Math.max(headerLines.length * lineHeight + padding, 36);
+
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width  = chartCanvas.width;
+    exportCanvas.height = headerHeight + chartCanvas.height;
+    const ctx = exportCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    // Cabecera oscura
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(0, 0, exportCanvas.width, headerHeight);
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < headerLines.length; i++) {
+      ctx.font = i === 0 ? 'bold 13px sans-serif' : '11px sans-serif';
+      ctx.fillText(headerLines[i], padding, padding / 2 + lineHeight * i + lineHeight / 2);
+    }
+
+    // Gráfico
+    ctx.drawImage(chartCanvas, 0, headerHeight);
+
+    // Barra de logos + descarga
+    this.drawLogosAndDownload(exportCanvas, ctx, filename);
+  }
+
+  protected drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string): void {
     const logoImg = document.querySelector('#logo-container img') as HTMLImageElement;
     if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
       this.appendLogosBarAndDownload(exportCanvas, logoImg, filename);
@@ -510,7 +553,7 @@ export class CsGraph extends BaseFrame {
     }
   }
 
-  private appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string): void {
+  protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string): void {
     const logoBarHeight = 60;
     const pad = 10;
 
@@ -532,14 +575,7 @@ export class CsGraph extends BaseFrame {
     fCtx.lineTo(finalCanvas.width, barY);
     fCtx.stroke();
 
-    const maxLogoH = logoBarHeight - pad * 2;
-    const scale = maxLogoH / logoImg.naturalHeight;
-    const logoW = logoImg.naturalWidth * scale;
-    const logoH = maxLogoH;
-    const logoX = (finalCanvas.width - logoW) / 2;
-    const logoY = barY + pad;
-    fCtx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-
+    // Copyright primero (para medir su ancho y reservar espacio)
     const copyrightText = '\u00A9 AEMET - CSIC PTI-Clima';
     fCtx.font = '10px sans-serif';
     fCtx.fillStyle = '#666666';
@@ -547,11 +583,24 @@ export class CsGraph extends BaseFrame {
     fCtx.textAlign = 'right';
     fCtx.fillText(copyrightText, finalCanvas.width - pad, barY + logoBarHeight - 4);
     fCtx.textAlign = 'left';
+    const copyrightW = fCtx.measureText(copyrightText).width + pad * 2;
+
+    // Logo: ajustar para no solapar el copyright
+    const maxLogoH = logoBarHeight - pad * 2;
+    const maxLogoW = finalCanvas.width - copyrightW - pad;
+    const scaleH = maxLogoH / logoImg.naturalHeight;
+    const scaleW = maxLogoW / logoImg.naturalWidth;
+    const scale = Math.min(scaleH, scaleW);
+    const logoW = logoImg.naturalWidth * scale;
+    const logoH = logoImg.naturalHeight * scale;
+    const logoX = pad;
+    const logoY = barY + (logoBarHeight - logoH) / 2;
+    fCtx.drawImage(logoImg, logoX, logoY, logoW, logoH);
 
     this.downloadExportCanvas(finalCanvas, filename);
   }
 
-  private downloadExportCanvas(canvas: HTMLCanvasElement, filename: string): void {
+  protected downloadExportCanvas(canvas: HTMLCanvasElement, filename: string): void {
     canvas.toBlob((blob) => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
@@ -1812,15 +1861,25 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     select.style.border = '1px solid #ccc';
     select.style.borderRadius = '4px';
 
+    let linearSeleceted = true;
+    if (axis === 'x') {
+      linearSeleceted = !this.currentXLogScale;
+    } else {
+      linearSeleceted = !this.currentYLogScale;
+    }
+
+
     // Opciones del selector
     const linearOption = document.createElement('option');
     linearOption.value = 'linear';
     linearOption.textContent = 'Lineal';
-    linearOption.selected = true;
+    linearOption.selected = linearSeleceted;
 
     const logOption = document.createElement('option');
     logOption.value = 'logarithmic';
     logOption.textContent = 'Logarítmica';
+    logOption.selected = !linearSeleceted;
+
 
     select.appendChild(linearOption);
     select.appendChild(logOption);

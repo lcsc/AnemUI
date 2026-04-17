@@ -280,6 +280,7 @@ export class CsMenuInput extends BaseUiElement {
   private minValue: number;
   private maxValue: number;
   private step: number;
+  private customPlaceholder: string | null = null;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onChange/onBlur
   private inputDebounceTimer: ReturnType<typeof setTimeout> | undefined; // Para onInput
 
@@ -316,6 +317,12 @@ export class CsMenuInput extends BaseUiElement {
       this.value = this.minValue;
       this.listener.valueChanged(this, this.value);
     }
+    if (this.container) {
+      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.min = _minValue !== undefined ? _minValue.toString() : undefined;
+      }
+    }
   }
 
   public getMinValue(): number {
@@ -327,6 +334,12 @@ export class CsMenuInput extends BaseUiElement {
     if (this.value !== null && _maxValue !== undefined && this.value > this.maxValue) {
       this.value = this.maxValue;
       this.listener.valueChanged(this, this.value);
+    }
+    if (this.container) {
+      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.max = _maxValue !== undefined ? _maxValue.toString() : undefined;
+      }
     }
   }
 
@@ -340,22 +353,27 @@ export class CsMenuInput extends BaseUiElement {
 
   public setValue(_value: number) {
     this.value = _value;
-    // Actualizar también el valor del input HTML renderizado
-    if (this.container) {
-      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
-      if (inputElement) {
-        inputElement.value = _value.toString();
-      }
-    }
+    // Actualizar todos los inputs con este id (pueden existir uno por vista: desktop y móvil)
+    document.querySelectorAll<HTMLInputElement>(`#${this.id}`)
+      .forEach(el => { el.value = _value.toString(); });
+  }
+
+  public clearValue(): void {
+    this.value = null;
+    document.querySelectorAll<HTMLInputElement>(`#${this.id}`)
+      .forEach(el => { el.value = ''; });
+  }
+
+  public setPlaceholder(ph: string): void {
+    this.customPlaceholder = ph;
+    document.querySelectorAll<HTMLInputElement>(`#${this.id}`)
+      .forEach(el => { el.placeholder = ph; });
   }
 
   private validateValue(inputValue: number): number | null {
-    /* if (isNaN(inputValue)) {
-      return null; // Permitir campo vacío
+    if (isNaN(inputValue) || inputValue <= 0) {
+      return null;
     }
-    if (inputValue < this.minValue) {
-      return this.minValue;
-    } */
     return inputValue;
   }
 
@@ -377,7 +395,7 @@ export class CsMenuInput extends BaseUiElement {
           max={this.maxValue !== undefined ? this.maxValue : undefined}
           step={this.step}
           className="form-control form-control-sm selection-param-input"
-          placeholder={`Mín: ${this.minValue}`}
+          placeholder={this.customPlaceholder !== null ? this.customPlaceholder : `Mín: ${this.minValue}`}
           value={displayValue}
           disabled={_disabled}
           onInput={(e: React.FormEvent<HTMLInputElement>) => {

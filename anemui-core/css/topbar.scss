@@ -227,7 +227,7 @@
         #title {
             width: auto !important;
             text-decoration: none;
-            color: $title_bgcolor;
+            color: $font_color;
             font-size: 1.0em;
             font-weight: 500;
             margin-bottom: 0px;
@@ -366,11 +366,11 @@
             left: 50%;
             transform: translateX(-50%);
             width: fit-content;
-            background-color: #4875b9fc;
-            padding: 10px 1.2rem;
+            background-color: $title_color;
+            padding: .5rem;
             margin: 0;
             list-style: none;
-            z-index: 999;
+            z-index: 9999;
             gap: 15px;
             align-items: flex-start;
             border-radius: 8px;
@@ -393,7 +393,7 @@
                 min-width: auto;
 
                 .dpdown-button, .menu-input {
-                    color: #fff;
+                    color: $font_color;
                     display: flex;
                     flex-direction: column;
                     width: fit-content !important;
@@ -402,7 +402,7 @@
                 }
 
                 .title {
-                    color: rgba(255, 255, 255, 0.85);
+                    color: $font_color;
                     font-size: 0.75em;
                     font-style: italic;
                     margin-bottom: 3px;
@@ -495,7 +495,7 @@
         z-index: 9999;
         width: 344px;
         min-height: 100vh;
-        background-color: #4875b9;
+        background-color: $title_color;
         left: 0;
         top: 0;
         display: flex;
@@ -515,7 +515,7 @@
     .nav-menu-mb li {
         display: block;
         width: 100%;
-        background-color: #4875b9;
+        background-color: $title_color;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
@@ -545,7 +545,7 @@
         position: relative !important;
         top: 0 !important;
         width: 100%;
-        background-color: #5987CC;
+        background-color: $azul_medio_50;
     }
 
     .nav-menu-mb .dropdown-item {
@@ -759,7 +759,7 @@
     min-width: fit-content;
     width: fit-content;
     // font-size: 0.8rem;
-    color: $color_4;
+    color: $font_color;
     
 }
 

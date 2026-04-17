@@ -13,6 +13,7 @@ div.infoFrame.min{
 // ── Modal de información (tingle.js) ──
 
 div.tingle-modal {
+    z-index: 3000;
     background: rgba(0, 0, 0, .5);
     font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
 
@@ -65,7 +66,7 @@ div.tingle-modal {
             padding-bottom: 0.3em;
             border-bottom: 2px solid lighten($title_color, 50%);
 
-            &:first-child {
+            .modal-content > div:first-child > &:first-child {
                 margin-top: 0.2em;
             }
         }

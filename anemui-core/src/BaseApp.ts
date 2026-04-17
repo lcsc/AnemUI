@@ -992,9 +992,11 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         } else {
             formattedValue = value.toFixed(2); // Mantiene 2 decimales para estos casos
         }
-    
+
         return this.getTranslation('valor_en') + text + formattedValue;
     }
+
+    public getHoverHintText(): string | null { return null; }
 
     // Metohds to manage renderers & folders
     public setRenderers(rd:number[] = [], remove: boolean = false): string[] {

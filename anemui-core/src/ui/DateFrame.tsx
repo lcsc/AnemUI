@@ -272,10 +272,6 @@ export class DateSelectorFrame extends BaseFrame {
                     // Convertir formato para visualización en español
                     const displayDate = this.formatDateForDisplay(this.dates[safeIndex]);
                     this.datepicker.datepicker('setDate', displayDate);
-                    if (this.dates.length > 1) {
-                        this.datepicker.datepicker('setStartDate', this.formatDateForDisplay(this.dates[0]));
-                        this.datepicker.datepicker('setEndDate', this.formatDateForDisplay(this.dates[this.dates.length - 1]));
-                    }
                     break;
                 case DateFrameMode.DateFrameMonth:
                     if (this.months && this.months.length > 0) {
@@ -673,11 +669,7 @@ export class DateSelectorFrame extends BaseFrame {
                 return 0
             }
             let index = this.indexOfDate(event.date);
-            // Fecha sin datos (gris): buscar la más cercana con datos
-            if (index < 0 && event.date) {
-                index = this.findNearestDateIndex(event.date);
-            }
-            this.navigateToIndex(index);
+            if (index >= 0) this.navigateToIndex(index);
             if (this.mode == DateFrameMode.DateFrameSeason && !this.pickerNotClicked) {
                 let [, selectedMonth, ] = this.dates[this.parent.getState().selectedTimeIndex].split('-')
                 this.setSeason(selectedMonth)
@@ -704,7 +696,17 @@ export class DateSelectorFrame extends BaseFrame {
             };
             inputEl.addEventListener('blur', handleManualInput);
             inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
-                if (e.key === 'Enter') handleManualInput();
+                if (e.key === 'Enter') {
+                    handleManualInput();
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const cur = this.parent.getState().selectedTimeIndex;
+                    const next = e.key === 'ArrowLeft' ? cur - 1 : cur + 1;
+                    if (next >= 0 && next < this.dates.length) {
+                        this.datepicker.datepicker('setDate', this.formatDateForDisplay(this.dates[next]));
+                        this.navigateToIndex(next);
+                    }
+                }
             });
         }
     }
@@ -807,7 +809,7 @@ export class DateSelectorFrame extends BaseFrame {
             if (this.mode == DateFrameMode.DateFrameSeason) {
                 let season = this.getSeason(this.dates[val])
             }
-            this.parent.update();
+            this.parent.update(true);
         })
         this.slider.on('slide',(val)=>{
             this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
