@@ -36,7 +36,8 @@ export type AnemuiLayer={
     layer?: string,
     credit?: string,
     wmsParams?: { [key: string]: string },
-    cssFilter?: string
+    cssFilter?: string,
+    format?: string
 }
 
 const baseStyle= new Style({
@@ -90,6 +91,7 @@ export class LayerManager {
         this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
         this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
         this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true, credit:'© <a href="https://www.eumetsat.int" target="_blank">EUMETSAT</a>'})
+        this.addBaseLayer({name:"Fondo relieve global GEBCO (IGN)",url: 'https://www.ign.es/wmts/mapa-raster?',type:AL_TYPE_WMTS,layer:'MTN_Fondo', global:true, credit:ign, format:'image/jpeg'})
         // ------ Estatal
         this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
         this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign_pnoa})
@@ -195,7 +197,7 @@ export class LayerManager {
                         url: bl.url,
                         layer: bl.layer,
                         matrixSet: 'GoogleMapsCompatible',
-                        format: 'image/png',
+                        format: bl.format ?? 'image/png',
                         projection: projection,
                         tileGrid: new WMTSTileGrid({
                             origin: getTopLeft(projectionExtent),

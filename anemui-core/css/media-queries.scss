@@ -1,19 +1,21 @@
 // COLORS
 
 // $title_color: #064d87;
-$title_color: #1950A0;
+$title_color: #1950A0;      // Azul oscuro AEMET
+$azul_medio: #2D7DD2;       // Azul medio AEMET
+$azul_medio_50: #96BEE8;    // Azul medio AEMET 50%
 $title_bgcolor: #dcdcdc;
 $font_color: #fff;
 $border-color: #b3b4b6;
-$navbar_bgcolor: #4875b9;
+$navbar_bgcolor: $title_color;
 $color_1: #f1f7f9;
 $color_2: #FC6262;
 $color_3: #000;
 $color_4: #fff;
-$color_5: #1E95FA;
-$color_6: #bac3e4;
+$color_5: $azul_medio;
+$color_6: $azul_medio_50;
 $color_7: #FF6200;
-$color_8: #2c6d9a;
+$color_8: $title_color;
 $color_9: #1D2D44;
 $color_10: #f4f4f5;
 $color_11: #737374;
