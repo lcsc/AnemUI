@@ -294,6 +294,47 @@ export class MenuBar extends BaseFrame {
         return element;
     }
 
+    /**
+     * Template method: añade los extraDisplays al DOM.
+     * La implementación base gestiona el caso hasClimatology.
+     * Las subclases pueden sobrescribir este método para añadir sus propios extraDisplays
+     * con clases CSS o lógica específica (p.ej. SriMenuBar).
+     * Se llama desde build() justo antes de changeInputOrder(), garantizando que
+     * todos los inputDivs estén en el DOM cuando se aplica el orden visual.
+     */
+    protected buildExtraDisplays(): void {
+        if (!hasClimatology) return;
+        this.extraDisplays.forEach((dsp) => {
+            const isInput = this.extraMenuInputs.some((input) => input.id == dsp.role);
+            if (isInput) {
+                addChild(this.inputsSubmenu, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+            } else {
+                addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+            }
+            const containers = document.querySelectorAll("[role=" + dsp.role + "]") as NodeListOf<HTMLDivElement>;
+            this.extraMenuItems.forEach((dpn) => {
+                if (dpn.id == dsp.role) {
+                    containers.forEach((container) => {
+                        addChild(container, dpn.render(dsp.subTitle, false));
+                        dpn.build(container);
+                    });
+                }
+            });
+            if (this.extraMenuInputs.length > 0) {
+                this.extraMenuInputs.forEach((input) => {
+                    if (input.id == dsp.role) {
+                        containers.forEach((container) => {
+                            addChild(container, input.render(this.parent.getState().selectionParam + ''));
+                            input.build(container);
+                        });
+                    }
+                });
+            }
+        });
+    }
+
     public build() {
         this.container = document.getElementById("TopBar") as HTMLDivElement;
         this.topBar = document.getElementById('TopBar') as HTMLDivElement;
@@ -406,43 +447,7 @@ export class MenuBar extends BaseFrame {
                 this.units.build(this.displayUnits);
             }
 
-            if (hasClimatology) {
-                this.extraDisplays.forEach((dsp) => {
-                    // Verificar si este display es un input (tiene un extraMenuInput asociado)
-                    const isInput = this.extraMenuInputs.some((input) => input.id == dsp.role);
-
-                    if (isInput) {
-                        // Los inputs van al submenu (desktop) y al menú móvil
-                        addChild(this.inputsSubmenu, this.renderDisplay(dsp, 'climBtn'));
-                        addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
-                    } else {
-                        // Los dropdowns van al menú principal
-                        addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                        addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
-                    }
-
-                    // Obtener TODOS los contenedores con este role (desktop y mobile)
-                    const containers = document.querySelectorAll("[role=" + dsp.role + "]") as NodeListOf<HTMLDivElement>;
-                    this.extraMenuItems.forEach((dpn) => {
-                        if (dpn.id == dsp.role) {
-                            containers.forEach((container) => {
-                                addChild(container, dpn.render(dsp.subTitle, false));
-                                dpn.build(container);
-                            });
-                        }
-                    });
-                    if (this.extraMenuInputs.length > 0) {
-                        this.extraMenuInputs.forEach((input) => {
-                            if (input.id == dsp.role) {
-                                containers.forEach((container) => {
-                                    addChild(container, input.render(this.parent.getState().selectionParam + ''));
-                                    input.build(container);
-                                });
-                            }
-                        })
-                    }
-                });
-            }
+            this.buildExtraDisplays();
             if (this.dropDownOrder.length) {
                 this.changeMenuItemOrder()
             }
@@ -695,6 +700,10 @@ export class MenuBar extends BaseFrame {
                     this.displayUncertainty = this.container.querySelector(`[role="${this.uncertaintyRole}"]`) as HTMLDivElement;
                     if (this.displayUncertainty && associatedButton.nextSibling) {
                         this.inputsFrame.insertBefore(this.displayUncertainty, associatedButton.nextSibling);
+                    }
+                    // Si hay orden visual configurado, colocar incertidumbre al final
+                    if (this.displayUncertainty && this.inputOrder.length > 0) {
+                        this.displayUncertainty.style.order = String(this.inputOrder.length + 1);
                     }
 
                     // Configurar el checkbox - establecer checked=true ANTES de renderizar
