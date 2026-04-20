@@ -12,7 +12,7 @@ export { ElementManager } from "./ElementManager";
 export { tpRenderers } from "./tiles/tpSupport"
 export * from './data/CsDataTypes';
 export { hasSubVars } from './Env';
-export {enableRenderer } from './tiles/Support';
+export { enableRenderer } from './tiles/Support';
 
 // Graph public API
 export { CsGraph, type GraphType } from './ui/Graph';

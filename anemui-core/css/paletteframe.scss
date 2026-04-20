@@ -1,301 +1,152 @@
+/* ══════════════════════════════════════════════════════════════
+   paletteframe.scss  –  Laguna Serena
+   ══════════════════════════════════════════════════════════════ */
+
 @import "media-queries.scss";
 
 div.paletteFrame.paletteSmall {
-    img {
-        width: 25px;
-        height: 28px;
-    }
-
-    #units {
-        display: none;
-    }
-
-    div.legend span {
-        display: none;
-        display: inline-block;
-        overflow: hidden;
-        width: 0px;
-        height: 0px;
-    }
-
-    div.legend br {
-        visibility: hidden;
-    }
-
-    div.legend {
-        padding-bottom: 5px;
-        width: 40px;
-    }
-
-    div.paletteSelect {
-        display: none;
-    }
+    img { width: 28px; height: 32px; }
+    #units { display: none; }
+    div.legend span { display: none; display: inline-block; overflow: hidden; width: 0px; height: 0px; }
+    div.legend br { visibility: hidden; }
+    div.legend { padding-bottom: 6px; width: 44px; }
+    div.paletteSelect { display: none; }
 }
 
 div.paletteFrame {
-    // @include blurBgFrame();
-    // position: static !important;
     background-color: transparent !important;
-    // max-width: fit-content;
-    // bottom: 7.5em;
     padding-top: 0px !important;
     padding-right: 0px !important;
-    
-    img {
-        width: 100px;
-        height: 114px;
-    }
 
-    div.legend:hover {
-        cursor:pointer;
-    }
+    img { width: 108px; height: 122px; }
+
+    div.legend:hover { cursor: pointer; }
 
     div.legend {
-        line-height: 12px;
-        text-align: center;
-        display: inline-flex;
-        flex-direction: column;
-        overflow: hidden;
-        box-shadow: 0.5px 0.5px 3px $color_3;
-        border-radius: 10px;
-        width: auto;
-        max-width: 40px;
-        min-width: 40px;
-        -webkit-transition: all 0.6s;
+        line-height: 14px; text-align: center;
+        display: inline-flex; flex-direction: column; overflow: hidden;
+        box-shadow: $shadow-soft; border-radius: $radius-md;
+        width: auto; max-width: 44px; min-width: 44px;
         transition: all 0.6s;
     }
 
     div.legend .legendText {
-        visibility: hidden;
-        white-space: nowrap;
-        padding-block: 5px;
-        margin: 10px;
+        visibility: hidden; white-space: nowrap;
+        padding-block: 6px; margin: 11px;
+        font-size: 0.9em; font-family: $font-body;
     }
 
     div.legend:hover {
-        max-width: fit-content;
-        min-width: fit-content;
-        cursor:pointer;
+        max-width: fit-content; min-width: fit-content; cursor: pointer;
     }
 
-    div.legend:hover .legendText{
-        visibility:visible;
-    }
+    div.legend:hover .legendText { visibility: visible; }
 
     #units {
-        color: $title_color;
-        background-color: $title_bgcolor;
-        font-size: 20px;
-        font-weight: 400;
-        padding: 0.5em 0.1em;
-        border-radius: 10px 10px 0px 0px;
+        color: $text-on-dark;
+        background-color: $accent-forest;          // azul pizarra
+        font-size: 22px; font-weight: $fw-medium;
+        padding: 0.55em 0.1em;
+        border-radius: $radius-md $radius-md 0 0;
+        font-family: $font-mono;
     }
 
     #legendBottom {
-        height: 15px;
-        background-color: $title_bgcolor;
-        border-radius: 0px 0px 10px 10px;
+        height: 16px;
+        background-color: $accent-forest;
+        border-radius: 0 0 $radius-md $radius-md;
     }
 
-    .mediumText {
-        font-size: 18px;
-    }
+    .mediumText { font-size: 20px; }
+    .smallText  { font-size: 13px; }
 
-    .smallText {
-        font-size: 12px;
-    }
-
-    div.row.selectDiv{
-        width: 200px;
-        margin: 0.45em 0em;
-    }
+    div.row.selectDiv { width: 210px; margin: 0.5em 0; }
 
     .uncDiv input.form-check-input {
-        visibility: visible;
-        margin: 0px auto;
-        width: 4em !important;
-        height: 2em !important;
-        background-color: $color_8;
-        box-shadow: 0.5px 0.5px 3px $color_3;
-        cursor:pointer;
+        visibility: visible; margin: 0px auto;
+        width: 4.2em !important; height: 2.1em !important;
+        background-color: $bg-elevated; box-shadow: $shadow-soft; cursor: pointer;
+        border: 1.5px solid $border-color;
+        &:checked { background-color: $accent-secondary; border-color: $accent-secondary; }
     }
 
-    .slider.slider-horizontal {
-        width: 80%;
-        height: auto;
-    }
+    .slider.slider-horizontal { width: 82%; height: auto; }
+    div.slider.visible { display: inline-block; margin: 0px auto; width: 82%; cursor: pointer; }
 
-    div.slider.visible {
-        display: inline-block;
-        margin: 0px auto;
-        width: 80%;
-        cursor: pointer;
-    }
+    .selectDiv .slider-track { height: 2px !important; width: 100% !important; margin-top: 0 !important; }
+    .selectDiv .slider-handle { top: 7px; width: 16px; height: 16px; background: $accent-primary; }
 
-    .selectDiv .slider-track {
-        height: 1px !important;
-        width: 100% !important;
-        margin-top: 0px !important;
-    }
-
-    .selectDiv .slider-handle {
-        top: 7px;
-        width: 15px;
-        height: 15px;
-    }
-    .hidden {
-        display: none;
-    }
+    .hidden { display: none; }
 
     .closeDiv .icon {
-        height: 30px;
-        width: 30px;
-        font-size: 1.8em !important;
-        box-shadow: 0.5px 1px 5px $color_3;
-        background-color: $color_8;
-        color: $color_4 !important;
-        border-radius: 50px;
-        border: solid 1px $color_4;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        height: 34px; width: 34px; font-size: 1.9em !important;
+        box-shadow: $shadow-soft; background-color: $bg-panel;
+        color: $accent-forest !important; border-radius: $radius-pill;
+        border: solid 1.5px $accent-forest;
+        display: flex; align-items: center; justify-content: center;
+        &:hover { cursor: pointer; background-color: $bg-elevated; color: $accent-primary !important; border-color: $accent-primary; }
     }
 
-    .closeDiv .icon:hover {
-        cursor:pointer;
-        background-color: $color_6;
-        color: $color_8;
-    }
+    /* ── Gradient legend ──────────────────────────────────── */
+    .gradient-legend-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
 
-    .gradient-legend-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-}
-
-/* Barra de gradiente - ocupa todo el ancho disponible */
-.gradient-legend-bar {
-    border: 1px solid #ccc;
-    border-radius: 2px;
-    box-shadow: 0.5px 0.5px 3px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    min-height: 150px;
-}
-
-/* Etiquetas individuales */
-.gradient-legend-label {
-    color: #333;
-    font-size: 11px;
-    font-weight: 500;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 2px 6px;
-    border-radius: 3px;
-    text-align: center;
-    min-width: 35px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
-}
-
-div.paletteFrame div.legend .gradient-legend-container {
-    margin: 0;
-    padding: 0;
-}
-
-div.paletteFrame div.legend .gradient-legend-bar {
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-}
-
-/* Responsive para móviles */
-@media (max-width: 768px) {
     .gradient-legend-bar {
-        min-height: 120px;
+        border: 1px solid $border-color; border-radius: 3px;
+        box-shadow: $shadow-soft; width: 100%; min-height: 158px;
     }
-    
+
     .gradient-legend-label {
-        font-size: 10px;
-        padding: 1px 4px;
-        min-width: 30px;
+        color: $text-primary; font-size: 12px; font-weight: $fw-medium; font-family: $font-mono;
+        background: rgba(255, 255, 255, 0.92); padding: 2px 7px;
+        border-radius: 4px; text-align: center; min-width: 38px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba($border-color, 0.7); flex-shrink: 0;
     }
-}
 
+    div.paletteFrame div.legend .gradient-legend-container { margin: 0; padding: 0; }
+    div.paletteFrame div.legend .gradient-legend-bar { border-radius: 0; border-left: none; border-right: none; }
 
-// ----------------- Prueba CSS radiobuttons
-.inputDiv{
-    background-color:$color_1;
-    border-radius: 10px;
-    box-shadow: 0.5px 1px 5px $color_3;
-}
-
-.radio {
-    width:100%;
-  margin: 0.5rem;
-  text-align: left;
-  font-size: 0.8em;
-  input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    + .radio-label {
-      &:before {
-        content: '';
-        background: $color_1;
-        border-radius: 100%;
-        border: 1px solid darken($color_1, 25%);
-        display: inline-block;
-        width: 1.1em;
-        height: 1.1em;
-        position: relative;
-        top: 0.25em;
-        margin-right: 0.6em !important; 
-        vertical-align: top;
-        cursor: pointer;
-        text-align: left;
-        transition: all 250ms ease;
-      }
+    @media (max-width: 768px) {
+        .gradient-legend-bar { min-height: 128px; }
+        .gradient-legend-label { font-size: 11px; padding: 1px 5px; min-width: 32px; }
     }
-    &:checked {
-      + .radio-label {
-        &:before {
-          background-color: $color_8;
-          box-shadow: inset 0 0 0 2px $color_1;
+
+    /* ── Radio buttons ────────────────────────────────────── */
+    .inputDiv {
+        background-color: $bg-panel; border-radius: $radius-md;
+        box-shadow: $shadow-soft; border: 1.5px solid $border-color;
+    }
+
+    .radio {
+        width: 100%; margin: 0.55rem; text-align: left; font-size: 0.85em;
+        font-family: $font-body; color: $text-primary;
+        input[type="checkbox"] {
+            position: absolute; opacity: 0; cursor: pointer;
+            + .radio-label {
+                &:before {
+                    content: ''; background: $bg-panel; border-radius: 100%;
+                    border: 1px solid darken($bg-panel, 22%);
+                    display: inline-block; width: 1.15em; height: 1.15em;
+                    position: relative; top: 0.25em; margin-right: 0.65em !important;
+                    vertical-align: top; cursor: pointer; transition: all 250ms ease;
+                }
+            }
+            &:checked + .radio-label::before {
+                background-color: $accent-secondary;
+                box-shadow: inset 0 0 0 2px $bg-panel;
+            }
+            + .radio-label:empty::before { margin-right: 0; }
         }
-      }
     }
-    + .radio-label {
-      &:empty {
-        &:before {
-          margin-right: 0;
-        }
-      }
-    }
-  }
-}
-// -----------------
 
     @include md-desktop {
-        top: 8.6em;
-        div.legend {
-            line-height: 14px;
-            max-width: fit-content;
-            min-width: fit-content;
-        }
-
-        div.legend .legendText{
-            visibility:visible;
-        }
-    
+        top: 8.8em;
+        div.legend { line-height: 16px; max-width: fit-content; min-width: fit-content; }
+        div.legend .legendText { visibility: visible; }
     }
 
     @include xl-desktop {
-        top: 9.6em;
-        div.legend {
-            line-height: 18px;
-        }
+        top: 9.8em;
+        div.legend { line-height: 20px; }
     }
-
-
 }

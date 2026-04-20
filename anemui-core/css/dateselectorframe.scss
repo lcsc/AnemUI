@@ -1,83 +1,536 @@
+div.DateSelectorFrame.small {
+    max-width: fit-content;
 
-div.DateSelectorFrame.small { max-width: fit-content; div.slider-horizontal, button { display: none; } }
+    div.slider-horizontal,
+    button {
+        display: none;
+    }
+}
 
 div.DateSelectorFrame {
     @include mbBgFrame($radius-xl);
-    width: 92%; left: 0; right: 0; bottom: 0.5em;
-    margin-left: auto; margin-right: auto;
-    background-color: $bg-panel; border: 1.5px solid $border-color; box-shadow: $shadow-medium;
+    width: 93%;
+    left: 0;
+    right: 0;
+    bottom: 0.6em;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
 
-    div.datePickerGroup { position: relative; display: flex; width: fit-content; margin: 0 auto; }
-    div#datePicker { width: fit-content; margin: 0 auto; }
+    div.datePickerGroup {
+        position: relative;
+        display: flex;
+        width: fit-content;
+        margin: 0 auto;
+    }
+
+    div#datePicker {
+        width: fit-content;
+        margin: 0 auto;
+    }
 
     div#climPicker {
-        background-color: $accent-forest; border: none; border-radius: $radius-md; width: fit-content !important;
-        p { margin: 5px !important; font: bold 12px $font-mono !important; color: $text-on-dark; letter-spacing: 0.04em; }
+        background-color: $accent-secondary; // verde musgo
+        border: none;
+        border-radius: $radius-md;
+        width: fit-content !important;
+
+        p {
+            margin: 6px !important;
+            font: bold 13px $font-mono !important;
+            color: $text-on-dark;
+            letter-spacing: 0.04em;
+        }
     }
 
-    div.input-group-min { width: 50%; }
-    div.leftButtons, div.rightButtons { display: flex; width: 100%; padding: 0; }
-    div.leftButtons { justify-content: flex-end; } div.rightButtons { justify-content: flex-start; }
-    button.navbar-btn-title { min-width: 130px; }
+    div.input-group-min {
+        width: 50%;
+    }
 
-    // ── Slider ───────────────────────────────────────────────
-    div.slider-horizontal { width: 100%; }
-    div.slider-track { height: 4px !important; margin-top: -2px !important; background: $border-color !important; border-radius: 2px; }
-    div.slider-selection { background: $accent-primary !important; border-radius: 2px; }
+    div.leftButtons,
+    div.rightButtons {
+        display: flex;
+        width: 100%;
+        padding: 0;
+    }
+
+    div.leftButtons {
+        justify-content: flex-end;
+    }
+
+    div.rightButtons {
+        justify-content: flex-start;
+    }
+
+    button.navbar-btn-title {
+        min-width: 136px;
+    }
+
+    div.slider-horizontal {
+        width: 100%;
+    }
+
+    div.slider-track {
+        height: 4px !important;
+        margin-top: -2px !important;
+        background: $border-color !important;
+        border-radius: 2px;
+    }
+
+    div.slider-selection {
+        background: $accent-primary !important;
+        border-radius: 2px;
+    }
 
     div.slider-handle {
-        width: 18px; height: 18px; top: -9px;
-        background: $accent-primary; border: 3px solid $bg-panel; border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        top: -10px;
+        background: $accent-primary;
+        border: 3px solid $bg-panel;
+        border-radius: 50%;
         box-shadow: 0 0 0 1.5px $accent-primary, $shadow-soft;
         transition: transform $transition-fast, box-shadow $transition-fast;
-        &:hover, &:active { transform: scale(1.2); box-shadow: 0 0 0 2px $accent-hover, $shadow-colored; }
+
+        &:hover,
+        &:active {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 2.5px $accent-hover, $shadow-gold;
+        }
     }
 
-    div.tooltip { max-width: fit-content; font-family: $font-mono; }
+    div.tooltip {
+        max-width: fit-content;
+        font-family: $font-mono;
+        font-size: 0.88em;
+    }
 
     @include desktop {
         @include bgFrame($radius-xl);
-        width: 55%; background-color: $bg-panel; border: 1.5px solid $border-color; box-shadow: $shadow-medium;
+        width: 55%;
+        background-color: transparent;
+        border: none;
+        box-shadow: none;
     }
 }
 
-/* ── Datepicker ───────────────────────────────────────────── */
 .datepicker {
-    border-radius: $radius-lg !important; color: $text-primary;
-    background-color: $bg-panel; position: fixed !important;
-    left: 50% !important; transform: translate(-50%, 0%) !important;
-    display: block !important; box-shadow: $shadow-strong; font-family: $font-mono;
-    border: 2px solid $accent-forest;
+    border-radius: $radius-lg !important;
+    color: $text-primary;
+    background-color: $bg-panel;
+    position: fixed !important;
+    left: 50% !important;
+    transform: translate(-50%, 0%) !important;
+    display: block !important;
+    box-shadow: $shadow-strong;
+    font-family: $font-mono;
+    border: 2px solid $accent-secondary; // verde musgo
 }
 
 .datepicker table tr td,
-.datepicker table tr th { border: 2px solid $bg-panel !important; border-radius: $radius-sm; }
+.datepicker table tr th {
+    border: 2px solid $bg-panel !important;
+    border-radius: $radius-sm;
+}
 
 .datepicker table tr th {
-    color: $text-on-dark !important; font-weight: $fw-bold; font-size: 0.85em;
-    background-color: $accent-forest;
+    color: $text-on-dark !important;
+    font-weight: $fw-bold;
+    font-size: 0.9em;
+    background-color: $accent-secondary; // verde musgo
 }
 
 .datepicker table tr td.day,
 .datepicker table tr td span {
-    color: $text-primary !important; background-color: $bg-input !important;
-    border-radius: $radius-sm; transition: background $transition-fast; font-size: 0.85em;
+    color: $text-primary !important;
+    background-color: $bg-input !important;
+    border-radius: $radius-sm;
+    transition: background $transition-fast;
+    font-size: 0.9em;
 }
 
 .datepicker table tr td.disabled,
-.datepicker table tr td span.disabled { color: $text-muted !important; background-color: $bg-base !important; }
+.datepicker table tr td span.disabled {
+    color: $text-muted !important;
+    background-color: $bg-base !important;
+}
 
-.datepicker table tr td:hover, .datepicker table tr td:focus, .datepicker table tr td:active,
-.datepicker table tr td span:hover, .datepicker table tr td span:focus, .datepicker table tr td span:active {
-    background-color: rgba($accent-tertiary, 0.3) !important; color: $text-primary !important;
+.datepicker table tr td:hover,
+.datepicker table tr td:focus,
+.datepicker table tr td:active,
+.datepicker table tr td span:hover,
+.datepicker table tr td span:focus,
+.datepicker table tr td span:active {
+    background-color: rgba($accent-gold, 0.28) !important;
+    color: $text-primary !important;
 }
 
 .datepicker table tr td.active,
 .datepicker table tr td span.active {
-    background-color: $accent-primary !important; color: $text-on-accent !important; font-weight: $fw-bold;
+    background-color: $accent-primary !important;
+    color: $text-on-accent !important;
+    font-weight: $fw-bold;
 }
 
-.datepicker table tr td.old, .datepicker table tr td.new,
-.datepicker table tr td span.old, .datepicker table tr td span.new {
-    color: $text-muted !important; background-color: $bg-base !important;
+.datepicker table tr td.old,
+.datepicker table tr td.new,
+.datepicker table tr td span.old,
+.datepicker table tr td span.new {
+    color: $text-muted !important;
+    background-color: $bg-base !important;
+}
+
+div.btnSelect {
+    padding: 0.55em 0.18em;
+    min-height: 46px;
+    border-radius: 0 0 $radius-md $radius-md;
+    font-family: $font-body;
+
+    .form-switch {
+        padding-left: 0 !important;
+    }
+
+    &.left {
+        text-align: left;
+    }
+
+    &.right {
+        text-align: right;
+    }
+}
+
+div.btnSelect.visible {
+    select {
+        margin: 0 auto;
+        display: block;
+        width: 92%;
+        text-align: center;
+        font-family: $font-mono;
+        font-size: 0.87em;
+        font-weight: $fw-medium;
+        letter-spacing: 0.04em;
+        border: 1.5px solid $border-color;
+        border-radius: $radius-sm;
+        padding: 5px 10px;
+        background: $bg-panel;
+        color: $text-primary;
+        transition: border-color $transition-fast;
+
+        &:focus {
+            border-color: $accent-secondary;
+            outline: none;
+            box-shadow: 0 0 0 2.5px rgba($accent-secondary, 0.22);
+        }
+
+        option {
+            cursor: pointer;
+            background: $bg-panel;
+            color: $text-primary;
+        }
+
+        cursor: pointer;
+    }
+
+    div.slider {
+        display: inline-block;
+        margin: 0 auto;
+        width: 92%;
+        cursor: pointer;
+    }
+
+    span {
+        display: none;
+    }
+
+    .form-check-input {
+        visibility: visible;
+        margin: 9px auto;
+        width: 3.8rem !important;
+        height: 2rem !important;
+        background-color: $bg-elevated;
+        border: 1.5px solid $border-color;
+        cursor: pointer;
+        transition: background $transition-fast, border-color $transition-fast;
+
+        &:checked {
+            background-color: $accent-secondary;
+            border-color: $accent-secondary;
+        }
+
+        &:focus {
+            box-shadow: 0 0 0 2.5px rgba($accent-gold, 0.28);
+        }
+    }
+
+    .selectDiv {
+        padding: 0.3rem;
+        margin-top: 9px;
+        outline: none !important;
+        display: block;
+        background: transparent;
+        border: none;
+        color: $text-primary !important;
+        text-align: center;
+        font-family: $font-body;
+    }
+}
+
+.buttonDiv.visible {
+    height: 42px;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.88rem;
+    font-family: $font-body;
+    font-weight: $fw-semibold;
+    margin-top: 6px;
+    outline: none !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    overflow: hidden;
+    width: auto;
+    max-width: 42px;
+
+    background-color: $bg-panel;
+    color: $text-primary !important;
+    border: 1.5px solid $border-color;
+    border-radius: $radius-pill;
+    box-shadow: $shadow-soft;
+
+    transition: max-width $transition-smooth, background $transition-fast,
+        box-shadow $transition-fast, border-color $transition-fast;
+
+    .icon {
+        font-size: 20px !important;
+        margin-right: 11px;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        color: $accent-forest;
+        transition: color $transition-fast;
+    }
+
+    .text {
+        white-space: nowrap;
+        padding-right: 13px;
+        color: $text-primary;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    &:hover {
+        cursor: pointer;
+        max-width: 300px;
+        background: $bg-elevated;
+        border-color: $accent-gold;
+        box-shadow: $shadow-gold;
+
+        .text {
+            opacity: 1;
+        }
+
+        .icon {
+            color: $accent-primary;
+        }
+    }
+
+    &:active {
+        background: $bg-input;
+    }
+
+    &:disabled {
+        pointer-events: none;
+        background: $bg-input;
+        color: $text-muted !important;
+        border-color: $border-color;
+        box-shadow: none;
+
+        .icon {
+            color: $text-muted;
+        }
+    }
+}
+
+select.selectDiv.visible {
+    margin: 0 auto;
+    display: block;
+    width: 92%;
+    text-align: center;
+    font-family: $font-mono;
+    font-size: 0.87em;
+    border: 1.5px solid $border-color;
+    border-radius: $radius-sm;
+    padding: 5px 10px;
+    background: $bg-panel;
+    color: $text-primary;
+    cursor: pointer;
+
+    option {
+        cursor: pointer;
+        background: $bg-panel;
+        color: $text-primary;
+    }
+}
+
+.hidden {
+    display: none;
+}
+
+div.GraphContainer {
+    @include bgFrame($radius-lg);
+    position: absolute;
+    left: 50%;
+    top: 30%;
+    transform: translate(-50%, -30%);
+    padding: 1.2em 2em;
+    background-color: $bg-panel;
+    color: $text-primary;
+    border: 2px solid $accent-secondary; // verde musgo
+    box-shadow: $shadow-strong;
+    z-index: 2000;
+    width: fit-content;
+    position: relative;
+    font-family: $font-body;
+
+    a.popup-close-button {
+        position: absolute;
+        top: 11px;
+        right: 11px;
+        z-index: 300;
+
+        i.bi {
+            width: 36px;
+            height: 36px;
+            font-size: 1.55rem;
+            color: $text-muted;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: $radius-pill;
+            transition: all $transition-fast;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover {
+                color: $accent-primary;
+                background: $bg-elevated;
+            }
+        }
+    }
+
+    div.popup-content-wrapper {
+        padding: 2px;
+        text-align: left;
+        border-radius: $radius-lg;
+    }
+
+    .dygraph-label {
+        color: $text-primary;
+        font-size: 1.0em;
+        font-weight: $fw-semibold;
+        font-family: $font-body;
+        padding: 0.25rem 0;
+    }
+
+    .dygraph-title {
+        margin-bottom: 16px;
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: $fw-bold;
+        font-family: $font-display;
+        color: $accent-secondary; // verde musgo
+        letter-spacing: 0.01em;
+    }
+
+    .dygraph-ylabel {
+        font-size: 0.85em;
+        color: $text-secondary;
+        font-weight: $fw-medium;
+        font-family: $font-body;
+    }
+
+    .dygraph-ylabel,
+    .dygraph-axis-label-y {
+        overflow: visible;
+        padding-right: 9px;
+    }
+
+    .dygraph-axis-label {
+        font-family: $font-mono;
+        font-size: 0.72em;
+        font-weight: $fw-medium;
+        color: $text-muted;
+        letter-spacing: 0.03em;
+    }
+
+    .dygraph-legend {
+        text-align: center;
+        width: 1024px;
+        background-color: transparent !important;
+        left: 0 !important;
+        font-family: $font-mono;
+        font-size: 0.82em;
+        color: $text-primary;
+    }
+
+    .chart {
+        border: 1px dashed $border-color;
+        margin: 5px 5px 5px 52px;
+        padding: 2px;
+    }
+
+    .labels-content {
+        min-height: 38px;
+        padding-top: 9px;
+    }
+
+    #labels {
+        text-align: center;
+    }
+
+    #scaleSelectorsContainer {
+        margin: 11px 0;
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    #graphTooltip {
+        position: absolute;
+        display: none;
+        background-color: $accent-secondary; // verde musgo
+        color: $text-on-dark;
+        padding: 6px 12px;
+        border-radius: $radius-sm;
+        pointer-events: none;
+        font-size: 12px;
+        font-family: $font-mono;
+        z-index: 1000;
+        white-space: nowrap;
+        box-shadow: $shadow-medium;
+        letter-spacing: 0.03em;
+    }
+}
+
+div.downloadFrame {
+    z-index: 100;
+    bottom: 0.3em;
+    left: 0.3em;
+    margin: 0px auto;
+
+    #latlong {
+        font-size: 15px;
+        margin: 11px 0px;
+    }
+
+    .download-handler {
+        width: 22px;
+        height: 11px;
+    }
+
+    .download-btn {
+        width: 100%;
+    }
 }

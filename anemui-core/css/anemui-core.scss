@@ -8,13 +8,15 @@ $bootstrap-icons-font-src: url("~bootstrap-icons/font/fonts/bootstrap-icons.woff
 @import "~bootstrap-slider/src/sass/bootstrap-slider.scss";
 
 /* ── Google Fonts ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Source+Code+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+/* Nunito: redondeada y amigable para cuerpo y títulos
+   JetBrains Mono: técnico para labels, coords y código      */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ── Reset & Base ─────────────────────────────────────────── */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html {
-    font-size: 15px;
+    font-size: 17px;                /* +2px vs diseño anterior */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -24,7 +26,7 @@ body {
     font-family: $font-body;
     color: $text-primary;
     background-color: $bg-base;
-    line-height: 1.55;
+    line-height: 1.6;
 }
 
 body.noscroll {
@@ -39,9 +41,9 @@ html, body, #map {
 
 #map {
     position: absolute;
-    top: 58px;
+    top: 62px;
     z-index: 0;
-    @include desktop { top: 76px; }
+    @include desktop { top: 82px; }
 }
 
 #download_iframe { display: none; }
@@ -51,18 +53,18 @@ html, body, #map {
     margin: 0 auto;
 }
 
-/* ── Frame Mixins (solid) ─────────────────────────────────── */
+/* ── Frame Mixins ────────────────────────────────────────── */
 @mixin mbBgFrame($b_radius: $radius-lg) {
     z-index: 10;
     border-radius: $b_radius;
-    padding: 0.5em 0.25em;
+    padding: 0.6em 0.3em;
     position: absolute;
 }
 
 @mixin bgFrame($b_radius: $radius-lg) {
     z-index: 10;
     border-radius: $b_radius;
-    padding: 0.25em 1.5em 0.5em;
+    padding: 0.3em 1.75em 0.6em;
     position: absolute;
 }
 
@@ -77,16 +79,16 @@ html, body, #map {
     @include bgFrame($b_radius);
 }
 
-/* ── Scrollbar ────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 7px; height: 7px; }
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: $bg-base; }
 ::-webkit-scrollbar-thumb {
     background: $border-color;
     border-radius: 4px;
-    &:hover { background: $text-muted; }
+    &:hover { background: $accent-sage; }
 }
 
-/* ── Utility ──────────────────────────────────────────────── */
+/* ── Utility ─────────────────────────────────────────────── */
 .hide   { display: none !important; }
 .hidden { display: none; }
 

@@ -1,69 +1,90 @@
+// ══════════════════════════════════════════════════════════════
+//  SAMS – Variables Rediseño  ·  Paleta Laguna Serena
+//  Azules suaves · Verdes musgo · Amarillos ocre
+// ══════════════════════════════════════════════════════════════
+
 // ── Core palette ─────────────────────────────────────────────
-$color_1:        #FFFFFF;           // panel / dropdown bg
-$color_2:        #E8573A;           // accent (rojo amapola)
-$color_3:        #3C3C3C;           // deep dark text
-$color_4:        #2D5A3D;           // header / navbar (verde bosque)
-$color_5:        #3A8FB7;           // secondary (azul cielo)
-$color_6:        #EBE7E0;           // hover bg (lino más cálido)
-$color_7:        #F2A735;           // tertiary/warning (girasol)
-$color_8:        #FFFFFF;           // card surface
-$color_9:        #6B7C72;           // secondary text (verde gris)
-$color_10:       #F4F1EC;           // input bg (lino)
-$color_11:       #2A2A2A;           // strong text
+$color_1:        #F5F8F5;           // panel / fondo verde muy claro
+$color_2:        #D4863A;           // acento ámbar cálido
+$color_3:        #2C3E30;           // texto oscuro verdoso
+$color_4:        #2B5278;           // header / navbar (azul pizarra)
+$color_5:        #5A8FA3;           // azul cielo suave
+$color_6:        #E8EFE6;           // hover bg (verde muy claro)
+$color_7:        #C9B84C;           // amarillo ocre / dorado
+$color_8:        #FFFFFF;           // superficie carta
+$color_9:        #5C7268;           // texto secundario verde gris
+$color_10:       #EFF4F0;           // fondo input (verde lino)
+$color_11:       #1E2E22;           // texto fuerte
 
 // ── Semantic tokens ──────────────────────────────────────────
-$title_color:    #FFFFFF;           // top bar bg
-$title_bgcolor:  #2D5A3D;          // header bg (verde bosque)
-$border-color:   #C8C2B8;          // borders (lino oscuro)
-$navbar_bgcolor: #2D5A3D;
+$title_color:    #FFFFFF;
+$title_bgcolor:  #2B5278;           // azul pizarra
+$border-color:   #B8CABA;           // borde verde suave
+$navbar_bgcolor: #2B5278;
 
-// ── Extended tokens ──────────────────────────────────────────
-$accent-primary:    #E8573A;        // amapola
-$accent-hover:      #F06A4F;        // amapola claro
-$accent-deep:       #C94830;        // amapola oscuro
-$accent-secondary:  #3A8FB7;        // azul cielo
-$accent-sec-hover:  #4BA3CA;        // azul cielo claro
-$accent-tertiary:   #F2A735;        // girasol
-$accent-forest:     #2D5A3D;        // verde bosque
-$accent-forest-lt:  #3D7550;        // verde bosque claro
+// ── Accent tokens ────────────────────────────────────────────
+$accent-primary:    #3A7DB8;        // azul lago principal
+$accent-hover:      #5295CC;        // azul lago claro
+$accent-deep:       #255C8A;        // azul lago oscuro
+$accent-secondary:  #5A9E6F;        // verde musgo
+$accent-sec-hover:  #72B887;        // verde musgo claro
+$accent-tertiary:   #C9B84C;        // amarillo ocre
+$accent-forest:     #2B5278;        // azul pizarra profundo (ex-verde bosque)
+$accent-forest-lt:  #3D6E9E;        // azul pizarra claro
 
-$bg-base:           #F4F1EC;        // fondo lino
+// Amarillo suave para highlights
+$accent-gold:       #D4A843;
+$accent-gold-lt:    #E8C96B;
+$accent-sage:       #7FAF8C;        // verde salvia
+$accent-sage-lt:    #A4C9AE;        // verde salvia claro
+
+// ── Backgrounds ──────────────────────────────────────────────
+$bg-base:           #EDF2ED;        // fondo principal verde muy pálido
 $bg-panel:          #FFFFFF;        // paneles blancos
-$bg-elevated:       #EBE7E0;        // hover / elevated
-$bg-input:          #F4F1EC;        // input bg
+$bg-elevated:       #E4EDE6;        // hover / elevated
+$bg-input:          #EFF4F0;        // input bg
 $bg-dropdown:       #FFFFFF;        // dropdown
-$bg-dropdown-hover: #F0EDE6;        // dropdown hover
-$bg-header:         #2D5A3D;        // header oscuro
+$bg-dropdown-hover: #E8F0EA;        // dropdown hover
+$bg-header:         #2B5278;        // header azul pizarra
+$bg-subtle:         #F0F5F1;        // fondo sutil
 
-$text-primary:   #2A2A2A;          // texto principal
-$text-secondary: #6B7C72;          // texto secundario
-$text-muted:     #9EA69E;          // texto apagado
-$text-on-dark:   #FFFFFF;          // texto sobre fondo oscuro
-$text-on-accent: #FFFFFF;          // texto sobre acento
+// ── Text ─────────────────────────────────────────────────────
+$text-primary:   #1E2E22;           // texto principal oscuro verdoso
+$text-secondary: #5C7268;           // texto secundario
+$text-muted:     #8FA898;           // texto apagado
+$text-on-dark:   #FFFFFF;           // sobre fondos oscuros
+$text-on-accent: #FFFFFF;           // sobre acento
 
-$shadow-soft:    0 2px 8px rgba(60, 60, 60, 0.08);
-$shadow-medium:  0 4px 16px rgba(60, 60, 60, 0.12);
-$shadow-strong:  0 8px 28px rgba(60, 60, 60, 0.18);
-$shadow-colored: 0 4px 14px rgba(232, 87, 58, 0.15);
+// ── Shadows ──────────────────────────────────────────────────
+$shadow-soft:    0 2px 10px rgba(43, 82, 120, 0.08);
+$shadow-medium:  0 4px 20px rgba(43, 82, 120, 0.13);
+$shadow-strong:  0 8px 32px rgba(43, 82, 120, 0.20);
+$shadow-colored: 0 4px 16px rgba(58, 125, 184, 0.18);
+$shadow-gold:    0 4px 14px rgba(201, 184, 76, 0.20);
 
-$radius-sm:   5px;
-$radius-md:   10px;
-$radius-lg:   14px;
-$radius-xl:   20px;
-$radius-pill:  50px;
+// ── Radii ─────────────────────────────────────────────────────
+$radius-sm:   6px;
+$radius-md:   12px;
+$radius-lg:   18px;
+$radius-xl:   24px;
+$radius-pill: 50px;
 
+// ── Transitions ──────────────────────────────────────────────
 $transition-fast:   0.12s ease;
 $transition-base:   0.2s ease;
-$transition-smooth: 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+$transition-smooth: 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
 
 // ── Typography ───────────────────────────────────────────────
-$font-body:    'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif;
-$font-mono:    'Source Code Pro', 'Consolas', monospace;
+// Tipografía más grande y legible
+$font-body:    'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+$font-mono:    'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+$font-display: 'Nunito', sans-serif;            // títulos también en Nunito
 $fw-normal:    400;
 $fw-medium:    500;
 $fw-semibold:  600;
 $fw-bold:      700;
 
+// ── Media queries ────────────────────────────────────────────
 @mixin sm-mobile {
     @media only screen and (max-width: 576px) { @content; }
 }
