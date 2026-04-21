@@ -37,7 +37,11 @@ export type AnemuiLayer={
     credit?: string,
     wmsParams?: { [key: string]: string },
     cssFilter?: string,
-    format?: string
+    format?: string,
+    /** URL WMS equivalente para usar en la exportación del mapa (cuando el tipo no es WMS) */
+    wmsExportUrl?: string,
+    /** Nombre de capa WMS para la exportación */
+    wmsExportLayer?: string
 }
 
 const baseStyle= new Style({
@@ -88,9 +92,8 @@ export class LayerManager {
         // CAPAS BASE
         // ------ Global
         this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:true, credit:ign})
-        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
+        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>', wmsExportUrl:'https://services.arcgisonline.com/ArcGIS/services/World_Imagery/MapServer/WMSServer?', wmsExportLayer:'0'})
         this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
-        this.addBaseLayer({name:"Capa fondo global EUMETSAT",url:'https://view.eumetsat.int/geoserver/wms?',type:AL_TYPE_WMS,layer:'backgrounds:ne_background', global:true, credit:'© <a href="https://www.eumetsat.int" target="_blank">EUMETSAT</a>'})
         this.addBaseLayer({name:"Fondo relieve global GEBCO (IGN)",url: 'https://www.ign.es/wmts/mapa-raster?',type:AL_TYPE_WMTS,layer:'MTN_Fondo', global:true, credit:ign, format:'image/jpeg'})
         // ------ Estatal
         this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
@@ -216,12 +219,21 @@ export class LayerManager {
         return this.baseLayers[this.baseSelected[layer]].source
     }
 
-    /** Returns the WMS-capable selected base layers in order (bottom to top), for use in map export */
+    /** Devuelve las capas base seleccionadas con info WMS para la exportación del mapa.
+     *  Para capas de tipo WMS usa su URL directamente; para otros tipos (OSM, WMTS)
+     *  usa wmsExportUrl/wmsExportLayer si están definidos. */
     public getBaseLayerWmsInfo(): Array<{url: string, layer: string, transparent: boolean}> {
-        return this.baseSelected
-            .map(name => this.baseLayers[name])
-            .filter(l => l && l.type === AL_TYPE_WMS)
-            .map((l, idx) => ({ url: l.url, layer: l.layer, transparent: idx > 0 }));
+        const result: Array<{url: string, layer: string, transparent: boolean}> = [];
+        this.baseSelected.forEach((name, idx) => {
+            const l = this.baseLayers[name];
+            if (!l) return;
+            if (l.type === AL_TYPE_WMS) {
+                result.push({ url: l.url, layer: l.layer, transparent: idx > 0 });
+            } else if (l.wmsExportUrl && l.wmsExportLayer) {
+                result.push({ url: l.wmsExportUrl, layer: l.wmsExportLayer, transparent: idx > 0 });
+            }
+        });
+        return result;
     }
 
     //TopLayer
