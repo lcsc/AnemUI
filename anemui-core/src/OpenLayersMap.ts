@@ -758,6 +758,16 @@ export class OpenLayerMap implements CsMapController {
       // Esperar a que se construyan las imágenes antes de registrar las capas
       await buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
 
+      // Si buildImages falló internamente (p.ej. fichero .bin inexistente), las capas quedan
+      // sin source. Limpiar y desactivar para no reintentar en cada cambio de zoom.
+      const hasData = this.uncertaintyLayer.some(l => (l as any).getSource() !== null);
+      if (!hasData) {
+        this.safelyRemoveUncertaintyLayers();
+        this.uncertaintyLayer = [];
+        state.uncertaintyLayer = false;
+        return;
+      }
+
       // Registrar las capas en LayerManager después de construirlas
       lmgr.setUncertaintyLayer(this.uncertaintyLayer);
 
@@ -1389,27 +1399,51 @@ export class OpenLayerMap implements CsMapController {
     capture.height = height;
     const ctx = capture.getContext('2d');
 
-    const olCanvases = this.map.getViewport().querySelectorAll('.ol-layer canvas') as NodeListOf<HTMLCanvasElement>;
+    // Usar el mismo selector que el ejemplo oficial de OL para capturar todas las capas
+    const olCanvases = this.map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer') as NodeListOf<HTMLCanvasElement>;
     olCanvases.forEach((canvas) => {
       if (canvas.width > 0) {
         ctx.save();
-        const opacity = (canvas.parentNode as HTMLElement).style.opacity || '1';
-        ctx.globalAlpha = parseFloat(opacity);
+        const parent = canvas.parentNode as HTMLElement;
+        const opacity = parent?.style?.opacity || canvas.style.opacity || '1';
+        ctx.globalAlpha = opacity === '' ? 1 : parseFloat(opacity);
+
         const transform = canvas.style.transform;
-        const matrix = transform.match(/^matrix\(([^\(]*)\)$/);
-        if (matrix) {
-          const values = matrix[1].split(',').map(Number);
-          ctx.setTransform(values[0], values[1], values[2], values[3], values[4], values[5]);
+        let matrix: number[];
+        const matrixMatch = transform && transform.match(/^matrix\(([^\(]*)\)$/);
+        if (matrixMatch) {
+          matrix = matrixMatch[1].split(',').map(Number);
+        } else {
+          // Fallback para capas HiDPI: la transformación real es el ratio style.width/canvas.width
+          const sw = parseFloat(canvas.style.width);
+          const sh = parseFloat(canvas.style.height);
+          matrix = [
+            sw > 0 ? sw / canvas.width : 1, 0, 0,
+            sh > 0 ? sh / canvas.height : 1, 0, 0
+          ];
         }
+        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+
+        // Aplicar backgroundColor del contenedor si existe (algunos tiles tienen fondo definido)
+        if (parent?.style?.backgroundColor) {
+          ctx.fillStyle = parent.style.backgroundColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
         ctx.drawImage(canvas, 0, 0);
         ctx.restore();
       }
     });
+
+    // Restaurar transform a identidad antes de devolver
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
     return capture;
   }
 
   private buildWmsUrlForLayer(url: string, layer: string, bbox4326: number[], width: number, height: number, transparent: boolean): string {
-    return url +
+    const base = url.endsWith('?') || url.includes('?') ? url : url + '?';
+    return base +
       'SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap' +
       '&LAYERS=' + encodeURIComponent(layer) + '&STYLES=' +
       '&SRS=EPSG:4326' +
@@ -1423,7 +1457,9 @@ export class OpenLayerMap implements CsMapController {
     canBbox: number[], canW: number, canH: number,
     callback: (mainBg: CanvasImageSource | null, canBg: CanvasImageSource | null) => void
   ): void {
-    // Obtain WMS-capable selected base layers from LayerManager; fallback to IGN base if none
+    // Obtener capas base con info WMS para la exportación. Incluye capas WMS nativas y
+    // capas OSM/WMTS que tengan wmsExportUrl configurado (p.ej. ESRI satélite).
+    // Si ninguna capa tiene equivalente WMS, usar IGN base como fallback cartográfico.
     let wmsLayers = LayerManager.getInstance().getBaseLayerWmsInfo();
     if (wmsLayers.length === 0) {
       wmsLayers = [{ url: 'https://www.ign.es/wms-inspire/ign-base?', layer: 'IGNBaseTodo', transparent: false }];
