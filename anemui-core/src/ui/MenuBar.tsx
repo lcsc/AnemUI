@@ -612,8 +612,9 @@ export class MenuBar extends BaseFrame {
         const ptMgr = PaletteManager.getInstance();
         const lmgr = LayerManager.getInstance();
 
-        // Actualizar el estado en PaletteManager
+        // Actualizar el estado en PaletteManager y en el estado global de la app
         ptMgr.setUncertaintyLayerChecked(checked);
+        this.parent.getState().uncertaintyLayer = checked;
 
         // Actualizar el checkbox solo si existe
         if (this.uncertaintyCheckbox) {
