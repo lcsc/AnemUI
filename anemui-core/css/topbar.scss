@@ -680,11 +680,11 @@
         }
 
         .inputDiv .title {
-            font-size: 0.8em;
+            font-size: 0.7em;
         }
 
         .inputDiv .sub-title {
-            font-size: 0.8em;
+            font-size: 0.7em;
         }
 
 
@@ -722,6 +722,16 @@
         }
     }
 
+    @include md-desktop {
+        .inputDiv .title {
+            font-size: 0.8em;
+        }
+
+        .inputDiv .sub-title {
+            font-size: 0.8em;
+        }
+    }
+
     @include xl-desktop {
         // width: 97%;
         padding-top: 0em;
@@ -729,10 +739,18 @@
         .longLogo, .shortLogo, .allScrLogo {
             padding-left: 0;
         }
-        
+
         #logo img {
             width: 120px;
             margin-left: 7%;
+        }
+
+        .inputDiv .title {
+            font-size: 0.9em;
+        }
+
+        .inputDiv .sub-title {
+            font-size: 0.9em;
         }
     }
 }
@@ -788,7 +806,7 @@ li {
 
 .inputDiv .title{
     white-space: normal;
-    font-size: 0.7em;
+    font-size: 0.6em;
     font-style: italic;
     line-height: 1.2;
     text-align: left;
@@ -799,7 +817,7 @@ li {
 
 .inputDiv .sub-title {
     display: block;
-    font-size: 1em;
+    font-size: 0.9em;
     font-style: normal;
     font-weight: 500;
     width: fit-content;
@@ -983,9 +1001,17 @@ input.selection-param-input {
 .dropdown-item {
     box-sizing: border-box;
     white-space: normal;
-    font-size: 0.7em !important;
+    font-size: 0.6em !important;
     font-style: italic;
     line-height: 1.2;
+
+    @include md-desktop {
+        font-size: 0.65em !important;
+    }
+
+    @include xl-desktop {
+        font-size: 0.7em !important;
+    }
 }
 
 #marker {

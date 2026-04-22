@@ -96,8 +96,8 @@ export default class Language {
                 'index units': 'Index units',
                 'Terciles': 'Terciles',
                 'Anomalías': 'Anomalies',
-                'kJ/m2': 'kJ/m²',
-                'MJ/m2': 'MJ/m²'
+                'kJ/m2': 'kJ/m²·day',
+                'MJ/m2': 'MJ/m²·day'
             }
         },
         es: {
@@ -184,8 +184,8 @@ export default class Language {
                 'index units': 'Unidades del índice',
                 'Terciles': 'Terciles',
                 'Anomalías': 'Anomalías',
-                'kJ/m2': 'kJ/m²',
-                'MJ/m2': 'MJ/m²'
+                'kJ/m2': 'kJ/m²·día',
+                'MJ/m2': 'MJ/m²·día'
             }
         }
     }
