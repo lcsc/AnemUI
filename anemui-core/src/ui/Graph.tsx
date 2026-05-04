@@ -6,6 +6,7 @@ import { dateText } from "../data/CsPConstans";
 import { CsTimeSpan } from "../data/CsDataTypes";
 import { CsLatLong } from '../CsMapTypes';
 
+
 require("dygraphs/dist/dygraph.css")
 
 export type GraphType = "Serial" | "Area" | "Linear" | "Cummulative" | "MgFr" | "WindRose" | "PercentileClock" | "ECDF" | "DailyEvolution"
@@ -110,21 +111,16 @@ export class CsGraph extends BaseFrame {
 
   public render(): JSX.Element {
     let self = this;
-    // Calcular tamaño responsivo del gráfico
-    const maxWidth = Math.min(screen.width * 0.85, 900);
-    const maxHeight = Math.min(screen.height * 0.65, 500);
-    let graphWidth = screen.width > 1200 ? Math.min(screen.width * 0.4, maxWidth) : Math.min(screen.width * 0.55, maxWidth);
-    let graphHeight = screen.height > 900 ? Math.min(screen.height * 0.4, maxHeight) : Math.min(screen.height * 0.50, maxHeight);
     let element =
       (<div className="container">
         <div id="GraphContainer" className='GraphContainer row' hidden >
           <div className="popup-content-wrapper col">
             <div className="popup-content" style={{ width: "auto", position: "relative" }}>
-              <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
+              <div id="popGraph" className="pop-graph"></div>
               <div id="graphTooltip"></div>
             </div>
             <div className="labels-content" style={{ width: "auto" }}>
-              <div id="labels" style={{ width: "100%", maxWidth: graphWidth + "px" }}></div>
+              <div id="labels" style={{ width: "100%" }}></div>
             </div>
             <div id="colorLegend" style={{ display: "none", padding: "8px 5px", justifyContent: "center", alignItems: "center", gap: "3px", flexWrap: "wrap", fontSize: "11px" }}></div>
             <div id="graphControls" className="graph-controls" hidden style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", gap: "15px", flexWrap: "wrap" }}>
@@ -315,10 +311,12 @@ export class CsGraph extends BaseFrame {
     const totalH = headerHeight + graphH + labelsH + colorLegendH + copyrightHeight;
     const totalW = graphW;
 
+    const dpr = Math.max(window.devicePixelRatio || 1, 2);
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = totalW;
-    exportCanvas.height = totalH;
+    exportCanvas.width = Math.round(totalW * dpr);
+    exportCanvas.height = Math.round(totalH * dpr);
     const ctx = exportCanvas.getContext('2d');
+    ctx.scale(dpr, dpr);
 
     // Fondo blanco
     ctx.fillStyle = '#ffffff';
@@ -492,7 +490,7 @@ export class CsGraph extends BaseFrame {
     }
 
     // --- Barra de logos (pie) ---
-    this.drawLogosAndDownload(exportCanvas, ctx, 'grafico.png');
+    this.drawLogosAndDownload(exportCanvas, ctx, 'grafico.png', dpr);
   }
 
   /**
@@ -535,67 +533,83 @@ export class CsGraph extends BaseFrame {
     ctx.drawImage(chartCanvas, 0, headerHeight);
 
     // Barra de logos + descarga
-    this.drawLogosAndDownload(exportCanvas, ctx, filename);
+    this.drawLogosAndDownload(exportCanvas, ctx, filename, window.devicePixelRatio || 1);
   }
 
-  protected drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string): void {
-    const logoImg = document.querySelector('#logo-container img') as HTMLImageElement;
-    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
-      this.appendLogosBarAndDownload(exportCanvas, logoImg, filename);
-    } else if (logoImg) {
-      const clone = new Image();
-      clone.crossOrigin = 'anonymous';
-      clone.onload = () => this.appendLogosBarAndDownload(exportCanvas, clone, filename);
-      clone.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
-      clone.src = logoImg.src;
-    } else {
-      this.downloadExportCanvas(exportCanvas, filename);
-    }
+  protected drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string, exportScale?: number): void {
+    const banner = new Image();
+    banner.crossOrigin = 'anonymous';
+    banner.onload = () => this.appendLogosBarAndDownload(exportCanvas, banner, filename, exportScale);
+    banner.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
+    banner.src = './images/banner_logos_imp.png';
   }
 
-  protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string): void {
-    const logoBarHeight = 60;
-    const pad = 10;
+  protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string, exportScale?: number): void {
+    const pad = 6;
+    const copyrightLineH = 18;
+    const dpr = exportScale ?? (window.devicePixelRatio || 1);
+
+    const cssW = srcCanvas.width / dpr;
+
+    // Logos a ancho completo, altura proporcional
+    const logoH = cssW * (logoImg.naturalHeight / logoImg.naturalWidth);
+    const totalBarH = logoH + copyrightLineH;
+    const totalBarHPx = Math.round(totalBarH * dpr);
 
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = srcCanvas.width;
-    finalCanvas.height = srcCanvas.height + logoBarHeight;
+    finalCanvas.height = srcCanvas.height + totalBarHPx;
     const fCtx = finalCanvas.getContext('2d');
 
+    // Copiar el contenido del gráfico (ya está en resolución dpr)
     fCtx.drawImage(srcCanvas, 0, 0);
 
-    const barY = srcCanvas.height;
-    fCtx.fillStyle = '#ffffff';
-    fCtx.fillRect(0, barY, finalCanvas.width, logoBarHeight);
+    fCtx.save();
+    fCtx.translate(0, srcCanvas.height);
+    fCtx.scale(dpr, dpr);
 
+    // Fondo blanco + línea separadora
+    fCtx.fillStyle = '#ffffff';
+    fCtx.fillRect(0, 0, cssW, totalBarH);
     fCtx.strokeStyle = '#cccccc';
     fCtx.lineWidth = 1;
     fCtx.beginPath();
-    fCtx.moveTo(0, barY);
-    fCtx.lineTo(finalCanvas.width, barY);
+    fCtx.moveTo(0, 0);
+    fCtx.lineTo(cssW, 0);
     fCtx.stroke();
 
-    // Copyright primero (para medir su ancho y reservar espacio)
-    const copyrightText = '\u00A9 AEMET - CSIC PTI-Clima';
+    // Logo a ancho completo — downscaling progresivo (mipmap) para evitar
+    // artefactos al reducir 6060px→~800px en un solo paso.
+    const targetW = Math.round(cssW * dpr);
+    const targetH = Math.round(logoH * dpr);
+    let logoSrc: HTMLImageElement | HTMLCanvasElement = logoImg;
+    let sw = logoImg.naturalWidth;
+    let sh = logoImg.naturalHeight;
+    while (sw / targetW > 2 || sh / targetH > 2) {
+      sw = Math.max(Math.ceil(sw / 2), targetW);
+      sh = Math.max(Math.ceil(sh / 2), targetH);
+      const tmp = document.createElement('canvas');
+      tmp.width = sw;
+      tmp.height = sh;
+      const tCtx = tmp.getContext('2d');
+      tCtx.imageSmoothingEnabled = true;
+      tCtx.imageSmoothingQuality = 'high';
+      tCtx.drawImage(logoSrc, 0, 0, sw, sh);
+      logoSrc = tmp;
+    }
+    fCtx.imageSmoothingEnabled = true;
+    fCtx.imageSmoothingQuality = 'high';
+    fCtx.drawImage(logoSrc, 0, 0, cssW, logoH);
+
+    // Copyright en línea separada debajo
+    const copyrightText = '© AEMET - CSIC PTI-Clima';
     fCtx.font = '10px sans-serif';
     fCtx.fillStyle = '#666666';
-    fCtx.textBaseline = 'bottom';
+    fCtx.textBaseline = 'middle';
     fCtx.textAlign = 'right';
-    fCtx.fillText(copyrightText, finalCanvas.width - pad, barY + logoBarHeight - 4);
-    fCtx.textAlign = 'left';
-    const copyrightW = fCtx.measureText(copyrightText).width + pad * 2;
+    fCtx.fillText(copyrightText, cssW - pad, logoH + copyrightLineH / 2);
 
-    // Logo: ajustar para no solapar el copyright
-    const maxLogoH = logoBarHeight - pad * 2;
-    const maxLogoW = finalCanvas.width - copyrightW - pad;
-    const scaleH = maxLogoH / logoImg.naturalHeight;
-    const scaleW = maxLogoW / logoImg.naturalWidth;
-    const scale = Math.min(scaleH, scaleW);
-    const logoW = logoImg.naturalWidth * scale;
-    const logoH = logoImg.naturalHeight * scale;
-    const logoX = pad;
-    const logoY = barY + (logoBarHeight - logoH) / 2;
-    fCtx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+    fCtx.restore();
 
     this.downloadExportCanvas(finalCanvas, filename);
   }
