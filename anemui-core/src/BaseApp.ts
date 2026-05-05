@@ -641,7 +641,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             legendTitle: legendTitle,
             selection: "",
             selectionParamEnable: false,
-            uncertaintyLayer: overlayVarId != undefined,
+            // Si la variable no cambia, conservar la preferencia del usuario (no resetear al hacer zoom)
+            uncertaintyLayer: this.state.varId === varId
+                ? this.state.uncertaintyLayer
+                : (overlayVarId != undefined),
             overlayVarId: overlayVarId
         }
     }

@@ -95,7 +95,9 @@ export default class Language {
                 'adim': 'adim',
                 'index units': 'Index units',
                 'Terciles': 'Terciles',
-                'Anomalías': 'Anomalies'
+                'Anomalías': 'Anomalies',
+                'kJ/m2': 'kJ/m²·day',
+                'MJ/m2': 'MJ/m²·day'
             }
         },
         es: {
@@ -181,7 +183,9 @@ export default class Language {
                 'adim': 'adim',
                 'index units': 'Unidades del índice',
                 'Terciles': 'Terciles',
-                'Anomalías': 'Anomalías'
+                'Anomalías': 'Anomalías',
+                'kJ/m2': 'kJ/m²·día',
+                'MJ/m2': 'MJ/m²·día'
             }
         }
     }

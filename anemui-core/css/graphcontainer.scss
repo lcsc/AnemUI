@@ -33,6 +33,21 @@ div.GraphContainer {
         padding: 0.3em 0.5em;
     }
 
+    .pop-graph {
+        width: clamp(300px, 50vw, 900px);
+        height: clamp(250px, 44vh, 500px);
+
+        @include md-desktop {
+            width: clamp(500px, 55vw, 1100px);
+            height: clamp(350px, 48vh, 600px);
+        }
+
+        @include xl-desktop {
+            width: clamp(600px, 55vw, 1200px);
+            height: clamp(400px, 50vh, 650px);
+        }
+    }
+
     a.popup-close-button {
         position: absolute;
         top: 10px;
@@ -44,7 +59,7 @@ div.GraphContainer {
         width: 40px;
         height: 40px;
         font-size: 2rem;
-        color: #2c6d9a;
+        color: $title_color;
         padding: 5px;
         cursor: pointer;
     }
