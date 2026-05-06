@@ -843,6 +843,9 @@ export class DateSelectorFrame extends BaseFrame {
         }
         this.setValidDates(this.parent.getState().times, varChanged);
         this.slider.setValue(this.parent.getState().selectedTimeIndex,false,false);
+        if (this.parent.getState().climatology) {
+            this.updateMode();
+        }
     }
 
     protected updateMode(){
