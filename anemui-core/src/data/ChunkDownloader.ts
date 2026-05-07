@@ -563,8 +563,17 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         }
 
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
+
+        if (!chunk || chunk.length === 0) {
+            throw new Error(`Empty chunk for ${varName}${portion} at offset=${chunkOffset}, size=${chunkSize}. Check server range support or data integrity.`);
+        }
+
         const uncompressedArray = inflate(chunk);
-   
+
+        if (!uncompressedArray) {
+            throw new Error(`inflate returned undefined for ${varName}${portion}, chunk.length=${chunk.length}`);
+        }
+
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
         if (!Array.isArray(floatArray) || floatArray.length === 0) {

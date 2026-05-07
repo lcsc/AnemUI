@@ -41,7 +41,8 @@ export interface ColorLegendConfig {
 
 export class CsGraph extends BaseFrame {
   protected graphTitle: string;
-  protected graphSubTitle: string;
+  protected graphCoords: string = '';   // set by setGraphCoords() — lat/lng or station name
+  protected graphSubTitle: string = ''; // viewer-specific extra text (dates, etc.)
   protected yLabel: string;
   protected xLabel: string;
   public graphType: GraphType;
@@ -96,64 +97,33 @@ export class CsGraph extends BaseFrame {
     super(_parent)
   }
 
-  // Stub methods for ETM-specific UI controls (overridden in ETMGraph)
-  protected changeViewMode(): void {}
-  protected toggleTemperatureType(): void {}
-  protected previousYear(): void {}
-  protected nextYear(): void {}
-  protected createCompleteYearData(dataLines: string[], targetYear: number, header: string): string {
-    // Stub implementation - overridden in ETMGraph
-    return header + '\n';
-  }
-  protected updateGraphForYear(): void {
-    // Stub implementation - overridden in ETMGraph
-  }
-
   public render(): JSX.Element {
     let self = this;
+    // Calcular tamaño responsivo del gráfico
+    const maxWidth = Math.min(screen.width * 0.80, 900);
+    const maxHeight = Math.min(screen.height * 0.60, 500);
+    let graphWidth = screen.width > 1200 ? Math.min(screen.width * 0.5, maxWidth) : Math.min(screen.width * 0.65, maxWidth);
+    let graphHeight = screen.height > 900 ? Math.min(screen.height * 0.4, maxHeight) : Math.min(screen.height * 0.50, maxHeight);
     let element =
       (<div className="container">
         <div id="GraphContainer" className='GraphContainer row' hidden >
           <div className="popup-content-wrapper col">
             <div className="popup-content" style={{ width: "auto", position: "relative" }}>
-              <div id="popGraph" className="pop-graph"></div>
+              <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
+              {/* <div id="popGraph" className="pop-graph"></div> */}
               <div id="graphTooltip"></div>
             </div>
             <div className="labels-content" style={{ width: "auto" }}>
               <div id="labels" style={{ width: "100%" }}></div>
             </div>
             <div id="colorLegend" style={{ display: "none", padding: "8px 5px", justifyContent: "center", alignItems: "center", gap: "3px", flexWrap: "wrap", fontSize: "11px" }}></div>
-            <div id="graphControls" className="graph-controls" hidden style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", gap: "15px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label htmlFor="viewModeSelector" style={{ fontWeight: "bold" }}>Vista:</label>
-                <select id="viewModeSelector" className="form-select" style={{ width: "auto" }} onChange={() => { this.changeViewMode() }}>
-                  <option value="monthly">Por años</option>
-                  <option value="full">Serie completa</option>
-                </select>
-              </div>
-              <div id="tempToggleContainer" style={{ display: "none", alignItems: "center", gap: "10px" }}>
-                <label htmlFor="tempToggle" style={{ fontWeight: "bold" }}>Mostrar:</label>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <label htmlFor="tempToggle" style={{ fontWeight: "normal", marginBottom: 0 }}>Temperatura media</label>
-                  <label className="switch">
-                    <input type="checkbox" id="tempToggle" onChange={() => { this.toggleTemperatureType() }} />
-                    <span className="slider round"></span>
-                  </label>
-                  <label htmlFor="tempToggle" style={{ fontWeight: "normal", marginBottom: 0 }}>Temperatura extrema</label>
-                </div>
-              </div>
-              <div id="yearPagination" className="year-pagination" style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                <button type="button" id="prevYearBtn" className="btn navbar-btn" onClick={() => { this.previousYear() }}>← Año anterior</button>
-                <span id="currentYearLabel" style={{ fontWeight: "bold", whiteSpace: "nowrap" }}>Año: </span>
-                <button type="button" id="nextYearBtn" className="btn navbar-btn" onClick={() => { this.nextYear() }}>Año siguiente →</button>
-              </div>
-            </div>
-            <div id="graphDiv" className="droppDownButton" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-              <div>
+            <div id="graphDiv" className="droppDownButton" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "6px 0", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                 <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
                 <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
               </div>
-              <div>
+              <div id="graphControls" hidden style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", flex: 1, flexWrap: "nowrap", minWidth: 0, overflow: "hidden" }}></div>
+              <div style={{ flexShrink: 0 }}>
                 <button type="button" className="btn navbar-btn" onClick={() => { this.exportGraph() }}><i className="bi bi-printer"></i> {this.parent.getTranslation('imprimir_grafico') || 'Imprimir gráfico'}</button>
               </div>
             </div>
@@ -194,6 +164,12 @@ export class CsGraph extends BaseFrame {
       const target = e.target as HTMLElement;
       if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' ||
           target.tagName === 'SELECT' || target.tagName === 'A') {
+        return;
+      }
+      // No iniciar drag sobre los elementos del range selector de Dygraph
+      if (target.classList.contains('dygraph-rangesel-bgcanvas') ||
+          target.classList.contains('dygraph-rangesel-fgcanvas') ||
+          target.classList.contains('dygraph-rangesel-zoomhandle')) {
         return;
       }
 
@@ -272,13 +248,25 @@ export class CsGraph extends BaseFrame {
     this.hideColorLegend();
   }
 
+  protected get exportShowDygraphTitle(): boolean { return true; }
+
+  protected getExportHeaderLines(): string[] {
+    const state = this.parent.getState();
+    const tpSupport = state.tpSupport || '';
+    const varName = state.varName || '';
+    const subVarName = state.subVarName || '';
+    const text = [tpSupport, varName, subVarName].filter(s => s && s.length > 0).join(' - ');
+    return text ? [text] : [];
+  }
+
   public exportGraph(): void {
     const popGraph = document.getElementById('popGraph');
     if (!popGraph) return;
 
     const labelsDiv = document.getElementById('labels');
     const colorLegendDiv = document.getElementById('colorLegend');
-    const headerHeight = 36;
+    const headerLines = this.getExportHeaderLines();
+    const headerHeight = Math.max(36, headerLines.length * 18 + 12);
     const padding = 12;
     const copyrightHeight = 20;
 
@@ -322,20 +310,21 @@ export class CsGraph extends BaseFrame {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, totalW, totalH);
 
-    // --- Barra de título (info del visor) ---
-    const state = this.parent.getState();
-    const varName = state.varName || '';
-    const subVarName = state.subVarName || '';
-    const tpSupport = state.tpSupport || '';
-    const titleParts = [tpSupport, varName, subVarName].filter(s => s && s.length > 0);
-    const headerText = titleParts.join(' - ') + (this.graphSubTitle || '');
-
+    // --- Barra de título ---
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(0, 0, totalW, headerHeight);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
     ctx.textBaseline = 'middle';
-    ctx.fillText(headerText, padding, headerHeight / 2);
+    if (headerLines.length <= 1) {
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(headerLines[0] || '', padding, headerHeight / 2);
+    } else {
+      const lineH = headerHeight / headerLines.length;
+      headerLines.forEach((line, i) => {
+        ctx.font = i === 0 ? 'bold 14px sans-serif' : '12px sans-serif';
+        ctx.fillText(line, padding, lineH * i + lineH / 2);
+      });
+    }
 
     // Recortar al área del gráfico para que no se salga
     ctx.save();
@@ -370,14 +359,27 @@ export class CsGraph extends BaseFrame {
 
     // Dibujar título del gráfico (Dygraph: div.dygraph-title)
     const dygraphTitle = popGraph.querySelector('.dygraph-title') as HTMLElement;
-    if (dygraphTitle && dygraphTitle.textContent) {
+    if (dygraphTitle && dygraphTitle.innerHTML && this.exportShowDygraphTitle) {
       const rect = dygraphTitle.getBoundingClientRect();
       const style = window.getComputedStyle(dygraphTitle);
       ctx.fillStyle = style.color || '#333333';
-      ctx.font = (style.fontWeight || 'bold') + ' ' + (style.fontSize || '14px') + ' ' + (style.fontFamily || 'sans-serif');
       ctx.textBaseline = 'top';
       ctx.textAlign = 'center';
-      ctx.fillText(dygraphTitle.textContent, graphW / 2, rect.top - graphRect.top + headerHeight);
+      // Split on <br> to support two-line titles (graphTitle + coords)
+      const htmlLines = dygraphTitle.innerHTML.split(/<br\s*\/?>/i);
+      const titleLines = htmlLines.map(h => {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = h;
+        return (tmp.textContent || '').trim();
+      }).filter(l => l.length > 0);
+      const baseFontSize = parseInt(style.fontSize || '14');
+      const lineHeight = baseFontSize * 1.35;
+      const topY = rect.top - graphRect.top + headerHeight;
+      titleLines.forEach((line, i) => {
+        const fontSize = i === 0 ? baseFontSize : Math.round(baseFontSize * 0.85);
+        ctx.font = (i === 0 ? (style.fontWeight || 'bold') : 'normal') + ' ' + fontSize + 'px ' + (style.fontFamily || 'sans-serif');
+        ctx.fillText(line, graphW / 2, topY + i * lineHeight);
+      });
       ctx.textAlign = 'left';
     }
 
@@ -460,28 +462,69 @@ export class CsGraph extends BaseFrame {
     // --- Color Legend ---
     if (colorLegendDiv && colorLegendDiv.style.display !== 'none' && colorLegendDiv.offsetHeight > 0) {
       const items = colorLegendDiv.children;
-      let lx = padding;
+
+      // Measure total width for horizontal centering
+      let totalLegendW = 0;
+      ctx.save();
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i] as HTMLElement;
+        if (item.tagName === 'SPAN') {
+          ctx.font = 'bold 11px sans-serif';
+          totalLegendW += ctx.measureText(item.textContent || '').width + 8;
+        } else {
+          const svgCircle = item.querySelector('svg circle') as SVGCircleElement | null;
+          const colorBox = item.querySelector('div') as HTMLElement;
+          const label = item.querySelector('span') as HTMLElement;
+          if (svgCircle) {
+            totalLegendW += Math.min(parseFloat(svgCircle.getAttribute('r') || '5'), 12) * 2 + 4;
+          } else if (colorBox) {
+            totalLegendW += 20;
+          }
+          if (label) {
+            ctx.font = '11px sans-serif';
+            totalLegendW += ctx.measureText(label.textContent || '').width + 8;
+          }
+        }
+      }
+      ctx.restore();
+
+      const legendRowH = colorLegendH - 8; // strip height excluding margin
+      const legendMidY = curY + 4 + legendRowH / 2; // vertical center of the legend strip
+      let lx = Math.max(padding, Math.round((totalW - totalLegendW) / 2));
+
       for (let i = 0; i < items.length; i++) {
         const item = items[i] as HTMLElement;
         if (item.tagName === 'SPAN') {
           ctx.fillStyle = '#333333';
           ctx.font = 'bold 11px sans-serif';
           ctx.textBaseline = 'middle';
-          ctx.fillText(item.textContent || '', lx, curY + 8);
+          ctx.fillText(item.textContent || '', lx, legendMidY);
           lx += ctx.measureText(item.textContent || '').width + 8;
         } else {
+          const svgCircle = item.querySelector('svg circle') as SVGCircleElement | null;
           const colorBox = item.querySelector('div') as HTMLElement;
           const label = item.querySelector('span') as HTMLElement;
-          if (colorBox) {
+          if (svgCircle) {
+            const r = Math.min(parseFloat(svgCircle.getAttribute('r') || '5'), 12);
+            const fill = svgCircle.getAttribute('fill') || '#ccc';
+            ctx.fillStyle = fill;
+            ctx.beginPath();
+            ctx.arc(lx + r, legendMidY, r, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            lx += r * 2 + 4;
+          } else if (colorBox) {
             ctx.fillStyle = colorBox.style.backgroundColor || '#ccc';
-            ctx.fillRect(lx, curY + 2, 18, 12);
+            ctx.fillRect(lx, legendMidY - 6, 18, 12);
             lx += 20;
           }
           if (label) {
             ctx.fillStyle = '#333333';
             ctx.font = '11px sans-serif';
             ctx.textBaseline = 'middle';
-            ctx.fillText(label.textContent || '', lx, curY + 8);
+            ctx.fillText(label.textContent || '', lx, legendMidY);
             lx += ctx.measureText(label.textContent || '').width + 8;
           }
         }
@@ -688,11 +731,24 @@ export class CsGraph extends BaseFrame {
     this.featureButtonContainer.hidden = false
   }
 
+  protected setGraphCoords(latlng: CsLatLong, station: any = []): void {
+    this.graphCoords = Object.keys(station).length !== 0
+      ? ' - ' + station['name']
+      : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E';
+  }
+
+  protected get fullTitle(): string {
+    const sub = this.graphSubTitle || '';
+    const coords = this.graphCoords || '';
+    const secondLine = coords + (sub ? ' | ' + sub : '');
+    return this.graphTitle + (secondLine.trim() ? '<br>' + secondLine : '');
+  }
+
 public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station: any = []) {
     // Ocultar leyenda por defecto (cada tipo de gráfico decidirá si mostrarla)
     this.hideColorLegend();
 
-    this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E';
+    this.setGraphCoords(latlng, station);
     this.container.hidden = false;
     
     if (Object.keys(station).length != 0) this.enableStationDwButton(station);
@@ -810,7 +866,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 3,
         delimiter: ";",
-        title: this.graphTitle + this.graphSubTitle,
+        title: this.fullTitle,
+        titleHeight: 54,
         ylabel: this.yLabel,
         xlabel: "",
         showRangeSelector: true,
@@ -1028,7 +1085,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 3,
         delimiter: ";",
-        title: this.graphTitle + this.graphSubTitle,
+        title: this.fullTitle,
+        titleHeight: 54,
         ylabel: this.yLabel,
         xlabel: this.xLabel || dateText,
         showRangeSelector: true,
@@ -1130,7 +1188,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         {
             labelsDiv: document.getElementById('labels'),
             digitsAfterDecimal: 1,
-            title: this.graphTitle + this.graphSubTitle,
+            title: this.fullTitle,
+        titleHeight: 54,
             ylabel: this.yLabel,
             xlabel: this.xLabel,
             // Ajustar márgenes para evitar solapamiento del yLabel
