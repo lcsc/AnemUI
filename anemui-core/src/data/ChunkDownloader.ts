@@ -425,8 +425,22 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             // Informar al painter de la resolución de la capa de datos principal para calcular stride
             if (uncertaintyLayer && (painterInstance as any).setDataWidth) {
                 const dataPortion = timesJs.portions[status.varId]?.[i] ?? timesJs.portions[uncertaintyVarId][i];
-                const dataWidth = timesJs.lonNum[status.varId + dataPortion] || width;
-                (painterInstance as any).setDataWidth(dataWidth);
+                let dataWidth = timesJs.lonNum[status.varId + dataPortion];
+
+                // Derivar dataWidth de los tamaños reales de los arrays cuando:
+                // a) lonNum no tiene el dato (dataWidth undefined), o
+                // b) lonNum devolvió el ancho de la incertidumbre en vez del dato (dataWidth >= width).
+                if (mainLayerData[i] && mainLayerData[i].length > 0 && height > 0 && width > 0) {
+                    const uncertPixels = width * height;
+                    const dataPixels = mainLayerData[i].length;
+                    const strideEst = Math.max(1, Math.round(Math.sqrt(uncertPixels / dataPixels)));
+                    if (!dataWidth || dataWidth >= width) {
+                        dataWidth = Math.round(width / strideEst);
+                    }
+                }
+
+                const finalDW = dataWidth || width;
+                (painterInstance as any).setDataWidth(finalDW);
             }
 
             let canvas: HTMLCanvasElement | null = null;
@@ -436,13 +450,12 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                 if (canvas) {
                     const portionName = timesJs.portions[uncertaintyVarId][i];
                     const extent = ncExtents[portionName];
-
                     const imageSource = new Static({
                         url: canvas.toDataURL('image/png'),
                         crossOrigin: '',
                         projection: olProjection,
                         imageExtent: extent,
-                        interpolate: false
+                        interpolate: uncertaintyLayer
                     });
 
                     dataTilesLayer[i].setSource(imageSource);
@@ -563,8 +576,17 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         }
 
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
+
+        if (!chunk || chunk.length === 0) {
+            throw new Error(`Empty chunk for ${varName}${portion} at offset=${chunkOffset}, size=${chunkSize}. Check server range support or data integrity.`);
+        }
+
         const uncompressedArray = inflate(chunk);
-   
+
+        if (!uncompressedArray) {
+            throw new Error(`inflate returned undefined for ${varName}${portion}, chunk.length=${chunk.length}`);
+        }
+
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
         if (!Array.isArray(floatArray) || floatArray.length === 0) {

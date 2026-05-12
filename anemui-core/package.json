@@ -1,6 +1,6 @@
 {
   "name": "@lcsc/anemui-core",
-  "version": "0.2.5",
+  "version": "0.2.6-SNAPSHOT",
   "description": "Climatic Services Viewer Core",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -82,6 +82,6 @@
     "zarr": "^0.6.3"
   },
   "devDependencies": {
-    "@lcsc/anemui-test": "0.2.5"
+    "@lcsc/anemui-test": ">=0.2.6-20250826  && <0.3.0"
   }
 }
