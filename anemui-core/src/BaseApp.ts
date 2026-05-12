@@ -999,6 +999,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return this.getTranslation('valor_en') + text + formattedValue;
     }
 
+    protected formatTercilPopup(tercilLabel: string): string {
+        const uncertaintyMsg = this.state.uncertaintyLayer
+            ? `<div class="uncertainty-msg">${this.getTranslation('uncertainty_prediction')}</div>`
+            : '';
+        return `<div>Tercil ${tercilLabel}</div>${uncertaintyMsg}`;
+    }
+
     public getHoverHintText(): string | null { return null; }
 
     // Metohds to manage renderers & folders
