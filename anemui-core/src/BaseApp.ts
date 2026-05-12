@@ -641,7 +641,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             legendTitle: legendTitle,
             selection: "",
             selectionParamEnable: false,
-            uncertaintyLayer: overlayVarId != undefined,
+            // Si la variable no cambia, conservar la preferencia del usuario (no resetear al hacer zoom)
+            uncertaintyLayer: this.state.varId === varId
+                ? this.state.uncertaintyLayer
+                : (overlayVarId != undefined),
             overlayVarId: overlayVarId
         }
     }
@@ -992,9 +995,11 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         } else {
             formattedValue = value.toFixed(2); // Mantiene 2 decimales para estos casos
         }
-    
+
         return this.getTranslation('valor_en') + text + formattedValue;
     }
+
+    public getHoverHintText(): string | null { return null; }
 
     // Metohds to manage renderers & folders
     public setRenderers(rd:number[] = [], remove: boolean = false): string[] {

@@ -13,8 +13,8 @@ div.GraphContainer {
     z-index: 2000;
     width: fit-content;
     max-width: 90vw;
-    max-height: 85vh;
-    overflow: auto;
+    max-height: 90vh;
+    overflow: hidden;
     cursor: move;
 
     // Responsive para pantallas pequeñas
@@ -33,6 +33,22 @@ div.GraphContainer {
         padding: 0.3em 0.5em;
     }
 
+    .pop-graph {
+        cursor: default;
+        width: clamp(300px, 52vmin, 700px);
+        height: clamp(250px, 46vmin, 650px);
+
+        @include md-desktop {
+            width: clamp(450px, 54vmin, 720px);
+            height: clamp(350px, 50vmin, 680px);
+        }
+
+        @include xl-desktop {
+            width: clamp(450px, 54vmin, 750px);
+            height: clamp(400px, 50vmin, 700px);
+        }
+    }
+
     a.popup-close-button {
         position: absolute;
         top: 10px;
@@ -44,7 +60,7 @@ div.GraphContainer {
         width: 40px;
         height: 40px;
         font-size: 2rem;
-        color: #2c6d9a;
+        color: $title_color;
         padding: 5px;
         cursor: pointer;
     }
@@ -67,22 +83,34 @@ div.GraphContainer {
     }
 
     .dygraph-title {
-        margin-bottom: 15px; /* Ajusta este valor para aumentar o disminuir la separación */
+        margin-bottom: 8px;
         text-align: center;
-        font-size: 20px;
-        color: gray 2px 2px 2px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #333333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    // Tick labels (valores en los ejes)
+    .dygraph-axis-label {
+        font-size: 12px;
+        color: #555555;
     }
 
     .dygraph-ylabel {
-        font-size: 18px;
-        color: gray -2px 2px 2px;
+        font-size: 13px;
+    }
+    .dygraph-xlabel {
+        font-size: 13px;
     }
 
     .dygraph-ylabel, .dygraph-axis-label-y {
-        // width: 100px !important; /* Adjust this value as needed */
         overflow: visible;
         padding-right: 10px;
-      }
+    }
 
     .dygraph-legend {
         text-align: center;
@@ -98,9 +126,31 @@ div.GraphContainer {
         padding: 2px;
     }
 
+    // .labels-content {
+    //     min-height: 0;
+    //     padding-top: 0;
+
+    //     &:has(#labels:not(:empty)) {
+    //         min-height: 40px;
+    //         padding-top: 10px;
+    //     }
+    // }
+
     .labels-content {
         min-height: 40px;
         padding-top: 10px;
+    }
+
+    // El #popGraph tiene height inline en px calculado con screen.height (resolución física).
+    // max-height con !important lo limita al espacio real del contenedor en cualquier pantalla.
+    // 250px = suma estimada de: padding contenedor + leyenda + labels + botones + controles.
+    #popGraph {
+        max-height: calc(90vh - 250px) !important;
+        overflow: hidden;
+    }
+
+    #labels {
+        text-align: center;
     }
 
     #labels {
