@@ -455,7 +455,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                         crossOrigin: '',
                         projection: olProjection,
                         imageExtent: extent,
-                        interpolate: uncertaintyLayer
+                        interpolate: false
                     });
 
                     dataTilesLayer[i].setSource(imageSource);

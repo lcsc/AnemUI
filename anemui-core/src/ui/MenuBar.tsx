@@ -1072,6 +1072,25 @@ export class MenuBar extends BaseFrame {
 
     // public selectFirstSpatialSupportValue(): void {
     //     this.spatialSupport.selectFirstValidValue();
-    // }   
+    // }
+
+    protected adjustSelectorsWidth(): void {
+        const inputDivs = document.querySelectorAll<HTMLElement>('.inputDiv');
+        inputDivs.forEach((inputDiv) => {
+            const options = inputDiv.querySelectorAll<HTMLElement>('.dropdown-item');
+            if (options.length === 0) return;
+            const measureEl = document.createElement('span');
+            measureEl.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap';
+            measureEl.style.font = window.getComputedStyle(options[0]).font;
+            document.body.appendChild(measureEl);
+            let maxWidth = 0;
+            options.forEach((option) => {
+                measureEl.textContent = option.textContent;
+                if (measureEl.offsetWidth > maxWidth) maxWidth = measureEl.offsetWidth;
+            });
+            document.body.removeChild(measureEl);
+            if (maxWidth > 0) inputDiv.style.minWidth = `${maxWidth + 20}px`;
+        });
+    }
 
 }
