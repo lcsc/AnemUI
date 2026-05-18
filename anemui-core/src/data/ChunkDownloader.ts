@@ -389,7 +389,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         } else {
             painterInstance = PaletteManager.getInstance().getPainter();
         }
-
         // Para datos computados, precalcular breaks con todos los datos combinados
         if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
             (painterInstance as any).setPrecalculatedBreaks(allValidNumbers);

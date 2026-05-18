@@ -19,7 +19,7 @@ export default class Language {
             "pop_importance": "Index importance",
             "pop_time_scale": "Applicable time scale",
             "pop_geographic": "Geographic limitation",
-            "pop_formula": "Formula",
+            "pop_formula": "Equation",
             "pop_reference": "Reference",
             "descargar_nc": "Download File",
             "descargar_peninsula": "Download Peninsula",
@@ -91,6 +91,7 @@ export default class Language {
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',
+                'celsius decade-1': '°C/decade',
                 'days': 'Days',
                 'hours': 'Hours',
                 'mm': 'mm',
@@ -110,7 +111,7 @@ export default class Language {
             "pop_importance": "Importancia del índice",
             "pop_time_scale": "Escala temporal aplicable",
             "pop_geographic": "Limitación geográfica",
-            "pop_formula": "Fórmula",
+            "pop_formula": "Ecuación",
             "pop_reference": "Referencia",
             "descargar_nc": "Descargar Archivo",
             "descargar_peninsula": "Descargar Península",
@@ -182,6 +183,7 @@ export default class Language {
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',
+                'celsius decade-1': '°C/década',
                 'days': 'Días',
                 'hours': 'Horas',
                 'mm': 'mm',
