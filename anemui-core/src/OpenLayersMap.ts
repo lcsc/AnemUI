@@ -349,6 +349,7 @@ export class OpenLayerMap implements CsMapController {
     this.popupContent = document.createElement("div");
     this.popupContent.setAttribute("role", "popup-content")
     this.popup.appendChild(this.popupContent);
+    this.popup.hidden = true;
   }
 
   public onMouseMove(event: MapBrowserEvent<any>) {
