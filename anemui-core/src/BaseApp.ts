@@ -521,14 +521,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadFrame.showPointButtons()
     }
 
-    onClick(event: CsMapEvent): void {
-        //console.log("Map Clicked");
-
+    onClick(event: CsMapEvent): Promise<void> {
         this.menuBar.showLoading();
-        loadLatLongData(event.latLong, this.state, this.timesJs)
+        return loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
                 this.menuBar.hideLoading();
-                this.onLlDataLoaded(data)
+                this.onLlDataLoaded(data);
             })
             .catch((reason: any) => {
                 this.menuBar.hideLoading();

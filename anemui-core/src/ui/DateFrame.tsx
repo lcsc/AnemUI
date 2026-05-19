@@ -896,6 +896,7 @@ export class DateSelectorFrame extends BaseFrame {
                         this.mode = DateFrameMode.DateFrameDate;
                         break;
                 }
+            this.setSliderTooltipHidden(false);
             }
         } else {
             this.timeSeriesFrame.hidden = true;
@@ -921,6 +922,23 @@ export class DateSelectorFrame extends BaseFrame {
                     this.climatologyFrame.hidden = false;
                     break;
             }
+            // En modo climatología el slider muestra fechas ficticias del NC (ej. "04/05/2026").
+            // Ocultar el tooltip del slider para todos los visores.
+            this.setSliderTooltipHidden(true);
+        }
+    }
+
+    private setSliderTooltipHidden(hidden: boolean): void {
+        const styleId = 'anemui-clim-tooltip-hide';
+        if (hidden) {
+            if (!document.getElementById(styleId)) {
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = '#sliderFrame div.tooltip { display: none !important; }';
+                document.head.appendChild(style);
+            }
+        } else {
+            document.getElementById(styleId)?.remove();
         }
     }
 
