@@ -102,7 +102,8 @@ export default class Language {
                 'Anomalías': 'Anomalies',
                 'kJ/m2': 'kJ/m²·day',
                 'MJ/m2': 'MJ/m²·day'
-            }
+            },
+            'nonNegativeUnits': ['%', 'days', 'mm']
         },
         es: {
             // PopData fields
@@ -194,7 +195,8 @@ export default class Language {
                 'Anomalías': 'Anomalías',
                 'kJ/m2': 'kJ/m²·día',
                 'MJ/m2': 'MJ/m²·día'
-            }
+            },
+            'nonNegativeUnits': ['%', 'días', 'mm']
         }
     }
 
