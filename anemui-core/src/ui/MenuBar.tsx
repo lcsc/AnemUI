@@ -34,6 +34,8 @@ export class MenuBar extends BaseFrame {
     private menuCentral: HTMLElement
     private loading: HTMLDivElement
     private loadingText: HTMLSpanElement
+    private loadingOverlay: HTMLDivElement | null = null
+    private loadingTimer: ReturnType<typeof setTimeout> | null = null
     private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
     private collapseMenu: HTMLElement
@@ -566,18 +568,70 @@ export class MenuBar extends BaseFrame {
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
-        if (this.loading) this.loading.hidden = false;
-        if (this.loadingText) {
-            this.loadingText.hidden = false;
-            this.loadingText.classList.add('blinking-text');
+        if (this.loadingOverlay || this.loadingTimer) return;
+
+        this.loadingTimer = setTimeout(() => {
+            this.loadingTimer = null;
+            this._showLoadingOverlay();
+        }, 2000);
+    }
+
+    private _showLoadingOverlay(): void {
+        if (this.loadingOverlay) return;
+
+        if (!document.getElementById('_anemui_spinner_kf')) {
+            const st = document.createElement('style');
+            st.id = '_anemui_spinner_kf';
+            st.textContent = '@keyframes _anemui_spin{to{transform:rotate(360deg)}}';
+            document.head.appendChild(st);
         }
+
+        const mapEl = document.getElementById('map');
+        if (!mapEl) return;
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = [
+            'position:absolute', 'inset:0', 'z-index:9000',
+            'background:transparent',
+            'display:flex', 'flex-direction:column',
+            'align-items:center', 'justify-content:center', 'gap:12px',
+            'pointer-events:none',
+        ].join(';');
+
+        const spinner = document.createElement('div');
+        spinner.style.cssText = [
+            'width:42px', 'height:42px',
+            'border:5px solid rgba(44,62,80,0.25)',
+            'border-top-color:#2c3e50',
+            'border-radius:50%',
+            'animation:_anemui_spin 0.8s linear infinite',
+            'filter:drop-shadow(0 0 4px rgba(255,255,255,0.8))',
+        ].join(';');
+
+        const label = document.createElement('span');
+        label.style.cssText = [
+            'font:bold 14px sans-serif',
+            'color:#ffffff',
+            'text-shadow:0 1px 3px rgba(0,0,0,0.9),0 0 8px rgba(0,0,0,0.7)',
+            'filter:drop-shadow(0 0 4px rgba(255,255,255,0.8))',
+        ].join(';');
+        label.textContent = 'Cargando datos…';
+
+        overlay.appendChild(spinner);
+        overlay.appendChild(label);
+        if (getComputedStyle(mapEl).position === 'static') mapEl.style.position = 'relative';
+        mapEl.appendChild(overlay);
+        this.loadingOverlay = overlay;
     }
 
     public hideLoading(): void {
-        if (this.loading) this.loading.hidden = true;
-        if (this.loadingText) {
-            this.loadingText.hidden = true;
-            this.loadingText.classList.add('display:none')
+        if (this.loadingTimer) {
+            clearTimeout(this.loadingTimer);
+            this.loadingTimer = null;
+        }
+        if (this.loadingOverlay) {
+            this.loadingOverlay.remove();
+            this.loadingOverlay = null;
         }
     }
 
@@ -1072,6 +1126,25 @@ export class MenuBar extends BaseFrame {
 
     // public selectFirstSpatialSupportValue(): void {
     //     this.spatialSupport.selectFirstValidValue();
-    // }   
+    // }
+
+    protected adjustSelectorsWidth(): void {
+        const inputDivs = document.querySelectorAll<HTMLElement>('.inputDiv');
+        inputDivs.forEach((inputDiv) => {
+            const options = inputDiv.querySelectorAll<HTMLElement>('.dropdown-item');
+            if (options.length === 0) return;
+            const measureEl = document.createElement('span');
+            measureEl.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap';
+            measureEl.style.font = window.getComputedStyle(options[0]).font;
+            document.body.appendChild(measureEl);
+            let maxWidth = 0;
+            options.forEach((option) => {
+                measureEl.textContent = option.textContent;
+                if (measureEl.offsetWidth > maxWidth) maxWidth = measureEl.offsetWidth;
+            });
+            document.body.removeChild(measureEl);
+            if (maxWidth > 0) inputDiv.style.minWidth = `${maxWidth + 20}px`;
+        });
+    }
 
 }

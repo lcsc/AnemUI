@@ -1122,3 +1122,12 @@ $elements: 15;
     color: $color_4 !important;
 }
 
+.popover-description {
+    margin-top: 4px;
+    font-size: 0.85em;
+    color: #555;
+    max-width: 300px;
+    line-height: 1.35;
+    white-space: normal;
+}
+

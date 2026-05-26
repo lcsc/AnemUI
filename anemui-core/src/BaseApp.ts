@@ -521,14 +521,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadFrame.showPointButtons()
     }
 
-    onClick(event: CsMapEvent): void {
-        //console.log("Map Clicked");
-
+    onClick(event: CsMapEvent): Promise<void> {
         this.menuBar.showLoading();
-        loadLatLongData(event.latLong, this.state, this.timesJs)
+        return loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
                 this.menuBar.hideLoading();
-                this.onLlDataLoaded(data)
+                this.onLlDataLoaded(data);
             })
             .catch((reason: any) => {
                 this.menuBar.hideLoading();
@@ -730,6 +728,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         try {
             this.menuBar.update();
             this.leftBar.update();
+            // Actualizar el DateFrame antes de los awaits del mapa para que el cambio
+            // de modo (histórico ↔ climatología) sea inmediato, sin esperar a la carga
+            if (!dateChanged) this.dateSelectorFrame.update();
+
             await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
             this.csMap.updateRender(this.state.support);
 
@@ -738,7 +740,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
                 await this.waitForDataLoad();
             }
 
-            if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
@@ -997,6 +998,26 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
 
         return this.getTranslation('valor_en') + text + formattedValue;
+    }
+
+    protected formatTercilPopup(tercilLabel: string, acronimo?: string): string {
+        const uncertaintyMsg = this.state.uncertaintyLayer
+            ? `<div class="uncertainty-msg">${this.getTranslation('uncertainty_prediction')}</div>`
+            : '';
+        let descripcionMsg = '';
+        if (acronimo) {
+            const lc = tercilLabel.toLowerCase();
+            let texto = '';
+            if (lc === 'inferior') {
+                texto = `Se prevé una tendencia hacia valores inferiores a lo normal para el índice ${acronimo}.`;
+            } else if (lc === 'medio') {
+                texto = `No se anticipa una tendencia clara; los valores del índice ${acronimo} tienen mayor probabilidad de situarse dentro del rango habitual.`;
+            } else if (lc === 'superior') {
+                texto = `Se prevé una tendencia hacia valores superiores a lo normal para el índice ${acronimo}.`;
+            }
+            if (texto) descripcionMsg = `<div class="popover-description">${texto}</div>`;
+        }
+        return `<div>Tercil ${tercilLabel}</div>${descripcionMsg}${uncertaintyMsg}`;
     }
 
     public getHoverHintText(): string | null { return null; }

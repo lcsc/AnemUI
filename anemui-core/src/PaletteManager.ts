@@ -893,7 +893,6 @@ export class CrossPatternPainter implements Painter {
         const canvasW2 = drawWidth2 * this.cellSize;
         const canvasH2 = Math.ceil(height / stride2) * this.cellSize;
         const dataUrl = canvas.toDataURL('image/png');
-        console.log('[CrossPattern] canvas='+canvasW2+'x'+canvasH2+' stride='+stride2+' lineWidth='+context.lineWidth+' dataUrlLen='+dataUrl.length);
         return canvas;
     }
 
