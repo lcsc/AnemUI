@@ -1139,12 +1139,14 @@ export class OpenLayerMap implements CsMapController {
     // Safely update political layer
     let pLayer = lmgr.getTopLayerOlLayer();
     if (pLayer && this.politicalLayer !== pLayer) {
-      if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
+      if (this.politicalLayer) {
         this.map.removeLayer(this.politicalLayer);
+      }
+      if (!this.map.getLayers().getArray().includes(pLayer)) {
         pLayer.setZIndex(5000);
         this.map.addLayer(pLayer);
-        this.politicalLayer = pLayer;
       }
+      this.politicalLayer = pLayer;
     }
 
     let pSource = lmgr.getTopLayerSource();
