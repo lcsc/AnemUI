@@ -181,16 +181,14 @@ public render(): JSX.Element {
         let name:string;
         let data=this.container.querySelector(".info")
 
-    if (this.parent.getState().computedLayer) {
-        name = this.parent.getState().legendTitle;
-    } else {
-        if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined) {
-            const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
-            const legendValues = Language.getInstance().getTranslation('legendValues');
-            name = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
-        } else {
-            name = this.parent.getState().legendTitle;
-        }
+    // state.legendTitle es la fuente de verdad: lo fija setTimesJs y los visores
+    // pueden sobreescribirlo (ej. SRI con applyPaletteForVar). Solo caer a
+    // timesJs.legendTitle si state.legendTitle está vacío.
+    name = this.parent.getState().legendTitle;
+    if (!name && this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined) {
+        const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+        const legendValues = Language.getInstance().getTranslation('legendValues');
+        name = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
     }
 
     data.innerHTML = "<div id='units'><span class='legendText'>" + name + "</span><br/></div>";
@@ -232,24 +230,43 @@ public render(): JSX.Element {
             data.appendChild(legendItem);
         });
     } else {
+        const isTercilLegend = name === 'Tercil';
+        const tercilAcronym = isTercilLegend ? this.parent.getTercilAcronym() : '';
+
         values.map((val, index) => {
             let mgr = PaletteManager.getInstance();
-            mgr.updatePaletteStrings(); 
+            mgr.updatePaletteStrings();
             let ptr = mgr.getPainter();
             const backgroundColor = ptr.getColorString(val, min, max);
             const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
 
             let displayText = texts[index];
 
-            addChild(data, (
-                <div style={{ background: backgroundColor, color: textColor }}>
-                    <span className="legendText smallText">{displayText}</span><br />
-                </div>
-            ));
+            if (isTercilLegend) {
+                const tooltipText = this.parent.getTercilDescriptionText(displayText, tercilAcronym);
+                const div = document.createElement('div');
+                div.style.background = backgroundColor;
+                div.style.color = textColor;
+                div.style.cursor = 'help';
+                div.innerHTML = `<span class="legendText smallText"> ${displayText}</span><br/>`;
+                if (tooltipText) {
+                    div.addEventListener('mouseover', (e) => this.showTercilTooltip(tooltipText, e as MouseEvent));
+                    div.addEventListener('mouseout', () => this.hideTercilTooltip());
+                }
+                data.appendChild(div);
+            } else {
+                addChild(data, (
+                    <div style={{ background: backgroundColor, color: textColor }}>
+                        <span className="legendText smallText">{displayText}</span><br />
+                    </div>
+                ));
+            }
         });
     }
 
-    data.innerHTML += "<div id='legendBottom'></div>";
+    const bottomDiv = document.createElement('div');
+    bottomDiv.id = 'legendBottom';
+    data.appendChild(bottomDiv);
 
     let palettes = mgr.getPalettesNames();
     if (palettes.length > 2) {
@@ -268,6 +285,56 @@ public render(): JSX.Element {
     });
     return `linear-gradient(to top, ${stops.join(", ")})`;
 }
+
+    private showTercilTooltip(text: string, event: MouseEvent): void {
+        if (!document.getElementById('paletteTooltipStyle')) {
+            const s = document.createElement('style');
+            s.id = 'paletteTooltipStyle';
+            s.textContent =
+                '#paletteFrameTooltip::after,#paletteFrameTooltip::before{' +
+                'left:100%;top:50%;border:solid transparent;content:" ";' +
+                'height:0;width:0;position:absolute;pointer-events:none;}' +
+                '#paletteFrameTooltip::after{border-left-color:#fff;border-width:8px;margin-top:-8px;}' +
+                '#paletteFrameTooltip::before{border-left-color:#b3b4b6;border-width:9px;margin-top:-9px;}';
+            document.head.appendChild(s);
+        }
+
+        let tooltip = document.getElementById('paletteFrameTooltip') as HTMLDivElement;
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'paletteFrameTooltip';
+            tooltip.style.cssText = [
+                'position:fixed', 'z-index:9999',
+                'background-color:#fff', 'box-shadow:0 1px 4px rgba(0,0,0,.2)',
+                'padding:7px', 'border-radius:10px', 'border:1px solid #b3b4b6',
+                'min-width:100px', 'max-width:220px', 'font-size:small',
+                'text-align:center', 'line-height:1.5',
+                'pointer-events:none', 'display:none'
+            ].join(';');
+            document.body.appendChild(tooltip);
+        }
+        tooltip.textContent = text;
+        tooltip.style.display = 'block';
+
+        const legendEl = this.container.querySelector('.info.legend') as HTMLElement;
+        const refRect = (legendEl ?? this.container).getBoundingClientRect();
+        const tw = tooltip.offsetWidth || 220;
+        const th = tooltip.offsetHeight || 60;
+        const caretWidth = 9;
+        const gap = 2;
+        const itemRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+        const x = Math.max(refRect.left - tw - caretWidth - gap, gap);
+        const y = Math.max(itemRect.top + itemRect.height / 2 - th / 2, gap);
+
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+    }
+
+    private hideTercilTooltip(): void {
+        const tooltip = document.getElementById('paletteFrameTooltip');
+        if (tooltip) tooltip.style.display = 'none';
+    }
 
     // Función para determinar si un color de fondo es claro u oscuro
     protected isLightColor(hexColor: string): boolean {

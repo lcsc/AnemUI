@@ -5,6 +5,7 @@ import Dygraph, { dygraphs } from 'dygraphs';
 import { dateText } from "../data/CsPConstans";
 import { CsTimeSpan } from "../data/CsDataTypes";
 import { CsLatLong } from '../CsMapTypes';
+import Chart from 'chart.js/auto';
 
 
 require("dygraphs/dist/dygraph.css")
@@ -64,6 +65,12 @@ export class CsGraph extends BaseFrame {
 
   // Contador para climatología
   protected climatologyIndex: number = 0;
+
+  // Estado del gráfico de predicción (donut)
+  protected _predChart: Chart | null = null;
+  protected _savedPopGraphStyles: Partial<CSSStyleDeclaration> | null = null;
+  protected _savedGraphContainerStyles: Partial<CSSStyleDeclaration> | null = null;
+  protected _savedCloseButtonFlex: string | null = null;
 
   // Propiedades para manejo de escalas logarítmicas
   protected originalGraphData: string | null = null;
@@ -2045,6 +2052,204 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     this.pointYUnit = yUnit;
     this.pointXLabel = xLabel;
     this.pointXUnit = xUnit;
+  }
+
+  // ── Gráfico de distribución por terciles (predicción estacional) ──────────
+
+  protected _saveContainerStyles(): void {
+    const popGraph = document.getElementById('popGraph');
+    if (popGraph) {
+      this._savedPopGraphStyles = {
+        overflow: popGraph.style.overflow,
+        width:    popGraph.style.width,
+        maxWidth: popGraph.style.maxWidth,
+        margin:   popGraph.style.margin,
+        padding:  popGraph.style.padding,
+        height:   popGraph.style.height,
+      };
+    }
+    const gc = document.getElementById('GraphContainer') as HTMLDivElement;
+    if (gc) {
+      this._savedGraphContainerStyles = {
+        overflow:  gc.style.overflow,
+        maxWidth:  gc.style.maxWidth,
+        margin:    gc.style.margin,
+        height:    gc.style.height,
+        minHeight: gc.style.minHeight,
+        padding:   gc.style.padding,
+      };
+    }
+    // El div.col del botón de cerrar ocupa la mitad del popup (Bootstrap flex:1 0 0).
+    // Solo para el gráfico de predicción, forzarlo a ancho mínimo.
+    const popupWrapper = popGraph?.closest('.popup-content-wrapper') as HTMLElement;
+    const closeDiv = popupWrapper?.nextElementSibling as HTMLElement;
+    if (closeDiv) {
+      this._savedCloseButtonFlex = closeDiv.style.flex;
+      closeDiv.style.flex = '0 0 auto';
+    }
+  }
+
+  protected _resetContainerStyles(): void {
+    const popGraph = document.getElementById('popGraph');
+    if (popGraph && this._savedPopGraphStyles) {
+      Object.assign(popGraph.style, this._savedPopGraphStyles);
+      this._savedPopGraphStyles = null;
+    }
+    const gc = document.getElementById('GraphContainer') as HTMLDivElement;
+    if (gc && this._savedGraphContainerStyles) {
+      Object.assign(gc.style, this._savedGraphContainerStyles);
+      this._savedGraphContainerStyles = null;
+    }
+    if (this._savedCloseButtonFlex !== null) {
+      const popupWrapper = document.getElementById('popGraph')?.closest('.popup-content-wrapper') as HTMLElement;
+      const closeDiv = popupWrapper?.nextElementSibling as HTMLElement;
+      if (closeDiv) closeDiv.style.flex = this._savedCloseButtonFlex;
+      this._savedCloseButtonFlex = null;
+    }
+    const downloadBtn = document.querySelector('[role=dropPointBtn]') as HTMLButtonElement;
+    if (downloadBtn) downloadBtn.hidden = false;
+  }
+
+  /**
+   * Renderiza el donut de distribución por terciles en #popGraph.
+   * Diseño: donut 200×200 (izquierda) + columna de leyenda con % (derecha) + párrafo descriptivo.
+   * Llamar después de preparar labels/colors/values en el visor específico.
+   */
+  protected renderPredictionDoughnut(params: {
+    labels: string[];
+    colors: string[];
+    values: number[];
+    title: string;
+    periodText: string;
+    descriptionText: string;
+  }): void {
+    const popGraph = document.getElementById('popGraph');
+    if (!popGraph) return;
+
+    if (this._predChart) {
+      this._predChart.destroy();
+      this._predChart = null;
+    }
+    this._saveContainerStyles();
+
+    popGraph.innerHTML = '';
+
+    const graphContainer = document.getElementById('GraphContainer') as HTMLDivElement;
+    if (graphContainer) graphContainer.hidden = false;
+    popGraph.style.width = '100%';
+    popGraph.style.height = 'auto';
+
+    const downloadBtn = document.querySelector('[role=dropPointBtn]') as HTMLButtonElement;
+    if (downloadBtn) downloadBtn.hidden = true;
+
+    const legendDiv = document.getElementById('colorLegend');
+    if (legendDiv) legendDiv.style.display = 'none';
+
+    const { labels, colors, values, title, periodText, descriptionText } = params;
+    const total = values.reduce((a, b) => a + b, 0);
+
+    const mainContainer = document.createElement('div');
+    mainContainer.style.cssText = 'display:block; padding:16px 20px; width:100%; box-sizing:border-box; text-align:center;';
+
+    const titleEl = document.createElement('h3');
+    titleEl.textContent = title;
+    titleEl.style.cssText = 'margin:0 0 4px 0; font-size:13px; color:#1f2937;';
+    mainContainer.appendChild(titleEl);
+
+    if (periodText) {
+      const periodEl = document.createElement('p');
+      periodEl.textContent = periodText;
+      periodEl.style.cssText = 'margin:0 0 12px 0; font-size:12px; color:#6b7280; font-weight:500;';
+      mainContainer.appendChild(periodEl);
+    }
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:inline-flex; flex-direction:row; align-items:center; gap:28px;';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 200;
+    canvas.style.flexShrink = '0';
+    row.appendChild(canvas);
+
+    const legendCol = document.createElement('div');
+    legendCol.style.cssText = 'display:flex; flex-direction:column; gap:12px; justify-content:center;';
+    for (let i = 0; i < labels.length; i++) {
+      const pct = total > 0 ? ((values[i] / total) * 100).toFixed(1) : '0.0';
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex; align-items:center; gap:8px;';
+      const box = document.createElement('span');
+      box.style.cssText = `display:inline-block; width:14px; height:14px; border-radius:3px; background:${colors[i]}; flex-shrink:0;`;
+      const text = document.createElement('span');
+      text.style.cssText = 'font-size:13px; color:#374151; white-space:nowrap;';
+      text.textContent = `${labels[i]}: ${pct}%`;
+      item.appendChild(box);
+      item.appendChild(text);
+      legendCol.appendChild(item);
+    }
+    row.appendChild(legendCol);
+    mainContainer.appendChild(row);
+
+    if (descriptionText) {
+      const desc = document.createElement('p');
+      desc.className = 'popover-description';
+      desc.style.cssText = 'display:block; margin:14px auto 0; max-width:560px; text-align:justify;';
+      desc.textContent = descriptionText;
+      mainContainer.appendChild(desc);
+    }
+
+    popGraph.appendChild(mainContainer);
+
+    const ctx = canvas.getContext('2d');
+    this._predChart = new Chart(ctx as any, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderWidth: 1.5,
+          borderColor: 'rgba(255,255,255,0.9)',
+          hoverOffset: 8,
+          hoverBorderWidth: 2,
+          hoverBorderColor: 'rgba(0,0,0,0.15)'
+        }]
+      },
+      plugins: [{
+        id: 'doughnutBackground',
+        beforeDraw: (chart: any) => {
+          const { ctx: c } = chart;
+          c.save();
+          c.globalCompositeOperation = 'destination-over';
+          c.fillStyle = '#ffffff';
+          c.fillRect(0, 0, chart.width, chart.height);
+          c.restore();
+        }
+      }],
+      options: {
+        responsive: false,
+        maintainAspectRatio: true,
+        layout: { padding: 8 },
+        cutout: '45%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(31,41,55,0.95)',
+            titleColor: '#f9fafb', bodyColor: '#f9fafb',
+            padding: 12, cornerRadius: 6, displayColors: true,
+            titleFont: { size: 13 }, bodyFont: { size: 12 }, boxPadding: 6,
+            callbacks: {
+              label: function(context: any) {
+                const value = context.parsed ?? 0;
+                const t = (context.dataset.data as number[]).reduce((a: number, b: number) => a + b, 0);
+                const pct = t > 0 ? ((value / t) * 100).toFixed(1) : '0.0';
+                return ` ${context.label}: ${pct}%`;
+              }
+            }
+          }
+        }
+      }
+    } as any);
   }
 
   public drawPercentileClockGraph(currentValue: number, historicalData: number[], latlng: CsLatLong): void {
