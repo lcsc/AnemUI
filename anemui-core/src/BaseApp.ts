@@ -1000,21 +1000,29 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return this.getTranslation('valor_en') + text + formattedValue;
     }
 
+    /** Devuelve el acrónimo del índice para los textos de tercil. Cada visor lo sobrescribe. */
+    public getTercilAcronym(): string { return ''; }
+
+    /** Texto descriptivo de un tercil dado un acrónimo. Fuente única de verdad para pixel popup y leyenda. */
+    public getTercilDescriptionText(tercilLabel: string, acronimo: string): string {
+        const lc = tercilLabel.toLowerCase();
+        if (lc === 'inferior')
+            return `Se prevé una tendencia hacia valores inferiores a lo normal para el índice ${acronimo}.`;
+        if (lc === 'medio')
+            return `No se anticipa una tendencia clara; los valores del índice ${acronimo} tienen mayor probabilidad de situarse dentro del rango habitual.`;
+        if (lc === 'superior')
+            return `Se prevé una tendencia hacia valores superiores a lo normal para el índice ${acronimo}.`;
+        return '';
+    }
+
     protected formatTercilPopup(tercilLabel: string, acronimo?: string): string {
         const uncertaintyMsg = this.state.uncertaintyLayer
             ? `<div class="uncertainty-msg">${this.getTranslation('uncertainty_prediction')}</div>`
             : '';
         let descripcionMsg = '';
-        if (acronimo) {
-            const lc = tercilLabel.toLowerCase();
-            let texto = '';
-            if (lc === 'inferior') {
-                texto = `Se prevé una tendencia hacia valores inferiores a lo normal para el índice ${acronimo}.`;
-            } else if (lc === 'medio') {
-                texto = `No se anticipa una tendencia clara; los valores del índice ${acronimo} tienen mayor probabilidad de situarse dentro del rango habitual.`;
-            } else if (lc === 'superior') {
-                texto = `Se prevé una tendencia hacia valores superiores a lo normal para el índice ${acronimo}.`;
-            }
+        const acr = acronimo ?? this.getTercilAcronym();
+        if (acr) {
+            const texto = this.getTercilDescriptionText(tercilLabel, acr);
             if (texto) descripcionMsg = `<div class="popover-description">${texto}</div>`;
         }
         return `<div>Tercil ${tercilLabel}</div>${descripcionMsg}${uncertaintyMsg}`;

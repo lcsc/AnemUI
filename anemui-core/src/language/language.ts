@@ -190,7 +190,7 @@ export default class Language {
                 'mm': 'mm',
                 'm/s': 'm/s',
                 'adim': 'adim',
-                'index units': 'Unidades del índice',
+                'index units': 'Unidades índice',
                 'Terciles': 'Terciles',
                 'Anomalías': 'Anomalías',
                 'kJ/m2': 'kJ/m²·día',
