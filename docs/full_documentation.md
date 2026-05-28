@@ -510,6 +510,15 @@ Auto-detected time granularity, derived from the length of the time array:
 
 Building a new climate service viewer requires two files and one configuration.
 
+### Reference implementation: anemui-demo
+
+The `anemui-demo` workspace is a complete, runnable example of this pattern. It implements a Reference Evapotranspiration (ETo) monitor with four variables (ETo, uncertainty, aerodynamic component, radiative component) and per-variable fixed threshold selections. The key files are:
+
+- `anemui-demo/src/EtmService.ts` — implements `CsDataService`; maps variable names to `ETo`, `ETo_var`, `ETo_Ae`, `ETo_Ra`; threshold selections include `0mm`–`100mm` presets plus `"Personalizado"` (custom input).
+- `anemui-demo/src/App.ts` — `AppETO` extends `DataServiceApp`; registers a custom yellow-to-dark-red palette (`"eto"`), loads `times.json`, populates the menu, and overrides `getLegendValues()` to compute 16 evenly-spaced steps from the per-timestep min/max in `times.json`.
+
+The generic pattern below follows the same structure. Consult `anemui-demo` as a reference when setting up a new service.
+
 ### Step 1 — Implement CsDataService
 
 ```typescript
