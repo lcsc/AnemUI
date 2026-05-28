@@ -1,4 +1,4 @@
-# AnemUI
+# <img src="man/figures/badge.png" alt="image" width="100"/> AnemUI
 
 AnemUI is a TypeScript framework for building interactive web-based climate services viewers. It provides a complete, configurable front-end stack — map rendering, time navigation, palette management, data downloading, and UI controls — so that new climate services can be deployed by implementing a single data-service interface and a minimal application class.
 
