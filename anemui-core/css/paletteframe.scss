@@ -79,7 +79,11 @@ div.paletteFrame {
 
     div.legend .legendText {
         visibility: hidden;
-        white-space: nowrap;
+        white-space: normal;
+        word-break: keep-all;
+        max-width: 80px;
+        font-size: 0.8em;
+        text-align: center;
         padding-block: 5px;
         margin: 10px;
     }
