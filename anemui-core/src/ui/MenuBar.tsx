@@ -164,10 +164,10 @@ export class MenuBar extends BaseFrame {
         this.extraBtns = []
         this.dropDownOrder = []
         this.logoMaps = [
-            "0,28|AEMET|https://www.aemet.es/",
-            "28,32|PTI Clima CSIC|https://pti-clima.csic.es/",
-            "60,22|Plan de Recuperación|https://planderecuperacion.gob.es/",
-            "82,22|NextGenerationEU|https://next-generation-eu.europa.eu/index_en"
+            "0,18|NextGenerationEU|https://next-generation-eu.europa.eu/index_en",
+            "19,30|AEMET|https://www.aemet.es/",
+            "52,26|PTI Clima CSIC|https://pti-clima.csic.es/",
+            "81,20|Plan de Recuperación|https://planderecuperacion.gob.es/"
         ]
     }
 
