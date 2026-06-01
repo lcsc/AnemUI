@@ -1,6 +1,6 @@
 {
   "name": "@lcsc/anemui-demo",
-  "version": "0.2.8-SNAPSHOT",
+  "version": "0.2.9-SNAPSHOT",
   "description": "Reference Evapotranspiration Monitor",
   "main": "src/index.ts",
   "devDependencies": {},
