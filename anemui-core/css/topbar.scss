@@ -38,8 +38,8 @@
         }
     }
 
-    // Ocultar en tablet y superiores (solo visible en móvil)
-    @include tablet {
+    // Ocultar solo cuando los logos ya son visibles en el topbar
+    @include desktop {
         display: none;
     }
 }
