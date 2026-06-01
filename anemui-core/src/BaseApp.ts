@@ -735,11 +735,6 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
             this.csMap.updateRender(this.state.support);
 
-            // Wait for data only if we have computed data tiles layer
-            if (computedDataTilesLayer && this.state.computedLayer) {
-                await this.waitForDataLoad();
-            }
-
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
