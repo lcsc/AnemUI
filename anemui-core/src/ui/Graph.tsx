@@ -2149,39 +2149,44 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     const total = values.reduce((a, b) => a + b, 0);
 
     const mainContainer = document.createElement('div');
-    mainContainer.style.cssText = 'display:block; padding:16px 20px; width:100%; box-sizing:border-box; text-align:center;';
+    mainContainer.style.cssText = 'display:flex; flex-direction:column; align-items:center; padding:16px 20px; width:100%; box-sizing:border-box;';
 
     const titleEl = document.createElement('h3');
     titleEl.textContent = title;
-    titleEl.style.cssText = 'margin:0 0 4px 0; font-size:13px; color:#1f2937;';
+    titleEl.style.cssText = 'margin:0 0 14px 0; font-size:13px; color:#1f2937; text-align:center; max-width:560px;';
     mainContainer.appendChild(titleEl);
 
     if (periodText) {
       const periodEl = document.createElement('p');
       periodEl.textContent = periodText;
-      periodEl.style.cssText = 'margin:0 0 12px 0; font-size:12px; color:#6b7280; font-weight:500;';
+      periodEl.style.cssText = 'margin:-8px 0 12px 0; font-size:12px; color:#6b7280; font-weight:500; text-align:center;';
       mainContainer.appendChild(periodEl);
     }
 
     const row = document.createElement('div');
-    row.style.cssText = 'display:inline-flex; flex-direction:row; align-items:center; gap:28px;';
+    row.style.cssText = 'display:flex; flex-direction:row; align-items:center; gap:24px; justify-content:center; width:100%;';
 
     const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
-    canvas.style.flexShrink = '0';
+    const canvasSize = 200;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+    canvas.style.cssText = `flex-shrink:0; width:${canvasSize}px; height:${canvasSize}px;`;
     row.appendChild(canvas);
 
+    const multiCol = labels.length > 6;
     const legendCol = document.createElement('div');
-    legendCol.style.cssText = 'display:flex; flex-direction:column; gap:12px; justify-content:center;';
+    legendCol.style.cssText = multiCol
+      ? 'display:grid; grid-template-columns:1fr 1fr; gap:4px 20px; align-content:center;'
+      : 'display:flex; flex-direction:column; gap:6px; justify-content:center;';
+
     for (let i = 0; i < labels.length; i++) {
       const pct = total > 0 ? ((values[i] / total) * 100).toFixed(1) : '0.0';
       const item = document.createElement('div');
-      item.style.cssText = 'display:flex; align-items:center; gap:8px;';
+      item.style.cssText = 'display:flex; align-items:center; gap:6px;';
       const box = document.createElement('span');
-      box.style.cssText = `display:inline-block; width:14px; height:14px; border-radius:3px; background:${colors[i]}; flex-shrink:0;`;
+      box.style.cssText = `display:inline-block; width:11px; height:11px; border-radius:2px; background:${colors[i]}; flex-shrink:0;`;
       const text = document.createElement('span');
-      text.style.cssText = 'font-size:13px; color:#374151; white-space:nowrap;';
+      text.style.cssText = 'font-size:11px; color:#374151; white-space:nowrap;';
       text.textContent = `${labels[i]}: ${pct}%`;
       item.appendChild(box);
       item.appendChild(text);
