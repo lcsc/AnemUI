@@ -760,7 +760,7 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
 export function downloadCSVbyRegion(folder: string, varName: string, doneCb: CsvDownloadDone): void {
     downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let result: string
+            let result: any
             try {
                 result = parse(response as Buffer, {
                     columns: true,
@@ -806,7 +806,7 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
                     columns: true,
                     skip_empty_lines: true
                 });
-                stResult = records[timeIndex]
+                stResult = records[timeIndex] as []
                 // if (records.length == 1) stResult = records[0];
                 // else {
                 //     records.forEach((record: any) => {
