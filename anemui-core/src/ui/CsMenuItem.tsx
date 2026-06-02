@@ -334,7 +334,7 @@ export class CsMenuInput extends BaseUiElement {
     return this.minValue;
   }
 
-  public setMaxValue(_maxValue: number) {
+  public setMaxValue(_maxValue: number | undefined) {
     this.maxValue = _maxValue;
     if (this.value !== null && _maxValue !== undefined && this.value > this.maxValue) {
       this.value = this.maxValue;
@@ -343,7 +343,11 @@ export class CsMenuInput extends BaseUiElement {
     const rangeTitle = this.getRangeTitle();
     document.querySelectorAll<HTMLInputElement>(`#${this.id}`)
       .forEach(el => {
-        el.max = _maxValue !== undefined ? _maxValue.toString() : undefined;
+        if (_maxValue !== undefined) {
+          el.max = _maxValue.toString();
+        } else {
+          el.removeAttribute('max');
+        }
         el.title = rangeTitle;
       });
   }
