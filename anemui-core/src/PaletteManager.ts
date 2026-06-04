@@ -866,12 +866,13 @@ export class CrossPatternPainter implements Painter {
         context.beginPath();
 
         // Una X por cada dato, submuestreando con stride si la resolución de incertidumbre es mayor
+        // Convención: 0 = incierto/no significativo (pintar X), 1 = cierto/significativo (no pintar)
         for (let dy = 0; dy < height; dy += stride) {
             for (let dx = 0; dx < width; dx += stride) {
                 const ncIndex = dx + dy * width;
                 const value = floatArray[ncIndex];
 
-                if (!isNaN(value) && isFinite(value) && value > 0) {
+                if (!isNaN(value) && isFinite(value) && value === 0) {
                     const drawDx = Math.floor(dx / stride);
                     const drawDy = Math.floor(dy / stride);
                     const px = drawDx * effectiveCs;
