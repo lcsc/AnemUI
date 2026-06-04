@@ -409,7 +409,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     filteredArray = filteredArray.map((val, idx) => {
                         const mainVal = mainLayerData[i][idx];
                         if (isNaN(mainVal) || !isFinite(mainVal)) {
-                            return 0;
+                            return NaN;
                         }
                         return val;
                     });
