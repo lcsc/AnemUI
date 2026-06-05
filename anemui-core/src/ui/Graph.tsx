@@ -446,6 +446,71 @@ export class CsGraph extends BaseFrame {
     // Restaurar clip
     ctx.restore();
 
+    // --- Elementos HTML de gráficos de predicción/proyección ---
+    // Usa la clase .prediction-doughnut-container (añadida en renderPredictionDoughnut)
+    // para no afectar otros tipos de gráfico.
+    const predContainer = popGraph.querySelector<HTMLElement>('.prediction-doughnut-container');
+    if (predContainer) {
+      ctx.textAlign = 'left';
+
+      // Helper: dibuja texto con word-wrap
+      const drawWrapped = (text: string, x: number, y: number, maxW: number, lineH: number, font: string, color: string) => {
+        ctx.font = font; ctx.fillStyle = color; ctx.textBaseline = 'top';
+        const words = text.split(' '); let line = '';
+        for (const word of words) {
+          const test = line ? line + ' ' + word : word;
+          if (ctx.measureText(test).width > maxW && line) {
+            ctx.fillText(line, x, y); line = word; y += lineH;
+          } else { line = test; }
+        }
+        if (line) ctx.fillText(line, x, y);
+      };
+
+      // Título (h3) centrado en el área blanca
+      predContainer.querySelectorAll<HTMLElement>('h3').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const style = getComputedStyle(el);
+        const x = Math.round(rect.left - graphRect.left);
+        const y = Math.round(rect.top - graphRect.top) + headerHeight;
+        const fontSize = style.fontSize || '13px';
+        const fw = parseInt(style.fontWeight) >= 700 ? 'bold ' : '';
+        drawWrapped(el.textContent || '', x, y, rect.width, 16, `${fw}${fontSize} sans-serif`, style.color || '#1f2937');
+      });
+
+      // Ítems de leyenda: item-div > span(caja coloreada) + span(texto)
+      predContainer.querySelectorAll<HTMLElement>('div > div').forEach(item => {
+        const spans = Array.from(item.querySelectorAll<HTMLElement>(':scope > span'));
+        if (spans.length < 2) return;
+        const box = spans[0]; const textEl = spans[1];
+        const bg = box.style.background || box.style.backgroundColor || getComputedStyle(box).backgroundColor;
+        if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') return;
+        const boxRect = box.getBoundingClientRect();
+        if (!boxRect.width || !boxRect.height) return;
+        const bx = Math.round(boxRect.left - graphRect.left);
+        const by = Math.round(boxRect.top - graphRect.top) + headerHeight;
+        ctx.fillStyle = bg;
+        ctx.fillRect(bx, by, boxRect.width, boxRect.height);
+        const textRect = textEl.getBoundingClientRect();
+        ctx.fillStyle = getComputedStyle(textEl).color || '#374151';
+        ctx.font = (getComputedStyle(textEl).fontSize || '11px') + ' sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(textEl.textContent || '',
+          Math.round(textRect.left - graphRect.left),
+          Math.round(textRect.top - graphRect.top) + headerHeight + textRect.height / 2);
+      });
+
+      // Descripción (.popover-description)
+      predContainer.querySelectorAll<HTMLElement>('.popover-description').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        drawWrapped(el.textContent || '',
+          Math.round(rect.left - graphRect.left),
+          Math.round(rect.top - graphRect.top) + headerHeight,
+          rect.width, 16, '12px sans-serif', getComputedStyle(el).color || '#374151');
+      });
+    }
+
     // --- Labels (leyenda de series Dygraph) ---
     let curY = headerHeight + graphH;
     if (labelsDiv && labelsDiv.offsetHeight > 0) {
@@ -2149,6 +2214,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     const total = values.reduce((a, b) => a + b, 0);
 
     const mainContainer = document.createElement('div');
+    mainContainer.className = 'prediction-doughnut-container';
     mainContainer.style.cssText = 'display:flex; flex-direction:column; align-items:center; padding:16px 20px; width:100%; box-sizing:border-box;';
 
     const titleEl = document.createElement('h3');
