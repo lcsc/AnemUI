@@ -284,8 +284,17 @@ export class CsGraph extends BaseFrame {
     const rangeSelBg = popGraph.querySelector('.dygraph-rangesel-bgcanvas') as HTMLCanvasElement;
     let plotBottomY = graphRect.height; // por defecto, todo el popGraph
     if (rangeSelBg) {
+      // Con range selector (Dygraph): cortar justo antes, es intencional
       const rsRect = rangeSelBg.getBoundingClientRect();
-      plotBottomY = rsRect.top - graphRect.top; // cortar justo antes del range selector
+      plotBottomY = rsRect.top - graphRect.top;
+    } else {
+      // Sin range selector: el contenido (donut, leyenda, descripción, etc.) puede exceder
+      // el alto visible del popup según el tamaño de pantalla. Usar scrollHeight para no recortarlo.
+      plotBottomY = Math.max(plotBottomY, popGraph.scrollHeight);
+      const predContainerForH = popGraph.querySelector<HTMLElement>('.prediction-doughnut-container');
+      if (predContainerForH) {
+        plotBottomY = Math.max(plotBottomY, predContainerForH.scrollHeight);
+      }
     }
 
     const graphW = Math.round(graphRect.width);
@@ -605,7 +614,12 @@ export class CsGraph extends BaseFrame {
     }
 
     // --- Barra de logos (pie) ---
-    this.drawLogosAndDownload(exportCanvas, ctx, 'grafico.png', dpr);
+    this.drawLogosAndDownload(exportCanvas, ctx, this.getExportFilename(), dpr);
+  }
+
+  /** Nombre del fichero PNG exportado. Los visores pueden sobreescribirlo. */
+  protected getExportFilename(): string {
+    return 'grafico.png';
   }
 
   /**
