@@ -311,36 +311,45 @@ export class CsMenuInput extends BaseUiElement {
     }
   }
 
+  private getRangeTitle(): string {
+    const maxStr = this.maxValue !== undefined ? ` | Máx: ${this.maxValue}` : '';
+    return `Mín: ${this.minValue}${maxStr}`;
+  }
+
   public setMinValue(_minValue: number) {
     this.minValue = _minValue;
     if (this.value !== null && this.value < this.minValue) {
       this.value = this.minValue;
       this.listener.valueChanged(this, this.value);
     }
-    if (this.container) {
-      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
-      if (inputElement) {
-        inputElement.min = _minValue !== undefined ? _minValue.toString() : undefined;
-      }
-    }
+    const rangeTitle = this.getRangeTitle();
+    document.querySelectorAll<HTMLInputElement>(`#${this.id}`)
+      .forEach(el => {
+        el.min = _minValue !== undefined ? _minValue.toString() : undefined;
+        el.title = rangeTitle;
+      });
   }
 
   public getMinValue(): number {
     return this.minValue;
   }
 
-  public setMaxValue(_maxValue: number) {
+  public setMaxValue(_maxValue: number | undefined) {
     this.maxValue = _maxValue;
     if (this.value !== null && _maxValue !== undefined && this.value > this.maxValue) {
       this.value = this.maxValue;
       this.listener.valueChanged(this, this.value);
     }
-    if (this.container) {
-      const inputElement = this.container.querySelector(`#${this.id}`) as HTMLInputElement;
-      if (inputElement) {
-        inputElement.max = _maxValue !== undefined ? _maxValue.toString() : undefined;
-      }
-    }
+    const rangeTitle = this.getRangeTitle();
+    document.querySelectorAll<HTMLInputElement>(`#${this.id}`)
+      .forEach(el => {
+        if (_maxValue !== undefined) {
+          el.max = _maxValue.toString();
+        } else {
+          el.removeAttribute('max');
+        }
+        el.title = rangeTitle;
+      });
   }
 
   public getMaxValue(): number {
@@ -371,9 +380,7 @@ export class CsMenuInput extends BaseUiElement {
   }
 
   private validateValue(inputValue: number): number | null {
-    if (isNaN(inputValue) || inputValue <= 0) {
-      return null;
-    }
+    if (isNaN(inputValue)) return null;
     return inputValue;
   }
 
@@ -396,8 +403,22 @@ export class CsMenuInput extends BaseUiElement {
           step={this.step}
           className="form-control form-control-sm selection-param-input"
           placeholder={this.customPlaceholder !== null ? this.customPlaceholder : `Mín: ${this.minValue}`}
+          title={this.getRangeTitle()}
           value={displayValue}
           disabled={_disabled}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+            const v = parseFloat(e.currentTarget.value);
+            if (!isNaN(v)) {
+              let clamped = v;
+              if (this.minValue !== undefined && clamped < this.minValue) clamped = this.minValue;
+              if (this.maxValue !== undefined && clamped > this.maxValue) clamped = this.maxValue;
+              if (clamped !== v) {
+                e.currentTarget.value = clamped.toString();
+                this.value = clamped;
+                this.listener.valueChanged(this, clamped);
+              }
+            }
+          }}
           onInput={(e: React.FormEvent<HTMLInputElement>) => {
             const rawValue = e.currentTarget.value;
             const inputElement = e.currentTarget;

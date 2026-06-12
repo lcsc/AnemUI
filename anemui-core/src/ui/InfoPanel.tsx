@@ -33,13 +33,18 @@ export class InfoDiv extends BaseFrame {
         return ret;
     }
 
+    protected getEmail():string{
+        return "buzonplataformaclima@aemet.es";
+    }
+
+
     protected renderLicense():JSX.Element{
         return (<div>
                 <h6>Cobertura de cartografía de referencia</h6>
                 <ul>
                     <li><strong>Imagen global arcGIS:</strong> <a href="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" target="_blank">https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer</a></li>
                     <li><strong>Mapa global OpenStreetMap:</strong> <a href="https://planet.openstreetmap.org/" target="_blank">https://planet.openstreetmap.org/</a></li>
-                    <li><strong>Imagen global EUMETSAT:</strong> <a href="https://view.eumetsat.int/geoserver/wms" target="_blank">https://view.eumetsat.int/geoserver/wms</a></li>
+                    <li><strong>Imagen global GEBCO:</strong> <a href="https://www.gebco.net/data-products/gebco-web-services/web-map-service" target="_blank">https://www.gebco.net/data-products/gebco-web-services/web-map-service</a></li>
                     <li><strong>Mapa Topográfico Nacional del IGN:</strong> <a href="https://www.ign.es/wmts/ign-base" target="_blank">https://www.ign.es/wmts/ign-base</a></li>
                     <li><strong>Ortofoto PNOA:</strong> <a href="https://www.ign.es/wms-inspire/pnoa-ma" target="_blank">https://www.ign.es/wms-inspire/pnoa-ma</a></li>
                     <li><strong>Mapa Lidar PNOA:</strong> <a href="https://wmts-mapa-lidar.idee.es/lidar" target="_blank">https://wmts-mapa-lidar.idee.es/lidar</a></li>
@@ -63,6 +68,9 @@ export class InfoDiv extends BaseFrame {
                 <h6>Financiación</h6>
                 <p>La Plataforma Estatal de Servicios Climáticos está financiada con el contrato CSC2023-02-00 por parte del Ministerio para la Transición Ecológica y el Reto Demográfico (MITECO) y la Comisión Europea NextGenerationEU (Reglamento UE 2020/2094).</p>
                 <p>El servicio ha sido desarrollado por la Plataforma Temática Interdisciplinar Clima y Servicios Climáticos (PTI Clima) del Consejo Superior de Investigaciones Científicas (CSIC) junto con la Agencia Estatal de Meteorología (AEMET).</p>
+                
+                <h6>Contacto</h6>
+                <p>Para cualquier consulta o información adicional, puede ponerse en contacto con nosotros a través del correo electrónico: <a href={`mailto:${this.getEmail()}`}>{this.getEmail()}</a></p>
         </div>)
     }
 
