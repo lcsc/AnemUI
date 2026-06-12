@@ -389,7 +389,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         } else {
             painterInstance = PaletteManager.getInstance().getPainter();
         }
-
         // Para datos computados, precalcular breaks con todos los datos combinados
         if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
             (painterInstance as any).setPrecalculatedBreaks(allValidNumbers);
@@ -410,7 +409,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     filteredArray = filteredArray.map((val, idx) => {
                         const mainVal = mainLayerData[i][idx];
                         if (isNaN(mainVal) || !isFinite(mainVal)) {
-                            return 0;
+                            return NaN;
                         }
                         return val;
                     });
@@ -425,8 +424,22 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             // Informar al painter de la resolución de la capa de datos principal para calcular stride
             if (uncertaintyLayer && (painterInstance as any).setDataWidth) {
                 const dataPortion = timesJs.portions[status.varId]?.[i] ?? timesJs.portions[uncertaintyVarId][i];
-                const dataWidth = timesJs.lonNum[status.varId + dataPortion] || width;
-                (painterInstance as any).setDataWidth(dataWidth);
+                let dataWidth = timesJs.lonNum[status.varId + dataPortion];
+
+                // Derivar dataWidth de los tamaños reales de los arrays cuando:
+                // a) lonNum no tiene el dato (dataWidth undefined), o
+                // b) lonNum devolvió el ancho de la incertidumbre en vez del dato (dataWidth >= width).
+                if (mainLayerData[i] && mainLayerData[i].length > 0 && height > 0 && width > 0) {
+                    const uncertPixels = width * height;
+                    const dataPixels = mainLayerData[i].length;
+                    const strideEst = Math.max(1, Math.round(Math.sqrt(uncertPixels / dataPixels)));
+                    if (!dataWidth || dataWidth >= width) {
+                        dataWidth = Math.round(width / strideEst);
+                    }
+                }
+
+                const finalDW = dataWidth || width;
+                (painterInstance as any).setDataWidth(finalDW);
             }
 
             let canvas: HTMLCanvasElement | null = null;
@@ -436,7 +449,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                 if (canvas) {
                     const portionName = timesJs.portions[uncertaintyVarId][i];
                     const extent = ncExtents[portionName];
-
                     const imageSource = new Static({
                         url: canvas.toDataURL('image/png'),
                         crossOrigin: '',
@@ -748,7 +760,7 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
 export function downloadCSVbyRegion(folder: string, varName: string, doneCb: CsvDownloadDone): void {
     downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let result: string
+            let result: any
             try {
                 result = parse(response as Buffer, {
                     columns: true,
@@ -794,7 +806,7 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
                     columns: true,
                     skip_empty_lines: true
                 });
-                stResult = records[timeIndex]
+                stResult = records[timeIndex] as []
                 // if (records.length == 1) stResult = records[0];
                 // else {
                 //     records.forEach((record: any) => {

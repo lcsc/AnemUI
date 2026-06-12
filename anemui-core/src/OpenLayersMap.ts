@@ -349,6 +349,7 @@ export class OpenLayerMap implements CsMapController {
     this.popupContent = document.createElement("div");
     this.popupContent.setAttribute("role", "popup-content")
     this.popup.appendChild(this.popupContent);
+    this.popup.hidden = true;
   }
 
   public onMouseMove(event: MapBrowserEvent<any>) {
@@ -438,17 +439,21 @@ export class OpenLayerMap implements CsMapController {
       this.parent.getParent().update();
     }
 
-    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad
+    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad,
+    // salvo que el painter activo indique que no necesita reconstruirse (skipZoomRebuild).
     if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
-      const zoom = this.getZoom();
-      const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
-      if (currentLevel !== this.lastUncertaintyZoomLevel) {
-        this.lastUncertaintyZoomLevel = currentLevel;
-        // Diferir al siguiente ciclo para no interferir con el render actual
-        setTimeout(() => {
-          let timesJs = this.parent.getParent().getTimesJs();
-          this.buildUncertaintyLayer(state, timesJs);
-        }, 0);
+      const overlayKey = state.overlayVarId?.includes('_pvalue') ? 'significance' : 'uncertainty';
+      const activePainter = PaletteManager.getInstance().getNamedPainter(overlayKey);
+      if (!(activePainter as any)?.skipZoomRebuild) {
+        const zoom = this.getZoom();
+        const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
+        if (currentLevel !== this.lastUncertaintyZoomLevel) {
+          this.lastUncertaintyZoomLevel = currentLevel;
+          setTimeout(() => {
+            let timesJs = this.parent.getParent().getTimesJs();
+            this.buildUncertaintyLayer(state, timesJs);
+          }, 0);
+        }
       }
     }
   }
@@ -748,7 +753,10 @@ export class OpenLayerMap implements CsMapController {
     });
 
     let promises: Promise<number[]>[] = [];
-    this.setExtents(timesJs, uncertaintyVarId);
+    // No llamar setExtents para uncertaintyVarId: usa el extent del dato (ya calculado con
+    // pxSize del dato). El extent de incertidumbre difiere en pxSize cuando la resolución
+    // de incertidumbre es mayor que la del dato (p.ej. 1090 vs 545 en CCM), lo que causaría
+    // un desplazamiento de escala al renderizar en OL.
 
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
       promises.push(downloadXYChunk(state.selectedTimeIndex, uncertaintyVarId, portion, timesJs));
@@ -1131,12 +1139,14 @@ export class OpenLayerMap implements CsMapController {
     // Safely update political layer
     let pLayer = lmgr.getTopLayerOlLayer();
     if (pLayer && this.politicalLayer !== pLayer) {
-      if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
+      if (this.politicalLayer) {
         this.map.removeLayer(this.politicalLayer);
+      }
+      if (!this.map.getLayers().getArray().includes(pLayer)) {
         pLayer.setZIndex(5000);
         this.map.addLayer(pLayer);
-        this.politicalLayer = pLayer;
       }
+      this.politicalLayer = pLayer;
     }
 
     let pSource = lmgr.getTopLayerSource();
@@ -2048,10 +2058,10 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     }
 
     const val = dataValue !== undefined ? parseFloat(String(dataValue)) : NaN;
-    if (!isNaN(val) && isFinite(val) && currentRange !== 0) {
-      color = ptr.getColorString(val, minValue, maxValue);
-      radius = 10;
-      if (isNaN(radius) || radius < 3) radius = 3;
+    if (!isNaN(val) && isFinite(val)) {          
+        color = ptr.getColorString(val, minValue, maxValue);
+        radius = 10;
+        if (isNaN(radius) || radius < 3) radius = 3;
     }
 
     const isHovered = feature.get('hover') || feature.get('selected');

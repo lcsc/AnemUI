@@ -521,14 +521,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadFrame.showPointButtons()
     }
 
-    onClick(event: CsMapEvent): void {
-        //console.log("Map Clicked");
-
+    onClick(event: CsMapEvent): Promise<void> {
         this.menuBar.showLoading();
-        loadLatLongData(event.latLong, this.state, this.timesJs)
+        return loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
                 this.menuBar.hideLoading();
-                this.onLlDataLoaded(data)
+                this.onLlDataLoaded(data);
             })
             .catch((reason: any) => {
                 this.menuBar.hideLoading();
@@ -730,15 +728,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         try {
             this.menuBar.update();
             this.leftBar.update();
+            // Actualizar el DateFrame antes de los awaits del mapa para que el cambio
+            // de modo (histórico ↔ climatología) sea inmediato, sin esperar a la carga
+            if (!dateChanged) this.dateSelectorFrame.update();
+
             await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
             this.csMap.updateRender(this.state.support);
 
-            // Wait for data only if we have computed data tiles layer
-            if (computedDataTilesLayer && this.state.computedLayer) {
-                await this.waitForDataLoad();
-            }
-
-            if (!dateChanged) this.dateSelectorFrame.update();
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
@@ -997,6 +993,34 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
 
         return this.getTranslation('valor_en') + text + formattedValue;
+    }
+
+    /** Devuelve el acrónimo del índice para los textos de tercil. Cada visor lo sobrescribe. */
+    public getTercilAcronym(): string { return ''; }
+
+    /** Texto descriptivo de un tercil dado un acrónimo. Fuente única de verdad para pixel popup y leyenda. */
+    public getTercilDescriptionText(tercilLabel: string, acronimo: string): string {
+        const lc = tercilLabel.toLowerCase();
+        if (lc === 'inferior')
+            return `Se prevé una tendencia hacia valores inferiores a lo normal para el índice ${acronimo}.`;
+        if (lc === 'medio')
+            return `No se anticipa una tendencia clara; los valores del índice ${acronimo} tienen mayor probabilidad de situarse dentro del rango habitual.`;
+        if (lc === 'superior')
+            return `Se prevé una tendencia hacia valores superiores a lo normal para el índice ${acronimo}.`;
+        return '';
+    }
+
+    protected formatTercilPopup(tercilLabel: string, acronimo?: string): string {
+        const uncertaintyMsg = this.state.uncertaintyLayer
+            ? `<div class="uncertainty-msg">${this.getTranslation('uncertainty_prediction')}</div>`
+            : '';
+        let descripcionMsg = '';
+        const acr = acronimo ?? this.getTercilAcronym();
+        if (acr) {
+            const texto = this.getTercilDescriptionText(tercilLabel, acr);
+            if (texto) descripcionMsg = `<div class="popover-description">${texto}</div>`;
+        }
+        return `<div>Tercil ${tercilLabel}</div>${descripcionMsg}${uncertaintyMsg}`;
     }
 
     public getHoverHintText(): string | null { return null; }
