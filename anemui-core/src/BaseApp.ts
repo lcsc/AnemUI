@@ -111,7 +111,17 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
-        
+
+        // Favicon común a todos los visores (AEMET). El HTML generado por
+        // HtmlWebpackPlugin no incluye favicon, así que se inyecta aquí.
+        let favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+        if (!favicon) {
+            favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            document.head.appendChild(favicon);
+        }
+        favicon.href = 'https://www.aemet.es/favicon.ico';
+
         this.language = Language.getInstance();
         
         if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);

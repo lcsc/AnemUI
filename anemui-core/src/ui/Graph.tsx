@@ -670,7 +670,7 @@ export class CsGraph extends BaseFrame {
     banner.crossOrigin = 'anonymous';
     banner.onload = () => this.appendLogosBarAndDownload(exportCanvas, banner, filename, exportScale);
     banner.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
-    banner.src = './images/banner_logos_imp.png';
+    banner.src = './images/banner_logos_imp.svg';
   }
 
   protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string, exportScale?: number): void {

@@ -305,7 +305,7 @@
 
         @include sm-desktop {
             img {
-                max-height: 35px;
+                max-height: 30px;
             }
         }
     }
@@ -313,19 +313,19 @@
     .longLogo {
         padding-left: 0;
         img {
-            height: 30px;
+            height: 25px;
         }
 
         @include desktop {
             padding-left: 0;
             img {
-                height: 50px;
+                height: 42px;
             }
         }
 
         @include sm-desktop {
             img {
-                height: 35px;
+                height: 30px;
             }
         }
     }
@@ -676,7 +676,7 @@
 
 
         .allScrLogo img {
-            height: 50px;
+            height: 42px;
         }
 
         .inputDiv .title {
@@ -710,11 +710,11 @@
 
     @include sm-desktop {
         .allScrLogo img {
-            height: 35px;
+            height: 30px;
         }
 
         .longLogo img {
-            height: 35px;
+            height: 30px;
         }
 
         .shortLogo img {
