@@ -63,7 +63,7 @@ export default class CsCookies {
 
         var cookies_link = document.createElement('a');
         cookies_link.innerText = this.parent.getTranslation('cookies_info');
-        cookies_link.href = 'https://www.aemet.es/es/politica_cookies';
+        cookies_link.href = 'https://lcsc.csic.es/cookies-policy/';
         cookies_link.target = '_blank';
         cookies_link.id = 'cookies_link';
         cookies_div.appendChild(cookies_link);
