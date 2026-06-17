@@ -2058,10 +2058,10 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     }
 
     const val = dataValue !== undefined ? parseFloat(String(dataValue)) : NaN;
-    if (!isNaN(val) && isFinite(val) && currentRange !== 0) {
-      color = ptr.getColorString(val, minValue, maxValue);
-      radius = 10;
-      if (isNaN(radius) || radius < 3) radius = 3;
+    if (!isNaN(val) && isFinite(val)) {          
+        color = ptr.getColorString(val, minValue, maxValue);
+        radius = 10;
+        if (isNaN(radius) || radius < 3) radius = 3;
     }
 
     const isHovered = feature.get('hover') || feature.get('selected');
