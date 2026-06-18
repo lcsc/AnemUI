@@ -236,7 +236,7 @@ export class MenuBar extends BaseFrame {
                                 </div>
                             </div>
                             <div className="col menu-info d-flex" id="home">
-                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal">
+                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                             </div>
@@ -274,7 +274,7 @@ export class MenuBar extends BaseFrame {
                                 </ul>
                             </div>
                             <div className="mobile-actions">
-                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
+                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                                 <div className="topbar-icon-btn" id="info-mobile">
