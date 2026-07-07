@@ -67,6 +67,15 @@ export const OVERLAY_SUFFIXES = [UNCERTAINTY_LAYER, PVALUE_LAYER]
 const LEYEND_TITLE = "Leyenda"
 const STR_ALL = "Todo"
 
+export type CsViewerAppParam={
+    param: string,
+    field: string,
+    storeFn?: (param: string,field:string, value: any) => boolean,
+    validValues?: string[],
+    validValueFn?: (param: string,field:string, value: any) => boolean,
+    castFn?:(value: any) => any
+}
+
 export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFrameListener {
 
     protected menuBar: MenuBar;
@@ -93,6 +102,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     
     protected language: Language;
     protected cookies: CsCookies;
+    protected paramsDef?: CsViewerAppParam[];
 
     protected constructor() {
         this.menuBar = useFactoryMethods.menuBar ? this.createMenuBar() : new MenuBar(this, this);
@@ -698,6 +708,36 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
 
+    
+    public safeChangeUrl(): void {
+        console.log("safeChangeUrl called");
+        if (!this.paramsDef) return ;
+        if (this.paramsDef.length == 0) return;
+        let newUrl = new URL(document.location.toString())
+        
+        for (let paramDef of this.paramsDef) {
+            
+            let paramValue = (this.state as any)[paramDef.field];
+            let param = paramDef.param;
+
+            if (paramDef.storeFn && paramDef.storeFn(param, paramDef.field, paramValue) === false) {
+                newUrl.searchParams.delete(param);
+                continue;
+            }
+            if (paramValue !== undefined && paramValue !== null) {
+                newUrl.searchParams.set(param, this.getCode(paramValue));
+            } else {
+                newUrl.searchParams.delete(param);
+            }
+        }
+
+        if (history.replaceState) {
+            history.replaceState({}, "", newUrl)
+        } else {
+            history.pushState({}, "", newUrl)
+        }
+    }
+
     public changeUrl(): void {
         let newUrl = new URL(document.location.toString())
         newUrl.searchParams.set("var", this.state.varId)
@@ -732,6 +772,43 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             this.state.tpSupport = newUrl.searchParams.get("tp")
         }
         return ret
+    }
+
+    public safeFillStateFromUrl(): boolean {
+        let ret = true;
+        if (!this.paramsDef) return ret;
+        let newUrl = new URL(document.location.toString());
+        for (let paramDef of this.paramsDef) {
+            let param = paramDef.param;
+            if (newUrl.searchParams.has(param)) {
+                console.log(`Found param ${param} in URL, processing...`);
+                let value = newUrl.searchParams.get(param);
+                if (paramDef.castFn) {
+                    value = paramDef.castFn(value);
+                }
+
+                // si hay una función de validación, usarla para validar el valor
+                if (paramDef.validValueFn){
+                    if (!paramDef.validValueFn(param, paramDef.field, value)) {
+                        console.warn(`Value ${value} for param ${param} is not valid`);
+                        return false;
+                    } 
+                } else if (paramDef.validValues){
+                    if (!paramDef.validValues.includes(value)) {
+                        console.warn(`Value ${value} for param ${param} is not valid`);
+                        return false;
+                    }
+                }else{
+                    console.warn(`No validValues or validValueFn defined for param ${param}`);
+                    continue;
+                }
+                
+                (this.state as any)[paramDef.field] = value;
+                ret = true;
+            }
+        }
+        return ret;
+
     }
 
     public async update(dateChanged: boolean = false): Promise<void> {
