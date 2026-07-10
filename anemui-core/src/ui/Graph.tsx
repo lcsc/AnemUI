@@ -106,25 +106,19 @@ export class CsGraph extends BaseFrame {
 
   public render(): JSX.Element {
     let self = this;
-    // Calcular tamaño responsivo del gráfico
-    const maxWidth = Math.min(screen.width * 0.80, 900);
-    const maxHeight = Math.min(screen.height * 0.60, 500);
-    let graphWidth = screen.width > 1200 ? Math.min(screen.width * 0.5, maxWidth) : Math.min(screen.width * 0.65, maxWidth);
-    let graphHeight = screen.height > 900 ? Math.min(screen.height * 0.4, maxHeight) : Math.min(screen.height * 0.50, maxHeight);
     let element =
       (<div className="container">
         <div id="GraphContainer" className='GraphContainer row' hidden >
           <div className="popup-content-wrapper col">
             <div className="popup-content" style={{ width: "auto", position: "relative" }}>
-              <div id="popGraph" style={{ height: graphHeight + "px", width: graphWidth + "px" }}></div>
-              {/* <div id="popGraph" className="pop-graph"></div> */}
+              <div id="popGraph" className="pop-graph"></div>
               <div id="graphTooltip"></div>
             </div>
             <div className="labels-content" style={{ width: "auto" }}>
               <div id="labels" style={{ width: "100%" }}></div>
             </div>
             <div id="colorLegend" style={{ display: "none", padding: "8px 5px", justifyContent: "center", alignItems: "center", gap: "3px", flexWrap: "wrap", fontSize: "11px" }}></div>
-            <div id="graphDiv" className="droppDownButton" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "6px 0", gap: "8px" }}>
+            <div id="graphDiv" className="droppDownButton" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "6px 0", gap: "8px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                 <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
                 <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
@@ -135,7 +129,7 @@ export class CsGraph extends BaseFrame {
               </div>
             </div>
           </div>
-          <div className="col">
+          <div className="col-auto">
             <a className="popup-close-button" onClick={() => { this.closeGraph() }}>
               <i className="bi bi-x-circle-fill"></i>
             </a>
@@ -269,6 +263,37 @@ export class CsGraph extends BaseFrame {
   public exportGraph(): void {
     const popGraph = document.getElementById('popGraph');
     if (!popGraph) return;
+
+    // Forzar temporalmente el tamaño "desktop" del popup para que se
+    // imprima/exporte con las proporciones de escritorio (más ancho, más
+    // espacio horizontal entre marcas), en vez de capturar tal cual el
+    // layout estrecho que tiene el popup en pantallas pequeñas. Común a
+    // TODOS los visores (no solo este): Dygraph escucha su propio listener
+    // de window 'resize' y redibuja el canvas al tamaño real que tenga en
+    // ese momento su contenedor (#popGraph) — ver Dygraph.prototype.resize
+    // en dygraphs/src/dygraph.js — así que basta con agrandar
+    // #GraphContainer y disparar el evento; no hace falta guardar una
+    // referencia a la instancia Dygraph de turno (cada método
+    // drawXxxGraph la crea como variable local, no la expone en `this`).
+    // gc-auto-size (wind-monitor) ya calcula su propio layout fijo en JS
+    // según el ancho de pantalla real, así que se deja fuera para no pisar
+    // ese cálculo.
+    const graphContainerEl = document.getElementById('GraphContainer');
+    const forcedDesktopSize = !!graphContainerEl && !graphContainerEl.classList.contains('gc-auto-size');
+    const prevInlineWidth = graphContainerEl?.style.width ?? '';
+    const prevInlineHeight = graphContainerEl?.style.height ?? '';
+    if (forcedDesktopSize) {
+      graphContainerEl!.style.width = '930px';
+      graphContainerEl!.style.height = '700px';
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    const restoreLiveSize = () => {
+      if (!forcedDesktopSize) return;
+      graphContainerEl!.style.width = prevInlineWidth;
+      graphContainerEl!.style.height = prevInlineHeight;
+      window.dispatchEvent(new Event('resize'));
+    };
 
     const labelsDiv = document.getElementById('labels');
     const colorLegendDiv = document.getElementById('colorLegend');
@@ -615,6 +640,12 @@ export class CsGraph extends BaseFrame {
 
     // --- Barra de logos (pie) ---
     this.drawLogosAndDownload(exportCanvas, ctx, this.getExportFilename(), dpr);
+
+    // exportCanvas ya tiene todos los píxeles capturados a tamaño desktop;
+    // restaurar el popup a su tamaño real en pantalla. drawLogosAndDownload
+    // termina de forma asíncrona (carga una imagen de logos) pero opera
+    // solo sobre exportCanvas, no vuelve a leer el DOM del gráfico en vivo.
+    restoreLiveSize();
   }
 
   /** Nombre del fichero PNG exportado. Los visores pueden sobreescribirlo. */
@@ -635,6 +666,58 @@ export class CsGraph extends BaseFrame {
     headerLines: string[],
     filename: string
   ): void {
+    // Igual motivo que en exportGraph() (Dygraph): capturar el canvas tal
+    // cual está en pantalla exporta con el layout estrecho de móvil en vez
+    // de con las proporciones de escritorio. A diferencia de Dygraph,
+    // Chart.js no redibuja solo con disparar window 'resize' (usa un
+    // ResizeObserver interno asíncrono), así que se resuelve la instancia
+    // Chart.js real ligada a este canvas (Chart.getChart, API pública desde
+    // Chart.js v3) y se le llama resize() de forma síncrona tras agrandar
+    // #GraphContainer. Común a todos los visores basados en Chart.js (EPM,
+    // CCM, SRI...), que llaman todos a este mismo método.
+    //
+    // Algunos visores (p.ej. CcmGraph.prepareCanvas) fijan además un
+    // width/height en px directamente sobre #popGraph (el padre real del
+    // canvas), en vez de dejar que herede el ancho de #GraphContainer vía
+    // CSS — agrandar solo #GraphContainer no tendría ningún efecto ahí, ese
+    // style inline gana siempre. Se agranda también #popGraph por si acaso.
+    const graphContainerEl = document.getElementById('GraphContainer');
+    const forcedDesktopSize = !!graphContainerEl && !graphContainerEl.classList.contains('gc-auto-size');
+    const prevInlineWidth = graphContainerEl?.style.width ?? '';
+    const prevInlineHeight = graphContainerEl?.style.height ?? '';
+    const popGraphEl = chartCanvas.parentElement as HTMLElement | null;
+    const prevPopGraphWidth = popGraphEl?.style.width ?? '';
+    const prevPopGraphHeight = popGraphEl?.style.height ?? '';
+    const chartInstance = Chart.getChart(chartCanvas);
+    if (forcedDesktopSize) {
+      graphContainerEl!.style.width = '930px';
+      graphContainerEl!.style.height = '700px';
+      if (popGraphEl && popGraphEl.id === 'popGraph') {
+        popGraphEl.style.width = '900px';
+        popGraphEl.style.height = '560px';
+      }
+      chartInstance?.resize();
+      // resize() por sí solo puede acabar pintando en el siguiente frame
+      // (pasa por el mismo animator que las transiciones). update('none')
+      // es el mismo patrón que ya usan EPMGraph/CcmGraph para el ocultado
+      // de título justo antes de capturar — fuerza el redibujado completo
+      // ya, sin animación, para que el drawImage de más abajo vea el
+      // tamaño nuevo.
+      chartInstance?.update('none');
+    }
+
+    const restoreLiveSize = () => {
+      if (!forcedDesktopSize) return;
+      graphContainerEl!.style.width = prevInlineWidth;
+      graphContainerEl!.style.height = prevInlineHeight;
+      if (popGraphEl && popGraphEl.id === 'popGraph') {
+        popGraphEl.style.width = prevPopGraphWidth;
+        popGraphEl.style.height = prevPopGraphHeight;
+      }
+      chartInstance?.resize();
+      chartInstance?.update('none');
+    };
+
     const lineHeight = 18;
     const padding = 12;
     const headerHeight = Math.max(headerLines.length * lineHeight + padding, 36);
@@ -643,7 +726,10 @@ export class CsGraph extends BaseFrame {
     exportCanvas.width  = chartCanvas.width;
     exportCanvas.height = headerHeight + chartCanvas.height;
     const ctx = exportCanvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      restoreLiveSize();
+      return;
+    }
 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
@@ -660,6 +746,10 @@ export class CsGraph extends BaseFrame {
 
     // Gráfico
     ctx.drawImage(chartCanvas, 0, headerHeight);
+
+    // exportCanvas ya tiene los píxeles capturados a tamaño desktop:
+    // restaurar el chart en pantalla a su tamaño real de móvil.
+    restoreLiveSize();
 
     // Barra de logos + descarga
     this.drawLogosAndDownload(exportCanvas, ctx, filename, window.devicePixelRatio || 1);
