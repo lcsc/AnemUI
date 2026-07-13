@@ -38,6 +38,7 @@ export class MenuBar extends BaseFrame {
     private loadingTimer: ReturnType<typeof setTimeout> | null = null
     private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
+    private titleMobileDiv: HTMLElement
     private collapseMenu: HTMLElement
     private navMenu: HTMLElement
     private collapseMenuMb: HTMLElement
@@ -174,6 +175,43 @@ export class MenuBar extends BaseFrame {
     public setTitle(_title: string) {
         this.title = _title;
         document.title = _title;
+    }
+
+    /**
+     * Encoge #title-mobile hasta que el título quepa en una sola línea, en
+     * vez de un font-size fijo (1em) que con títulos largos ("Servicio de
+     * monitorización y predicción de sequías"...) se envuelve a dos líneas.
+     * Cada visor tiene un título de longitud distinta, así que un valor fijo
+     * no sirve para todos: se mide el ancho real en una línea (scrollWidth
+     * con nowrap forzado) contra el ancho disponible y se escala el
+     * font-size en esa proporción — títulos cortos no se ven afectados.
+     */
+    private fitMobileTitle(): void {
+        const el = this.titleMobileDiv;
+        if (!el) return;
+
+        const MIN_PX = 11;
+
+        // Reset a lo que diga el CSS (#title-mobile: 1.0em) antes de medir:
+        // "1.0em" depende del font-size del contenedor, no asumir 16px a
+        // ciegas — y así una llamada posterior (resize a una pantalla más
+        // ancha) también puede CRECER de vuelta al tamaño base, no solo encoger.
+        el.style.fontSize = '';
+        el.style.whiteSpace = 'nowrap';
+        const basePx = parseFloat(window.getComputedStyle(el).fontSize) || 16;
+
+        // clientWidth: ancho de caja del propio h3 (bloque, ocupa el ancho
+        // disponible del contenedor) — con nowrap forzado el contenido
+        // puede desbordar esa caja sin ensancharla, así que sigue midiendo
+        // el ancho realmente disponible.
+        const available = el.clientWidth;
+        const natural = el.scrollWidth;
+
+        if (available > 0 && natural > available) {
+            // 0.96: pequeño margen de seguridad frente a redondeos de fuente.
+            const fitted = Math.max(MIN_PX, Math.floor(basePx * (available / natural) * 0.96));
+            el.style.fontSize = fitted + 'px';
+        }
     }
 
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
@@ -342,6 +380,7 @@ export class MenuBar extends BaseFrame {
         this.topBar = document.getElementById('TopBar') as HTMLDivElement;
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
+        this.titleMobileDiv = document.getElementById('title-mobile') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
@@ -463,6 +502,8 @@ export class MenuBar extends BaseFrame {
             }
 
             if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
+            this.fitMobileTitle();
+            window.addEventListener('resize', () => this.fitMobileTitle());
 
             if (this.inputOrder.length) {
                 this.changeInputOrder()

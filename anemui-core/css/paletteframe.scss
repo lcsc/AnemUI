@@ -36,7 +36,19 @@ div.paletteFrame {
     // @include blurBgFrame();
     // position: static !important;
     background-color: transparent !important;
-    // max-width: fit-content;
+    // .rightbar-item{display:block} lo estira al ancho completo de #RightBar
+    // por defecto; fit-content lo encoge a su contenido real (la leyenda
+    // colapsada o expandida al pasar el cursor). #RightBar es TAMBIÉN
+    // fit-content (sidebar.scss), así que ambos niveles se mueven juntos sin
+    // desalinearse.
+    width: fit-content;
+    // #latLong tiene un min-width fijo (sidebar.scss) para que #RightBar no
+    // cambie de ancho al aparecer el texto de coordenadas; eso deja hueco a
+    // un lado de la paleta dentro de #RightBar. Ese hueco debe quedar a la
+    // IZQUIERDA (donde #latLong reserva su espacio) y la paleta pegada a la
+    // DERECHA, que es el borde real de la pantalla (#RightBar: right:1%).
+    margin-left: auto;
+    margin-right: 0;
     // bottom: 7.5em;
     padding-top: 0px !important;
     padding-right: 0px !important;
@@ -69,6 +81,11 @@ div.paletteFrame {
         -webkit-transition: all 0.6s;
         transition: all 0.6s;
 
+        @include sm-mobile {
+            max-width: 20px;
+            min-width: 20px;
+        }
+
         @include tablet {
             line-height: 12px;
             border-radius: 10px;
@@ -79,7 +96,13 @@ div.paletteFrame {
 
     div.legend .legendText {
         visibility: hidden;
-        white-space: normal;
+        // nowrap (no normal): aunque esté oculto, visibility:hidden sigue
+        // ocupando espacio en el layout. Con white-space:normal, el ancho
+        // estrecho del estado colapsado (30-40px) partía este texto en
+        // varias líneas invisibles que igualmente sumaban altura, haciendo
+        // la paleta colapsada mucho más alta que la expandida. overflow:
+        // hidden en el .legend padre recorta el sobrante horizontal.
+        white-space: nowrap;
         word-break: keep-all;
         max-width: 80px;
         font-size: 0.8em;

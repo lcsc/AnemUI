@@ -428,8 +428,32 @@ export class OpenLayerMap implements CsMapController {
   }
 
   public onClick(event: MapEvent) {
-    if (!Number.isNaN(this.parent.getParent().getState().xyValue))
-      this.parent.onMapClick(this.toCsMapEvent(event))
+    const state = this.parent.getParent().getState();
+
+    if (!Number.isNaN(state.xyValue)) {
+      this.parent.onMapClick(this.toCsMapEvent(event));
+      return;
+    }
+
+    // En touch/móvil no hay pointermove antes del tap, así que xyValue nunca
+    // se ha calculado por el hover. Calculamos el valor del punto pulsado
+    // directamente, igual que hace onMouseMoveEnd, antes de decidir si se abre el gráfico.
+    if (state.support !== this.defaultRenderer) return;
+
+    const self = this;
+    const mapEvent = this.toCsMapEvent(event);
+    const timesJs = this.parent.getParent().getTimesJs();
+
+    loadLatLogValue(mapEvent.latLong, state, timesJs, this.getZoom())
+      .then(value => {
+        self.showValue(mapEvent.latLong, value[0], value[1], value[2] == 0 ? '_can' : '_pen');
+        if (!Number.isNaN(state.xyValue)) {
+          self.parent.onMapClick(mapEvent);
+        }
+      })
+      .catch(reason => {
+        console.log("error: " + reason);
+      });
   }
 
   public handleMapMove() {
