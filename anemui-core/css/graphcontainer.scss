@@ -48,9 +48,49 @@ div.GraphContainer {
         // usado para el resto de visores puede no expandirse al contenido real.
         // Flujo de bloque normal es 100% predecible: el alto es la suma del
         // contenido, sin cálculos de flex de por medio.
+        //
+        // Cinturón de seguridad, válido para CUALQUIER visor que use este
+        // escape hatch (no solo wind-monitor): el cálculo en JS de cada
+        // visor (buildDualLayout, DroughtGraphs.buildDualLayout...) es una
+        // ESTIMA del espacio que van a ocupar títulos/botones/controles
+        // reales; con textos largos (traducciones, nombres de variable) esa
+        // estima puede quedarse corta. max-height + overflow-y:auto aquí
+        // garantiza que, pase lo que pase, el popup nunca puede rebasar el
+        // alto de pantalla: en el caso normal no se nota (el contenido ya
+        // cabe por el cálculo en JS) y en el caso límite el usuario puede
+        // hacer scroll dentro del popup en vez de perder acceso a parte del
+        // contenido (el popup está centrado con translate(-50%,-50%), así
+        // que sin este límite la mitad que sobra queda fuera de la pantalla
+        // y es inalcanzable, no solo "hay que hacer scroll de la página").
+        // El botón de cierre (a.popup-close-button, hermano de
+        // .popup-content-wrapper, no descendiente) queda fuera de esta zona
+        // con scroll y siempre visible.
         .popup-content-wrapper {
             display: block;
             height: auto;
+            max-height: 82vh;
+            max-height: 82dvh;
+            overflow-y: auto;
+            overflow-x: hidden;
+
+            // Scrollbar fina en vez de la barra gris ancha por defecto del
+            // navegador (que además, sin estos estilos, parece un elemento
+            // decorativo roto más que un scroll real).
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+
+            &::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            &::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background-color: rgba(0, 0, 0, 0.25);
+                border-radius: 3px;
+            }
         }
 
         .popup-content {

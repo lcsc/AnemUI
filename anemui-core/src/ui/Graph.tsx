@@ -173,6 +173,16 @@ export class CsGraph extends BaseFrame {
           target.classList.contains('dygraph-rangesel-zoomhandle')) {
         return;
       }
+      // .popup-content-wrapper puede llevar su propio scroll interno
+      // (gc-auto-size, graphcontainer.scss) cuando el contenido no cabe en
+      // pantalla. Si no se excluye aquí, cualquier intento de arrastrar para
+      // hacer scroll dentro del contenido se interpreta como "arrastrar el
+      // popup entero" (arranca aquí y mueve el contenedor en onMouseMove) y
+      // el scroll nativo nunca llega a producirse — el popup sigue siendo
+      // arrastrable agarrando el marco/fondo, fuera del contenido.
+      if (target.closest('.popup-content-wrapper')) {
+        return;
+      }
 
       pendingDrag = true;
       startX = e.clientX;
