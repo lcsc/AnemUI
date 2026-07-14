@@ -820,7 +820,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             if (!dateChanged) this.dateSelectorFrame.update();
 
             await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
-            this.csMap.updateRender(this.state.support);
+            // Sin este await, paletteFrame.update() (línea siguiente) podía
+            // ejecutarse mientras updateRender() todavía estaba a mitad de
+            // computeFeatureLayerData() — es decir, con computedDataByFeature
+            // recién vaciado (self.state.computedDataByFeature = {}) antes de
+            // rellenarse. La leyenda se calculaba entonces sobre datos vacíos,
+            // no sobre los definitivos.
+            await this.csMap.updateRender(this.state.support);
 
             this.paletteFrame.update();
             this.layerFrame.update();
