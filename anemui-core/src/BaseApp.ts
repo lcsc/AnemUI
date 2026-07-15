@@ -775,7 +775,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public safeFillStateFromUrl(): boolean {
-        let ret = true;
+        let ret = false;
         if (!this.paramsDef) return ret;
         let newUrl = new URL(document.location.toString());
         for (let paramDef of this.paramsDef) {
