@@ -243,6 +243,33 @@ div.GraphContainer {
         display: flex;
         flex-direction: column;
         height: 100%;
+
+        // Red de seguridad, igual que en .gc-auto-size más arriba: con
+        // height:100% de un GraphContainer de alto fijo por clamp() (línea
+        // ~8) y overflow:hidden en el propio GraphContainer, un popup con
+        // más contenido del que cabe (p.ej. donut de predicción con leyenda
+        // + descripción larga, como en FRI) se recortaba en seco sin ningún
+        // scroll — el texto quedaba cortado a media frase. overflow-y:auto
+        // aquí, con la altura ya fija que da height:100%, permite hacer
+        // scroll dentro del popup en vez de perder contenido.
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.25);
+            border-radius: 3px;
+        }
     }
 
     .popup-content {
@@ -321,7 +348,32 @@ div.GraphContainer {
     }
 
     #popGraph {
-        overflow: hidden;
+        // overflow-y:auto (no "hidden"): el donut de predicción
+        // (renderPredictionDoughnut, base) mete su leyenda+descripción
+        // directamente aquí dentro, no como hermano en .popup-content-wrapper
+        // — con overflow:hidden ese contenido se recortaba en seco DENTRO de
+        // #popGraph, antes de que el scroll de .popup-content-wrapper (más
+        // arriba) tuviera ocasión de entrar en juego. Con contenido normal
+        // (un gráfico Dygraph/Chart.js que ya encaja en su contenedor) esto
+        // no cambia nada visualmente, solo actúa cuando hace falta.
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.25);
+            border-radius: 3px;
+        }
     }
 
     &.gc-auto-size #popGraph {
