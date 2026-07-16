@@ -46,7 +46,7 @@ export class CsMenuItem extends BaseUiElement {
             id: val.startsWith("~") ? val.substring(1) : val,
             'data-toggle': 'popover'
           };
-          if (!val.startsWith("-") && !val.startsWith("~")) {
+          if (!val.startsWith("-") && !val.startsWith("~") && val !== "") {
         /*     if (val.startsWith("~")) {
               addChild(ul, (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>))
             } else { */
@@ -118,7 +118,7 @@ export class CsMenuItem extends BaseUiElement {
                     id: val.startsWith("~") ? val.substring(1) : val,
                     'data-toggle': 'popover'
                   };
-                  if (!val.startsWith("-")) {
+                  if (!val.startsWith("-") && val !== "") {
                     if (val.startsWith("~")) {
                       return (<li> <a {...hasPopData && popOverAttrs} className="dropdown-item cs-disabled" href="#"> {val.substring(1)}  </a></li>)
                     }
