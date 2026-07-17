@@ -69,6 +69,16 @@ export class NiceSteps {
             effectiveMax = maxDisplayVal;
         }
 
+        // Rango degenerado (un único valor de entrada, o varios idénticos):
+        // con effectiveMax===effectiveMin, rawStep sale 0, niceStep(0) también
+        // da 0, y start/end se calculan como floor(v/0)*0 = Infinity*0 = NaN.
+        // El bucle de más abajo compara "val <= end" en cada vuelta — con
+        // ambos NaN esa comparación es siempre false, así que nunca itera
+        // ni una vez y se devolvía [] en lugar de representar ese valor.
+        if (effectiveMax === effectiveMin) {
+            return [effectiveMin];
+        }
+
         // Calculamos el paso inicial usando el rango completo de los datos
         const rawStep = (effectiveMax - effectiveMin) / numBreaks;
         // Si rawStep es muy pequeño o negativo, usar un paso mínimo
@@ -142,7 +152,14 @@ export class NiceSteps {
         }
         
         const effectiveMin = Math.max(0, this.percentile(data, 5));
-        
+
+        // Mismo caso degenerado que en getRegularSteps() — ver el comentario
+        // ahí: sin esto, un dataset sin variación real (un único valor, o
+        // varios idénticos) acaba devolviendo [] en vez de representarlo.
+        if (effectiveMax === effectiveMin) {
+            return [effectiveMin];
+        }
+
         // Resto del código igual que antes
         const rawStep = (effectiveMax - effectiveMin) / numBreaks;
         const minStep = (effectiveMax - effectiveMin) / 100;
