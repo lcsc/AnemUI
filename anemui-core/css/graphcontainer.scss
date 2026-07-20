@@ -16,13 +16,13 @@ div.GraphContainer {
     overflow: hidden;
     cursor: move;
 
-    @include md-desktop {
+    @include desktop {
         width: clamp(320px, 80vw, 900px);
         height: clamp(400px, 75vh, 650px);
         height: clamp(400px, 75svh, 650px);
     }
 
-    @include xl-desktop {
+    @include md-desktop {
         width: clamp(320px, 75vw, 1030px);
         height: clamp(420px, 75vh, 700px);
         height: clamp(420px, 75svh, 700px);
@@ -54,43 +54,18 @@ div.GraphContainer {
         // visor (buildDualLayout, DroughtGraphs.buildDualLayout...) es una
         // ESTIMA del espacio que van a ocupar títulos/botones/controles
         // reales; con textos largos (traducciones, nombres de variable) esa
-        // estima puede quedarse corta. max-height + overflow-y:auto aquí
-        // garantiza que, pase lo que pase, el popup nunca puede rebasar el
-        // alto de pantalla: en el caso normal no se nota (el contenido ya
-        // cabe por el cálculo en JS) y en el caso límite el usuario puede
-        // hacer scroll dentro del popup en vez de perder acceso a parte del
-        // contenido (el popup está centrado con translate(-50%,-50%), así
-        // que sin este límite la mitad que sobra queda fuera de la pantalla
-        // y es inalcanzable, no solo "hay que hacer scroll de la página").
-        // El botón de cierre (a.popup-close-button, hermano de
-        // .popup-content-wrapper, no descendiente) queda fuera de esta zona
-        // con scroll y siempre visible.
+        // estima puede quedarse corta. max-height aquí garantiza que, pase
+        // lo que pase, el popup nunca puede rebasar el alto de pantalla.
+        // overflow:hidden (no auto): no puede aparecer NUNCA una scrollbar
+        // en ninguna gráfica de ningún visor — requisito de producto, no
+        // negociable por caso límite. El caso límite (estima corta) debe
+        // resolverse ajustando el cálculo de altura en JS, no con scroll.
         .popup-content-wrapper {
             display: block;
             height: auto;
             max-height: 82vh;
             max-height: 82dvh;
-            overflow-y: auto;
-            overflow-x: hidden;
-
-            // Scrollbar fina en vez de la barra gris ancha por defecto del
-            // navegador (que además, sin estos estilos, parece un elemento
-            // decorativo roto más que un scroll real).
-            scrollbar-width: thin;
-            scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
-
-            &::-webkit-scrollbar {
-                width: 6px;
-            }
-
-            &::-webkit-scrollbar-track {
-                background: transparent;
-            }
-
-            &::-webkit-scrollbar-thumb {
-                background-color: rgba(0, 0, 0, 0.25);
-                border-radius: 3px;
-            }
+            overflow: hidden;
         }
 
         .popup-content {
@@ -244,32 +219,12 @@ div.GraphContainer {
         flex-direction: column;
         height: 100%;
 
-        // Red de seguridad, igual que en .gc-auto-size más arriba: con
-        // height:100% de un GraphContainer de alto fijo por clamp() (línea
-        // ~8) y overflow:hidden en el propio GraphContainer, un popup con
-        // más contenido del que cabe (p.ej. donut de predicción con leyenda
-        // + descripción larga, como en FRI) se recortaba en seco sin ningún
-        // scroll — el texto quedaba cortado a media frase. overflow-y:auto
-        // aquí, con la altura ya fija que da height:100%, permite hacer
-        // scroll dentro del popup en vez de perder contenido.
-        overflow-y: auto;
-        overflow-x: hidden;
-
-        scrollbar-width: thin;
-        scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
-
-        &::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        &::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        &::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.25);
-            border-radius: 3px;
-        }
+        // overflow:hidden (no auto): no puede aparecer NUNCA una scrollbar
+        // en ninguna gráfica de ningún visor — requisito de producto. Un
+        // popup con más contenido del que cabe (p.ej. donut de predicción
+        // con leyenda + descripción larga, como en FRI) debe resolverse
+        // ajustando el layout/tamaño en JS, no dejando hacer scroll.
+        overflow: hidden;
     }
 
     .popup-content {
@@ -348,32 +303,13 @@ div.GraphContainer {
     }
 
     #popGraph {
-        // overflow-y:auto (no "hidden"): el donut de predicción
-        // (renderPredictionDoughnut, base) mete su leyenda+descripción
-        // directamente aquí dentro, no como hermano en .popup-content-wrapper
-        // — con overflow:hidden ese contenido se recortaba en seco DENTRO de
-        // #popGraph, antes de que el scroll de .popup-content-wrapper (más
-        // arriba) tuviera ocasión de entrar en juego. Con contenido normal
-        // (un gráfico Dygraph/Chart.js que ya encaja en su contenedor) esto
-        // no cambia nada visualmente, solo actúa cuando hace falta.
-        overflow-y: auto;
-        overflow-x: hidden;
-
-        scrollbar-width: thin;
-        scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
-
-        &::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        &::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        &::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.25);
-            border-radius: 3px;
-        }
+        // overflow:hidden: no puede aparecer NUNCA una scrollbar en ninguna
+        // gráfica de ningún visor — requisito de producto. El donut de
+        // predicción (renderPredictionDoughnut, base) mete su
+        // leyenda+descripción directamente aquí dentro, no como hermano en
+        // .popup-content-wrapper; si no cabe, el ajuste va en el layout/JS
+        // del donut, no en un scroll.
+        overflow: hidden;
     }
 
     &.gc-auto-size #popGraph {
