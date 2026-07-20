@@ -2352,7 +2352,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     }
 
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex; flex-direction:row; align-items:center; gap:24px; justify-content:center; width:100%;';
+    row.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:24px; justify-content:center; width:100%;';
 
     const canvas = document.createElement('canvas');
     const canvasSize = 200;
