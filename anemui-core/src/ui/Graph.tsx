@@ -184,6 +184,8 @@ export class CsGraph extends BaseFrame {
         return;
       }
 
+      e.preventDefault();
+
       pendingDrag = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -203,8 +205,13 @@ export class CsGraph extends BaseFrame {
         if (Math.abs(deltaX) < DRAG_THRESHOLD && Math.abs(deltaY) < DRAG_THRESHOLD) return;
         isDragging = true;
         this.container.style.transform = 'none';
+        this.container.style.margin = '0';
+        this.container.style.right = 'auto';
+        this.container.style.bottom = 'auto';
         this.container.style.left = startLeft + 'px';
         this.container.style.top = startTop + 'px';
+        document.getSelection()?.removeAllRanges();
+        document.body.style.userSelect = 'none';
       }
 
       this.container.style.left = (startLeft + deltaX) + 'px';
@@ -215,6 +222,7 @@ export class CsGraph extends BaseFrame {
     const onMouseUp = () => {
       isDragging = false;
       pendingDrag = false;
+      document.body.style.userSelect = '';
     };
 
     this.container.addEventListener('mousedown', onMouseDown);
