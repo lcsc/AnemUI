@@ -69,6 +69,16 @@ export class NiceSteps {
             effectiveMax = maxDisplayVal;
         }
 
+        // Rango degenerado (un único valor de entrada, o varios idénticos):
+        // con effectiveMax===effectiveMin, rawStep sale 0, niceStep(0) también
+        // da 0, y start/end se calculan como floor(v/0)*0 = Infinity*0 = NaN.
+        // El bucle de más abajo compara "val <= end" en cada vuelta — con
+        // ambos NaN esa comparación es siempre false, así que nunca itera
+        // ni una vez y se devolvía [] en lugar de representar ese valor.
+        if (effectiveMax === effectiveMin) {
+            return [effectiveMin];
+        }
+
         // Calculamos el paso inicial usando el rango completo de los datos
         const rawStep = (effectiveMax - effectiveMin) / numBreaks;
         // Si rawStep es muy pequeño o negativo, usar un paso mínimo
@@ -142,7 +152,14 @@ export class NiceSteps {
         }
         
         const effectiveMin = Math.max(0, this.percentile(data, 5));
-        
+
+        // Mismo caso degenerado que en getRegularSteps() — ver el comentario
+        // ahí: sin esto, un dataset sin variación real (un único valor, o
+        // varios idénticos) acaba devolviendo [] en vez de representarlo.
+        if (effectiveMax === effectiveMin) {
+            return [effectiveMin];
+        }
+
         // Resto del código igual que antes
         const rawStep = (effectiveMax - effectiveMin) / numBreaks;
         const minStep = (effectiveMax - effectiveMin) / 100;
@@ -835,11 +852,13 @@ export class CrossPatternPainter implements Painter {
         const drawWidth = Math.ceil(width / stride);
         const drawHeight = Math.ceil(height / stride);
 
-        // effectiveCs = cellSize siempre (sin cap).
-        // El bug original "4X por pixel" se debía a ficheros de datos con lonNum incorrecto
-        // (stale) que causaba stride=4. Con datos regenerados (lonNum=545) el stride=1 y
-        // effectiveCs=cellSize=8 produce la X delgada correcta en cada celda de dato.
-        const effectiveCs = this.cellSize;
+        // Cuando el dato es más fino que la incertidumbre (ej. península 4x vs canarias),
+        // escalar effectiveCs para que el canvas tenga la resolución del dato.
+        // OL estira ambos canvases por igual → 1 X por celda de incertidumbre.
+        const scaleUp = (this.adaptiveCellSize && this.dataWidth > 0 && this.dataWidth > width)
+            ? this.dataWidth / width
+            : 1;
+        const effectiveCs = this.cellSize * scaleUp;
 
         const canvasW = drawWidth * effectiveCs;
         const canvasH = drawHeight * effectiveCs;
@@ -864,12 +883,13 @@ export class CrossPatternPainter implements Painter {
         context.beginPath();
 
         // Una X por cada dato, submuestreando con stride si la resolución de incertidumbre es mayor
+        // Convención: 0 = incierto/no significativo (pintar X), 1 = cierto/significativo (no pintar)
         for (let dy = 0; dy < height; dy += stride) {
             for (let dx = 0; dx < width; dx += stride) {
                 const ncIndex = dx + dy * width;
                 const value = floatArray[ncIndex];
 
-                if (!isNaN(value) && isFinite(value) && value > 0) {
+                if (!isNaN(value) && isFinite(value) && value === 0) {
                     const drawDx = Math.floor(dx / stride);
                     const drawDy = Math.floor(dy / stride);
                     const px = drawDx * effectiveCs;
@@ -891,7 +911,6 @@ export class CrossPatternPainter implements Painter {
         const canvasW2 = drawWidth2 * this.cellSize;
         const canvasH2 = Math.ceil(height / stride2) * this.cellSize;
         const dataUrl = canvas.toDataURL('image/png');
-        console.log('[CrossPattern] canvas='+canvasW2+'x'+canvasH2+' stride='+stride2+' lineWidth='+context.lineWidth+' dataUrlLen='+dataUrl.length);
         return canvas;
     }
 

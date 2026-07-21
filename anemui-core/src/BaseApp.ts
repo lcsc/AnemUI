@@ -67,6 +67,15 @@ export const OVERLAY_SUFFIXES = [UNCERTAINTY_LAYER, PVALUE_LAYER]
 const LEYEND_TITLE = "Leyenda"
 const STR_ALL = "Todo"
 
+export type CsViewerAppParam={
+    param: string,
+    field: string,
+    storeFn?: (param: string,field:string, value: any) => boolean,
+    validValues?: string[],
+    validValueFn?: (param: string,field:string, value: any) => boolean,
+    castFn?:(value: any) => any
+}
+
 export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFrameListener {
 
     protected menuBar: MenuBar;
@@ -93,6 +102,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     
     protected language: Language;
     protected cookies: CsCookies;
+    protected paramsDef?: CsViewerAppParam[];
 
     protected constructor() {
         this.menuBar = useFactoryMethods.menuBar ? this.createMenuBar() : new MenuBar(this, this);
@@ -111,7 +121,17 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
-        
+
+        // Favicon común a todos los visores (AEMET). El HTML generado por
+        // HtmlWebpackPlugin no incluye favicon, así que se inyecta aquí.
+        let favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+        if (!favicon) {
+            favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            document.head.appendChild(favicon);
+        }
+        favicon.href = 'https://www.aemet.es/favicon.ico';
+
         this.language = Language.getInstance();
         
         if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);
@@ -521,14 +541,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadFrame.showPointButtons()
     }
 
-    onClick(event: CsMapEvent): void {
-        //console.log("Map Clicked");
-
+    onClick(event: CsMapEvent): Promise<void> {
         this.menuBar.showLoading();
-        loadLatLongData(event.latLong, this.state, this.timesJs)
+        return loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
                 this.menuBar.hideLoading();
-                this.onLlDataLoaded(data)
+                this.onLlDataLoaded(data);
             })
             .catch((reason: any) => {
                 this.menuBar.hideLoading();
@@ -690,6 +708,36 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
 
+    
+    public safeChangeUrl(): void {
+        console.log("safeChangeUrl called");
+        if (!this.paramsDef) return ;
+        if (this.paramsDef.length == 0) return;
+        let newUrl = new URL(document.location.toString())
+        
+        for (let paramDef of this.paramsDef) {
+            
+            let paramValue = (this.state as any)[paramDef.field];
+            let param = paramDef.param;
+
+            if (paramDef.storeFn && paramDef.storeFn(param, paramDef.field, paramValue) === false) {
+                newUrl.searchParams.delete(param);
+                continue;
+            }
+            if (paramValue !== undefined && paramValue !== null) {
+                newUrl.searchParams.set(param, this.getCode(paramValue));
+            } else {
+                newUrl.searchParams.delete(param);
+            }
+        }
+
+        if (history.replaceState) {
+            history.replaceState({}, "", newUrl)
+        } else {
+            history.pushState({}, "", newUrl)
+        }
+    }
+
     public changeUrl(): void {
         let newUrl = new URL(document.location.toString())
         newUrl.searchParams.set("var", this.state.varId)
@@ -726,19 +774,60 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return ret
     }
 
+    public safeFillStateFromUrl(): boolean {
+        let ret = false;
+        if (!this.paramsDef) return ret;
+        let newUrl = new URL(document.location.toString());
+        for (let paramDef of this.paramsDef) {
+            let param = paramDef.param;
+            if (newUrl.searchParams.has(param)) {
+                console.log(`Found param ${param} in URL, processing...`);
+                let value = newUrl.searchParams.get(param);
+                if (paramDef.castFn) {
+                    value = paramDef.castFn(value);
+                }
+
+                // si hay una función de validación, usarla para validar el valor
+                if (paramDef.validValueFn){
+                    if (!paramDef.validValueFn(param, paramDef.field, value)) {
+                        console.warn(`Value ${value} for param ${param} is not valid`);
+                        return false;
+                    } 
+                } else if (paramDef.validValues){
+                    if (!paramDef.validValues.includes(value)) {
+                        console.warn(`Value ${value} for param ${param} is not valid`);
+                        return false;
+                    }
+                }else{
+                    console.warn(`No validValues or validValueFn defined for param ${param}`);
+                    continue;
+                }
+                
+                (this.state as any)[paramDef.field] = value;
+                ret = true;
+            }
+        }
+        return ret;
+
+    }
+
     public async update(dateChanged: boolean = false): Promise<void> {
         try {
             this.menuBar.update();
             this.leftBar.update();
-            await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
-            this.csMap.updateRender(this.state.support);
-
-            // Wait for data only if we have computed data tiles layer
-            if (computedDataTilesLayer && this.state.computedLayer) {
-                await this.waitForDataLoad();
-            }
-
+            // Actualizar el DateFrame antes de los awaits del mapa para que el cambio
+            // de modo (histórico ↔ climatología) sea inmediato, sin esperar a la carga
             if (!dateChanged) this.dateSelectorFrame.update();
+
+            await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
+            // Sin este await, paletteFrame.update() (línea siguiente) podía
+            // ejecutarse mientras updateRender() todavía estaba a mitad de
+            // computeFeatureLayerData() — es decir, con computedDataByFeature
+            // recién vaciado (self.state.computedDataByFeature = {}) antes de
+            // rellenarse. La leyenda se calculaba entonces sobre datos vacíos,
+            // no sobre los definitivos.
+            await this.csMap.updateRender(this.state.support);
+
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
@@ -997,6 +1086,34 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
 
         return this.getTranslation('valor_en') + text + formattedValue;
+    }
+
+    /** Devuelve el acrónimo del índice para los textos de tercil. Cada visor lo sobrescribe. */
+    public getTercilAcronym(): string { return ''; }
+
+    /** Texto descriptivo de un tercil dado un acrónimo. Fuente única de verdad para pixel popup y leyenda. */
+    public getTercilDescriptionText(tercilLabel: string, acronimo: string): string {
+        const lc = tercilLabel.toLowerCase();
+        if (lc === 'inferior')
+            return `Se prevé una tendencia hacia valores inferiores a lo normal para el índice ${acronimo}.`;
+        if (lc === 'medio')
+            return `No se anticipa una tendencia clara; los valores del índice ${acronimo} tienen mayor probabilidad de situarse dentro del rango habitual.`;
+        if (lc === 'superior')
+            return `Se prevé una tendencia hacia valores superiores a lo normal para el índice ${acronimo}.`;
+        return '';
+    }
+
+    protected formatTercilPopup(tercilLabel: string, acronimo?: string): string {
+        const uncertaintyMsg = this.state.uncertaintyLayer
+            ? `<div class="uncertainty-msg">${this.getTranslation('uncertainty_prediction')}</div>`
+            : '';
+        let descripcionMsg = '';
+        const acr = acronimo ?? this.getTercilAcronym();
+        if (acr) {
+            const texto = this.getTercilDescriptionText(tercilLabel, acr);
+            if (texto) descripcionMsg = `<div class="popover-description">${texto}</div>`;
+        }
+        return `<div>Tercil ${tercilLabel}</div>${descripcionMsg}${uncertaintyMsg}`;
     }
 
     public getHoverHintText(): string | null { return null; }

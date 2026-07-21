@@ -34,8 +34,11 @@ export class MenuBar extends BaseFrame {
     private menuCentral: HTMLElement
     private loading: HTMLDivElement
     private loadingText: HTMLSpanElement
+    private loadingOverlay: HTMLDivElement | null = null
+    private loadingTimer: ReturnType<typeof setTimeout> | null = null
     private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
+    private titleMobileDiv: HTMLElement
     private collapseMenu: HTMLElement
     private navMenu: HTMLElement
     private collapseMenuMb: HTMLElement
@@ -162,16 +165,53 @@ export class MenuBar extends BaseFrame {
         this.extraBtns = []
         this.dropDownOrder = []
         this.logoMaps = [
-            "0,28|AEMET|https://www.aemet.es/",
-            "28,32|PTI Clima CSIC|https://pti-clima.csic.es/",
-            "60,22|Plan de Recuperación|https://planderecuperacion.gob.es/",
-            "82,22|NextGenerationEU|https://next-generation-eu.europa.eu/index_en"
+            "0,18|NextGenerationEU|https://next-generation-eu.europa.eu/index_en",
+            "19,30|AEMET|https://www.aemet.es/",
+            "52,26|PTI Clima CSIC|https://pti-clima.csic.es/",
+            "81,20|Plan de Recuperación|https://planderecuperacion.gob.es/"
         ]
     }
 
     public setTitle(_title: string) {
         this.title = _title;
         document.title = _title;
+    }
+
+    /**
+     * Encoge #title-mobile hasta que el título quepa en una sola línea, en
+     * vez de un font-size fijo (1em) que con títulos largos ("Servicio de
+     * monitorización y predicción de sequías"...) se envuelve a dos líneas.
+     * Cada visor tiene un título de longitud distinta, así que un valor fijo
+     * no sirve para todos: se mide el ancho real en una línea (scrollWidth
+     * con nowrap forzado) contra el ancho disponible y se escala el
+     * font-size en esa proporción — títulos cortos no se ven afectados.
+     */
+    private fitMobileTitle(): void {
+        const el = this.titleMobileDiv;
+        if (!el) return;
+
+        const MIN_PX = 11;
+
+        // Reset a lo que diga el CSS (#title-mobile: 1.0em) antes de medir:
+        // "1.0em" depende del font-size del contenedor, no asumir 16px a
+        // ciegas — y así una llamada posterior (resize a una pantalla más
+        // ancha) también puede CRECER de vuelta al tamaño base, no solo encoger.
+        el.style.fontSize = '';
+        el.style.whiteSpace = 'nowrap';
+        const basePx = parseFloat(window.getComputedStyle(el).fontSize) || 16;
+
+        // clientWidth: ancho de caja del propio h3 (bloque, ocupa el ancho
+        // disponible del contenedor) — con nowrap forzado el contenido
+        // puede desbordar esa caja sin ensancharla, así que sigue midiendo
+        // el ancho realmente disponible.
+        const available = el.clientWidth;
+        const natural = el.scrollWidth;
+
+        if (available > 0 && natural > available) {
+            // 0.96: pequeño margen de seguridad frente a redondeos de fuente.
+            const fitted = Math.max(MIN_PX, Math.floor(basePx * (available / natural) * 0.96));
+            el.style.fontSize = fitted + 'px';
+        }
     }
 
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
@@ -234,7 +274,7 @@ export class MenuBar extends BaseFrame {
                                 </div>
                             </div>
                             <div className="col menu-info d-flex" id="home">
-                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal">
+                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                             </div>
@@ -272,7 +312,7 @@ export class MenuBar extends BaseFrame {
                                 </ul>
                             </div>
                             <div className="mobile-actions">
-                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
+                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                                 <div className="topbar-icon-btn" id="info-mobile">
@@ -340,6 +380,7 @@ export class MenuBar extends BaseFrame {
         this.topBar = document.getElementById('TopBar') as HTMLDivElement;
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
+        this.titleMobileDiv = document.getElementById('title-mobile') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
@@ -461,6 +502,8 @@ export class MenuBar extends BaseFrame {
             }
 
             if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
+            this.fitMobileTitle();
+            window.addEventListener('resize', () => this.fitMobileTitle());
 
             if (this.inputOrder.length) {
                 this.changeInputOrder()
@@ -566,18 +609,70 @@ export class MenuBar extends BaseFrame {
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
-        if (this.loading) this.loading.hidden = false;
-        if (this.loadingText) {
-            this.loadingText.hidden = false;
-            this.loadingText.classList.add('blinking-text');
+        if (this.loadingOverlay || this.loadingTimer) return;
+
+        this.loadingTimer = setTimeout(() => {
+            this.loadingTimer = null;
+            this._showLoadingOverlay();
+        }, 2000);
+    }
+
+    private _showLoadingOverlay(): void {
+        if (this.loadingOverlay) return;
+
+        if (!document.getElementById('_anemui_spinner_kf')) {
+            const st = document.createElement('style');
+            st.id = '_anemui_spinner_kf';
+            st.textContent = '@keyframes _anemui_spin{to{transform:rotate(360deg)}}';
+            document.head.appendChild(st);
         }
+
+        const mapEl = document.getElementById('map');
+        if (!mapEl) return;
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = [
+            'position:absolute', 'inset:0', 'z-index:9000',
+            'background:transparent',
+            'display:flex', 'flex-direction:column',
+            'align-items:center', 'justify-content:center', 'gap:12px',
+            'pointer-events:none',
+        ].join(';');
+
+        const spinner = document.createElement('div');
+        spinner.style.cssText = [
+            'width:42px', 'height:42px',
+            'border:5px solid rgba(44,62,80,0.25)',
+            'border-top-color:#2c3e50',
+            'border-radius:50%',
+            'animation:_anemui_spin 0.8s linear infinite',
+            'filter:drop-shadow(0 0 4px rgba(255,255,255,0.8))',
+        ].join(';');
+
+        const label = document.createElement('span');
+        label.style.cssText = [
+            'font:bold 14px sans-serif',
+            'color:#ffffff',
+            'text-shadow:0 1px 3px rgba(0,0,0,0.9),0 0 8px rgba(0,0,0,0.7)',
+            'filter:drop-shadow(0 0 4px rgba(255,255,255,0.8))',
+        ].join(';');
+        label.textContent = 'Cargando datos…';
+
+        overlay.appendChild(spinner);
+        overlay.appendChild(label);
+        if (getComputedStyle(mapEl).position === 'static') mapEl.style.position = 'relative';
+        mapEl.appendChild(overlay);
+        this.loadingOverlay = overlay;
     }
 
     public hideLoading(): void {
-        if (this.loading) this.loading.hidden = true;
-        if (this.loadingText) {
-            this.loadingText.hidden = true;
-            this.loadingText.classList.add('display:none')
+        if (this.loadingTimer) {
+            clearTimeout(this.loadingTimer);
+            this.loadingTimer = null;
+        }
+        if (this.loadingOverlay) {
+            this.loadingOverlay.remove();
+            this.loadingOverlay = null;
         }
     }
 
@@ -1072,6 +1167,25 @@ export class MenuBar extends BaseFrame {
 
     // public selectFirstSpatialSupportValue(): void {
     //     this.spatialSupport.selectFirstValidValue();
-    // }   
+    // }
+
+    protected adjustSelectorsWidth(): void {
+        const inputDivs = document.querySelectorAll<HTMLElement>('.inputDiv');
+        inputDivs.forEach((inputDiv) => {
+            const options = inputDiv.querySelectorAll<HTMLElement>('.dropdown-item');
+            if (options.length === 0) return;
+            const measureEl = document.createElement('span');
+            measureEl.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap';
+            measureEl.style.font = window.getComputedStyle(options[0]).font;
+            document.body.appendChild(measureEl);
+            let maxWidth = 0;
+            options.forEach((option) => {
+                measureEl.textContent = option.textContent;
+                if (measureEl.offsetWidth > maxWidth) maxWidth = measureEl.offsetWidth;
+            });
+            document.body.removeChild(measureEl);
+            if (maxWidth > 0) inputDiv.style.minWidth = `${maxWidth + 20}px`;
+        });
+    }
 
 }
