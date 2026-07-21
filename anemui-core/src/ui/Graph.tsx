@@ -2104,6 +2104,16 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       graphContainer.parentNode.insertBefore(mainContainer, graphContainer);
     }
 
+    // Insertar este bloque reduce el alto disponible de #popGraph (ahora hay
+    // que hacerle sitio también a los selectores), pero Dygraph ya había
+    // medido y dibujado con el alto de ANTES de insertarlo — su canvas se
+    // queda más alto de lo que ahora cabe de verdad, y lo que sobra por
+    // abajo (justo el eje X) queda recortado por el overflow:hidden de
+    // #popGraph/.popup-content-wrapper. resize() fuerza a Dygraph a volver
+    // a medir su contenedor ya con el selector puesto y redibujar al alto
+    // correcto, eje X incluido.
+    graph.resize();
+
     // Agregar eventos para cambiar las escalas
     this.attachScaleEvents(graph);
   }
