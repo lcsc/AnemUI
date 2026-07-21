@@ -2112,7 +2112,9 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     // #popGraph/.popup-content-wrapper. resize() fuerza a Dygraph a volver
     // a medir su contenedor ya con el selector puesto y redibujar al alto
     // correcto, eje X incluido.
-    graph.resize();
+    if (graph && graphContainer && graphContainer.clientWidth > 0 && graphContainer.clientHeight > 0) {
+      graph.resize();
+    }
 
     // Agregar eventos para cambiar las escalas
     this.attachScaleEvents(graph);
