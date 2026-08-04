@@ -45,9 +45,9 @@ export class InfoDiv extends BaseFrame {
                     <li><strong>Imagen global arcGIS:</strong> <a href="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" target="_blank">https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer</a></li>
                     <li><strong>Mapa global OpenStreetMap:</strong> <a href="https://planet.openstreetmap.org/" target="_blank">https://planet.openstreetmap.org/</a></li>
                     <li><strong>Imagen global GEBCO:</strong> <a href="https://www.gebco.net/data-products/gebco-web-services/web-map-service" target="_blank">https://www.gebco.net/data-products/gebco-web-services/web-map-service</a></li>
-                    <li><strong>Mapa Topográfico Nacional del IGN:</strong> <a href="https://www.ign.es/wmts/ign-base" target="_blank">https://www.ign.es/wmts/ign-base</a></li>
-                    <li><strong>Ortofoto PNOA:</strong> <a href="https://www.ign.es/wms-inspire/pnoa-ma" target="_blank">https://www.ign.es/wms-inspire/pnoa-ma</a></li>
-                    <li><strong>Mapa Lidar PNOA:</strong> <a href="https://wmts-mapa-lidar.idee.es/lidar" target="_blank">https://wmts-mapa-lidar.idee.es/lidar</a></li>
+                    <li><strong>Mapa Topográfico Nacional del IGN:</strong> <a href="https://www.ign.es/web/ide-area-nodo-ide-ign" target="_blank">https://www.ign.es/web/ide-area-nodo-ide-ign</a></li>
+                    <li><strong>Ortofoto PNOA:</strong> <a href="https://pnoa.ign.es/web/portal/pnoa-imagen/presentacion" target="_blank">https://pnoa.ign.es/web/portal/pnoa-imagen/presentacion</a></li>
+                    <li><strong>Mapa Lidar PNOA:</strong> <a href="https://pnoa.ign.es/web/portal/pnoa-lidar/presentacion" target="_blank">https://pnoa.ign.es/web/portal/pnoa-lidar/presentacion</a></li>
                 </ul>
                 <h6>Licencias</h6>
                 <p>Los datos de esta web están disponibles bajo la licencia Creative Commons Attribution 4.0 International (CC BY 4.0).</p>
