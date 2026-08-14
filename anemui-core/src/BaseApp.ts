@@ -10,7 +10,7 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData, loadPopData, PopDataItem } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData, CsTimeSpan } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods } from "./Env";
+import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods, faviconUrl } from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked } from "./data/ChunkDownloader";
@@ -122,15 +122,16 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
 
-        // Favicon común a todos los visores (AEMET). El HTML generado por
+        // Favicon común a todos los visores. El HTML generado por
         // HtmlWebpackPlugin no incluye favicon, así que se inyecta aquí.
+        // Parametrizable vía Env.faviconUrl (por defecto, el de AEMET).
         let favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
         if (!favicon) {
             favicon = document.createElement('link');
             favicon.rel = 'icon';
             document.head.appendChild(favicon);
         }
-        favicon.href = 'https://www.aemet.es/favicon.ico';
+        favicon.href = faviconUrl;
 
         this.language = Language.getInstance();
         
@@ -312,13 +313,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
     
-    private renderBaseStructure(): void {
+    protected renderBaseStructure(): void {
         // Renderizado del frame principal
         mount(this.mainFrame.render(), document.body);
         this.mainFrame.build();
     }
     
-    private renderMainComponents(): void {
+    protected renderMainComponents(): void {
         // Componentes que no dependen de datos
         const mainFrameElement = document.getElementById('MainFrame');
         if (!mainFrameElement) {
@@ -399,7 +400,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         addChild(mainFrameElement, DownloadIframe());
     }
     
-    private renderDataDependentComponents(): void {
+    protected renderDataDependentComponents(): void {
         // Componentes que necesitan datos cargados
         const rightBarElement = document.getElementById('RightBar');
         if (rightBarElement) {

@@ -660,7 +660,7 @@ export function calcPixelIndex(ncCoords: number[], portion: string): number {
 export function extractDataChunkedFromT(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false): void {
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
-    if (portion != '') {
+    if (portion != '' || globalMap) {
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
         let cb: ArrayDownloadDone = (data: number[]) => {
             let download = false;
