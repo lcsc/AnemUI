@@ -87,6 +87,14 @@ public onMapClick(event: CsMapEvent): void {
     }
 
     const result = this.listener.onClick(event);
+
+    if (!isTimeSeries) {
+        // Climatología (p.ej. Average Aridity): un único valor, no hay serie
+        // temporal que graficar -> solo se posiciona el marcador, sin popup.
+        if (result instanceof Promise) result.catch(() => {});
+        return;
+    }
+
     const showWhenReady = () => this.checkDataToShowGraph();
 
     if (result instanceof Promise) {
