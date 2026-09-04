@@ -18,6 +18,16 @@ export class CsMenuItem extends BaseUiElement {
   private values: string[];
   private listener: CsMenuItemListener;
   private jsonResponse: any;
+  // Todos los contenedores con los que se ha llamado a build(), en orden. Los
+  // "extraDisplays" (Period/Scenario/Database en gams) llaman build() una vez
+  // por copia (escritorio + móvil), con role=id, así que aquí acaban 2
+  // contenedores. Los campos básicos (var/subVar/tpSupport...) en cambio solo
+  // llaman build() para la copia de escritorio (ver MenuBar.
+  // addMenuItemToBothFrames, que nunca hace menuItem.build(mobileContainer)),
+  // con un role distinto del id ("subVar" vs "SubVariableDD") — de ahí que no
+  // se pueda localizar el/los contenedores buscando por role==id en el DOM,
+  // hace falta recordar la referencia real de cada uno.
+  private containers: HTMLElement[] = [];
 
   constructor(_id: string, _title: string, _listener: CsMenuItemListener) {
     super()
@@ -36,9 +46,13 @@ export class CsMenuItem extends BaseUiElement {
             count++;
         }
     }
-    if (this.container != undefined) {
-      //alert("needs Update")
-      let ul = this.container.getElementsByTagName("ul")[0]
+    // Recorre TODOS los contenedores construidos (no solo this.container, que
+    // build() reasigna en cada llamada y termina apuntando solo al último).
+    // Sin esto, cualquier contenedor que no sea el último construido se queda
+    // con la lista de opciones inicial aunque las opciones cambien
+    // dinámicamente (p.ej. al alternar Time span/Period o Data en gams).
+    this.containers.forEach((container) => {
+      let ul = container.getElementsByTagName("ul")[0]
       if (ul) {
         ul.innerHTML = "";
         this.values.map((val, index) => {
@@ -54,9 +68,11 @@ export class CsMenuItem extends BaseUiElement {
             // }
           }
         });
-        this.drop.update()
+        if (container === this.container) {
+          this.drop.update()
+        }
       }
-    }
+    });
   }
   
   public setTitle(_title: string, _role?: string) {
@@ -148,6 +164,7 @@ export class CsMenuItem extends BaseUiElement {
 
   public build( _container?: HTMLDivElement) {
     this.container = _container;
+    this.containers.push(_container);
     this.drop = new Dropdown(this.container);
   }
 
