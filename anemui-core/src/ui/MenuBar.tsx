@@ -394,6 +394,14 @@ export class MenuBar extends BaseFrame {
         this.navMenuMb = document.querySelector(".nav-menu-mb");
         this.logoContainer = document.getElementById('logo-container') as HTMLElement;
 
+        // Enlace "Volver al portal": algunos visores (p.ej. los de LCSC) no
+        // tienen un portal común al que volver. portalUrl vacío en Env oculta
+        // el enlace en vez de dejarlo roto (href="").
+        if (!portalUrl) {
+            document.getElementById('home')?.remove();
+            document.getElementById('home-mobile')?.remove();
+        }
+
         // Crear footer móvil con los logos
         const mobileFooter = document.createElement('div');
         mobileFooter.id = 'mobile-footer';
