@@ -9,7 +9,7 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent, globalMap } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
 import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
@@ -389,7 +389,12 @@ export class OpenLayerMap implements CsMapController {
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
       .then(value => {
         if (state.support == this.defaultRenderer) {
-          self.showValue(event.latLong, value[0], value[1], value[2] == 0? '_can':'_pen');
+          // value[2] codifica Canarias/Península (0/1), un esquema propio de
+          // los visores de España con dos portions. Los visores "globalMap"
+          // (p.ej. gams) tienen una única portion sin sufijo (''); forzarla
+          // aquí evita que el popup busque luego en un portion '_pen'/'_can'
+          // que no existe para ellos (ver App.ts formatPopupValue).
+          self.showValue(event.latLong, value[0], value[1], globalMap ? '' : (value[2] == 0? '_can':'_pen'));
         } else {
           let evt = event.original
           var features: Feature[] = [];
@@ -446,7 +451,7 @@ export class OpenLayerMap implements CsMapController {
 
     loadLatLogValue(mapEvent.latLong, state, timesJs, this.getZoom())
       .then(value => {
-        self.showValue(mapEvent.latLong, value[0], value[1], value[2] == 0 ? '_can' : '_pen');
+        self.showValue(mapEvent.latLong, value[0], value[1], globalMap ? '' : (value[2] == 0 ? '_can' : '_pen'));
         if (!Number.isNaN(state.xyValue)) {
           self.parent.onMapClick(mapEvent);
         }

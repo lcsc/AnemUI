@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuInput, CsMenuCheckbox, CsMenuItemListener, CsMenuCheckboxListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData } from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData, portalUrl, portalTitle } from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -274,7 +274,7 @@ export class MenuBar extends BaseFrame {
                                 </div>
                             </div>
                             <div className="col menu-info d-flex" id="home">
-                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal">
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle}>
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                             </div>
@@ -312,7 +312,7 @@ export class MenuBar extends BaseFrame {
                                 </ul>
                             </div>
                             <div className="mobile-actions">
-                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle} id="home-mobile">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                                 <div className="topbar-icon-btn" id="info-mobile">
@@ -393,6 +393,14 @@ export class MenuBar extends BaseFrame {
         this.collapseMenuMb = document.querySelector(".collapse-menu-mb");
         this.navMenuMb = document.querySelector(".nav-menu-mb");
         this.logoContainer = document.getElementById('logo-container') as HTMLElement;
+
+        // Enlace "Volver al portal": algunos visores (p.ej. los de LCSC) no
+        // tienen un portal común al que volver. portalUrl vacío en Env oculta
+        // el enlace en vez de dejarlo roto (href="").
+        if (!portalUrl) {
+            document.getElementById('home')?.remove();
+            document.getElementById('home-mobile')?.remove();
+        }
 
         // Crear footer móvil con los logos
         const mobileFooter = document.createElement('div');
@@ -946,17 +954,21 @@ export class MenuBar extends BaseFrame {
     }
 
     public hideExtraMenuItem(role: string): void {
-        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
-        if (element) {
+        // querySelectorAll, no querySelector: buildExtraDisplays() renderiza cada
+        // extraDisplay dos veces (inputsFrame desktop + inputsFrameMobile), ambas
+        // copias con el mismo role. Con querySelector solo se ocultaba la primera,
+        // dejando la otra visible (ver climBtnArray para el mismo patrón correcto).
+        const elements = this.container.querySelectorAll(`[role="${role}"]`) as NodeListOf<HTMLElement>;
+        elements.forEach((element) => {
             element.hidden = true;
-        }
+        });
     }
 
     public showExtraMenuItem(role: string): void {
-        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
-        if (element) {
+        const elements = this.container.querySelectorAll(`[role="${role}"]`) as NodeListOf<HTMLElement>;
+        elements.forEach((element) => {
             element.hidden = false;
-        }
+        });
     }
 
     public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[], hidden: boolean = false) {

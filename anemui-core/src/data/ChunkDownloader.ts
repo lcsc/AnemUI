@@ -298,9 +298,20 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         }
    
         const filteredArrays: number[][] = [];
-        
+
         for (let i = 0; i < validFloatArrays.length; i++) {
-            const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
+            // filterValues() es un hook pensado para transformar la capa
+            // PRINCIPAL de datos (p.ej. enmascarar por selectionParam, o el
+            // desplazamiento +DELTA_OFFSET de gams para esquivar un bug de
+            // GradientPainter con negativos). La capa de incertidumbre/
+            // significación es una máscara binaria (0/1) que el painter de
+            // overlay usa directamente como índice de color en una paleta de
+            // 2 colores (ver GradientPainter.paintValues/DotPatternPainter) —
+            // aplicarle el filtro del visor la desplaza fuera de rango y la
+            // deja siempre transparente. Se aplica solo a la capa principal.
+            const filteredArray = uncertaintyLayer
+                ? validFloatArrays[i]
+                : await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
             filteredArrays.push(filteredArray);
         }
 
@@ -660,7 +671,7 @@ export function calcPixelIndex(ncCoords: number[], portion: string): number {
 export function extractDataChunkedFromT(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false): void {
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
-    if (portion != '') {
+    if (portion != '' || globalMap) {
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
         let cb: ArrayDownloadDone = (data: number[]) => {
             let download = false;
