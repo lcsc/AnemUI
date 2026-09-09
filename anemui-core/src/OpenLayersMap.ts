@@ -846,8 +846,7 @@ export class OpenLayerMap implements CsMapController {
     this.glmgr = GeoLayerManager.getInstance();
     let self = this
     Object.entries(this.renderers).forEach(([key, renderer]) => {
-      // if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
-      if(!renderer.startsWith("-") && renderer != this.defaultRenderer){
+      if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
         const folders = this.parent.getParent().getFolders(renderer)
         folders.forEach( folder =>{
           loadGeoJsonData(folder)
