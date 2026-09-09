@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuInput, CsMenuCheckbox, CsMenuItemListener, CsMenuCheckboxListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData } from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData, portalUrl, portalTitle } from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -19,7 +19,9 @@ export interface MenuBarListener {
 export type simpleDiv = {
     role: string,
     title: string,
-    subTitle: string
+    subTitle: string,
+    /** Clase CSS del botón (ver setExtraDisplay). Sin ella, buildExtraDisplays() usa 'climBtn'. */
+    btnClass?: string
 }
 
 export class MenuBar extends BaseFrame {
@@ -34,8 +36,11 @@ export class MenuBar extends BaseFrame {
     private menuCentral: HTMLElement
     private loading: HTMLDivElement
     private loadingText: HTMLSpanElement
+    private loadingOverlay: HTMLDivElement | null = null
+    private loadingTimer: ReturnType<typeof setTimeout> | null = null
     private nodataText: HTMLSpanElement
     private titleDiv: HTMLElement
+    private titleMobileDiv: HTMLElement
     private collapseMenu: HTMLElement
     private navMenu: HTMLElement
     private collapseMenuMb: HTMLElement
@@ -162,16 +167,53 @@ export class MenuBar extends BaseFrame {
         this.extraBtns = []
         this.dropDownOrder = []
         this.logoMaps = [
-            "0,28|AEMET|https://www.aemet.es/",
-            "28,32|PTI Clima CSIC|https://pti-clima.csic.es/",
-            "60,22|Plan de Recuperación|https://planderecuperacion.gob.es/",
-            "82,22|NextGenerationEU|https://next-generation-eu.europa.eu/index_en"
+            "0,18|NextGenerationEU|https://next-generation-eu.europa.eu/index_en",
+            "19,30|AEMET|https://www.aemet.es/",
+            "52,26|PTI Clima CSIC|https://pti-clima.csic.es/",
+            "81,20|Plan de Recuperación|https://planderecuperacion.gob.es/"
         ]
     }
 
     public setTitle(_title: string) {
         this.title = _title;
         document.title = _title;
+    }
+
+    /**
+     * Encoge #title-mobile hasta que el título quepa en una sola línea, en
+     * vez de un font-size fijo (1em) que con títulos largos ("Servicio de
+     * monitorización y predicción de sequías"...) se envuelve a dos líneas.
+     * Cada visor tiene un título de longitud distinta, así que un valor fijo
+     * no sirve para todos: se mide el ancho real en una línea (scrollWidth
+     * con nowrap forzado) contra el ancho disponible y se escala el
+     * font-size en esa proporción — títulos cortos no se ven afectados.
+     */
+    private fitMobileTitle(): void {
+        const el = this.titleMobileDiv;
+        if (!el) return;
+
+        const MIN_PX = 11;
+
+        // Reset a lo que diga el CSS (#title-mobile: 1.0em) antes de medir:
+        // "1.0em" depende del font-size del contenedor, no asumir 16px a
+        // ciegas — y así una llamada posterior (resize a una pantalla más
+        // ancha) también puede CRECER de vuelta al tamaño base, no solo encoger.
+        el.style.fontSize = '';
+        el.style.whiteSpace = 'nowrap';
+        const basePx = parseFloat(window.getComputedStyle(el).fontSize) || 16;
+
+        // clientWidth: ancho de caja del propio h3 (bloque, ocupa el ancho
+        // disponible del contenedor) — con nowrap forzado el contenido
+        // puede desbordar esa caja sin ensancharla, así que sigue midiendo
+        // el ancho realmente disponible.
+        const available = el.clientWidth;
+        const natural = el.scrollWidth;
+
+        if (available > 0 && natural > available) {
+            // 0.96: pequeño margen de seguridad frente a redondeos de fuente.
+            const fitted = Math.max(MIN_PX, Math.floor(basePx * (available / natural) * 0.96));
+            el.style.fontSize = fitted + 'px';
+        }
     }
 
     public renderDisplay(display: simpleDiv, btnType?: string): JSX.Element {
@@ -234,7 +276,7 @@ export class MenuBar extends BaseFrame {
                                 </div>
                             </div>
                             <div className="col menu-info d-flex" id="home">
-                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal">
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle}>
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                             </div>
@@ -272,7 +314,7 @@ export class MenuBar extends BaseFrame {
                                 </ul>
                             </div>
                             <div className="mobile-actions">
-                                <a href="https://servicios-climaticos.pti-clima.csic.es/dev/" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle} id="home-mobile">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                                 <div className="topbar-icon-btn" id="info-mobile">
@@ -305,13 +347,18 @@ export class MenuBar extends BaseFrame {
     protected buildExtraDisplays(): void {
         if (!hasClimatology) return;
         this.extraDisplays.forEach((dsp) => {
+            // btnClass (ver setExtraDisplay) permite a un visor sacar un extraDisplay
+            // del grupo climBtn (Time span/Period, oculto fuera de modo climatología)
+            // dándole otra clase — p.ej. gams usa 'dbBtn' para Database, que debe
+            // verse siempre. Por defecto 'climBtn', mismo comportamiento que antes.
+            const btnType = dsp.btnClass || 'climBtn';
             const isInput = this.extraMenuInputs.some((input) => input.id == dsp.role);
             if (isInput) {
-                addChild(this.inputsSubmenu, this.renderDisplay(dsp, 'climBtn'));
-                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsSubmenu, this.renderDisplay(dsp, btnType));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, btnType));
             } else {
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsFrame, this.renderDisplay(dsp, btnType));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, btnType));
             }
             const containers = document.querySelectorAll("[role=" + dsp.role + "]") as NodeListOf<HTMLDivElement>;
             this.extraMenuItems.forEach((dpn) => {
@@ -340,6 +387,7 @@ export class MenuBar extends BaseFrame {
         this.topBar = document.getElementById('TopBar') as HTMLDivElement;
         this.menuCentral = document.getElementById('menu-central') as HTMLElement;
         this.titleDiv = document.getElementById('title') as HTMLElement;
+        this.titleMobileDiv = document.getElementById('title-mobile') as HTMLElement;
         this.menuInfo1 = this.container.getElementsByClassName("menu-info")[0] as HTMLElement;
         this.loading = this.container.querySelector("[role=status]") as HTMLDivElement;
         this.inputsFrame = document.getElementById('inputs') as HTMLDivElement;
@@ -352,6 +400,14 @@ export class MenuBar extends BaseFrame {
         this.collapseMenuMb = document.querySelector(".collapse-menu-mb");
         this.navMenuMb = document.querySelector(".nav-menu-mb");
         this.logoContainer = document.getElementById('logo-container') as HTMLElement;
+
+        // Enlace "Volver al portal": algunos visores (p.ej. los de LCSC) no
+        // tienen un portal común al que volver. portalUrl vacío en Env oculta
+        // el enlace en vez de dejarlo roto (href="").
+        if (!portalUrl) {
+            document.getElementById('home')?.remove();
+            document.getElementById('home-mobile')?.remove();
+        }
 
         // Crear footer móvil con los logos
         const mobileFooter = document.createElement('div');
@@ -461,6 +517,8 @@ export class MenuBar extends BaseFrame {
             }
 
             if (this.title.length >= 20) this.titleDiv.classList.add('smallSize');
+            this.fitMobileTitle();
+            window.addEventListener('resize', () => this.fitMobileTitle());
 
             if (this.inputOrder.length) {
                 this.changeInputOrder()
@@ -566,18 +624,70 @@ export class MenuBar extends BaseFrame {
         this.topBar.classList.remove('smallBar');
     }
     public showLoading(): void {
-        if (this.loading) this.loading.hidden = false;
-        if (this.loadingText) {
-            this.loadingText.hidden = false;
-            this.loadingText.classList.add('blinking-text');
+        if (this.loadingOverlay || this.loadingTimer) return;
+
+        this.loadingTimer = setTimeout(() => {
+            this.loadingTimer = null;
+            this._showLoadingOverlay();
+        }, 2000);
+    }
+
+    private _showLoadingOverlay(): void {
+        if (this.loadingOverlay) return;
+
+        if (!document.getElementById('_anemui_spinner_kf')) {
+            const st = document.createElement('style');
+            st.id = '_anemui_spinner_kf';
+            st.textContent = '@keyframes _anemui_spin{to{transform:rotate(360deg)}}';
+            document.head.appendChild(st);
         }
+
+        const mapEl = document.getElementById('map');
+        if (!mapEl) return;
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = [
+            'position:absolute', 'inset:0', 'z-index:9000',
+            'background:transparent',
+            'display:flex', 'flex-direction:column',
+            'align-items:center', 'justify-content:center', 'gap:12px',
+            'pointer-events:none',
+        ].join(';');
+
+        const spinner = document.createElement('div');
+        spinner.style.cssText = [
+            'width:42px', 'height:42px',
+            'border:5px solid rgba(44,62,80,0.25)',
+            'border-top-color:#2c3e50',
+            'border-radius:50%',
+            'animation:_anemui_spin 0.8s linear infinite',
+            'filter:drop-shadow(0 0 4px rgba(255,255,255,0.8))',
+        ].join(';');
+
+        const label = document.createElement('span');
+        label.style.cssText = [
+            'font:bold 14px sans-serif',
+            'color:#ffffff',
+            'text-shadow:0 1px 3px rgba(0,0,0,0.9),0 0 8px rgba(0,0,0,0.7)',
+            'filter:drop-shadow(0 0 4px rgba(255,255,255,0.8))',
+        ].join(';');
+        label.textContent = 'Cargando datos…';
+
+        overlay.appendChild(spinner);
+        overlay.appendChild(label);
+        if (getComputedStyle(mapEl).position === 'static') mapEl.style.position = 'relative';
+        mapEl.appendChild(overlay);
+        this.loadingOverlay = overlay;
     }
 
     public hideLoading(): void {
-        if (this.loading) this.loading.hidden = true;
-        if (this.loadingText) {
-            this.loadingText.hidden = true;
-            this.loadingText.classList.add('display:none')
+        if (this.loadingTimer) {
+            clearTimeout(this.loadingTimer);
+            this.loadingTimer = null;
+        }
+        if (this.loadingOverlay) {
+            this.loadingOverlay.remove();
+            this.loadingOverlay = null;
         }
     }
 
@@ -820,7 +930,7 @@ export class MenuBar extends BaseFrame {
     }
 
     public setExtraDisplay(type: number, id: string, displayTitle: string, options: string[], cssClass?: string, hasUncertainty?: boolean) {
-        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0] })
+        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0], btnClass: cssClass })
         let listener = this.listener
 
         switch (type) {
@@ -851,17 +961,21 @@ export class MenuBar extends BaseFrame {
     }
 
     public hideExtraMenuItem(role: string): void {
-        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
-        if (element) {
+        // querySelectorAll, no querySelector: buildExtraDisplays() renderiza cada
+        // extraDisplay dos veces (inputsFrame desktop + inputsFrameMobile), ambas
+        // copias con el mismo role. Con querySelector solo se ocultaba la primera,
+        // dejando la otra visible (ver climBtnArray para el mismo patrón correcto).
+        const elements = this.container.querySelectorAll(`[role="${role}"]`) as NodeListOf<HTMLElement>;
+        elements.forEach((element) => {
             element.hidden = true;
-        }
+        });
     }
 
     public showExtraMenuItem(role: string): void {
-        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
-        if (element) {
+        const elements = this.container.querySelectorAll(`[role="${role}"]`) as NodeListOf<HTMLElement>;
+        elements.forEach((element) => {
             element.hidden = false;
-        }
+        });
     }
 
     public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[], hidden: boolean = false) {
@@ -1072,6 +1186,25 @@ export class MenuBar extends BaseFrame {
 
     // public selectFirstSpatialSupportValue(): void {
     //     this.spatialSupport.selectFirstValidValue();
-    // }   
+    // }
+
+    protected adjustSelectorsWidth(): void {
+        const inputDivs = document.querySelectorAll<HTMLElement>('.inputDiv');
+        inputDivs.forEach((inputDiv) => {
+            const options = inputDiv.querySelectorAll<HTMLElement>('.dropdown-item');
+            if (options.length === 0) return;
+            const measureEl = document.createElement('span');
+            measureEl.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap';
+            measureEl.style.font = window.getComputedStyle(options[0]).font;
+            document.body.appendChild(measureEl);
+            let maxWidth = 0;
+            options.forEach((option) => {
+                measureEl.textContent = option.textContent;
+                if (measureEl.offsetWidth > maxWidth) maxWidth = measureEl.offsetWidth;
+            });
+            document.body.removeChild(measureEl);
+            if (maxWidth > 0) inputDiv.style.minWidth = `${maxWidth + 20}px`;
+        });
+    }
 
 }

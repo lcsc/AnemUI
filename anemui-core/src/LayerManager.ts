@@ -17,6 +17,7 @@ import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
 import { initialZoom } from './Env';
+import { LayerConfigEntry, baseLayersConfig, topLayersConfig } from './data/CsLayers';
 
 export const AL_TYPE_OSM="OSM"
 export const AL_TYPE_TOPO_JSON="TopoJson"
@@ -41,7 +42,9 @@ export type AnemuiLayer={
     /** URL WMS equivalente para usar en la exportación del mapa (cuando el tipo no es WMS) */
     wmsExportUrl?: string,
     /** Nombre de capa WMS para la exportación */
-    wmsExportLayer?: string
+    wmsExportLayer?: string,
+    /** Filtro de features para capas vectoriales (devuelve false para ocultar el feature) */
+    featureFilter?: (feature: any, resolution: number) => boolean
 }
 
 const baseStyle= new Style({
@@ -50,6 +53,41 @@ const baseStyle= new Style({
       width: 2
     })
   });
+
+// Créditos referenciados por LayerConfigEntry.creditKey (ver env/env.js).
+const CREDITS: { [key: string]: string } = {
+    ign: '© CC-BY 4.0 <a href="https://www.ign.es" target="_blank">ign.es</a>',
+    ign_pnoa: '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>',
+    miteco: '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>',
+    esri: '© <a href="https://www.esri.com" target="_blank">Esri</a>',
+    osm: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+    eurostat: '© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a>'
+};
+
+// Filtros de features referenciados por LayerConfigEntry.featureFilterKey (ver env/env.js).
+const FEATURE_FILTERS: { [key: string]: (feature: any, resolution: number) => boolean } = {
+    'es-nuts-ccaa-prov': (f: any, _resolution: number) => {
+        const p = f.getProperties();
+        return p.CNTR_CODE === 'ES' && p.LEVL_CODE === 2;
+    }
+};
+
+function resolveLayerConfig(cfg: LayerConfigEntry): AnemuiLayer {
+    return {
+        name: cfg.name,
+        url: cfg.url,
+        type: cfg.type,
+        global: cfg.global,
+        layer: cfg.layer,
+        credit: cfg.creditKey ? CREDITS[cfg.creditKey] : undefined,
+        wmsParams: cfg.wmsParams,
+        cssFilter: cfg.cssFilter,
+        format: cfg.format,
+        wmsExportUrl: cfg.wmsExportUrl,
+        wmsExportLayer: cfg.wmsExportLayer,
+        featureFilter: cfg.featureFilterKey ? FEATURE_FILTERS[cfg.featureFilterKey] : undefined
+    };
+}
 
 let projection = proj.get('EPSG:3857');
 let projectionExtent = projection.getExtent();
@@ -85,34 +123,21 @@ export class LayerManager {
      private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
-        const ign  = '© CC-BY 4.0 <a href="https://www.ign.es" target="_blank">ign.es</a>';
-        const ign_pnoa  = '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>';
-        const miteco = '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>';
+        // CAPAS BASE Y SUPERPUESTAS
+        // Definidas por visor en env/env.js (ENV.baseLayers / ENV.topLayers), ver src/data/CsLayers.ts.
+        // El array por defecto vive en anemui-core/env/env.js; cada visor puede sobreescribirlo
+        // en su propio env/env.js si necesita un conjunto distinto de capas.
+        //
+        // Capas superpuestas desactivadas (pendientes, no migradas a env.js):
+        // - "Unidad administrativa (IGN)": TODO temporal, solo CCAA+provincias mientras se resuelve
+        //   el problema de rendimiento con municipios.
+        // - WMS de wms.mapama.gob.es (Demarcaciones hidrográficas, Comarcas agrarias/ganaderas,
+        //   Zonas inundables T=10/50/100/500 años): NullReferenceException en
+        //   ConstruirServiceArcGISBaseUrl() del servidor (backend ArcGIS caído). Reactivar cuando
+        //   el Ministerio lo resuelva; usaban credit: CREDITS.miteco.
+        baseLayersConfig.forEach(cfg => this.addBaseLayer(resolveLayerConfig(cfg)));
+        topLayersConfig.forEach(cfg => this.addTopLayer(resolveLayerConfig(cfg)));
 
-        // CAPAS BASE
-        // ------ Global
-        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:true, credit:ign})
-        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>', wmsExportUrl:'https://services.arcgisonline.com/ArcGIS/services/World_Imagery/MapServer/WMSServer?', wmsExportLayer:'0'})
-        this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
-        this.addBaseLayer({name:"Fondo relieve global GEBCO (IGN)",url: 'https://www.ign.es/wmts/mapa-raster?',type:AL_TYPE_WMTS,layer:'MTN_Fondo', global:true, credit:ign, format:'image/jpeg'})
-        // ------ Estatal
-        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
-        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign_pnoa})
-
-        // CAPAS SUPERPUESTAS
-        // ------ Global
-        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Límites políticos y topónimos globales (ArcGIS)",url:"https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
-        this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true, credit:'© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> — EuroGeographics'})
-        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        
         const topNames = Object.keys(this.topLayers);
         this.topSelected = topNames.length > 0 ? topNames[0] : "";
         this.uncertaintyLayer = [];
@@ -248,7 +273,7 @@ export class LayerManager {
         return this.topSelected;
     }
 
-    private static readonly IGN_ADMIN_LAYER = "Unidad administrativa (IGN)";
+    private static readonly IGN_ADMIN_LAYER = "Límites provinciales (Eurostat NUTS)";
 
     public setTopSelected(_selected:string){
         if(this.topLayers[_selected]!=undefined){
@@ -276,16 +301,22 @@ export class LayerManager {
                 return this.topLayerTile;
 
             case AL_TYPE_GEO_JSON:
-            case AL_TYPE_TOPO_JSON:
-                if(this.topLayerVector==undefined){
-                    this.topLayerVector= new VectorLayer({
+            case AL_TYPE_TOPO_JSON: {
+                const featureFilter = tLayer.featureFilter;
+                const styleFunc = (feature: any, resolution: number) => featureFilter && !featureFilter(feature, resolution) ? null : baseStyle;
+                if (this.topLayerVector == undefined) {
+                    this.topLayerVector = new VectorLayer({
                         source: this.getTopLayerSource() as VectorSource,
-                        style: (feature, resolution) => {return baseStyle},
+                        style: styleFunc,
                         zIndex: 5000
-                    })
+                    });
+                } else {
+                    (this.topLayerVector as VectorLayer<VectorSource>).setSource(this.getTopLayerSource() as VectorSource);
+                    (this.topLayerVector as VectorLayer<VectorSource>).setStyle(styleFunc);
                 }
                 this.topLayerVector.setZIndex(5000);
                 return this.topLayerVector;
+            }
 
             case AL_TYPE_IMG_LAYER:
                 if(this.topLayerWMS==undefined){
@@ -554,10 +585,25 @@ export class LayerManager {
             eq('Provincia'), 7, 9, false, 11, true, 0.001
         ));
 
-        // Municipios (zoom 9+): carga por bbox — nominalRes ~zoom 10, 10px normal
-        this.nomenclatorLayers.push(this.buildNgbeLayer(
-            eq('Municipio'), 9, undefined, true, 10, false, 0.0004
-        ));
+        // TODO temporal: municipios desactivados mientras se resuelve el problema de rendimiento
+        // this.nomenclatorLayers.push(this.buildNgbeLayer(
+        //     eq('Municipio'), 9, undefined, true, 10, false, 0.0004
+        // ));
+
+        // Límites de provincias (España, NUTS LEVL_CODE=3): capa separada con maxResolution nativo de OL
+        const provSource = new Vector({
+            format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
+            url: './NUTS_RG_10M_2021_3857.json'
+        });
+        this.nomenclatorLayers.push(new VectorLayer({
+            source: provSource,
+            style: (feature: any) => {
+                const p = feature.getProperties();
+                return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? baseStyle : null;
+            },
+            minZoom: 7,
+            zIndex: 5000
+        }));
 
         this.syncNomenclatorVisibility();
         return this.nomenclatorLayers;

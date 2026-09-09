@@ -166,10 +166,41 @@
 }
 
 #RightBar {
-    right: 1%;    
+    // #RightBar/#LeftBar siempre llevan la clase "active" en el JSX (nunca se
+    // alterna), así que sin esto heredan sin querer .side-bar.active
+    // {min-width:50%;max-width:50%} pensado para un menú lateral desplegable.
+    // width:fit-content (en vez de un ancho fijo) + min-width:0 hace que la
+    // caja mida siempre justo lo que ocupa su contenido visible (paleta
+    // colapsada o expandida al pasar el cursor), sin hueco invisible que
+    // tape el mapa — ver también div.paletteFrame en paletteframe.scss,
+    // que debe mantenerse igualmente fit-content para que ambos niveles no
+    // se desalineen entre sí.
+    width: fit-content;
+    min-width: 0;
+    max-width: 90vw;
+    // fit-content ajusta el ancho TOTAL de la caja, pero #latLong (arriba,
+    // ancho) y .paletteFrame (debajo, estrecho) apilados dejan huecos vacíos
+    // en las esquinas del rectángulo envolvente que fit-content no puede
+    // evitar. pointer-events:none aquí + auto solo en los hijos ya
+    // correctamente ajustados a su contenido cierra esos huecos sin volver
+    // a activar "auto" en más anidamiento del necesario (ver #PaletteFrame,
+    // que ya es fit-content en paletteframe.scss).
+    pointer-events: none;
+
+    #latLong,
+    .paletteFrame,
+    .downloadFrame {
+        pointer-events: auto;
+    }
+
+    @include tablet {
+        max-width: 60vw;
+    }
+
+    right: 1%;
     text-align: right;
-    top: 7rem; 
-    margin-top: 1rem; 
+    top: 7rem;
+    margin-top: 1rem;
     margin-right: 1rem;
 
     .rightbar-item {
@@ -189,6 +220,14 @@
         gap: 0.4em;
         white-space: nowrap;
         // width: 100%;
+        // Ancho mínimo fijo, calculado para "Lat:-XX.XX Long:-XXX.XX" (el
+        // texto más largo esperado). Sin esto, el texto inicial "latLng"
+        // (placeholder corto) hace que #RightBar (fit-content) sea estrecho;
+        // al seleccionar un punto el texto real es mucho más ancho,
+        // #RightBar crece, y todo lo que cuelga de él (paleta incluida) se
+        // desplaza. Con un mínimo fijo, #RightBar no cambia de ancho entre
+        // ambos estados.
+        min-width: 190px;
         height: 28px;
         margin-bottom: 0.5em;
         padding: 0 0.75em;
@@ -205,6 +244,51 @@
         //     line-height: 1;
         //     flex-shrink: 0;
         // }
+    }
+
+    // Solo móvil: la paleta se desplaza a la derecha para alinearse con el
+    // botón de info del menú superior, y el cartel de coordenadas se separa
+    // por completo del flujo de RightBar (position:fixed, ver más abajo) para
+    // poder centrarlo entre columnas sin arrastrar ni descuadrar la paleta.
+    // right:9px calculado para que el centro de la paleta colapsada (33px,
+    // igualado a los botones de LeftBar en paletteframe.scss) caiga a 26px
+    // del borde derecho, el mismo offset con el que #info-mobile
+    // (topbar.scss: padding-right 0.5rem=8px + mitad de sus 36px) queda
+    // respecto al borde derecho. margin-right:0 anula el 1rem de la regla
+    // base (pensado para desktop), que si no se sumaría a "right" y
+    // desplazaría la paleta mucho más allá de lo calculado.
+    @include sm-mobile {
+        right: 9px;
+        margin-right: 0;
+
+        #latLong {
+            // Sacado del flujo de RightBar: así RightBar se reduce a solo la
+            // paleta (ancho ~igual al de los botones de LeftBar) y el cartel
+            // puede centrarse él solo entre ambas columnas. #RightBar no
+            // tiene transform, así que el contenedor de este position:fixed
+            // sigue siendo el viewport, no #RightBar.
+            position: fixed;
+            top: 5.5rem; // = top:5rem + margin-top:0.5rem de #RightBar/#LeftBar en móvil (misma altura que ya tenía)
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: fit-content;
+            min-width: 0;
+            font-size: 11px;
+            height: 22px;
+            padding: 0 0.6em;
+
+            i.bi {
+                font-size: 11px;
+            }
+        }
+
+        .paletteFrame {
+            // Ya no hay #latLong por delante en el flujo: el margen que lo
+            // separaba de él sobra y descuadraría la paleta respecto a los
+            // botones de LeftBar (que no tienen ese margen extra).
+            margin-top: 0;
+        }
     }
 
     @include tablet {
@@ -225,13 +309,41 @@
 }
 
 #LeftBar {
+    // Mismo motivo y mismo criterio que en #RightBar: fit-content en vez de
+    // ancho fijo, para que la caja no sea más ancha que sus iconos y no
+    // tape el mapa. #layer-frame (sidebar.scss, más abajo) debe mantenerse
+    // igualmente fit-content para que ambos niveles no se desalineen.
+    width: fit-content;
+    min-width: 0;
+    max-width: 90vw;
+    // Ver el mismo comentario en #RightBar: fit-content ajusta el ancho
+    // total, pero no evita huecos vacíos si hay hijos de anchos distintos
+    // apilados. pointer-events:none aquí + auto solo en #layer-frame (ya
+    // fit-content) cierra esos huecos.
+    pointer-events: none;
+
+    #layer-frame {
+        pointer-events: auto;
+    }
+
     left: 1%;
     top: 7rem;
     margin-top: 1rem;
     overflow: visible;
     z-index: 51;
 
+    // Solo móvil: left:9px calculado para que el centro de la columna de
+    // botones colapsada (~33px, ver .buttonDiv.visible en buttons.scss)
+    // caiga a 26px del borde izquierdo — el mismo offset con el que la
+    // hamburguesa (topbar.scss: padding-left 0.5rem=8px + mitad de sus 36px)
+    // queda respecto al borde izquierdo. Ver #RightBar para el cálculo
+    // simétrico del lado derecho.
+    @include sm-mobile {
+        left: 9px;
+    }
+
     @include tablet {
+        max-width: 60vw;
         // top: 6rem;
         // margin-top: 0.5rem;
         left: 2%;
@@ -595,6 +707,10 @@ ul .two-columns {
     SELECTORES DE CAPAS
 ----------------------------------------------------- */
 #layer-frame {
+    // Igual que #PaletteFrame: sin esto se estira al ancho completo de
+    // #LeftBar (block por defecto) aunque solo pinte los iconos. #LeftBar es
+    // TAMBIÉN fit-content, así que ambos niveles se mueven juntos.
+    width: fit-content;
     padding-top: 0;
 }
 

@@ -4,7 +4,9 @@ import { BaseFrame } from "./BaseFrame";
 import Dygraph, { dygraphs } from 'dygraphs';
 import { dateText } from "../data/CsPConstans";
 import { CsTimeSpan } from "../data/CsDataTypes";
+import { DateFrameMode } from "./DateFrame";
 import { CsLatLong } from '../CsMapTypes';
+import Chart from 'chart.js/auto';
 
 
 require("dygraphs/dist/dygraph.css")
@@ -41,7 +43,8 @@ export interface ColorLegendConfig {
 
 export class CsGraph extends BaseFrame {
   protected graphTitle: string;
-  protected graphSubTitle: string;
+  protected graphCoords: string = '';   // set by setGraphCoords() — lat/lng or station name
+  protected graphSubTitle: string = ''; // viewer-specific extra text (dates, etc.)
   protected yLabel: string;
   protected xLabel: string;
   public graphType: GraphType;
@@ -63,6 +66,12 @@ export class CsGraph extends BaseFrame {
 
   // Contador para climatología
   protected climatologyIndex: number = 0;
+
+  // Estado del gráfico de predicción (donut)
+  protected _predChart: Chart | null = null;
+  protected _savedPopGraphStyles: Partial<CSSStyleDeclaration> | null = null;
+  protected _savedGraphContainerStyles: Partial<CSSStyleDeclaration> | null = null;
+  protected _savedCloseButtonFlex: string | null = null;
 
   // Propiedades para manejo de escalas logarítmicas
   protected originalGraphData: string | null = null;
@@ -96,19 +105,6 @@ export class CsGraph extends BaseFrame {
     super(_parent)
   }
 
-  // Stub methods for ETM-specific UI controls (overridden in ETMGraph)
-  protected changeViewMode(): void {}
-  protected toggleTemperatureType(): void {}
-  protected previousYear(): void {}
-  protected nextYear(): void {}
-  protected createCompleteYearData(dataLines: string[], targetYear: number, header: string): string {
-    // Stub implementation - overridden in ETMGraph
-    return header + '\n';
-  }
-  protected updateGraphForYear(): void {
-    // Stub implementation - overridden in ETMGraph
-  }
-
   public render(): JSX.Element {
     let self = this;
     let element =
@@ -123,42 +119,18 @@ export class CsGraph extends BaseFrame {
               <div id="labels" style={{ width: "100%" }}></div>
             </div>
             <div id="colorLegend" style={{ display: "none", padding: "8px 5px", justifyContent: "center", alignItems: "center", gap: "3px", flexWrap: "wrap", fontSize: "11px" }}></div>
-            <div id="graphControls" className="graph-controls" hidden style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", gap: "15px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label htmlFor="viewModeSelector" style={{ fontWeight: "bold" }}>Vista:</label>
-                <select id="viewModeSelector" className="form-select" style={{ width: "auto" }} onChange={() => { this.changeViewMode() }}>
-                  <option value="monthly">Por años</option>
-                  <option value="full">Serie completa</option>
-                </select>
-              </div>
-              <div id="tempToggleContainer" style={{ display: "none", alignItems: "center", gap: "10px" }}>
-                <label htmlFor="tempToggle" style={{ fontWeight: "bold" }}>Mostrar:</label>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <label htmlFor="tempToggle" style={{ fontWeight: "normal", marginBottom: 0 }}>Temperatura media</label>
-                  <label className="switch">
-                    <input type="checkbox" id="tempToggle" onChange={() => { this.toggleTemperatureType() }} />
-                    <span className="slider round"></span>
-                  </label>
-                  <label htmlFor="tempToggle" style={{ fontWeight: "normal", marginBottom: 0 }}>Temperatura extrema</label>
-                </div>
-              </div>
-              <div id="yearPagination" className="year-pagination" style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                <button type="button" id="prevYearBtn" className="btn navbar-btn" onClick={() => { this.previousYear() }}>← Año anterior</button>
-                <span id="currentYearLabel" style={{ fontWeight: "bold", whiteSpace: "nowrap" }}>Año: </span>
-                <button type="button" id="nextYearBtn" className="btn navbar-btn" onClick={() => { this.nextYear() }}>Año siguiente →</button>
-              </div>
-            </div>
-            <div id="graphDiv" className="droppDownButton" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-              <div>
+            <div id="graphDiv" className="droppDownButton" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "6px 0", gap: "8px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                 <button type="button" role="dropPointBtn" className="btn navbar-btn" onClick={() => { this.parent.downloadPoint() }}>{this.parent.getTranslation('descargar_pixel')}</button>
                 <button type="button" role="dropFeatureBtn" className="btn navbar-btn" hidden onClick={() => { this.parent.downloadFeature(this.stationProps) }}>{this.parent.getTranslation('descargar_pixel')}</button>
               </div>
-              <div>
+              <div id="graphControls" hidden style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", flex: 1, flexWrap: "nowrap", minWidth: 0, overflow: "hidden" }}></div>
+              <div style={{ flexShrink: 0 }}>
                 <button type="button" className="btn navbar-btn" onClick={() => { this.exportGraph() }}><i className="bi bi-printer"></i> {this.parent.getTranslation('imprimir_grafico') || 'Imprimir gráfico'}</button>
               </div>
             </div>
           </div>
-          <div className="col">
+          <div className="col-auto">
             <a className="popup-close-button" onClick={() => { this.closeGraph() }}>
               <i className="bi bi-x-circle-fill"></i>
             </a>
@@ -196,6 +168,24 @@ export class CsGraph extends BaseFrame {
           target.tagName === 'SELECT' || target.tagName === 'A') {
         return;
       }
+      // No iniciar drag sobre los elementos del range selector de Dygraph
+      if (target.classList.contains('dygraph-rangesel-bgcanvas') ||
+          target.classList.contains('dygraph-rangesel-fgcanvas') ||
+          target.classList.contains('dygraph-rangesel-zoomhandle')) {
+        return;
+      }
+      // .popup-content-wrapper puede llevar su propio scroll interno
+      // (gc-auto-size, graphcontainer.scss) cuando el contenido no cabe en
+      // pantalla. Si no se excluye aquí, cualquier intento de arrastrar para
+      // hacer scroll dentro del contenido se interpreta como "arrastrar el
+      // popup entero" (arranca aquí y mueve el contenedor en onMouseMove) y
+      // el scroll nativo nunca llega a producirse — el popup sigue siendo
+      // arrastrable agarrando el marco/fondo, fuera del contenido.
+      if (target.closest('.popup-content-wrapper')) {
+        return;
+      }
+
+      e.preventDefault();
 
       pendingDrag = true;
       startX = e.clientX;
@@ -216,8 +206,13 @@ export class CsGraph extends BaseFrame {
         if (Math.abs(deltaX) < DRAG_THRESHOLD && Math.abs(deltaY) < DRAG_THRESHOLD) return;
         isDragging = true;
         this.container.style.transform = 'none';
+        this.container.style.margin = '0';
+        this.container.style.right = 'auto';
+        this.container.style.bottom = 'auto';
         this.container.style.left = startLeft + 'px';
         this.container.style.top = startTop + 'px';
+        document.getSelection()?.removeAllRanges();
+        document.body.style.userSelect = 'none';
       }
 
       this.container.style.left = (startLeft + deltaX) + 'px';
@@ -228,11 +223,25 @@ export class CsGraph extends BaseFrame {
     const onMouseUp = () => {
       isDragging = false;
       pendingDrag = false;
+      document.body.style.userSelect = '';
     };
 
     this.container.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
+  }
+
+  /**
+   * Permite a un visor concreto sobrescribir el título ya fijado por
+   * setParams (p.ej. para añadirle la base de datos activa) sin perder la
+   * segunda línea (coordenadas/estación) que gestiona fullTitle.
+   */
+  public setGraphTitle(title: string): void {
+    this.graphTitle = title;
+  }
+
+  public getFullTitle(): string {
+    return this.fullTitle;
   }
 
   public setParams(_title: string = '', _type: GraphType, _byPoint: boolean, _scaleSelectors?: boolean, _xLabel: string = '', _yLabel: string = '') {
@@ -272,13 +281,56 @@ export class CsGraph extends BaseFrame {
     this.hideColorLegend();
   }
 
+  protected get exportShowDygraphTitle(): boolean { return true; }
+
+  protected getExportHeaderLines(): string[] {
+    const state = this.parent.getState();
+    const tpSupport = state.tpSupport || '';
+    const varName = state.varName || '';
+    const subVarName = state.subVarName || '';
+    const text = [tpSupport, varName, subVarName].filter(s => s && s.length > 0).join(' - ');
+    return text ? [text] : [];
+  }
+
   public exportGraph(): void {
     const popGraph = document.getElementById('popGraph');
     if (!popGraph) return;
 
+    // Forzar temporalmente el tamaño "desktop" del popup para que se
+    // imprima/exporte con las proporciones de escritorio (más ancho, más
+    // espacio horizontal entre marcas), en vez de capturar tal cual el
+    // layout estrecho que tiene el popup en pantallas pequeñas. Común a
+    // TODOS los visores (no solo este): Dygraph escucha su propio listener
+    // de window 'resize' y redibuja el canvas al tamaño real que tenga en
+    // ese momento su contenedor (#popGraph) — ver Dygraph.prototype.resize
+    // en dygraphs/src/dygraph.js — así que basta con agrandar
+    // #GraphContainer y disparar el evento; no hace falta guardar una
+    // referencia a la instancia Dygraph de turno (cada método
+    // drawXxxGraph la crea como variable local, no la expone en `this`).
+    // gc-auto-size (wind-monitor) ya calcula su propio layout fijo en JS
+    // según el ancho de pantalla real, así que se deja fuera para no pisar
+    // ese cálculo.
+    const graphContainerEl = document.getElementById('GraphContainer');
+    const forcedDesktopSize = !!graphContainerEl && !graphContainerEl.classList.contains('gc-auto-size');
+    const prevInlineWidth = graphContainerEl?.style.width ?? '';
+    const prevInlineHeight = graphContainerEl?.style.height ?? '';
+    if (forcedDesktopSize) {
+      graphContainerEl!.style.width = '930px';
+      graphContainerEl!.style.height = '700px';
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    const restoreLiveSize = () => {
+      if (!forcedDesktopSize) return;
+      graphContainerEl!.style.width = prevInlineWidth;
+      graphContainerEl!.style.height = prevInlineHeight;
+      window.dispatchEvent(new Event('resize'));
+    };
+
     const labelsDiv = document.getElementById('labels');
     const colorLegendDiv = document.getElementById('colorLegend');
-    const headerHeight = 36;
+    const headerLines = this.getExportHeaderLines();
+    const headerHeight = Math.max(36, headerLines.length * 18 + 12);
     const padding = 12;
     const copyrightHeight = 20;
 
@@ -289,8 +341,17 @@ export class CsGraph extends BaseFrame {
     const rangeSelBg = popGraph.querySelector('.dygraph-rangesel-bgcanvas') as HTMLCanvasElement;
     let plotBottomY = graphRect.height; // por defecto, todo el popGraph
     if (rangeSelBg) {
+      // Con range selector (Dygraph): cortar justo antes, es intencional
       const rsRect = rangeSelBg.getBoundingClientRect();
-      plotBottomY = rsRect.top - graphRect.top; // cortar justo antes del range selector
+      plotBottomY = rsRect.top - graphRect.top;
+    } else {
+      // Sin range selector: el contenido (donut, leyenda, descripción, etc.) puede exceder
+      // el alto visible del popup según el tamaño de pantalla. Usar scrollHeight para no recortarlo.
+      plotBottomY = Math.max(plotBottomY, popGraph.scrollHeight);
+      const predContainerForH = popGraph.querySelector<HTMLElement>('.prediction-doughnut-container');
+      if (predContainerForH) {
+        plotBottomY = Math.max(plotBottomY, predContainerForH.scrollHeight);
+      }
     }
 
     const graphW = Math.round(graphRect.width);
@@ -322,20 +383,21 @@ export class CsGraph extends BaseFrame {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, totalW, totalH);
 
-    // --- Barra de título (info del visor) ---
-    const state = this.parent.getState();
-    const varName = state.varName || '';
-    const subVarName = state.subVarName || '';
-    const tpSupport = state.tpSupport || '';
-    const titleParts = [tpSupport, varName, subVarName].filter(s => s && s.length > 0);
-    const headerText = titleParts.join(' - ') + (this.graphSubTitle || '');
-
+    // --- Barra de título ---
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(0, 0, totalW, headerHeight);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
     ctx.textBaseline = 'middle';
-    ctx.fillText(headerText, padding, headerHeight / 2);
+    if (headerLines.length <= 1) {
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(headerLines[0] || '', padding, headerHeight / 2);
+    } else {
+      const lineH = headerHeight / headerLines.length;
+      headerLines.forEach((line, i) => {
+        ctx.font = i === 0 ? 'bold 14px sans-serif' : '12px sans-serif';
+        ctx.fillText(line, padding, lineH * i + lineH / 2);
+      });
+    }
 
     // Recortar al área del gráfico para que no se salga
     ctx.save();
@@ -370,14 +432,27 @@ export class CsGraph extends BaseFrame {
 
     // Dibujar título del gráfico (Dygraph: div.dygraph-title)
     const dygraphTitle = popGraph.querySelector('.dygraph-title') as HTMLElement;
-    if (dygraphTitle && dygraphTitle.textContent) {
+    if (dygraphTitle && dygraphTitle.innerHTML && this.exportShowDygraphTitle) {
       const rect = dygraphTitle.getBoundingClientRect();
       const style = window.getComputedStyle(dygraphTitle);
       ctx.fillStyle = style.color || '#333333';
-      ctx.font = (style.fontWeight || 'bold') + ' ' + (style.fontSize || '14px') + ' ' + (style.fontFamily || 'sans-serif');
       ctx.textBaseline = 'top';
       ctx.textAlign = 'center';
-      ctx.fillText(dygraphTitle.textContent, graphW / 2, rect.top - graphRect.top + headerHeight);
+      // Split on <br> to support two-line titles (graphTitle + coords)
+      const htmlLines = dygraphTitle.innerHTML.split(/<br\s*\/?>/i);
+      const titleLines = htmlLines.map(h => {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = h;
+        return (tmp.textContent || '').trim();
+      }).filter(l => l.length > 0);
+      const baseFontSize = parseInt(style.fontSize || '14');
+      const lineHeight = baseFontSize * 1.35;
+      const topY = rect.top - graphRect.top + headerHeight;
+      titleLines.forEach((line, i) => {
+        const fontSize = i === 0 ? baseFontSize : Math.round(baseFontSize * 0.85);
+        ctx.font = (i === 0 ? (style.fontWeight || 'bold') : 'normal') + ' ' + fontSize + 'px ' + (style.fontFamily || 'sans-serif');
+        ctx.fillText(line, graphW / 2, topY + i * lineHeight);
+      });
       ctx.textAlign = 'left';
     }
 
@@ -437,6 +512,71 @@ export class CsGraph extends BaseFrame {
     // Restaurar clip
     ctx.restore();
 
+    // --- Elementos HTML de gráficos de predicción/proyección ---
+    // Usa la clase .prediction-doughnut-container (añadida en renderPredictionDoughnut)
+    // para no afectar otros tipos de gráfico.
+    const predContainer = popGraph.querySelector<HTMLElement>('.prediction-doughnut-container');
+    if (predContainer) {
+      ctx.textAlign = 'left';
+
+      // Helper: dibuja texto con word-wrap
+      const drawWrapped = (text: string, x: number, y: number, maxW: number, lineH: number, font: string, color: string) => {
+        ctx.font = font; ctx.fillStyle = color; ctx.textBaseline = 'top';
+        const words = text.split(' '); let line = '';
+        for (const word of words) {
+          const test = line ? line + ' ' + word : word;
+          if (ctx.measureText(test).width > maxW && line) {
+            ctx.fillText(line, x, y); line = word; y += lineH;
+          } else { line = test; }
+        }
+        if (line) ctx.fillText(line, x, y);
+      };
+
+      // Título (h3) centrado en el área blanca
+      predContainer.querySelectorAll<HTMLElement>('h3').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const style = getComputedStyle(el);
+        const x = Math.round(rect.left - graphRect.left);
+        const y = Math.round(rect.top - graphRect.top) + headerHeight;
+        const fontSize = style.fontSize || '13px';
+        const fw = parseInt(style.fontWeight) >= 700 ? 'bold ' : '';
+        drawWrapped(el.textContent || '', x, y, rect.width, 16, `${fw}${fontSize} sans-serif`, style.color || '#1f2937');
+      });
+
+      // Ítems de leyenda: item-div > span(caja coloreada) + span(texto)
+      predContainer.querySelectorAll<HTMLElement>('div > div').forEach(item => {
+        const spans = Array.from(item.querySelectorAll<HTMLElement>(':scope > span'));
+        if (spans.length < 2) return;
+        const box = spans[0]; const textEl = spans[1];
+        const bg = box.style.background || box.style.backgroundColor || getComputedStyle(box).backgroundColor;
+        if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') return;
+        const boxRect = box.getBoundingClientRect();
+        if (!boxRect.width || !boxRect.height) return;
+        const bx = Math.round(boxRect.left - graphRect.left);
+        const by = Math.round(boxRect.top - graphRect.top) + headerHeight;
+        ctx.fillStyle = bg;
+        ctx.fillRect(bx, by, boxRect.width, boxRect.height);
+        const textRect = textEl.getBoundingClientRect();
+        ctx.fillStyle = getComputedStyle(textEl).color || '#374151';
+        ctx.font = (getComputedStyle(textEl).fontSize || '11px') + ' sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(textEl.textContent || '',
+          Math.round(textRect.left - graphRect.left),
+          Math.round(textRect.top - graphRect.top) + headerHeight + textRect.height / 2);
+      });
+
+      // Descripción (.popover-description)
+      predContainer.querySelectorAll<HTMLElement>('.popover-description').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        drawWrapped(el.textContent || '',
+          Math.round(rect.left - graphRect.left),
+          Math.round(rect.top - graphRect.top) + headerHeight,
+          rect.width, 16, '12px sans-serif', getComputedStyle(el).color || '#374151');
+      });
+    }
+
     // --- Labels (leyenda de series Dygraph) ---
     let curY = headerHeight + graphH;
     if (labelsDiv && labelsDiv.offsetHeight > 0) {
@@ -460,28 +600,69 @@ export class CsGraph extends BaseFrame {
     // --- Color Legend ---
     if (colorLegendDiv && colorLegendDiv.style.display !== 'none' && colorLegendDiv.offsetHeight > 0) {
       const items = colorLegendDiv.children;
-      let lx = padding;
+
+      // Measure total width for horizontal centering
+      let totalLegendW = 0;
+      ctx.save();
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i] as HTMLElement;
+        if (item.tagName === 'SPAN') {
+          ctx.font = 'bold 11px sans-serif';
+          totalLegendW += ctx.measureText(item.textContent || '').width + 8;
+        } else {
+          const svgCircle = item.querySelector('svg circle') as SVGCircleElement | null;
+          const colorBox = item.querySelector('div') as HTMLElement;
+          const label = item.querySelector('span') as HTMLElement;
+          if (svgCircle) {
+            totalLegendW += Math.min(parseFloat(svgCircle.getAttribute('r') || '5'), 12) * 2 + 4;
+          } else if (colorBox) {
+            totalLegendW += 20;
+          }
+          if (label) {
+            ctx.font = '11px sans-serif';
+            totalLegendW += ctx.measureText(label.textContent || '').width + 8;
+          }
+        }
+      }
+      ctx.restore();
+
+      const legendRowH = colorLegendH - 8; // strip height excluding margin
+      const legendMidY = curY + 4 + legendRowH / 2; // vertical center of the legend strip
+      let lx = Math.max(padding, Math.round((totalW - totalLegendW) / 2));
+
       for (let i = 0; i < items.length; i++) {
         const item = items[i] as HTMLElement;
         if (item.tagName === 'SPAN') {
           ctx.fillStyle = '#333333';
           ctx.font = 'bold 11px sans-serif';
           ctx.textBaseline = 'middle';
-          ctx.fillText(item.textContent || '', lx, curY + 8);
+          ctx.fillText(item.textContent || '', lx, legendMidY);
           lx += ctx.measureText(item.textContent || '').width + 8;
         } else {
+          const svgCircle = item.querySelector('svg circle') as SVGCircleElement | null;
           const colorBox = item.querySelector('div') as HTMLElement;
           const label = item.querySelector('span') as HTMLElement;
-          if (colorBox) {
+          if (svgCircle) {
+            const r = Math.min(parseFloat(svgCircle.getAttribute('r') || '5'), 12);
+            const fill = svgCircle.getAttribute('fill') || '#ccc';
+            ctx.fillStyle = fill;
+            ctx.beginPath();
+            ctx.arc(lx + r, legendMidY, r, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            lx += r * 2 + 4;
+          } else if (colorBox) {
             ctx.fillStyle = colorBox.style.backgroundColor || '#ccc';
-            ctx.fillRect(lx, curY + 2, 18, 12);
+            ctx.fillRect(lx, legendMidY - 6, 18, 12);
             lx += 20;
           }
           if (label) {
             ctx.fillStyle = '#333333';
             ctx.font = '11px sans-serif';
             ctx.textBaseline = 'middle';
-            ctx.fillText(label.textContent || '', lx, curY + 8);
+            ctx.fillText(label.textContent || '', lx, legendMidY);
             lx += ctx.measureText(label.textContent || '').width + 8;
           }
         }
@@ -490,7 +671,18 @@ export class CsGraph extends BaseFrame {
     }
 
     // --- Barra de logos (pie) ---
-    this.drawLogosAndDownload(exportCanvas, ctx, 'grafico.png', dpr);
+    this.drawLogosAndDownload(exportCanvas, ctx, this.getExportFilename(), dpr);
+
+    // exportCanvas ya tiene todos los píxeles capturados a tamaño desktop;
+    // restaurar el popup a su tamaño real en pantalla. drawLogosAndDownload
+    // termina de forma asíncrona (carga una imagen de logos) pero opera
+    // solo sobre exportCanvas, no vuelve a leer el DOM del gráfico en vivo.
+    restoreLiveSize();
+  }
+
+  /** Nombre del fichero PNG exportado. Los visores pueden sobreescribirlo. */
+  protected getExportFilename(): string {
+    return 'grafico.png';
   }
 
   /**
@@ -506,6 +698,58 @@ export class CsGraph extends BaseFrame {
     headerLines: string[],
     filename: string
   ): void {
+    // Igual motivo que en exportGraph() (Dygraph): capturar el canvas tal
+    // cual está en pantalla exporta con el layout estrecho de móvil en vez
+    // de con las proporciones de escritorio. A diferencia de Dygraph,
+    // Chart.js no redibuja solo con disparar window 'resize' (usa un
+    // ResizeObserver interno asíncrono), así que se resuelve la instancia
+    // Chart.js real ligada a este canvas (Chart.getChart, API pública desde
+    // Chart.js v3) y se le llama resize() de forma síncrona tras agrandar
+    // #GraphContainer. Común a todos los visores basados en Chart.js (EPM,
+    // CCM, SRI...), que llaman todos a este mismo método.
+    //
+    // Algunos visores (p.ej. CcmGraph.prepareCanvas) fijan además un
+    // width/height en px directamente sobre #popGraph (el padre real del
+    // canvas), en vez de dejar que herede el ancho de #GraphContainer vía
+    // CSS — agrandar solo #GraphContainer no tendría ningún efecto ahí, ese
+    // style inline gana siempre. Se agranda también #popGraph por si acaso.
+    const graphContainerEl = document.getElementById('GraphContainer');
+    const forcedDesktopSize = !!graphContainerEl && !graphContainerEl.classList.contains('gc-auto-size');
+    const prevInlineWidth = graphContainerEl?.style.width ?? '';
+    const prevInlineHeight = graphContainerEl?.style.height ?? '';
+    const popGraphEl = chartCanvas.parentElement as HTMLElement | null;
+    const prevPopGraphWidth = popGraphEl?.style.width ?? '';
+    const prevPopGraphHeight = popGraphEl?.style.height ?? '';
+    const chartInstance = Chart.getChart(chartCanvas);
+    if (forcedDesktopSize) {
+      graphContainerEl!.style.width = '930px';
+      graphContainerEl!.style.height = '700px';
+      if (popGraphEl && popGraphEl.id === 'popGraph') {
+        popGraphEl.style.width = '900px';
+        popGraphEl.style.height = '560px';
+      }
+      chartInstance?.resize();
+      // resize() por sí solo puede acabar pintando en el siguiente frame
+      // (pasa por el mismo animator que las transiciones). update('none')
+      // es el mismo patrón que ya usan EPMGraph/CcmGraph para el ocultado
+      // de título justo antes de capturar — fuerza el redibujado completo
+      // ya, sin animación, para que el drawImage de más abajo vea el
+      // tamaño nuevo.
+      chartInstance?.update('none');
+    }
+
+    const restoreLiveSize = () => {
+      if (!forcedDesktopSize) return;
+      graphContainerEl!.style.width = prevInlineWidth;
+      graphContainerEl!.style.height = prevInlineHeight;
+      if (popGraphEl && popGraphEl.id === 'popGraph') {
+        popGraphEl.style.width = prevPopGraphWidth;
+        popGraphEl.style.height = prevPopGraphHeight;
+      }
+      chartInstance?.resize();
+      chartInstance?.update('none');
+    };
+
     const lineHeight = 18;
     const padding = 12;
     const headerHeight = Math.max(headerLines.length * lineHeight + padding, 36);
@@ -514,7 +758,10 @@ export class CsGraph extends BaseFrame {
     exportCanvas.width  = chartCanvas.width;
     exportCanvas.height = headerHeight + chartCanvas.height;
     const ctx = exportCanvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      restoreLiveSize();
+      return;
+    }
 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
@@ -532,6 +779,10 @@ export class CsGraph extends BaseFrame {
     // Gráfico
     ctx.drawImage(chartCanvas, 0, headerHeight);
 
+    // exportCanvas ya tiene los píxeles capturados a tamaño desktop:
+    // restaurar el chart en pantalla a su tamaño real de móvil.
+    restoreLiveSize();
+
     // Barra de logos + descarga
     this.drawLogosAndDownload(exportCanvas, ctx, filename, window.devicePixelRatio || 1);
   }
@@ -541,7 +792,7 @@ export class CsGraph extends BaseFrame {
     banner.crossOrigin = 'anonymous';
     banner.onload = () => this.appendLogosBarAndDownload(exportCanvas, banner, filename, exportScale);
     banner.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
-    banner.src = './images/banner_logos_imp.png';
+    banner.src = './images/banner_logos_imp.svg';
   }
 
   protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string, exportScale?: number): void {
@@ -688,11 +939,24 @@ export class CsGraph extends BaseFrame {
     this.featureButtonContainer.hidden = false
   }
 
+  protected setGraphCoords(latlng: CsLatLong, station: any = []): void {
+    this.graphCoords = Object.keys(station).length !== 0
+      ? ' - ' + station['name']
+      : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E';
+  }
+
+  protected get fullTitle(): string {
+    const sub = this.graphSubTitle || '';
+    const coords = this.graphCoords || '';
+    const secondLine = coords + (sub ? ' | ' + sub : '');
+    return this.graphTitle + (secondLine.trim() ? '<br>' + secondLine : '');
+  }
+
 public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station: any = []) {
     // Ocultar leyenda por defecto (cada tipo de gráfico decidirá si mostrarla)
     this.hideColorLegend();
 
-    this.graphSubTitle = station.length != 0? ' - ' + station['name'] : ' ' + latlng.lat.toFixed(2) + ' N , ' + latlng.lng.toFixed(2) + ' E';
+    this.setGraphCoords(latlng, station);
     this.container.hidden = false;
     
     if (Object.keys(station).length != 0) this.enableStationDwButton(station);
@@ -803,6 +1067,53 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         console.log('Media calculada en drawSerialGraph:', this.currentMeanValue);
     }
     
+    const xAxisLabelFormatter = function (number: number, granularity: any, opts: any, dygraph: Dygraph) {
+      var fecha = new Date(number);
+
+      const numRows = dygraph.numRows();
+
+      if (numRows <= 12 && numRows > 4) {
+        const monthNames = self.parent.getTranslation('monthsShort');
+        return monthNames[fecha.getMonth()];
+      } else if (numRows <= 4) {
+        const seasonNames = self.parent.getTranslation('season');
+        const season = Math.floor(fecha.getMonth() / 3);
+        return seasonNames[season];
+      } else {
+        let value = self.formatDate(fecha);
+        return value;
+      }
+    };
+
+    // Dygraph detecta el tipo de la columna x al parsear el CSV (fechas en
+    // nuestro caso, ver Dygraph.prototype.parseCSV_ -> detectTypeFromString_
+    // -> setXAxisOptions_) y ahí mismo pisa axes.x.axisLabelFormatter con su
+    // propio formateador de fábrica, ignorando el que se pasa aquí en el
+    // constructor -- ni pasándolo de nuevo por updateOptions() ni forzando un
+    // redraw consigue aplicarse (las pruebas con updateOptions()/predraw_()
+    // no cambiaron nada en pantalla). Como no hay forma fiable de que Dygraph
+    // respete el formateador para un eje de fechas con datos en CSV, se
+    // reescribe directamente el texto ya pintado de las etiquetas del eje X
+    // en el DOM, usando el valor real de cada tick (dygraph.layout_.xticks,
+    // en el mismo orden en que willDrawChart crea sus divs .dygraph-axis-label-x).
+    const fixXAxisLabels = function (dygraph: Readonly<Dygraph>) {
+      const layout = (dygraph as any).layout_;
+      if (!layout || !Array.isArray(layout.xticks)) return;
+      // layout_.xticks solo trae pos (fracción 0-1 dentro del rango visible)
+      // y label (ya como string calculado con el formateador de fábrica) --
+      // no el valor numérico del tick, así que se recupera invirtiendo el
+      // mismo cálculo que usa Dygraph internamente en toPercentXCoord.
+      const ticksWithLabel = layout.xticks.filter((t: any) => t.label !== undefined);
+      const container = document.getElementById("popGraph");
+      if (!container) return;
+      const els = container.getElementsByClassName('dygraph-axis-label-x');
+      const xRange = (dygraph as Dygraph).xAxisRange();
+      for (let i = 0; i < ticksWithLabel.length && i < els.length; i++) {
+        const value = xRange[0] + ticksWithLabel[i].pos * (xRange[1] - xRange[0]);
+        els[i].textContent = xAxisLabelFormatter(value, 0, undefined, dygraph as Dygraph);
+      }
+    };
+
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -810,12 +1121,16 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 3,
         delimiter: ";",
-        title: this.graphTitle + this.graphSubTitle,
+        title: this.fullTitle,
+        titleHeight: 54,
         ylabel: this.yLabel,
         xlabel: "",
         showRangeSelector: true,
         xValueParser: function (str: any): number {
           return self.parseXValue(str);
+        },
+        drawCallback: function (dygraph, isInitial) {
+          fixXAxisLabels(dygraph);
         },
         axes: {
           x: {
@@ -824,23 +1139,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
               let value = self.formatDate(fecha)
               return value;
             },
-            axisLabelFormatter(number, granularity, opts, dygraph) {
-              var fecha = new Date(number);
-              
-              const numRows = dygraph.numRows();
-              
-              if (numRows <= 12 && numRows > 4) {
-                const monthNames = self.parent.getTranslation('monthsShort');
-                return monthNames[fecha.getMonth()];
-              } else if (numRows <= 4) {
-                const seasonNames = self.parent.getTranslation('season');
-                const season = Math.floor(fecha.getMonth() / 3);
-                return seasonNames[season];
-              } else {
-                let value = self.formatDate(fecha);
-                return value;
-              }
-            }
+            axisLabelFormatter: xAxisLabelFormatter
           },
           y: {
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
@@ -850,6 +1149,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         }
       }
     );
+
     return graph;
   }
 
@@ -1028,7 +1328,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         labelsDiv: document.getElementById('labels'),
         digitsAfterDecimal: 3,
         delimiter: ";",
-        title: this.graphTitle + this.graphSubTitle,
+        title: this.fullTitle,
+        titleHeight: 54,
         ylabel: this.yLabel,
         xlabel: this.xLabel || dateText,
         showRangeSelector: true,
@@ -1130,7 +1431,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         {
             labelsDiv: document.getElementById('labels'),
             digitsAfterDecimal: 1,
-            title: this.graphTitle + this.graphSubTitle,
+            title: this.fullTitle,
+        titleHeight: 54,
             ylabel: this.yLabel,
             xlabel: this.xLabel,
             // Ajustar márgenes para evitar solapamiento del yLabel
@@ -1321,7 +1623,13 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         break;
       case 3:
         value = date.getFullYear() + " "
-        break;  
+        break;
+      case DateFrameMode.DateFrameYear:
+      case DateFrameMode.DateFrameYearSeries:
+        // Series anuales (p.ej. monitorización con un valor por año): solo el año,
+        // sin día/mes -> antes caía sin match y devolvía undefined.
+        value = "" + date.getFullYear()
+        break;
     }
     return value;
   }
@@ -1851,6 +2159,18 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
       graphContainer.parentNode.insertBefore(mainContainer, graphContainer);
     }
 
+    // Insertar este bloque reduce el alto disponible de #popGraph (ahora hay
+    // que hacerle sitio también a los selectores), pero Dygraph ya había
+    // medido y dibujado con el alto de ANTES de insertarlo — su canvas se
+    // queda más alto de lo que ahora cabe de verdad, y lo que sobra por
+    // abajo (justo el eje X) queda recortado por el overflow:hidden de
+    // #popGraph/.popup-content-wrapper. resize() fuerza a Dygraph a volver
+    // a medir su contenedor ya con el selector puesto y redibujar al alto
+    // correcto, eje X incluido.
+    if (graph && graphContainer && graphContainer.clientWidth > 0 && graphContainer.clientHeight > 0) {
+      graph.resize();
+    }
+
     // Agregar eventos para cambiar las escalas
     this.attachScaleEvents(graph);
   }
@@ -1986,6 +2306,210 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     this.pointYUnit = yUnit;
     this.pointXLabel = xLabel;
     this.pointXUnit = xUnit;
+  }
+
+  // ── Gráfico de distribución por terciles (predicción estacional) ──────────
+
+  protected _saveContainerStyles(): void {
+    const popGraph = document.getElementById('popGraph');
+    if (popGraph) {
+      this._savedPopGraphStyles = {
+        overflow: popGraph.style.overflow,
+        width:    popGraph.style.width,
+        maxWidth: popGraph.style.maxWidth,
+        margin:   popGraph.style.margin,
+        padding:  popGraph.style.padding,
+        height:   popGraph.style.height,
+      };
+    }
+    const gc = document.getElementById('GraphContainer') as HTMLDivElement;
+    if (gc) {
+      this._savedGraphContainerStyles = {
+        overflow:  gc.style.overflow,
+        maxWidth:  gc.style.maxWidth,
+        margin:    gc.style.margin,
+        height:    gc.style.height,
+        minHeight: gc.style.minHeight,
+        padding:   gc.style.padding,
+      };
+    }
+    // El div.col del botón de cerrar ocupa la mitad del popup (Bootstrap flex:1 0 0).
+    // Solo para el gráfico de predicción, forzarlo a ancho mínimo.
+    const popupWrapper = popGraph?.closest('.popup-content-wrapper') as HTMLElement;
+    const closeDiv = popupWrapper?.nextElementSibling as HTMLElement;
+    if (closeDiv) {
+      this._savedCloseButtonFlex = closeDiv.style.flex;
+      closeDiv.style.flex = '0 0 auto';
+    }
+  }
+
+  protected _resetContainerStyles(): void {
+    const popGraph = document.getElementById('popGraph');
+    if (popGraph && this._savedPopGraphStyles) {
+      Object.assign(popGraph.style, this._savedPopGraphStyles);
+      this._savedPopGraphStyles = null;
+    }
+    const gc = document.getElementById('GraphContainer') as HTMLDivElement;
+    if (gc && this._savedGraphContainerStyles) {
+      Object.assign(gc.style, this._savedGraphContainerStyles);
+      this._savedGraphContainerStyles = null;
+    }
+    if (this._savedCloseButtonFlex !== null) {
+      const popupWrapper = document.getElementById('popGraph')?.closest('.popup-content-wrapper') as HTMLElement;
+      const closeDiv = popupWrapper?.nextElementSibling as HTMLElement;
+      if (closeDiv) closeDiv.style.flex = this._savedCloseButtonFlex;
+      this._savedCloseButtonFlex = null;
+    }
+    const downloadBtn = document.querySelector('[role=dropPointBtn]') as HTMLButtonElement;
+    if (downloadBtn) downloadBtn.hidden = false;
+  }
+
+  /**
+   * Renderiza el donut de distribución por terciles en #popGraph.
+   * Diseño: donut 200×200 (izquierda) + columna de leyenda con % (derecha) + párrafo descriptivo.
+   * Llamar después de preparar labels/colors/values en el visor específico.
+   */
+  protected renderPredictionDoughnut(params: {
+    labels: string[];
+    colors: string[];
+    values: number[];
+    title: string;
+    periodText: string;
+    descriptionText: string;
+  }): void {
+    const popGraph = document.getElementById('popGraph');
+    if (!popGraph) return;
+
+    if (this._predChart) {
+      this._predChart.destroy();
+      this._predChart = null;
+    }
+    this._saveContainerStyles();
+
+    popGraph.innerHTML = '';
+
+    const graphContainer = document.getElementById('GraphContainer') as HTMLDivElement;
+    if (graphContainer) graphContainer.hidden = false;
+    popGraph.style.width = '100%';
+    popGraph.style.height = 'auto';
+
+    const downloadBtn = document.querySelector('[role=dropPointBtn]') as HTMLButtonElement;
+    if (downloadBtn) downloadBtn.hidden = true;
+
+    const legendDiv = document.getElementById('colorLegend');
+    if (legendDiv) legendDiv.style.display = 'none';
+
+    const { labels, colors, values, title, periodText, descriptionText } = params;
+    const total = values.reduce((a, b) => a + b, 0);
+
+    const mainContainer = document.createElement('div');
+    mainContainer.className = 'prediction-doughnut-container';
+    mainContainer.style.cssText = 'display:flex; flex-direction:column; align-items:center; padding:16px 20px; width:100%; box-sizing:border-box;';
+
+    const titleEl = document.createElement('h3');
+    titleEl.textContent = title;
+    titleEl.style.cssText = 'margin:0 0 14px 0; font-size:13px; color:#1f2937; text-align:center; max-width:560px;';
+    mainContainer.appendChild(titleEl);
+
+    if (periodText) {
+      const periodEl = document.createElement('p');
+      periodEl.textContent = periodText;
+      periodEl.style.cssText = 'margin:-8px 0 12px 0; font-size:12px; color:#6b7280; font-weight:500; text-align:center;';
+      mainContainer.appendChild(periodEl);
+    }
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:24px; justify-content:center; width:100%;';
+
+    const canvas = document.createElement('canvas');
+    const canvasSize = 200;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+    canvas.style.cssText = `flex-shrink:0; width:${canvasSize}px; height:${canvasSize}px;`;
+    row.appendChild(canvas);
+
+    const multiCol = labels.length > 6;
+    const legendCol = document.createElement('div');
+    legendCol.style.cssText = multiCol
+      ? 'display:grid; grid-template-columns:1fr 1fr; gap:4px 20px; align-content:center;'
+      : 'display:flex; flex-direction:column; gap:6px; justify-content:center;';
+
+    for (let i = 0; i < labels.length; i++) {
+      const pct = total > 0 ? ((values[i] / total) * 100).toFixed(1) : '0.0';
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex; align-items:center; gap:6px;';
+      const box = document.createElement('span');
+      box.style.cssText = `display:inline-block; width:11px; height:11px; border-radius:2px; background:${colors[i]}; flex-shrink:0;`;
+      const text = document.createElement('span');
+      text.style.cssText = 'font-size:11px; color:#374151; white-space:nowrap;';
+      text.textContent = `${labels[i]}: ${pct}%`;
+      item.appendChild(box);
+      item.appendChild(text);
+      legendCol.appendChild(item);
+    }
+    row.appendChild(legendCol);
+    mainContainer.appendChild(row);
+
+    if (descriptionText) {
+      const desc = document.createElement('p');
+      desc.className = 'popover-description';
+      desc.style.cssText = 'display:block; margin:14px auto 0; max-width:560px; text-align:justify;';
+      desc.textContent = descriptionText;
+      mainContainer.appendChild(desc);
+    }
+
+    popGraph.appendChild(mainContainer);
+
+    const ctx = canvas.getContext('2d');
+    this._predChart = new Chart(ctx as any, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderWidth: 1.5,
+          borderColor: 'rgba(255,255,255,0.9)',
+          hoverOffset: 8,
+          hoverBorderWidth: 2,
+          hoverBorderColor: 'rgba(0,0,0,0.15)'
+        }]
+      },
+      plugins: [{
+        id: 'doughnutBackground',
+        beforeDraw: (chart: any) => {
+          const { ctx: c } = chart;
+          c.save();
+          c.globalCompositeOperation = 'destination-over';
+          c.fillStyle = '#ffffff';
+          c.fillRect(0, 0, chart.width, chart.height);
+          c.restore();
+        }
+      }],
+      options: {
+        responsive: false,
+        maintainAspectRatio: true,
+        layout: { padding: 8 },
+        cutout: '45%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(31,41,55,0.95)',
+            titleColor: '#f9fafb', bodyColor: '#f9fafb',
+            padding: 12, cornerRadius: 6, displayColors: true,
+            titleFont: { size: 13 }, bodyFont: { size: 12 }, boxPadding: 6,
+            callbacks: {
+              label: function(context: any) {
+                const value = context.parsed ?? 0;
+                const t = (context.dataset.data as number[]).reduce((a: number, b: number) => a + b, 0);
+                const pct = t > 0 ? ((value / t) * 100).toFixed(1) : '0.0';
+                return ` ${context.label}: ${pct}%`;
+              }
+            }
+          }
+        }
+      }
+    } as any);
   }
 
   public drawPercentileClockGraph(currentValue: number, historicalData: number[], latlng: CsLatLong): void {

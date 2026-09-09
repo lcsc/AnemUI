@@ -32,7 +32,7 @@ export interface CsMapListener{
     onMapInited():void;
     onMapLoaded():void;
     onDragStart(event:CsMapEvent):void;
-    onClick(event:CsMapEvent):void;
+    onClick(event:CsMapEvent):void | Promise<void>;
     // onMouseMoveEnd(event:CsMapEvent):void;
 }
 

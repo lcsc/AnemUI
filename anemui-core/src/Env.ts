@@ -24,6 +24,9 @@ export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhe
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
 export const computedDataTilesLayer:boolean = ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer: false;
 export const dataSource: string = ENV.dataSource !== 'undefined'? ENV.dataSource:'nc';
+export const faviconUrl: string = typeof ENV.faviconUrl !== 'undefined'? ENV.faviconUrl:'https://www.aemet.es/favicon.ico';
+export const portalUrl: string = typeof ENV.portalUrl !== 'undefined'? ENV.portalUrl:'https://www.aemet.es/es/serviciosclimaticos/pesc';
+export const portalTitle: string = typeof ENV.portalTitle !== 'undefined'? ENV.portalTitle:'Volver al portal';
 
 // Defines the appearance of the display -- Default values
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
@@ -44,9 +47,9 @@ export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.sho
 export const intValues:boolean = ENV.intValues !== 'undefined'? ENV.intValues:false;
 export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
-export const maxPaletteValue = ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
-export const maxPaletteSteps = ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
-export const globalMap = ENV.globalMap !== 'undefined'? ENV.globalMap:false;
+export const maxPaletteValue = typeof ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
+export const maxPaletteSteps = typeof ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
+export const globalMap = typeof ENV.globalMap !== 'undefined'? ENV.globalMap:false;
 export const mapExtent: [number, number, number, number] | undefined =
     Array.isArray(ENV.mapExtent) ? ENV.mapExtent as [number, number, number, number] : undefined;
 

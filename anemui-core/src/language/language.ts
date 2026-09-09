@@ -19,7 +19,7 @@ export default class Language {
             "pop_importance": "Index importance",
             "pop_time_scale": "Applicable time scale",
             "pop_geographic": "Geographic limitation",
-            "pop_formula": "Formula",
+            "pop_formula": "Equation",
             "pop_reference": "Reference",
             "descargar_nc": "Download File",
             "descargar_peninsula": "Download Peninsula",
@@ -38,8 +38,12 @@ export default class Language {
             "top_layer":"Data Layer",
             "opciones_visualizacion": "Visualization Options",
             "imprimir_mapa":"Print map",
+            "imprimir_grafico":"Print graph",
             "transparency":"Transparency",
             "uncertainty":"Uncertainty",
+            "uncertainty_prediction": "Marked areas show </br> high uncertainty in the prediction",
+            "uncertainty_projection": "Marked areas show </br> high uncertainty in the projection",
+            "significance_obs": "Marked areas are </br> not statistically significant",
             'estadistico': 'Statistic',
             'periodo_referencia':'Reference period',
             'unidad_adminiastrativa':'Administrative division',
@@ -88,6 +92,7 @@ export default class Language {
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',
+                'celsius decade-1': '°C/decade',
                 'days': 'Days',
                 'hours': 'Hours',
                 'mm': 'mm',
@@ -98,7 +103,8 @@ export default class Language {
                 'Anomalías': 'Anomalies',
                 'kJ/m2': 'kJ/m²·day',
                 'MJ/m2': 'MJ/m²·day'
-            }
+            },
+            'nonNegativeUnits': ['%', 'days', 'mm']
         },
         es: {
             // PopData fields
@@ -107,7 +113,7 @@ export default class Language {
             "pop_importance": "Importancia del índice",
             "pop_time_scale": "Escala temporal aplicable",
             "pop_geographic": "Limitación geográfica",
-            "pop_formula": "Fórmula",
+            "pop_formula": "Ecuación",
             "pop_reference": "Referencia",
             "descargar_nc": "Descargar Archivo",
             "descargar_peninsula": "Descargar Península",
@@ -126,8 +132,12 @@ export default class Language {
             "top_layer":"Capa Info",
             "opciones_visualizacion": "Opciones de visualización",
             "imprimir_mapa":"Imprimir mapa",
+            "imprimir_grafico":"Imprimir gráfico",
             "transparency":"Transparencia",
             "uncertainty":"Incertidumbre",
+            "uncertainty_prediction": "Las zonas marcadas presentan </br> elevada incertidumbre en la predicción",
+            "uncertainty_projection": "Las zonas marcadas presentan </br> elevada incertidumbre en la proyección",
+            "significance_obs": "Las zonas marcadas no son </br> estadísticamente significativas",
             'estadistico': 'Estadístico',
             'periodo_referencia':'Período de referencia',
             'unidad_adminiastrativa':'Unidad administrativa',
@@ -176,17 +186,19 @@ export default class Language {
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',
+                'celsius decade-1': '°C/década',
                 'days': 'Días',
                 'hours': 'Horas',
                 'mm': 'mm',
                 'm/s': 'm/s',
                 'adim': 'adim',
-                'index units': 'Unidades del índice',
+                'index units': 'Unidades índice',
                 'Terciles': 'Terciles',
                 'Anomalías': 'Anomalías',
                 'kJ/m2': 'kJ/m²·día',
                 'MJ/m2': 'MJ/m²·día'
-            }
+            },
+            'nonNegativeUnits': ['%', 'días', 'mm']
         }
     }
 

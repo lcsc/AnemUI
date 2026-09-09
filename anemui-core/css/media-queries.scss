@@ -33,6 +33,23 @@ $color_11: #737374;
     }
 }
 
+/* max-width 750px: para el layout compacto de DateSelectorFrame +
+   .ol-attribution (dateselectorframe.scss, open-layers-map.scss). Por debajo
+   de 750px de ancho, el DateSelectorFrame (90% de ancho hasta el breakpoint
+   desktop) se acerca lo suficiente a la esquina inferior derecha como para
+   solaparse con el aviso de atribuciones si este se queda en su posición de
+   escritorio; de 576 a 750px hace falta el mismo tratamiento (selector
+   reducido + atribuciones debajo, centradas) que ya se aplicaba solo a
+   sm-mobile. Mixin separado (no se amplía sm-mobile) para no afectar de
+   rebote a otros elementos (sidebar, paleta...) que sí deben seguir
+   cambiando solo a partir de 576px.
+*/
+@mixin dateAttr-mobile {
+    @media only screen and (max-width: 750px) {
+        @content;
+    }
+}
+
 /* min-width 576px, medium screens */
 @mixin mobile {
     @media only screen and (min-width:576px) {

@@ -9,7 +9,7 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent, globalMap } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
 import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
@@ -349,6 +349,7 @@ export class OpenLayerMap implements CsMapController {
     this.popupContent = document.createElement("div");
     this.popupContent.setAttribute("role", "popup-content")
     this.popup.appendChild(this.popupContent);
+    this.popup.hidden = true;
   }
 
   public onMouseMove(event: MapBrowserEvent<any>) {
@@ -388,7 +389,12 @@ export class OpenLayerMap implements CsMapController {
     loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
       .then(value => {
         if (state.support == this.defaultRenderer) {
-          self.showValue(event.latLong, value[0], value[1], value[2] == 0? '_can':'_pen');
+          // value[2] codifica Canarias/Península (0/1), un esquema propio de
+          // los visores de España con dos portions. Los visores "globalMap"
+          // (p.ej. gams) tienen una única portion sin sufijo (''); forzarla
+          // aquí evita que el popup busque luego en un portion '_pen'/'_can'
+          // que no existe para ellos (ver App.ts formatPopupValue).
+          self.showValue(event.latLong, value[0], value[1], globalMap ? '' : (value[2] == 0? '_can':'_pen'));
         } else {
           let evt = event.original
           var features: Feature[] = [];
@@ -427,8 +433,32 @@ export class OpenLayerMap implements CsMapController {
   }
 
   public onClick(event: MapEvent) {
-    if (!Number.isNaN(this.parent.getParent().getState().xyValue))
-      this.parent.onMapClick(this.toCsMapEvent(event))
+    const state = this.parent.getParent().getState();
+
+    if (!Number.isNaN(state.xyValue)) {
+      this.parent.onMapClick(this.toCsMapEvent(event));
+      return;
+    }
+
+    // En touch/móvil no hay pointermove antes del tap, así que xyValue nunca
+    // se ha calculado por el hover. Calculamos el valor del punto pulsado
+    // directamente, igual que hace onMouseMoveEnd, antes de decidir si se abre el gráfico.
+    if (state.support !== this.defaultRenderer) return;
+
+    const self = this;
+    const mapEvent = this.toCsMapEvent(event);
+    const timesJs = this.parent.getParent().getTimesJs();
+
+    loadLatLogValue(mapEvent.latLong, state, timesJs, this.getZoom())
+      .then(value => {
+        self.showValue(mapEvent.latLong, value[0], value[1], globalMap ? '' : (value[2] == 0 ? '_can' : '_pen'));
+        if (!Number.isNaN(state.xyValue)) {
+          self.parent.onMapClick(mapEvent);
+        }
+      })
+      .catch(reason => {
+        console.log("error: " + reason);
+      });
   }
 
   public handleMapMove() {
@@ -438,17 +468,21 @@ export class OpenLayerMap implements CsMapController {
       this.parent.getParent().update();
     }
 
-    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad
+    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad,
+    // salvo que el painter activo indique que no necesita reconstruirse (skipZoomRebuild).
     if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
-      const zoom = this.getZoom();
-      const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
-      if (currentLevel !== this.lastUncertaintyZoomLevel) {
-        this.lastUncertaintyZoomLevel = currentLevel;
-        // Diferir al siguiente ciclo para no interferir con el render actual
-        setTimeout(() => {
-          let timesJs = this.parent.getParent().getTimesJs();
-          this.buildUncertaintyLayer(state, timesJs);
-        }, 0);
+      const overlayKey = state.overlayVarId?.includes('_pvalue') ? 'significance' : 'uncertainty';
+      const activePainter = PaletteManager.getInstance().getNamedPainter(overlayKey);
+      if (!(activePainter as any)?.skipZoomRebuild) {
+        const zoom = this.getZoom();
+        const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
+        if (currentLevel !== this.lastUncertaintyZoomLevel) {
+          this.lastUncertaintyZoomLevel = currentLevel;
+          setTimeout(() => {
+            let timesJs = this.parent.getParent().getTimesJs();
+            this.buildUncertaintyLayer(state, timesJs);
+          }, 0);
+        }
       }
     }
   }
@@ -748,7 +782,10 @@ export class OpenLayerMap implements CsMapController {
     });
 
     let promises: Promise<number[]>[] = [];
-    this.setExtents(timesJs, uncertaintyVarId);
+    // No llamar setExtents para uncertaintyVarId: usa el extent del dato (ya calculado con
+    // pxSize del dato). El extent de incertidumbre difiere en pxSize cuando la resolución
+    // de incertidumbre es mayor que la del dato (p.ej. 1090 vs 545 en CCM), lo que causaría
+    // un desplazamiento de escala al renderizar en OL.
 
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
       promises.push(downloadXYChunk(state.selectedTimeIndex, uncertaintyVarId, portion, timesJs));
@@ -809,8 +846,7 @@ export class OpenLayerMap implements CsMapController {
     this.glmgr = GeoLayerManager.getInstance();
     let self = this
     Object.entries(this.renderers).forEach(([key, renderer]) => {
-      // if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
-      if(!renderer.startsWith("-") && renderer != this.defaultRenderer){
+      if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
         const folders = this.parent.getParent().getFolders(renderer)
         folders.forEach( folder =>{
           loadGeoJsonData(folder)
@@ -1131,12 +1167,14 @@ export class OpenLayerMap implements CsMapController {
     // Safely update political layer
     let pLayer = lmgr.getTopLayerOlLayer();
     if (pLayer && this.politicalLayer !== pLayer) {
-      if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
+      if (this.politicalLayer) {
         this.map.removeLayer(this.politicalLayer);
+      }
+      if (!this.map.getLayers().getArray().includes(pLayer)) {
         pLayer.setZIndex(5000);
         this.map.addLayer(pLayer);
-        this.politicalLayer = pLayer;
       }
+      this.politicalLayer = pLayer;
     }
 
     let pSource = lmgr.getTopLayerSource();
@@ -2048,10 +2086,10 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     }
 
     const val = dataValue !== undefined ? parseFloat(String(dataValue)) : NaN;
-    if (!isNaN(val) && isFinite(val) && currentRange !== 0) {
-      color = ptr.getColorString(val, minValue, maxValue);
-      radius = 10;
-      if (isNaN(radius) || radius < 3) radius = 3;
+    if (!isNaN(val) && isFinite(val)) {          
+        color = ptr.getColorString(val, minValue, maxValue);
+        radius = 10;
+        if (isNaN(radius) || radius < 3) radius = 3;
     }
 
     const isHovered = feature.get('hover') || feature.get('selected');
