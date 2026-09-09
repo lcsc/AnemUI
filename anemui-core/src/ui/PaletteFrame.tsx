@@ -27,35 +27,51 @@ public render(): JSX.Element {
     
     const currentPalette = mgr.getSelected();
     const isContinuousPalette = currentPalette === 'continua' || currentPalette === 'cambio-continuo' || currentPalette === 'gradiente';
+    // GradientPainter con nombre no reconocido arriba (p.ej. gams: degradado de
+    // muchos pasos sin nombre fijo). En vez del gradiente CSS aproximado (pensado
+    // para paletas de pocos colores con nombre), se pinta una franja de 1px por
+    // valor con el color real del painter y el texto solo en el tooltip —
+    // funciona igual de bien con 4 valores que con 256.
+    const isGenericGradientPalette = !isContinuousPalette && ptr instanceof GradientPainter;
+
+    let legendContent: JSX.Element | JSX.Element[];
+    if (isContinuousPalette) {
+        legendContent = (
+            <div className="gradient-legend-container">
+                <div
+                    className="gradient-legend-bar"
+                    style={{
+                        background: this.createGradientForPalette(mgr.getSelected(), mgr),
+                        height: `${Math.max(values.length * 40, 200)}px`,
+                        width: '100%',
+                        margin: '5px 0',
+                        border: '1px solid #ccc',
+                        borderRadius: '2px',
+                        minHeight: '150px'
+                    }}
+                ></div>
+            </div>
+        );
+    } else if (isGenericGradientPalette) {
+        const gValues = [...values].reverse();
+        const gTexts = [...texts].reverse();
+        legendContent = gValues.map((val, index) => {
+            const backgroundColor = ptr.getColorString(val, min, max)
+            return (<div key={index} style={{ background: backgroundColor, height: '1px' }} data-toggle="tooltip" data-placement="left" title={gTexts[index]}></div>)
+        });
+    } else {
+        legendContent = values.map((val, index) => {
+            const backgroundColor = ptr.getColorString(val, min, max)
+            const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
+            return (<div key={index} style={{ background: backgroundColor, color: textColor }}><span className='legendText smallText'> {texts[index]}</span><br /></div>)
+        });
+    }
 
     let element = (
         <div id="PaletteFrame" className='rightbar-item paletteFrame' onMouseOver={(event: React.MouseEvent) => { mouseOverFrame(self, event) }}>
             <div className="info legend">
                 <div id="units"><span className='legendText'>{name}</span><br /></div>
-                {
-                    isContinuousPalette ? (
-                        <div className="gradient-legend-container">
-                            <div 
-                                className="gradient-legend-bar" 
-                                style={{
-                                    background: this.createGradientForPalette(mgr.getSelected(), mgr),
-                                    height: `${Math.max(values.length * 40, 200)}px`,
-                                    width: '100%',
-                                    margin: '5px 0',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '2px',
-                                    minHeight: '150px'
-                                }}
-                            ></div>
-                        </div>
-                    ) : (
-                        values.map((val, index) => {
-                            const backgroundColor = ptr.getColorString(val, min, max)
-                            const textColor = this.isLightColor(backgroundColor) ? '#000' : '#fff';
-                            return (<div key={index} style={{ background: backgroundColor, color: textColor }}><span className='legendText smallText'> {texts[index]}</span><br /></div>)
-                        })
-                    )
-                }
+                {legendContent}
                 <div id="legendBottom"></div>
             </div>
         </div>
@@ -196,6 +212,8 @@ public render(): JSX.Element {
     const currentPalette = mgr.getSelected();
     const isContinuousPalette = currentPalette === 'continua' || currentPalette === 'cambio-continuo' || currentPalette === 'gradiente';
     const isWindPalette = currentPalette === 'wind-kmh';
+    // Ver comentario equivalente en render().
+    const isGenericGradientPalette = !isContinuousPalette && !isWindPalette && ptr instanceof GradientPainter;
 
     if (isContinuousPalette) {
         const gradientDiv = document.createElement('div');
@@ -228,6 +246,19 @@ public render(): JSX.Element {
             legendItem.innerHTML = `<span class="legendText smallText"> ${text}</span><br/>`;
 
             data.appendChild(legendItem);
+        });
+    } else if (isGenericGradientPalette) {
+        const gValues = [...values].reverse();
+        const gTexts = [...texts].reverse();
+        gValues.forEach((val, index) => {
+            const backgroundColor = ptr.getColorString(val, min, max);
+            const item = document.createElement('div');
+            item.style.background = backgroundColor;
+            item.style.height = '1px';
+            item.setAttribute('data-toggle', 'tooltip');
+            item.setAttribute('data-placement', 'left');
+            item.setAttribute('title', String(gTexts[index]));
+            data.appendChild(item);
         });
     } else {
         const isTercilLegend = name === 'Tercil';

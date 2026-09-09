@@ -19,7 +19,9 @@ export interface MenuBarListener {
 export type simpleDiv = {
     role: string,
     title: string,
-    subTitle: string
+    subTitle: string,
+    /** Clase CSS del botón (ver setExtraDisplay). Sin ella, buildExtraDisplays() usa 'climBtn'. */
+    btnClass?: string
 }
 
 export class MenuBar extends BaseFrame {
@@ -345,13 +347,18 @@ export class MenuBar extends BaseFrame {
     protected buildExtraDisplays(): void {
         if (!hasClimatology) return;
         this.extraDisplays.forEach((dsp) => {
+            // btnClass (ver setExtraDisplay) permite a un visor sacar un extraDisplay
+            // del grupo climBtn (Time span/Period, oculto fuera de modo climatología)
+            // dándole otra clase — p.ej. gams usa 'dbBtn' para Database, que debe
+            // verse siempre. Por defecto 'climBtn', mismo comportamiento que antes.
+            const btnType = dsp.btnClass || 'climBtn';
             const isInput = this.extraMenuInputs.some((input) => input.id == dsp.role);
             if (isInput) {
-                addChild(this.inputsSubmenu, this.renderDisplay(dsp, 'climBtn'));
-                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsSubmenu, this.renderDisplay(dsp, btnType));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, btnType));
             } else {
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsFrame, this.renderDisplay(dsp, btnType));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, btnType));
             }
             const containers = document.querySelectorAll("[role=" + dsp.role + "]") as NodeListOf<HTMLDivElement>;
             this.extraMenuItems.forEach((dpn) => {
@@ -923,7 +930,7 @@ export class MenuBar extends BaseFrame {
     }
 
     public setExtraDisplay(type: number, id: string, displayTitle: string, options: string[], cssClass?: string, hasUncertainty?: boolean) {
-        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0] })
+        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0], btnClass: cssClass })
         let listener = this.listener
 
         switch (type) {
