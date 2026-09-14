@@ -1,6 +1,6 @@
 import { Source } from "ol/source";
 import { OSM, Vector, ImageStatic } from "ol/source";
-import { TopoJSON } from "ol/format"
+import { TopoJSON, GeoJSON } from "ol/format"
 import {Image, Layer, WebGLTile} from "ol/layer";
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
@@ -16,7 +16,7 @@ import WMTS from 'ol/source/WMTS.js';
 import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
-import { initialZoom } from './Env';
+import { initialZoom, defaultGlobalBaseLayer, defaultNationalBaseLayer } from './Env';
 import { LayerConfigEntry, baseLayersConfig, topLayersConfig } from './data/CsLayers';
 
 export const AL_TYPE_OSM="OSM"
@@ -44,7 +44,9 @@ export type AnemuiLayer={
     /** Nombre de capa WMS para la exportación */
     wmsExportLayer?: string,
     /** Filtro de features para capas vectoriales (devuelve false para ocultar el feature) */
-    featureFilter?: (feature: any, resolution: number) => boolean
+    featureFilter?: (feature: any, resolution: number) => boolean,
+    /** Propiedad del feature a dibujar como etiqueta de texto (capas TopoJson/GeoJson) */
+    labelPropertyKey?: string
 }
 
 const baseStyle= new Style({
@@ -60,6 +62,7 @@ const CREDITS: { [key: string]: string } = {
     ign_pnoa: '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>',
     miteco: '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>',
     esri: '© <a href="https://www.esri.com" target="_blank">Esri</a>',
+    naturalearth: '<a href="https://www.naturalearthdata.com" target="_blank">Natural Earth</a>',
     osm: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
     eurostat: '© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a>'
 };
@@ -85,7 +88,8 @@ function resolveLayerConfig(cfg: LayerConfigEntry): AnemuiLayer {
         format: cfg.format,
         wmsExportUrl: cfg.wmsExportUrl,
         wmsExportLayer: cfg.wmsExportLayer,
-        featureFilter: cfg.featureFilterKey ? FEATURE_FILTERS[cfg.featureFilterKey] : undefined
+        featureFilter: cfg.featureFilterKey ? FEATURE_FILTERS[cfg.featureFilterKey] : undefined,
+        labelPropertyKey: cfg.labelPropertyKey
     };
 }
 
@@ -165,8 +169,8 @@ export class LayerManager {
         const globalLayers = baseNames.filter(name => this.baseLayers[name].global);
         const nationalLayers = baseNames.filter(name => !this.baseLayers[name].global);
 
-        const DEFAULT_GLOBAL   = "Foto satélite global ARCGIS";
-        const DEFAULT_NATIONAL = "Mapa LIDAR nacional (PNOA)";
+        const DEFAULT_GLOBAL   = defaultGlobalBaseLayer;
+        const DEFAULT_NATIONAL = defaultNationalBaseLayer;
 
         if (zoom >= 6.00) {
             // Zoom nacional: EUMETSAT + LIDAR por defecto
@@ -303,11 +307,28 @@ export class LayerManager {
             case AL_TYPE_GEO_JSON:
             case AL_TYPE_TOPO_JSON: {
                 const featureFilter = tLayer.featureFilter;
-                const styleFunc = (feature: any, resolution: number) => featureFilter && !featureFilter(feature, resolution) ? null : baseStyle;
+                const labelPropertyKey = tLayer.labelPropertyKey;
+                // Sin labelPropertyKey (p.ej. NUTS): solo el trazo del límite, igual
+                // que antes. Con ella (p.ej. países): trazo + nombre centrado en el
+                // polígono (Text sin placement propio => OL lo ancla al punto
+                // interior del polígono/multipolígono automáticamente).
+                const styleFunc = (feature: any, resolution: number) => {
+                    if (featureFilter && !featureFilter(feature, resolution)) return null;
+                    if (!labelPropertyKey) return baseStyle;
+                    return [baseStyle, new Style({
+                        text: new Text({
+                            text: feature.get(labelPropertyKey) || '',
+                            font: '11px sans-serif',
+                            fill: new Fill({ color: '#1a1a1a' }),
+                            stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 3 })
+                        })
+                    })];
+                };
                 if (this.topLayerVector == undefined) {
                     this.topLayerVector = new VectorLayer({
                         source: this.getTopLayerSource() as VectorSource,
                         style: styleFunc,
+                        declutter: true,
                         zIndex: 5000
                     });
                 } else {
@@ -385,6 +406,18 @@ export class LayerManager {
                 case AL_TYPE_TOPO_JSON:
                     tl.source = new Vector({
                         format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
+                        url: tl.url,
+                        attributions: tl.credit
+                    });
+                    break;
+                case AL_TYPE_GEO_JSON:
+                    // A diferencia del TopoJson de arriba (NUTS, ya reproyectado a
+                    // 3857 en el propio fichero), un GeoJson estándar viene en
+                    // lon/lat (EPSG:4326, WGS84) — dataProjection lo declara así en
+                    // vez de asumir 3857, para poder usar ficheros GeoJSON sin
+                    // reproyectarlos antes.
+                    tl.source = new Vector({
+                        format: new GeoJSON({ dataProjection: 'EPSG:4326' }),
                         url: tl.url,
                         attributions: tl.credit
                     });

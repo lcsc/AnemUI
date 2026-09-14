@@ -121,7 +121,6 @@ export class InfoFrame extends BaseFrame {
             footer: true,
             stickyFooter: false,
             closeMethods: ['overlay', 'button', 'escape'],
-            closeLabel: "Cerrar",
             //cssClass: ['custom-class-1', 'custom-class-2'],
             onOpen: function () {
                 //console.log('modal open');
@@ -140,7 +139,7 @@ export class InfoFrame extends BaseFrame {
         infoDiv.removeAttribute('hidden');
         this.modal.setContent(infoDiv);
         let self=this
-        this.modal.addFooterBtn('Cerrar', 'tingle-btn tingle-btn--muted tingle-btn--pull-right', function() {
+        this.modal.addFooterBtn(this.parent.getTranslation('cerrar'), 'tingle-btn tingle-btn--muted tingle-btn--pull-right', function() {
             self.modal.close();
           });
     }

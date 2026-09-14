@@ -18,6 +18,9 @@ export interface LayerConfigEntry {
     wmsExportLayer?: string;
     /** Clave de filtro resuelta contra el registro FEATURE_FILTERS de LayerManager.ts */
     featureFilterKey?: string;
+    /** Capas TopoJson/GeoJson: propiedad del feature a usar como etiqueta de texto
+     *  (p.ej. "name"). Sin ella, la capa solo dibuja el trazo del límite. */
+    labelPropertyKey?: string;
 }
 
 // Capas base por defecto. Un visor puede sobreescribir el array completo definiendo

@@ -801,7 +801,7 @@ export class MenuBar extends BaseFrame {
                 if (associatedButton) {
                     // Crear el display del checkbox con la clase CSS del botón asociado
                     // Usar el role dinámico basado en el botón asociado
-                    let dspUncertainty: simpleDiv = { role: this.uncertaintyRole, title: 'Incertidumbre', subTitle: '' };
+                    let dspUncertainty: simpleDiv = { role: this.uncertaintyRole, title: this.parent.getTranslation('uncertainty'), subTitle: '' };
                     const uncertaintyElement = this.renderDisplay(dspUncertainty, this.uncertaintyCssClass);
 
                     // Agregar el elemento al DOM
@@ -1167,7 +1167,7 @@ export class MenuBar extends BaseFrame {
         this.uncertaintyId = `UncertaintyCheckbox-${associatedRole}`;
 
         // Crear el checkbox con el id dinámico
-        this.uncertaintyCheckbox = new CsMenuCheckbox(this.uncertaintyId, "Incertidumbre", {
+        this.uncertaintyCheckbox = new CsMenuCheckbox(this.uncertaintyId, this.parent.getTranslation('uncertainty'), {
             checkboxChanged(origin, checked) {
                 self.toggleUncertaintyLayer(checked);
             },
