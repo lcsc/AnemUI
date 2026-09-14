@@ -27,6 +27,24 @@ export const dataSource: string = ENV.dataSource !== 'undefined'? ENV.dataSource
 export const faviconUrl: string = typeof ENV.faviconUrl !== 'undefined'? ENV.faviconUrl:'https://www.aemet.es/favicon.ico';
 export const portalUrl: string = typeof ENV.portalUrl !== 'undefined'? ENV.portalUrl:'https://www.aemet.es/es/serviciosclimaticos/pesc';
 export const portalTitle: string = typeof ENV.portalTitle !== 'undefined'? ENV.portalTitle:'Volver al portal';
+// Nombre del layer (LayerConfigEntry.name, ver CsLayers.ts) preseleccionado
+// al cargar el mapa, por zoom global/nacional — ver
+// LayerManager.initBaseSelected(). Default = comportamiento actual.
+export const defaultGlobalBaseLayer: string = typeof ENV.defaultGlobalBaseLayer !== 'undefined'? ENV.defaultGlobalBaseLayer:'Foto satélite global ARCGIS';
+export const defaultNationalBaseLayer: string = typeof ENV.defaultNationalBaseLayer !== 'undefined'? ENV.defaultNationalBaseLayer:'Mapa LIDAR nacional (PNOA)';
+// Texto de copyright superpuesto en la esquina del mapa exportado/impreso
+// (ver OpenLayersMap.drawAttributionOverlay). Default = AEMET (comportamiento
+// actual de VisorServiciosClimaticos); Visores-LCSC lo fija a su propia
+// atribución (LCSC – CSIC).
+export const exportCopyright: string = typeof ENV.exportCopyright !== 'undefined'? ENV.exportCopyright:'AEMET – CSIC PTI-Clima';
+// Cabecera oscura del gráfico exportado (Graph.getExportHeaderLines): por
+// defecto arma "tpSupport - varName - subVarName" (CsViewerData genérico).
+// Para visores cuyo modelo de estado no encaja en ese esquema genérico (p.ej.
+// gams: varName es una constante interna no seleccionable, y el trío no
+// refleja lo que el usuario ve elegido) se puede desactivar del todo — el
+// título/coordenadas del propio gráfico (dygraph-title) ya se exportan aparte
+// y no dependen de este flag.
+export const exportShowGraphHeader: boolean = typeof ENV.exportShowGraphHeader !== 'undefined'? ENV.exportShowGraphHeader:true;
 
 // Defines the appearance of the display -- Default values
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;

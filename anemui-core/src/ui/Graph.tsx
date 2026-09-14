@@ -7,6 +7,7 @@ import { CsTimeSpan } from "../data/CsDataTypes";
 import { DateFrameMode } from "./DateFrame";
 import { CsLatLong } from '../CsMapTypes';
 import Chart from 'chart.js/auto';
+import { exportCopyright, exportShowGraphHeader } from "../Env";
 
 
 require("dygraphs/dist/dygraph.css")
@@ -284,6 +285,7 @@ export class CsGraph extends BaseFrame {
   protected get exportShowDygraphTitle(): boolean { return true; }
 
   protected getExportHeaderLines(): string[] {
+    if (!exportShowGraphHeader) return [];
     const state = this.parent.getState();
     const tpSupport = state.tpSupport || '';
     const varName = state.varName || '';
@@ -330,7 +332,9 @@ export class CsGraph extends BaseFrame {
     const labelsDiv = document.getElementById('labels');
     const colorLegendDiv = document.getElementById('colorLegend');
     const headerLines = this.getExportHeaderLines();
-    const headerHeight = Math.max(36, headerLines.length * 18 + 12);
+    // Sin líneas de cabecera (ver exportShowGraphHeader): 0, no la altura
+    // mínima — evita una franja oscura vacía cuando el visor la desactiva.
+    const headerHeight = headerLines.length > 0 ? Math.max(36, headerLines.length * 18 + 12) : 0;
     const padding = 12;
     const copyrightHeight = 20;
 
@@ -384,19 +388,21 @@ export class CsGraph extends BaseFrame {
     ctx.fillRect(0, 0, totalW, totalH);
 
     // --- Barra de título ---
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(0, 0, totalW, headerHeight);
-    ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'middle';
-    if (headerLines.length <= 1) {
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(headerLines[0] || '', padding, headerHeight / 2);
-    } else {
-      const lineH = headerHeight / headerLines.length;
-      headerLines.forEach((line, i) => {
-        ctx.font = i === 0 ? 'bold 14px sans-serif' : '12px sans-serif';
-        ctx.fillText(line, padding, lineH * i + lineH / 2);
-      });
+    if (headerHeight > 0) {
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(0, 0, totalW, headerHeight);
+      ctx.fillStyle = '#ffffff';
+      ctx.textBaseline = 'middle';
+      if (headerLines.length <= 1) {
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(headerLines[0] || '', padding, headerHeight / 2);
+      } else {
+        const lineH = headerHeight / headerLines.length;
+        headerLines.forEach((line, i) => {
+          ctx.font = i === 0 ? 'bold 14px sans-serif' : '12px sans-serif';
+          ctx.fillText(line, padding, lineH * i + lineH / 2);
+        });
+      }
     }
 
     // Recortar al área del gráfico para que no se salga
@@ -788,11 +794,21 @@ export class CsGraph extends BaseFrame {
   }
 
   protected drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string, exportScale?: number): void {
-    const banner = new Image();
-    banner.crossOrigin = 'anonymous';
-    banner.onload = () => this.appendLogosBarAndDownload(exportCanvas, banner, filename, exportScale);
-    banner.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
-    banner.src = './images/banner_logos_imp.svg';
+    // Logo real del visor (el mismo <img> de la topbar en pantalla), no un
+    // banner fijo de VisorServiciosClimaticos — mismo criterio que
+    // OpenLayersMap.drawLogosAndDownload (mapa impreso).
+    const logoImg = document.querySelector('#logo-container img') as HTMLImageElement;
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+      this.appendLogosBarAndDownload(exportCanvas, logoImg, filename, exportScale);
+    } else if (logoImg) {
+      const clone = new Image();
+      clone.crossOrigin = 'anonymous';
+      clone.onload = () => this.appendLogosBarAndDownload(exportCanvas, clone, filename, exportScale);
+      clone.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
+      clone.src = logoImg.src;
+    } else {
+      this.downloadExportCanvas(exportCanvas, filename);
+    }
   }
 
   protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string, exportScale?: number): void {
@@ -802,8 +818,16 @@ export class CsGraph extends BaseFrame {
 
     const cssW = srcCanvas.width / dpr;
 
-    // Logos a ancho completo, altura proporcional
-    const logoH = cssW * (logoImg.naturalHeight / logoImg.naturalWidth);
+    // Proporción real del logo, limitada por ancho disponible Y por una
+    // altura máxima razonable — igual criterio que en
+    // OpenLayersMap.appendLogosBarAndDownload (mapa impreso): estirar
+    // siempre al ancho completo asume un banner muy ancho y bajo (AEMET,
+    // 6060×246px); con un logo de proporción normal (p.ej. gams) el
+    // resultado era una barra de logo desproporcionada.
+    const MAX_LOGO_HEIGHT = 70;
+    const logoScale = Math.min(cssW / logoImg.naturalWidth, MAX_LOGO_HEIGHT / logoImg.naturalHeight);
+    const logoW = logoImg.naturalWidth * logoScale;
+    const logoH = logoImg.naturalHeight * logoScale;
     const totalBarH = logoH + copyrightLineH;
     const totalBarHPx = Math.round(totalBarH * dpr);
 
@@ -829,9 +853,9 @@ export class CsGraph extends BaseFrame {
     fCtx.lineTo(cssW, 0);
     fCtx.stroke();
 
-    // Logo a ancho completo — downscaling progresivo (mipmap) para evitar
-    // artefactos al reducir 6060px→~800px en un solo paso.
-    const targetW = Math.round(cssW * dpr);
+    // Downscaling progresivo (mipmap) para evitar artefactos al reducir
+    // 6060px→~800px en un solo paso.
+    const targetW = Math.round(logoW * dpr);
     const targetH = Math.round(logoH * dpr);
     let logoSrc: HTMLImageElement | HTMLCanvasElement = logoImg;
     let sw = logoImg.naturalWidth;
@@ -850,10 +874,10 @@ export class CsGraph extends BaseFrame {
     }
     fCtx.imageSmoothingEnabled = true;
     fCtx.imageSmoothingQuality = 'high';
-    fCtx.drawImage(logoSrc, 0, 0, cssW, logoH);
+    fCtx.drawImage(logoSrc, 0, 0, logoW, logoH);
 
     // Copyright en línea separada debajo
-    const copyrightText = '© AEMET - CSIC PTI-Clima';
+    const copyrightText = '© ' + exportCopyright;
     fCtx.font = '10px sans-serif';
     fCtx.fillStyle = '#666666';
     fCtx.textBaseline = 'middle';
