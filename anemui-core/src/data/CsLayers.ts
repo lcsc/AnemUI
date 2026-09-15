@@ -49,7 +49,7 @@ const defaultBaseLayers: LayerConfigEntry[] = [
 // Ministerio lo resuelva (usaban creditKey: 'miteco', cssFilter: 'grayscale(1) brightness(0.3)'):
 // Demarcaciones hidrográficas, Comarcas agrarias/ganaderas, Zonas inundables T=10/50/100/500 años.
 const defaultTopLayers: LayerConfigEntry[] = [
-    { name: "Límites provinciales (Eurostat NUTS)", url: "./NUTS_RG_10M_2021_3857.json", type: 'TopoJson', global: false, creditKey: 'eurostat', featureFilterKey: 'es-nuts-ccaa-prov' },
+    { name: "Límites provinciales (Eurostat NUTS)", url: "./NUTS_RG_01M_2024_3857.json", type: 'TopoJson', global: false, creditKey: 'eurostat', featureFilterKey: 'es-nuts-ccaa-prov' },
     { name: "Límites políticos y topónimos globales (ArcGIS)", url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", type: 'OSM', global: true, creditKey: 'esri' }
 ];
 
