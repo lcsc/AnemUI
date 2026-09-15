@@ -618,15 +618,25 @@ export class LayerManager {
             eq('Provincia'), 7, 9, false, 11, true, 0.001
         ));
 
-        // TODO temporal: municipios desactivados mientras se resuelve el problema de rendimiento
+        // Etiquetas de nombre de municipio (NGBE, WFS): desactivadas, no las cubre este
+        // cambio — el límite de municipios de abajo es solo trazo, sin nombre. Si se
+        // quieren nombres habría que revisar antes el rendimiento de este loader WFS
+        // con ~8000 puntos.
         // this.nomenclatorLayers.push(this.buildNgbeLayer(
         //     eq('Municipio'), 9, undefined, true, 10, false, 0.0004
         // ));
 
-        // Límites de provincias (España, NUTS LEVL_CODE=3): capa separada con maxResolution nativo de OL
+        // Límites de provincias (España, NUTS LEVL_CODE=3): capa separada con maxResolution nativo de OL.
+        // Fichero a resolución 01M (1:1M, la más fina que distribuye Eurostat GISCO para
+        // NUTS) — con 10M (generalizado a 1:10M) los trazos salían demasiado burdos y no
+        // coincidían con el límite de municipios de abajo (LAU, también a 01M) al verse
+        // ambas capas a la vez cerca del corte de zoom.
+        // maxZoom 9: a partir de ahí toma el relevo la capa de municipios (más precisa,
+        // LEVL_CODE=3 es papel pintado una vez se ve el detalle municipal) — antes no
+        // había maxZoom y ambas capas quedaban visibles a la vez indefinidamente.
         const provSource = new Vector({
             format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
-            url: './NUTS_RG_10M_2021_3857.json'
+            url: './NUTS_RG_01M_2024_3857.json'
         });
         this.nomenclatorLayers.push(new VectorLayer({
             source: provSource,
@@ -635,6 +645,38 @@ export class LayerManager {
                 return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? baseStyle : null;
             },
             minZoom: 7,
+            maxZoom: 9,
+            zIndex: 5000
+        }));
+
+        // Límites de municipios (España, Eurostat GISCO LAU 2024): fichero recortado a
+        // España a partir del LAU_RG_01M_2024_3857.geojson europeo completo (43MB) —
+        // solo los ~8132 municipios españoles y los arcos topológicos que usan, ver
+        // informe doc/PLAN_REVISION_CAPAS_TOPOGRAFÍA.md. Validado con Puppeteer/Chrome
+        // headless: fetch+parse ~156ms, ~29fps en zoom continuo agresivo (vs ~60fps sin
+        // la capa) — coste real pero no bloqueante. minZoom 9: por debajo, ~8000
+        // polígonos diminutos no son legibles y serían solo ruido visual (y toma el
+        // relevo justo donde termina la capa de provincias de arriba, maxZoom 9).
+        // No hay otra capa que ponga el nombre de cada municipio (a diferencia de
+        // provincia/CCAA, cubiertas por el nomenclátor NGBE de abajo), así que aquí sí
+        // se dibuja el nombre (LAU_NAME) centrado en el polígono — con declutter para
+        // no amontonar texto de municipios pequeños y contiguos.
+        const municipioSource = new Vector({
+            format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
+            url: './LAU_RG_01M_2024_3857_ES.json'
+        });
+        this.nomenclatorLayers.push(new VectorLayer({
+            source: municipioSource,
+            style: (feature: any) => [baseStyle, new Style({
+                text: new Text({
+                    text: feature.get('LAU_NAME') || '',
+                    font: '11px sans-serif',
+                    fill: new Fill({ color: '#1a1a1a' }),
+                    stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 3 })
+                })
+            })],
+            declutter: true,
+            minZoom: 9,
             zIndex: 5000
         }));
 
