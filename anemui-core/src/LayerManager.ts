@@ -17,7 +17,7 @@ import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
 import { initialZoom, defaultGlobalBaseLayer, defaultNationalBaseLayer } from './Env';
-import { LayerConfigEntry, baseLayersConfig, topLayersConfig } from './data/CsLayers';
+import { LayerConfigEntry, baseLayersConfig, topLayersConfig, CREDITS, NOMENCLATOR_LAYER_NAME, nomenclatorConfig } from './data/CsLayers';
 
 export const AL_TYPE_OSM="OSM"
 export const AL_TYPE_TOPO_JSON="TopoJson"
@@ -55,17 +55,6 @@ const baseStyle= new Style({
       width: 2
     })
   });
-
-// Créditos referenciados por LayerConfigEntry.creditKey (ver env/env.js).
-const CREDITS: { [key: string]: string } = {
-    ign: '© CC-BY 4.0 <a href="https://www.ign.es" target="_blank">ign.es</a>',
-    ign_pnoa: '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>',
-    miteco: '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>',
-    esri: '© <a href="https://www.esri.com" target="_blank">Esri</a>',
-    naturalearth: '<a href="https://www.naturalearthdata.com" target="_blank">Natural Earth</a>',
-    osm: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-    eurostat: '© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a>'
-};
 
 // Filtros de features referenciados por LayerConfigEntry.featureFilterKey (ver env/env.js).
 const FEATURE_FILTERS: { [key: string]: (feature: any, resolution: number) => boolean } = {
@@ -277,8 +266,6 @@ export class LayerManager {
         return this.topSelected;
     }
 
-    private static readonly IGN_ADMIN_LAYER = "Límites provinciales (Eurostat NUTS)";
-
     public setTopSelected(_selected:string){
         if(this.topLayers[_selected]!=undefined){
             this.topSelected=_selected;
@@ -287,7 +274,7 @@ export class LayerManager {
     }
 
     private syncNomenclatorVisibility(): void {
-        const visible = this.topSelected === LayerManager.IGN_ADMIN_LAYER;
+        const visible = this.topSelected === NOMENCLATOR_LAYER_NAME;
         this.nomenclatorLayers.forEach(l => l.setVisible(visible));
     }
 
@@ -478,12 +465,32 @@ export class LayerManager {
         return tl.source
     }
 
-    private static readonly NGBE_WFS = 'https://servicios-climaticos.pti-clima.csic.es/wfs-ign/wfs-inspire/ngbe';
-    private static readonly GN_NS  = 'http://inspire.ec.europa.eu/schemas/gn/4.0';
-    private static readonly GML_NS = 'http://www.opengis.net/gml/3.2';
+    // El servidor pagina de 50 en 50 (ignora un `limit` mayor) y el tramo final de una
+    // página puede reaparecer entero al principio de la siguiente (offset con orden
+    // inestable) — se deduplica por `id` de feature y se para en cuanto una página no
+    // aporta ninguno nuevo, en vez de fiarse solo de `numberMatched`.
+    private async fetchNgbeFeatures(tipoFilter: string, bboxParams?: string): Promise<any[]> {
+        const seen = new Map<string, any>();
+        let offset = 0;
+        for (let page = 0; page < 20; page++) {
+            const url = `${nomenclatorConfig.ngbeApiUrl}?filter=${encodeURIComponent(tipoFilter)}` +
+                (bboxParams ? `&${bboxParams}` : '') +
+                `&limit=50&offset=${offset}&f=json`;
+            const data = await (await fetch(url)).json();
+            const pageFeatures: any[] = data.features || [];
+            if (pageFeatures.length === 0) break;
+            let added = 0;
+            for (const f of pageFeatures) {
+                if (!seen.has(f.id)) { seen.set(f.id, f); added++; }
+            }
+            offset += pageFeatures.length;
+            if (added === 0 || offset >= (data.numberMatched ?? offset)) break;
+        }
+        return Array.from(seen.values());
+    }
 
     private buildNgbeLayer(
-        filterInner: string,
+        tipoFilter: string,
         minZoom: number,
         maxZoom: number | undefined,
         useBbox: boolean,
@@ -491,86 +498,40 @@ export class LayerManager {
         bold: boolean,
         nominalRes: number
     ): VectorLayer<VectorSource> {
-        const ngbeCredit = '© <a href="https://www.ign.es" target="_blank">IGN</a> — Nomenclátor Geográfico Básico de España';
+        const ngbeCredit = nomenclatorConfig.ngbeCredit;
         const source = new VectorSource({
             attributions: ngbeCredit,
             strategy: useBbox ? strategyBbox : strategyAll,
             loader: (extent, _res, viewProj, success, failure) => {
                 const mapProj = (viewProj as any).getCode ? (viewProj as any).getCode() : String(viewProj);
-                // Transformar extensión del mapa a EPSG:3857 para el filtro BBOX del WFS
-                const wfsExtent = (useBbox && mapProj !== 'EPSG:3857')
-                    ? proj.transformExtent(extent, mapProj, 'EPSG:3857')
-                    : extent;
-                const bboxXml = useBbox ? `
-                    <fes:BBOX>
-                        <fes:ValueReference>gn:geometry</fes:ValueReference>
-                        <gml:Envelope srsName="EPSG:3857">
-                            <gml:lowerCorner>${wfsExtent[0]} ${wfsExtent[1]}</gml:lowerCorner>
-                            <gml:upperCorner>${wfsExtent[2]} ${wfsExtent[3]}</gml:upperCorner>
-                        </gml:Envelope>
-                    </fes:BBOX>` : '';
-                const filterContent = useBbox
-                    ? `<fes:And>${filterInner}${bboxXml}</fes:And>`
-                    : filterInner;
-                const body =
-                    `<wfs:GetFeature xmlns:wfs="http://www.opengis.net/wfs/2.0"` +
-                    ` xmlns:gn="http://inspire.ec.europa.eu/schemas/gn/4.0"` +
-                    ` xmlns:gmd="http://www.isotc211.org/2005/gmd"` +
-                    ` xmlns:fes="http://www.opengis.net/fes/2.0"` +
-                    ` xmlns:gml="http://www.opengis.net/gml/3.2"` +
-                    ` service="WFS" version="2.0.0">` +
-                    `<wfs:Query typeNames="gn:NamedPlace" srsName="EPSG:3857">` +
-                    `<fes:Filter>${filterContent}</fes:Filter>` +
-                    `</wfs:Query></wfs:GetFeature>`;
+                // La API Features de IGN devuelve coordenadas en CRS84 (lon/lat, WGS84) por
+                // defecto — igual que un GeoJSON estándar, ver el `case AL_TYPE_GEO_JSON` de
+                // getTopLayerSource() — así que el filtro de bbox y la reproyección de vuelta
+                // usan EPSG:4326 en vez del EPSG:3857 que exigía el WFS.
+                let bboxParams: string | undefined;
+                if (useBbox) {
+                    const bboxExtent = mapProj !== 'EPSG:4326'
+                        ? proj.transformExtent(extent, mapProj, 'EPSG:4326')
+                        : extent;
+                    bboxParams = `bbox=${bboxExtent.join(',')}&bbox-crs=http://www.opengis.net/def/crs/OGC/1.3/CRS84`;
+                }
 
-                fetch(LayerManager.NGBE_WFS, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/xml' },
-                    body
-                })
-                .then(r => r.text())
-                .then(xml => {
-                    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-                    const GN  = LayerManager.GN_NS;
-                    const GML = LayerManager.GML_NS;
-                    const members = doc.getElementsByTagNameNS(GN, 'NamedPlace');
-                    const features: Feature<Point>[] = [];
-
-                    for (let i = 0; i < members.length; i++) {
-                        const m = members[i];
-
-                        // Nombre (primer <gn:text>)
-                        const textEls = m.getElementsByTagNameNS(GN, 'text');
-                        const label = textEls.length > 0 ? textEls[0].textContent?.trim() : null;
-                        if (!label) continue;
-
-                        // Posición: primero gml:pos (Point), luego primer par de gml:posList
-                        let coords: [number, number] | null = null;
-                        const posEls = m.getElementsByTagNameNS(GML, 'pos');
-                        if (posEls.length > 0) {
-                            const p = posEls[0].textContent?.trim().split(/\s+/).map(Number);
-                            if (p && p.length >= 2 && !isNaN(p[0])) coords = [p[0], p[1]];
+                this.fetchNgbeFeatures(tipoFilter, bboxParams)
+                    .then(geojsonFeatures => {
+                        const features: Feature<Point>[] = [];
+                        for (const f of geojsonFeatures) {
+                            const label: string | undefined = nomenclatorConfig.nameOverrides[f.id] ?? f.properties?.etiqueta?.trim();
+                            const coords = f.geometry?.coordinates;
+                            if (!label || !coords) continue;
+                            const mapCoords = mapProj !== 'EPSG:4326'
+                                ? proj.transform(coords, 'EPSG:4326', mapProj) as [number, number]
+                                : coords;
+                            features.push(new Feature({ geometry: new Point(mapCoords), label }));
                         }
-                        if (!coords) {
-                            const pl = m.getElementsByTagNameNS(GML, 'posList');
-                            if (pl.length > 0) {
-                                const n = pl[0].textContent?.trim().split(/\s+/).map(Number);
-                                if (n && n.length >= 2) coords = [n[0], n[1]];
-                            }
-                        }
-                        if (!coords) continue;
-
-                        // Transformar de EPSG:3857 (WFS) a la proyección del mapa
-                        const mapCoords = mapProj !== 'EPSG:3857'
-                            ? proj.transform(coords, 'EPSG:3857', mapProj) as [number, number]
-                            : coords;
-                        features.push(new Feature({ geometry: new Point(mapCoords), label }));
-                    }
-
-                    source.addFeatures(features);
-                    success(features);
-                })
-                .catch(e => { console.error(e); failure(); });
+                        source.addFeatures(features);
+                        success(features);
+                    })
+                    .catch(e => { console.error(e); failure(); });
             }
         });
 
@@ -601,15 +562,13 @@ export class LayerManager {
     public getNomenclatorLayers(): VectorLayer<VectorSource>[] {
         if (this.nomenclatorLayers.length > 0) return this.nomenclatorLayers;
 
-        const eq = (val: string) =>
-            `<fes:PropertyIsEqualTo>` +
-            `<fes:ValueReference>gn:localType/gmd:LocalisedCharacterString</fes:ValueReference>` +
-            `<fes:Literal>${val}</fes:Literal>` +
-            `</fes:PropertyIsEqualTo>`;
+        // Filtro CQL sobre la propiedad plana `tipo` de la API Features (antes,
+        // `gn:localType/gmd:LocalisedCharacterString` en el XML del WFS).
+        const eq = (val: string) => `tipo='${val}'`;
 
         // CCAA (zoom 5–7): carga única — nominalRes ~zoom 6, 13px bold
         this.nomenclatorLayers.push(this.buildNgbeLayer(
-            `<fes:Or>${eq('Comunidad autónoma')}${eq('Ciudad con estatuto de autonomía')}</fes:Or>`,
+            `${eq('Comunidad autónoma')} OR ${eq('Ciudad con estatuto de autonomía')}`,
             5, 7, false, 13, true, 0.002
         ));
 
@@ -618,10 +577,11 @@ export class LayerManager {
             eq('Provincia'), 7, 9, false, 11, true, 0.001
         ));
 
-        // Etiquetas de nombre de municipio (NGBE, WFS): desactivadas, no las cubre este
-        // cambio — el límite de municipios de abajo es solo trazo, sin nombre. Si se
-        // quieren nombres habría que revisar antes el rendimiento de este loader WFS
-        // con ~8000 puntos.
+        // Etiquetas de nombre de municipio (NGBE): desactivadas, no las cubre este cambio
+        // — el límite de municipios de abajo es solo trazo, sin nombre. Si se quieren
+        // nombres habría que revisar antes el rendimiento con ~8000 puntos (aquí sí se
+        // filtraría por bbox, useBbox=true, a diferencia de CCAA/provincia que cargan todo
+        // de una vez por ser pocos).
         // this.nomenclatorLayers.push(this.buildNgbeLayer(
         //     eq('Municipio'), 9, undefined, true, 10, false, 0.0004
         // ));
@@ -636,7 +596,7 @@ export class LayerManager {
         // había maxZoom y ambas capas quedaban visibles a la vez indefinidamente.
         const provSource = new Vector({
             format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
-            url: './NUTS_RG_01M_2024_3857.json'
+            url: nomenclatorConfig.provinciaUrl
         });
         this.nomenclatorLayers.push(new VectorLayer({
             source: provSource,
@@ -663,7 +623,7 @@ export class LayerManager {
         // no amontonar texto de municipios pequeños y contiguos.
         const municipioSource = new Vector({
             format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
-            url: './LAU_RG_01M_2024_3857_ES.json'
+            url: nomenclatorConfig.municipioUrl
         });
         this.nomenclatorLayers.push(new VectorLayer({
             source: municipioSource,
