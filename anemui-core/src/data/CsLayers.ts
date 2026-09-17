@@ -24,6 +24,10 @@ export interface LayerConfigEntry {
     /** Capas TopoJson/GeoJson: propiedad del feature a usar como etiqueta de texto
      *  (p.ej. "name"). Sin ella, la capa solo dibuja el trazo del límite. */
     labelPropertyKey?: string;
+    /** Capas TopoJson/GeoJson: rango de zoom en el que se dibuja. Sin definir, se dibuja
+     *  a cualquier zoom mientras la capa esté seleccionada. */
+    minZoom?: number;
+    maxZoom?: number;
 }
 
 // Créditos referenciados por LayerConfigEntry.creditKey.
@@ -41,7 +45,15 @@ export const CREDITS: { [key: string]: string } = {
 // ENV.baseLayers en su propio env/env.js.
 const defaultBaseLayers: LayerConfigEntry[] = [
     // ------ Global
-    { name: "Mapa topográfico nacional (IGN)", url: 'https://tms-ign-base.idee.es/1.0.0/IGNBaseTodo/{z}/{x}/{-y}.jpeg', type: 'OSM', global: true, creditKey: 'ign', wmsExportUrl: 'https://www.ign.es/wms-inspire/ign-base?', wmsExportLayer: 'IGNBaseTodo' },
+    // Renombrada (era "Mapa topográfico nacional (IGN)"): IGNBaseTodo es el Callejero de
+    // IGN, no el MTN (ver doc/PROPUESTAS_IGN_CNIG_CARTOGRAFIA.md, punto 4) — el nombre
+    // anterior era engañoso respecto al dato real que sirve esta capa.
+    { name: "Callejero (IGN)", url: 'https://tms-ign-base.idee.es/1.0.0/IGNBaseTodo/{z}/{x}/{-y}.jpeg', type: 'OSM', global: true, creditKey: 'ign', wmsExportUrl: 'https://www.ign.es/wms-inspire/ign-base?', wmsExportLayer: 'IGNBaseTodo' },
+    // MTN real (punto 4 del informe anterior): mismo servicio WMTS que "Fondo relieve
+    // global GEBCO (IGN)" de más abajo (`mapa-raster`), capa `MTN` en vez de `MTN_Fondo`.
+    // Confirmado con una tesela real (`GetTile`, zoom 10 sobre Cuenca): estilo clásico de
+    // mapa topográfico (fondo beige, curvas de nivel), formato JPEG.
+    { name: "Mapa Topográfico Nacional (IGN)", url: 'https://www.ign.es/wmts/mapa-raster?', layer: 'MTN', type: 'WMTS', global: true, creditKey: 'ign', format: 'image/jpeg' },
     { name: "Foto satélite global ARCGIS", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", type: 'OSM', global: true, creditKey: 'esri', wmsExportUrl: 'https://services.arcgisonline.com/ArcGIS/services/World_Imagery/MapServer/WMSServer?', wmsExportLayer: '0' },
     { name: "Mapa global OpenStreet Map", type: 'OSM', global: true, creditKey: 'osm' } as LayerConfigEntry,
     { name: "Fondo relieve global GEBCO (IGN)", url: 'https://www.ign.es/wmts/mapa-raster?', layer: 'MTN_Fondo', type: 'WMTS', global: true, creditKey: 'ign', format: 'image/jpeg' },
@@ -81,10 +93,17 @@ export const NOMENCLATOR_LAYER_NAME = "Límites provinciales (Eurostat NUTS)";
 const WORLD_COUNTRIES_URL = './world_countries.geojson';
 const WORLD_COUNTRIES_LAYER_NAME = 'Países (límites y nombres)';
 const defaultTopLayers: LayerConfigEntry[] = [
+    // Sin maxZoom, a propósito (se probó con maxZoom:9 y se revirtió, ver
+    // LayerManager.ts junto a ccaaStyle): oculto del todo a partir de zoom de municipio,
+    // un borde real de CCAA (p.ej. Madrid/Segovia) se quedaba sin ninguna línea gruesa
+    // que lo distinguiera de un borde puramente de provincia — indistinguibles ambos con
+    // solo la referencia discontinua de provincia visible. Con la jerarquía de trazos
+    // (CCAA > provincia > municipio) y su zIndex más alto, este trazo se queda visible
+    // siempre que la capa esté seleccionada, igual que el de provincia, y gana donde
+    // coincida con municipio (p.ej. Ceuta, CCAA de un único municipio).
     { name: NOMENCLATOR_LAYER_NAME, url: NUTS_URL, type: 'TopoJson', global: false, creditKey: 'eurostat', featureFilterKey: 'es-nuts-ccaa-prov' },
     { name: WORLD_COUNTRIES_LAYER_NAME, url: WORLD_COUNTRIES_URL, type: 'GeoJson', global: true, creditKey: 'naturalearth', labelPropertyKey: 'name' }
 ];
-
 
 export const baseLayersConfig: LayerConfigEntry[] = Array.isArray(ENV.baseLayers) ? ENV.baseLayers : defaultBaseLayers;
 export const topLayersConfig: LayerConfigEntry[] = Array.isArray(ENV.topLayers) ? ENV.topLayers : defaultTopLayers;
