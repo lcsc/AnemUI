@@ -24,6 +24,27 @@ export const maxWhenInf:number=typeof ENV.maxWhenInf !== 'undefined'? ENV.maxWhe
 export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhenInf:0;
 export const computedDataTilesLayer:boolean = ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer: false;
 export const dataSource: string = ENV.dataSource !== 'undefined'? ENV.dataSource:'nc';
+export const faviconUrl: string = typeof ENV.faviconUrl !== 'undefined'? ENV.faviconUrl:'https://www.aemet.es/favicon.ico';
+export const portalUrl: string = typeof ENV.portalUrl !== 'undefined'? ENV.portalUrl:'https://www.aemet.es/es/serviciosclimaticos/pesc';
+export const portalTitle: string = typeof ENV.portalTitle !== 'undefined'? ENV.portalTitle:'Volver al portal';
+// Nombre del layer (LayerConfigEntry.name, ver CsLayers.ts) preseleccionado
+// al cargar el mapa, por zoom global/nacional — ver
+// LayerManager.initBaseSelected(). Default = comportamiento actual.
+export const defaultGlobalBaseLayer: string = typeof ENV.defaultGlobalBaseLayer !== 'undefined'? ENV.defaultGlobalBaseLayer:'Foto satélite global ARCGIS';
+export const defaultNationalBaseLayer: string = typeof ENV.defaultNationalBaseLayer !== 'undefined'? ENV.defaultNationalBaseLayer:'Mapa LIDAR nacional (PNOA)';
+// Texto de copyright superpuesto en la esquina del mapa exportado/impreso
+// (ver OpenLayersMap.drawAttributionOverlay). Default = AEMET (comportamiento
+// actual de VisorServiciosClimaticos); Visores-LCSC lo fija a su propia
+// atribución (LCSC – CSIC).
+export const exportCopyright: string = typeof ENV.exportCopyright !== 'undefined'? ENV.exportCopyright:'AEMET – CSIC PTI-Clima';
+// Cabecera oscura del gráfico exportado (Graph.getExportHeaderLines): por
+// defecto arma "tpSupport - varName - subVarName" (CsViewerData genérico).
+// Para visores cuyo modelo de estado no encaja en ese esquema genérico (p.ej.
+// gams: varName es una constante interna no seleccionable, y el trío no
+// refleja lo que el usuario ve elegido) se puede desactivar del todo — el
+// título/coordenadas del propio gráfico (dygraph-title) ya se exportan aparte
+// y no dependen de este flag.
+export const exportShowGraphHeader: boolean = typeof ENV.exportShowGraphHeader !== 'undefined'? ENV.exportShowGraphHeader:true;
 
 // Defines the appearance of the display -- Default values
 export const hasButtons:boolean = typeof ENV.hasButtons !== 'undefined'? ENV.hasButtons:true;
@@ -44,9 +65,9 @@ export const showLayers:boolean = typeof ENV.showLayers !== 'undefined'? ENV.sho
 export const intValues:boolean = ENV.intValues !== 'undefined'? ENV.intValues:false;
 export const hasClimatology:boolean = typeof ENV.hasClimatology !== 'undefined'? ENV.hasClimatology:false;
 export const logoStyle:string = typeof ENV.logoStyle !== 'undefined'? ENV.logoStyle:'longLogo';
-export const maxPaletteValue = ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
-export const maxPaletteSteps = ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
-export const globalMap = ENV.globalMap !== 'undefined'? ENV.globalMap:false;
+export const maxPaletteValue = typeof ENV.maxPaletteValue !== 'undefined'? ENV.maxPaletteValue:1000;
+export const maxPaletteSteps = typeof ENV.maxPaletteSteps !== 'undefined'? ENV.maxPaletteSteps:10;
+export const globalMap = typeof ENV.globalMap !== 'undefined'? ENV.globalMap:false;
 export const mapExtent: [number, number, number, number] | undefined =
     Array.isArray(ENV.mapExtent) ? ENV.mapExtent as [number, number, number, number] : undefined;
 

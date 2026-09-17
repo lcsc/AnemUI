@@ -76,33 +76,31 @@ public onMapClick(event: CsMapEvent): void {
     const isTimeSeries = !state.climatology && state.tpSupport !== 'Escenarios futuros';
     const isGridSupport = state.support === defaultRenderer; // defaultRenderer es "Rejilla"
     
-    if (isTimeSeries && isGridSupport) {
-        // En serie temporal + rejilla, siempre proceder con el gráfico
-        if (!event || !event.latLong) {
-            console.error("El objeto event o latLong no están definidos:", event);
-            return;
-        }
-        
-        this.listener.onClick(event);
-        
-        setTimeout(() => {
-            this.checkDataToShowGraph();
-        }, 500);
-    } else if (state.support != defaultRenderer) {
-        // Lógica original para otros soportes (estaciones, regiones)
+    if (state.support != defaultRenderer) {
+        // Estaciones / regiones: sin gráfico de punto
         return;
-    } else {
-        // Lógica original para otros casos
-        if (!event || !event.latLong) {
-            console.error("El objeto event o latLong no están definidos:", event);
-            return;
-        }
-    
-        this.listener.onClick(event);
+    }
 
-        setTimeout(() => {
-            this.checkDataToShowGraph();
-        }, 500);
+    if (!event || !event.latLong) {
+        console.error("El objeto event o latLong no están definidos:", event);
+        return;
+    }
+
+    const result = this.listener.onClick(event);
+
+    if (!isTimeSeries) {
+        // Climatología (p.ej. Average Aridity): un único valor, no hay serie
+        // temporal que graficar -> solo se posiciona el marcador, sin popup.
+        if (result instanceof Promise) result.catch(() => {});
+        return;
+    }
+
+    const showWhenReady = () => this.checkDataToShowGraph();
+
+    if (result instanceof Promise) {
+        result.then(showWhenReady).catch(() => {});
+    } else {
+        setTimeout(showWhenReady, 500);
     }
 }
 

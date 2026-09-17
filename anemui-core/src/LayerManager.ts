@@ -1,6 +1,6 @@
 import { Source } from "ol/source";
 import { OSM, Vector, ImageStatic } from "ol/source";
-import { TopoJSON } from "ol/format"
+import { TopoJSON, GeoJSON } from "ol/format"
 import {Image, Layer, WebGLTile} from "ol/layer";
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
@@ -16,7 +16,8 @@ import WMTS from 'ol/source/WMTS.js';
 import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
-import { initialZoom } from './Env';
+import { initialZoom, defaultGlobalBaseLayer, defaultNationalBaseLayer } from './Env';
+import { LayerConfigEntry, baseLayersConfig, topLayersConfig, CREDITS, NOMENCLATOR_LAYER_NAME, nomenclatorConfig } from './data/CsLayers';
 
 export const AL_TYPE_OSM="OSM"
 export const AL_TYPE_TOPO_JSON="TopoJson"
@@ -41,15 +42,109 @@ export type AnemuiLayer={
     /** URL WMS equivalente para usar en la exportación del mapa (cuando el tipo no es WMS) */
     wmsExportUrl?: string,
     /** Nombre de capa WMS para la exportación */
-    wmsExportLayer?: string
+    wmsExportLayer?: string,
+    /** Filtro de features para capas vectoriales (devuelve false para ocultar el feature) */
+    featureFilter?: (feature: any, resolution: number) => boolean,
+    /** Propiedad del feature a dibujar como etiqueta de texto (capas TopoJson/GeoJson) */
+    labelPropertyKey?: string,
+    /** Rango de zoom en el que se dibuja la capa vectorial (TopoJson/GeoJson); sin definir,
+     *  se dibuja a cualquier zoom mientras esté seleccionada. Ver `NOMENCLATOR_LAYER_NAME`
+     *  en CsLayers.ts, cuyo trazo de CCAA necesita `maxZoom` para no solapar con el de
+     *  municipio de `LayerManager.getNomenclatorLayers()` (zoom > 9). */
+    minZoom?: number,
+    maxZoom?: number
 }
 
+// Jerarquía de trazos de los límites administrativos (CCAA > provincia > municipio):
+// un solo tono neutro (gris/negro), diferenciado solo por grosor/opacidad/discontinuo —
+// no por color. Se probó con colores distintos por nivel (rojo/azul) y se descartó: el
+// visor ya tiene su propia paleta de datos (el ráster de precipitación en azul/verde/
+// morado, p.ej.), y un color saturado propio para límites administrativos compite con
+// ella en vez de leerse como referencia de fondo. Es también la convención habitual en
+// mapas de referencia (Google Maps, el propio IGN): límites administrativos en gris/
+// negro neutro, nunca en colores vivos reservados para los datos.
+// De más grueso/oscuro (CCAA, la más agregada) a más fino/tenue (municipio, ~8000
+// polígonos pequeños — con el mismo peso que CCAA/provincia sería puro ruido visual).
+// Donde dos trazos coinciden (p.ej. Madrid, CCAA de una única provincia: su borde es
+// literalmente la misma geometría en ambos niveles, no hay color que lo diferencie ahí)
+// domina el más grueso/oscuro por zIndex (ver getNomenclatorLayers()), sin ambigüedad de
+// "qué color es cuál".
 const baseStyle= new Style({
     stroke: new Stroke({
       color: '#444444',
       width: 2
     })
   });
+
+// CCAA (capa seleccionable "Límites provinciales (Eurostat NUTS)", ver getTopLayerOlLayer()
+// más abajo): la más gruesa y oscura, sin maxZoom — se queda visible a cualquier zoom
+// mientras la capa esté seleccionada, igual que provincia (ver debajo). Se probó a
+// ocultarla del todo a partir de zoom de municipio (bug real corregido antes, visto en
+// Ceuta) pero causaba un problema distinto: un borde real de CCAA (p.ej. Madrid/Segovia)
+// se quedaba sin ninguna línea que lo distinguiera de un borde puramente de provincia
+// (mismo trazo discontinuo para ambos, al no quedar ya ninguna capa de CCAA visible).
+// Verificado con los datos reales (arcos del TopoJSON) que el límite de CCAA nunca
+// aparece donde no debe — p.ej. Segovia/Soria (misma CCAA) no comparte ningún arco con
+// el polígono de Castilla y León — así que dejarla siempre visible no reintroduce falsos
+// positivos, solo asegura que los bordes que sí son de CCAA se vean como tales.
+const ccaaStyle = new Style({
+    stroke: new Stroke({
+      color: '#333333',
+      width: 1.75
+    })
+  });
+
+// Provincia (ver getNomenclatorLayers()): mismo gris neutro que CCAA/municipio, tono y
+// grosor intermedios — sin lineDash (se probó discontinuo y se descartó: reportado por
+// el usuario que el mismo límite real se veía discontinuo a un zoom y prácticamente
+// sólido a otro, sin relación con el nivel administrativo — con geometrías de muchos
+// vértices como estas, un trazo discontinuo en Canvas no es fiable, los tramos cortos
+// hacen que casi siempre caiga en la parte de trazo y rara vez en el hueco). Grosor y
+// tono, no el patrón de línea, son lo que la distingue de CCAA/municipio.
+const provStyle = new Style({
+    stroke: new Stroke({
+      color: '#707070',
+      width: 1.25
+    })
+  });
+
+// Municipio (ver getNomenclatorLayers()): la más fina y tenue de las tres — a propósito,
+// para que ~8000 polígonos pequeños no compitan visualmente con CCAA/provincia ni entre
+// sí al verse muchos a la vez.
+const munStyle = new Style({
+    stroke: new Stroke({
+      color: 'rgba(150,150,150,0.6)',
+      width: 0.5
+    })
+  });
+
+// Filtros de features referenciados por LayerConfigEntry.featureFilterKey (ver env/env.js).
+const FEATURE_FILTERS: { [key: string]: (feature: any, resolution: number) => boolean } = {
+    'es-nuts-ccaa-prov': (f: any, _resolution: number) => {
+        const p = f.getProperties();
+        return p.CNTR_CODE === 'ES' && p.LEVL_CODE === 2;
+    }
+};
+
+function resolveLayerConfig(cfg: LayerConfigEntry): AnemuiLayer {
+    return {
+        name: cfg.name,
+        url: cfg.url,
+        type: cfg.type,
+        global: cfg.global,
+        layer: cfg.layer,
+        credit: cfg.creditKey ? CREDITS[cfg.creditKey] : undefined,
+        wmsParams: cfg.wmsParams,
+        cssFilter: cfg.cssFilter,
+        format: cfg.format,
+        wmsExportUrl: cfg.wmsExportUrl,
+        wmsExportLayer: cfg.wmsExportLayer,
+        featureFilter: cfg.featureFilterKey ? FEATURE_FILTERS[cfg.featureFilterKey] : undefined,
+        labelPropertyKey: cfg.labelPropertyKey,
+        minZoom: cfg.minZoom,
+        maxZoom: cfg.maxZoom
+    };
+}
 
 let projection = proj.get('EPSG:3857');
 let projectionExtent = projection.getExtent();
@@ -85,34 +180,21 @@ export class LayerManager {
      private uncertaintyLayerVisible: boolean = false;
     
     private constructor() {
-        const ign  = '© CC-BY 4.0 <a href="https://www.ign.es" target="_blank">ign.es</a>';
-        const ign_pnoa  = '© <a href="https://pnoa.ign.es/" target="_blank">IGN - PNOA</a>';
-        const miteco = '© <a href="https://www.miteco.gob.es" target="_blank">Ministerio para la Transición Ecológica</a>';
+        // CAPAS BASE Y SUPERPUESTAS
+        // Definidas por visor en env/env.js (ENV.baseLayers / ENV.topLayers), ver src/data/CsLayers.ts.
+        // El array por defecto vive en anemui-core/env/env.js; cada visor puede sobreescribirlo
+        // en su propio env/env.js si necesita un conjunto distinto de capas.
+        //
+        // Capas superpuestas desactivadas (pendientes, no migradas a env.js):
+        // - "Unidad administrativa (IGN)": TODO temporal, solo CCAA+provincias mientras se resuelve
+        //   el problema de rendimiento con municipios.
+        // - WMS de wms.mapama.gob.es (Demarcaciones hidrográficas, Comarcas agrarias/ganaderas,
+        //   Zonas inundables T=10/50/100/500 años): NullReferenceException en
+        //   ConstruirServiceArcGISBaseUrl() del servidor (backend ArcGIS caído). Reactivar cuando
+        //   el Ministerio lo resuelva; usaban credit: CREDITS.miteco.
+        baseLayersConfig.forEach(cfg => this.addBaseLayer(resolveLayerConfig(cfg)));
+        topLayersConfig.forEach(cfg => this.addTopLayer(resolveLayerConfig(cfg)));
 
-        // CAPAS BASE
-        // ------ Global
-        this.addBaseLayer({name:"Mapa topográfico nacional (IGN)",url: 'https://www.ign.es/wms-inspire/ign-base?',type:AL_TYPE_WMS,layer:'IGNBaseTodo', global:true, credit:ign})
-        this.addBaseLayer({name:"Foto satélite global ARCGIS",url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>', wmsExportUrl:'https://services.arcgisonline.com/ArcGIS/services/World_Imagery/MapServer/WMSServer?', wmsExportLayer:'0'})
-        this.addBaseLayer({name:"Mapa global OpenStreet Map",url:undefined,type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'})
-        this.addBaseLayer({name:"Fondo relieve global GEBCO (IGN)",url: 'https://www.ign.es/wmts/mapa-raster?',type:AL_TYPE_WMTS,layer:'MTN_Fondo', global:true, credit:ign, format:'image/jpeg'})
-        // ------ Estatal
-        this.addBaseLayer({name:"Ortofoto nacional (PNOA)",url: 'https://www.ign.es/wms-inspire/pnoa-ma?',type:AL_TYPE_WMS,layer:'OI.OrthoimageCoverage', global:false, credit:ign_pnoa})
-        this.addBaseLayer({name:"Mapa LIDAR nacional (PNOA)",url: 'https://wmts-mapa-lidar.idee.es/lidar?',type:AL_TYPE_WMTS,layer:'EL.GridCoverageDSM', global:false, credit:ign_pnoa})
-
-        // CAPAS SUPERPUESTAS
-        // ------ Global
-        this.addTopLayer({name:"Unidad administrativa (IGN)",url:"https://www.ign.es/wms-inspire/unidades-administrativas?",type:AL_TYPE_IMG_LAYER, layer:'AU.AdministrativeBoundary', global:false, credit:ign, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Límites políticos y topónimos globales (ArcGIS)",url:"https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",type:AL_TYPE_OSM, global:true, credit:'© <a href="https://www.esri.com" target="_blank">Esri</a>'})
-        this.addTopLayer({name:"Límites provinciales (Eurostat NUTS)",url:"./NUTS_RG_10M_2021_3857.json",type:AL_TYPE_TOPO_JSON, global:true, credit:'© <a href="https://ec.europa.eu/eurostat" target="_blank">Eurostat</a> — EuroGeographics'})
-        this.addTopLayer({name:"Demarcaciones hidrográficas",url:"https://wms.mapama.gob.es/sig/Agua/PHC/DDHH2027/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'AM.RiverBasinDistrict', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Comarcas agrarias",url:"https://wms.mapama.gob.es/sig/Agricultura/ComarcasAgrarias/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Comarcas ganaderas",url:"https://wms.mapama.gob.es/sig/Ganaderia/ComarcasGanaderas/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'LC.LandCoverSurfaces', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Áreas con riesgo potencial significativo de inundación",url:"https://wms.mapama.gob.es/sig/Agua/ZI_ARPSI/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables con alta probabilidad (T=10 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ10/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables frecuente (T=50 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ50/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad media u ocasional (T=100 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ100/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        this.addTopLayer({name:"Zonas Inundables con probabilidad baja o excepcional (T=500 años)",url:"https://wms.mapama.gob.es/sig/Agua/ZI_LaminasQ500/wms.aspx?",type:AL_TYPE_IMG_LAYER, layer:'NZ.RiskZone', global:false, credit:miteco, cssFilter:'grayscale(1) brightness(0.3)'})
-        
         const topNames = Object.keys(this.topLayers);
         this.topSelected = topNames.length > 0 ? topNames[0] : "";
         this.uncertaintyLayer = [];
@@ -140,8 +222,8 @@ export class LayerManager {
         const globalLayers = baseNames.filter(name => this.baseLayers[name].global);
         const nationalLayers = baseNames.filter(name => !this.baseLayers[name].global);
 
-        const DEFAULT_GLOBAL   = "Foto satélite global ARCGIS";
-        const DEFAULT_NATIONAL = "Mapa LIDAR nacional (PNOA)";
+        const DEFAULT_GLOBAL   = defaultGlobalBaseLayer;
+        const DEFAULT_NATIONAL = defaultNationalBaseLayer;
 
         if (zoom >= 6.00) {
             // Zoom nacional: EUMETSAT + LIDAR por defecto
@@ -248,8 +330,6 @@ export class LayerManager {
         return this.topSelected;
     }
 
-    private static readonly IGN_ADMIN_LAYER = "Unidad administrativa (IGN)";
-
     public setTopSelected(_selected:string){
         if(this.topLayers[_selected]!=undefined){
             this.topSelected=_selected;
@@ -258,7 +338,7 @@ export class LayerManager {
     }
 
     private syncNomenclatorVisibility(): void {
-        const visible = this.topSelected === LayerManager.IGN_ADMIN_LAYER;
+        const visible = this.topSelected === NOMENCLATOR_LAYER_NAME;
         this.nomenclatorLayers.forEach(l => l.setVisible(visible));
     }
 
@@ -276,16 +356,54 @@ export class LayerManager {
                 return this.topLayerTile;
 
             case AL_TYPE_GEO_JSON:
-            case AL_TYPE_TOPO_JSON:
-                if(this.topLayerVector==undefined){
-                    this.topLayerVector= new VectorLayer({
+            case AL_TYPE_TOPO_JSON: {
+                const featureFilter = tLayer.featureFilter;
+                const labelPropertyKey = tLayer.labelPropertyKey;
+                // Con featureFilter (hoy, solo el filtro CCAA de NUTS): usa ccaaStyle, el
+                // más grueso/oscuro de la jerarquía (ver arriba) — es el único caso actual.
+                // Sin labelPropertyKey (p.ej. NUTS): solo el trazo del límite, igual
+                // que antes. Con ella (p.ej. países): trazo + nombre centrado en el
+                // polígono (Text sin placement propio => OL lo ancla al punto
+                // interior del polígono/multipolígono automáticamente).
+                const boundaryStyle = featureFilter ? ccaaStyle : baseStyle;
+                const styleFunc = (feature: any, resolution: number) => {
+                    if (featureFilter && !featureFilter(feature, resolution)) return null;
+                    if (!labelPropertyKey) return boundaryStyle;
+                    return [boundaryStyle, new Style({
+                        text: new Text({
+                            text: feature.get(labelPropertyKey) || '',
+                            font: '11px sans-serif',
+                            fill: new Fill({ color: '#1a1a1a' }),
+                            stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 3 })
+                        })
+                    })];
+                };
+                // zIndex 5002: por encima de provincia (5001) y municipio (5000, ver
+                // getNomenclatorLayers()) — en la banda de zoom 7-9 donde CCAA y provincia
+                // coexisten, el trazo de CCAA (más grueso) debe ganar donde coincidan, no
+                // el de provincia (más fino).
+                if (this.topLayerVector == undefined) {
+                    this.topLayerVector = new VectorLayer({
                         source: this.getTopLayerSource() as VectorSource,
-                        style: (feature, resolution) => {return baseStyle},
-                        zIndex: 5000
-                    })
+                        style: styleFunc,
+                        declutter: true,
+                        zIndex: 5002,
+                        minZoom: tLayer.minZoom,
+                        maxZoom: tLayer.maxZoom
+                    });
+                } else {
+                    (this.topLayerVector as VectorLayer<VectorSource>).setSource(this.getTopLayerSource() as VectorSource);
+                    (this.topLayerVector as VectorLayer<VectorSource>).setStyle(styleFunc);
+                    // Al reutilizar la instancia entre selecciones de topLayer distintas,
+                    // minZoom/maxZoom no se fijan solo en el constructor: hay que
+                    // actualizarlos aquí también, o una capa sin límite de zoom heredaría
+                    // el de la capa seleccionada antes.
+                    this.topLayerVector.setMinZoom(tLayer.minZoom ?? -Infinity);
+                    this.topLayerVector.setMaxZoom(tLayer.maxZoom ?? Infinity);
                 }
-                this.topLayerVector.setZIndex(5000);
+                this.topLayerVector.setZIndex(5002);
                 return this.topLayerVector;
+            }
 
             case AL_TYPE_IMG_LAYER:
                 if(this.topLayerWMS==undefined){
@@ -358,6 +476,18 @@ export class LayerManager {
                         attributions: tl.credit
                     });
                     break;
+                case AL_TYPE_GEO_JSON:
+                    // A diferencia del TopoJson de arriba (NUTS, ya reproyectado a
+                    // 3857 en el propio fichero), un GeoJson estándar viene en
+                    // lon/lat (EPSG:4326, WGS84) — dataProjection lo declara así en
+                    // vez de asumir 3857, para poder usar ficheros GeoJSON sin
+                    // reproyectarlos antes.
+                    tl.source = new Vector({
+                        format: new GeoJSON({ dataProjection: 'EPSG:4326' }),
+                        url: tl.url,
+                        attributions: tl.credit
+                    });
+                    break;
                 case AL_TYPE_IMG_LAYER: {
                     const cssFilter = tl.cssFilter;
                     tl.source = new TileWMS({
@@ -414,12 +544,32 @@ export class LayerManager {
         return tl.source
     }
 
-    private static readonly NGBE_WFS = 'https://servicios-climaticos.pti-clima.csic.es/wfs-ign/wfs-inspire/ngbe';
-    private static readonly GN_NS  = 'http://inspire.ec.europa.eu/schemas/gn/4.0';
-    private static readonly GML_NS = 'http://www.opengis.net/gml/3.2';
+    // El servidor pagina de 50 en 50 (ignora un `limit` mayor) y el tramo final de una
+    // página puede reaparecer entero al principio de la siguiente (offset con orden
+    // inestable) — se deduplica por `id` de feature y se para en cuanto una página no
+    // aporta ninguno nuevo, en vez de fiarse solo de `numberMatched`.
+    private async fetchNgbeFeatures(tipoFilter: string, bboxParams?: string): Promise<any[]> {
+        const seen = new Map<string, any>();
+        let offset = 0;
+        for (let page = 0; page < 20; page++) {
+            const url = `${nomenclatorConfig.ngbeApiUrl}?filter=${encodeURIComponent(tipoFilter)}` +
+                (bboxParams ? `&${bboxParams}` : '') +
+                `&limit=50&offset=${offset}&f=json`;
+            const data = await (await fetch(url)).json();
+            const pageFeatures: any[] = data.features || [];
+            if (pageFeatures.length === 0) break;
+            let added = 0;
+            for (const f of pageFeatures) {
+                if (!seen.has(f.id)) { seen.set(f.id, f); added++; }
+            }
+            offset += pageFeatures.length;
+            if (added === 0 || offset >= (data.numberMatched ?? offset)) break;
+        }
+        return Array.from(seen.values());
+    }
 
     private buildNgbeLayer(
-        filterInner: string,
+        tipoFilter: string,
         minZoom: number,
         maxZoom: number | undefined,
         useBbox: boolean,
@@ -427,86 +577,40 @@ export class LayerManager {
         bold: boolean,
         nominalRes: number
     ): VectorLayer<VectorSource> {
-        const ngbeCredit = '© <a href="https://www.ign.es" target="_blank">IGN</a> — Nomenclátor Geográfico Básico de España';
+        const ngbeCredit = nomenclatorConfig.ngbeCredit;
         const source = new VectorSource({
             attributions: ngbeCredit,
             strategy: useBbox ? strategyBbox : strategyAll,
             loader: (extent, _res, viewProj, success, failure) => {
                 const mapProj = (viewProj as any).getCode ? (viewProj as any).getCode() : String(viewProj);
-                // Transformar extensión del mapa a EPSG:3857 para el filtro BBOX del WFS
-                const wfsExtent = (useBbox && mapProj !== 'EPSG:3857')
-                    ? proj.transformExtent(extent, mapProj, 'EPSG:3857')
-                    : extent;
-                const bboxXml = useBbox ? `
-                    <fes:BBOX>
-                        <fes:ValueReference>gn:geometry</fes:ValueReference>
-                        <gml:Envelope srsName="EPSG:3857">
-                            <gml:lowerCorner>${wfsExtent[0]} ${wfsExtent[1]}</gml:lowerCorner>
-                            <gml:upperCorner>${wfsExtent[2]} ${wfsExtent[3]}</gml:upperCorner>
-                        </gml:Envelope>
-                    </fes:BBOX>` : '';
-                const filterContent = useBbox
-                    ? `<fes:And>${filterInner}${bboxXml}</fes:And>`
-                    : filterInner;
-                const body =
-                    `<wfs:GetFeature xmlns:wfs="http://www.opengis.net/wfs/2.0"` +
-                    ` xmlns:gn="http://inspire.ec.europa.eu/schemas/gn/4.0"` +
-                    ` xmlns:gmd="http://www.isotc211.org/2005/gmd"` +
-                    ` xmlns:fes="http://www.opengis.net/fes/2.0"` +
-                    ` xmlns:gml="http://www.opengis.net/gml/3.2"` +
-                    ` service="WFS" version="2.0.0">` +
-                    `<wfs:Query typeNames="gn:NamedPlace" srsName="EPSG:3857">` +
-                    `<fes:Filter>${filterContent}</fes:Filter>` +
-                    `</wfs:Query></wfs:GetFeature>`;
+                // La API Features de IGN devuelve coordenadas en CRS84 (lon/lat, WGS84) por
+                // defecto — igual que un GeoJSON estándar, ver el `case AL_TYPE_GEO_JSON` de
+                // getTopLayerSource() — así que el filtro de bbox y la reproyección de vuelta
+                // usan EPSG:4326 en vez del EPSG:3857 que exigía el WFS.
+                let bboxParams: string | undefined;
+                if (useBbox) {
+                    const bboxExtent = mapProj !== 'EPSG:4326'
+                        ? proj.transformExtent(extent, mapProj, 'EPSG:4326')
+                        : extent;
+                    bboxParams = `bbox=${bboxExtent.join(',')}&bbox-crs=http://www.opengis.net/def/crs/OGC/1.3/CRS84`;
+                }
 
-                fetch(LayerManager.NGBE_WFS, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/xml' },
-                    body
-                })
-                .then(r => r.text())
-                .then(xml => {
-                    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-                    const GN  = LayerManager.GN_NS;
-                    const GML = LayerManager.GML_NS;
-                    const members = doc.getElementsByTagNameNS(GN, 'NamedPlace');
-                    const features: Feature<Point>[] = [];
-
-                    for (let i = 0; i < members.length; i++) {
-                        const m = members[i];
-
-                        // Nombre (primer <gn:text>)
-                        const textEls = m.getElementsByTagNameNS(GN, 'text');
-                        const label = textEls.length > 0 ? textEls[0].textContent?.trim() : null;
-                        if (!label) continue;
-
-                        // Posición: primero gml:pos (Point), luego primer par de gml:posList
-                        let coords: [number, number] | null = null;
-                        const posEls = m.getElementsByTagNameNS(GML, 'pos');
-                        if (posEls.length > 0) {
-                            const p = posEls[0].textContent?.trim().split(/\s+/).map(Number);
-                            if (p && p.length >= 2 && !isNaN(p[0])) coords = [p[0], p[1]];
+                this.fetchNgbeFeatures(tipoFilter, bboxParams)
+                    .then(geojsonFeatures => {
+                        const features: Feature<Point>[] = [];
+                        for (const f of geojsonFeatures) {
+                            const label: string | undefined = nomenclatorConfig.nameOverrides[f.id] ?? f.properties?.etiqueta?.trim();
+                            const coords = f.geometry?.coordinates;
+                            if (!label || !coords) continue;
+                            const mapCoords = mapProj !== 'EPSG:4326'
+                                ? proj.transform(coords, 'EPSG:4326', mapProj) as [number, number]
+                                : coords;
+                            features.push(new Feature({ geometry: new Point(mapCoords), label }));
                         }
-                        if (!coords) {
-                            const pl = m.getElementsByTagNameNS(GML, 'posList');
-                            if (pl.length > 0) {
-                                const n = pl[0].textContent?.trim().split(/\s+/).map(Number);
-                                if (n && n.length >= 2) coords = [n[0], n[1]];
-                            }
-                        }
-                        if (!coords) continue;
-
-                        // Transformar de EPSG:3857 (WFS) a la proyección del mapa
-                        const mapCoords = mapProj !== 'EPSG:3857'
-                            ? proj.transform(coords, 'EPSG:3857', mapProj) as [number, number]
-                            : coords;
-                        features.push(new Feature({ geometry: new Point(mapCoords), label }));
-                    }
-
-                    source.addFeatures(features);
-                    success(features);
-                })
-                .catch(e => { console.error(e); failure(); });
+                        source.addFeatures(features);
+                        success(features);
+                    })
+                    .catch(e => { console.error(e); failure(); });
             }
         });
 
@@ -537,15 +641,13 @@ export class LayerManager {
     public getNomenclatorLayers(): VectorLayer<VectorSource>[] {
         if (this.nomenclatorLayers.length > 0) return this.nomenclatorLayers;
 
-        const eq = (val: string) =>
-            `<fes:PropertyIsEqualTo>` +
-            `<fes:ValueReference>gn:localType/gmd:LocalisedCharacterString</fes:ValueReference>` +
-            `<fes:Literal>${val}</fes:Literal>` +
-            `</fes:PropertyIsEqualTo>`;
+        // Filtro CQL sobre la propiedad plana `tipo` de la API Features (antes,
+        // `gn:localType/gmd:LocalisedCharacterString` en el XML del WFS).
+        const eq = (val: string) => `tipo='${val}'`;
 
         // CCAA (zoom 5–7): carga única — nominalRes ~zoom 6, 13px bold
         this.nomenclatorLayers.push(this.buildNgbeLayer(
-            `<fes:Or>${eq('Comunidad autónoma')}${eq('Ciudad con estatuto de autonomía')}</fes:Or>`,
+            `${eq('Comunidad autónoma')} OR ${eq('Ciudad con estatuto de autonomía')}`,
             5, 7, false, 13, true, 0.002
         ));
 
@@ -554,10 +656,75 @@ export class LayerManager {
             eq('Provincia'), 7, 9, false, 11, true, 0.001
         ));
 
-        // Municipios (zoom 9+): carga por bbox — nominalRes ~zoom 10, 10px normal
-        this.nomenclatorLayers.push(this.buildNgbeLayer(
-            eq('Municipio'), 9, undefined, true, 10, false, 0.0004
-        ));
+        // Etiquetas de nombre de municipio vía nomenclátor NGBE (puntos, mismo mecanismo
+        // que CCAA/provincia): desactivadas, no las cubre este cambio. No hace falta: la
+        // capa de límites de municipios de abajo ya pinta su propio nombre (`LAU_NAME`)
+        // sobre cada polígono. Se deja aquí solo por si ese enfoque (LAU_NAME) da problemas
+        // en algún caso — esta alternativa por puntos requeriría antes revisar el
+        // rendimiento con ~8000 puntos (aquí sí se filtraría por bbox, useBbox=true, a
+        // diferencia de CCAA/provincia que cargan todo de una vez por ser pocos).
+        // this.nomenclatorLayers.push(this.buildNgbeLayer(
+        //     eq('Municipio'), 9, undefined, true, 10, false, 0.0004
+        // ));
+
+        // Límites de provincias (España, NUTS LEVL_CODE=3): capa separada con maxResolution nativo de OL.
+        // Fichero a resolución 01M (1:1M, la más fina que distribuye Eurostat GISCO para
+        // NUTS) — con 10M (generalizado a 1:10M) los trazos salían demasiado burdos y no
+        // coincidían con el límite de municipios de abajo (LAU, también a 01M) al verse
+        // ambas capas a la vez cerca del corte de zoom.
+        // Sin maxZoom: a partir de zoom 9 (donde toma el relevo el detalle de municipio)
+        // se queda visible igual, con `provStyle` (ver jerarquía de trazos junto a
+        // ccaaStyle) en vez de desactivarse del todo, como referencia de fondo.
+        const provSource = new Vector({
+            format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
+            url: nomenclatorConfig.provinciaUrl
+        });
+        this.nomenclatorLayers.push(new VectorLayer({
+            source: provSource,
+            style: (feature: any) => {
+                const p = feature.getProperties();
+                return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? provStyle : null;
+            },
+            minZoom: 7,
+            // zIndex por encima del de municipio (5000): mismo zIndex tapaba el trazo
+            // discontinuo con el sólido de municipio en el borde exterior, donde ambos
+            // coinciden exactamente (se añade después en el array, y con el mismo zIndex
+            // gana el que se añade más tarde).
+            zIndex: 5001
+        }));
+
+        // Límites de municipios (España, Eurostat GISCO LAU 2024): fichero recortado a
+        // España a partir del LAU_RG_01M_2024_3857.geojson europeo completo (43MB) —
+        // solo los ~8132 municipios españoles y los arcos topológicos que usan, ver
+        // informe doc/PLAN_REVISION_CAPAS_TOPOGRAFÍA.md. Validado con Puppeteer/Chrome
+        // headless: fetch+parse ~156ms, ~29fps en zoom continuo agresivo (vs ~60fps sin
+        // la capa) — coste real pero no bloqueante. minZoom 9: por debajo, ~8000
+        // polígonos diminutos no son legibles y serían solo ruido visual. La capa de
+        // provincias de arriba ya no se desactiva a partir de este zoom (se queda como
+        // referencia, ver más arriba) — su zIndex más alto asegura que su trazo
+        // discontinuo se siga viendo por encima del sólido de aquí donde coinciden.
+        // No hay otra capa que ponga el nombre de cada municipio (a diferencia de
+        // provincia/CCAA, cubiertas por el nomenclátor NGBE de abajo), así que aquí sí
+        // se dibuja el nombre (LAU_NAME) centrado en el polígono — con declutter para
+        // no amontonar texto de municipios pequeños y contiguos.
+        const munSource = new Vector({
+            format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
+            url: nomenclatorConfig.municipioUrl
+        });
+        this.nomenclatorLayers.push(new VectorLayer({
+            source: munSource,
+            style: (feature: any) => [munStyle, new Style({
+                text: new Text({
+                    text: feature.get('LAU_NAME') || '',
+                    font: '11px sans-serif',
+                    fill: new Fill({ color: '#1a1a1a' }),
+                    stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 3 })
+                })
+            })],
+            declutter: true,
+            minZoom: 9,
+            zIndex: 5000
+        }));
 
         this.syncNomenclatorVisibility();
         return this.nomenclatorLayers;
