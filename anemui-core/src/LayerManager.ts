@@ -46,13 +46,75 @@ export type AnemuiLayer={
     /** Filtro de features para capas vectoriales (devuelve false para ocultar el feature) */
     featureFilter?: (feature: any, resolution: number) => boolean,
     /** Propiedad del feature a dibujar como etiqueta de texto (capas TopoJson/GeoJson) */
-    labelPropertyKey?: string
+    labelPropertyKey?: string,
+    /** Rango de zoom en el que se dibuja la capa vectorial (TopoJson/GeoJson); sin definir,
+     *  se dibuja a cualquier zoom mientras esté seleccionada. Ver `NOMENCLATOR_LAYER_NAME`
+     *  en CsLayers.ts, cuyo trazo de CCAA necesita `maxZoom` para no solapar con el de
+     *  municipio de `LayerManager.getNomenclatorLayers()` (zoom > 9). */
+    minZoom?: number,
+    maxZoom?: number
 }
 
+// Jerarquía de trazos de los límites administrativos (CCAA > provincia > municipio):
+// un solo tono neutro (gris/negro), diferenciado solo por grosor/opacidad/discontinuo —
+// no por color. Se probó con colores distintos por nivel (rojo/azul) y se descartó: el
+// visor ya tiene su propia paleta de datos (el ráster de precipitación en azul/verde/
+// morado, p.ej.), y un color saturado propio para límites administrativos compite con
+// ella en vez de leerse como referencia de fondo. Es también la convención habitual en
+// mapas de referencia (Google Maps, el propio IGN): límites administrativos en gris/
+// negro neutro, nunca en colores vivos reservados para los datos.
+// De más grueso/oscuro (CCAA, la más agregada) a más fino/tenue (municipio, ~8000
+// polígonos pequeños — con el mismo peso que CCAA/provincia sería puro ruido visual).
+// Donde dos trazos coinciden (p.ej. Madrid, CCAA de una única provincia: su borde es
+// literalmente la misma geometría en ambos niveles, no hay color que lo diferencie ahí)
+// domina el más grueso/oscuro por zIndex (ver getNomenclatorLayers()), sin ambigüedad de
+// "qué color es cuál".
 const baseStyle= new Style({
     stroke: new Stroke({
       color: '#444444',
       width: 2
+    })
+  });
+
+// CCAA (capa seleccionable "Límites provinciales (Eurostat NUTS)", ver getTopLayerOlLayer()
+// más abajo): la más gruesa y oscura, sin maxZoom — se queda visible a cualquier zoom
+// mientras la capa esté seleccionada, igual que provincia (ver debajo). Se probó a
+// ocultarla del todo a partir de zoom de municipio (bug real corregido antes, visto en
+// Ceuta) pero causaba un problema distinto: un borde real de CCAA (p.ej. Madrid/Segovia)
+// se quedaba sin ninguna línea que lo distinguiera de un borde puramente de provincia
+// (mismo trazo discontinuo para ambos, al no quedar ya ninguna capa de CCAA visible).
+// Verificado con los datos reales (arcos del TopoJSON) que el límite de CCAA nunca
+// aparece donde no debe — p.ej. Segovia/Soria (misma CCAA) no comparte ningún arco con
+// el polígono de Castilla y León — así que dejarla siempre visible no reintroduce falsos
+// positivos, solo asegura que los bordes que sí son de CCAA se vean como tales.
+const ccaaStyle = new Style({
+    stroke: new Stroke({
+      color: '#333333',
+      width: 1.75
+    })
+  });
+
+// Provincia (ver getNomenclatorLayers()): mismo gris neutro que CCAA/municipio, tono y
+// grosor intermedios — sin lineDash (se probó discontinuo y se descartó: reportado por
+// el usuario que el mismo límite real se veía discontinuo a un zoom y prácticamente
+// sólido a otro, sin relación con el nivel administrativo — con geometrías de muchos
+// vértices como estas, un trazo discontinuo en Canvas no es fiable, los tramos cortos
+// hacen que casi siempre caiga en la parte de trazo y rara vez en el hueco). Grosor y
+// tono, no el patrón de línea, son lo que la distingue de CCAA/municipio.
+const provStyle = new Style({
+    stroke: new Stroke({
+      color: '#707070',
+      width: 1.25
+    })
+  });
+
+// Municipio (ver getNomenclatorLayers()): la más fina y tenue de las tres — a propósito,
+// para que ~8000 polígonos pequeños no compitan visualmente con CCAA/provincia ni entre
+// sí al verse muchos a la vez.
+const munStyle = new Style({
+    stroke: new Stroke({
+      color: 'rgba(150,150,150,0.6)',
+      width: 0.5
     })
   });
 
@@ -78,7 +140,9 @@ function resolveLayerConfig(cfg: LayerConfigEntry): AnemuiLayer {
         wmsExportUrl: cfg.wmsExportUrl,
         wmsExportLayer: cfg.wmsExportLayer,
         featureFilter: cfg.featureFilterKey ? FEATURE_FILTERS[cfg.featureFilterKey] : undefined,
-        labelPropertyKey: cfg.labelPropertyKey
+        labelPropertyKey: cfg.labelPropertyKey,
+        minZoom: cfg.minZoom,
+        maxZoom: cfg.maxZoom
     };
 }
 
@@ -295,14 +359,17 @@ export class LayerManager {
             case AL_TYPE_TOPO_JSON: {
                 const featureFilter = tLayer.featureFilter;
                 const labelPropertyKey = tLayer.labelPropertyKey;
+                // Con featureFilter (hoy, solo el filtro CCAA de NUTS): usa ccaaStyle, el
+                // más grueso/oscuro de la jerarquía (ver arriba) — es el único caso actual.
                 // Sin labelPropertyKey (p.ej. NUTS): solo el trazo del límite, igual
                 // que antes. Con ella (p.ej. países): trazo + nombre centrado en el
                 // polígono (Text sin placement propio => OL lo ancla al punto
                 // interior del polígono/multipolígono automáticamente).
+                const boundaryStyle = featureFilter ? ccaaStyle : baseStyle;
                 const styleFunc = (feature: any, resolution: number) => {
                     if (featureFilter && !featureFilter(feature, resolution)) return null;
-                    if (!labelPropertyKey) return baseStyle;
-                    return [baseStyle, new Style({
+                    if (!labelPropertyKey) return boundaryStyle;
+                    return [boundaryStyle, new Style({
                         text: new Text({
                             text: feature.get(labelPropertyKey) || '',
                             font: '11px sans-serif',
@@ -311,18 +378,30 @@ export class LayerManager {
                         })
                     })];
                 };
+                // zIndex 5002: por encima de provincia (5001) y municipio (5000, ver
+                // getNomenclatorLayers()) — en la banda de zoom 7-9 donde CCAA y provincia
+                // coexisten, el trazo de CCAA (más grueso) debe ganar donde coincidan, no
+                // el de provincia (más fino).
                 if (this.topLayerVector == undefined) {
                     this.topLayerVector = new VectorLayer({
                         source: this.getTopLayerSource() as VectorSource,
                         style: styleFunc,
                         declutter: true,
-                        zIndex: 5000
+                        zIndex: 5002,
+                        minZoom: tLayer.minZoom,
+                        maxZoom: tLayer.maxZoom
                     });
                 } else {
                     (this.topLayerVector as VectorLayer<VectorSource>).setSource(this.getTopLayerSource() as VectorSource);
                     (this.topLayerVector as VectorLayer<VectorSource>).setStyle(styleFunc);
+                    // Al reutilizar la instancia entre selecciones de topLayer distintas,
+                    // minZoom/maxZoom no se fijan solo en el constructor: hay que
+                    // actualizarlos aquí también, o una capa sin límite de zoom heredaría
+                    // el de la capa seleccionada antes.
+                    this.topLayerVector.setMinZoom(tLayer.minZoom ?? -Infinity);
+                    this.topLayerVector.setMaxZoom(tLayer.maxZoom ?? Infinity);
                 }
-                this.topLayerVector.setZIndex(5000);
+                this.topLayerVector.setZIndex(5002);
                 return this.topLayerVector;
             }
 
@@ -593,9 +672,9 @@ export class LayerManager {
         // NUTS) — con 10M (generalizado a 1:10M) los trazos salían demasiado burdos y no
         // coincidían con el límite de municipios de abajo (LAU, también a 01M) al verse
         // ambas capas a la vez cerca del corte de zoom.
-        // maxZoom 9: a partir de ahí toma el relevo la capa de municipios (más precisa,
-        // LEVL_CODE=3 es papel pintado una vez se ve el detalle municipal) — antes no
-        // había maxZoom y ambas capas quedaban visibles a la vez indefinidamente.
+        // Sin maxZoom: a partir de zoom 9 (donde toma el relevo el detalle de municipio)
+        // se queda visible igual, con `provStyle` (ver jerarquía de trazos junto a
+        // ccaaStyle) en vez de desactivarse del todo, como referencia de fondo.
         const provSource = new Vector({
             format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
             url: nomenclatorConfig.provinciaUrl
@@ -604,11 +683,14 @@ export class LayerManager {
             source: provSource,
             style: (feature: any) => {
                 const p = feature.getProperties();
-                return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? baseStyle : null;
+                return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? provStyle : null;
             },
             minZoom: 7,
-            maxZoom: 9,
-            zIndex: 5000
+            // zIndex por encima del de municipio (5000): mismo zIndex tapaba el trazo
+            // discontinuo con el sólido de municipio en el borde exterior, donde ambos
+            // coinciden exactamente (se añade después en el array, y con el mismo zIndex
+            // gana el que se añade más tarde).
+            zIndex: 5001
         }));
 
         // Límites de municipios (España, Eurostat GISCO LAU 2024): fichero recortado a
@@ -617,19 +699,21 @@ export class LayerManager {
         // informe doc/PLAN_REVISION_CAPAS_TOPOGRAFÍA.md. Validado con Puppeteer/Chrome
         // headless: fetch+parse ~156ms, ~29fps en zoom continuo agresivo (vs ~60fps sin
         // la capa) — coste real pero no bloqueante. minZoom 9: por debajo, ~8000
-        // polígonos diminutos no son legibles y serían solo ruido visual (y toma el
-        // relevo justo donde termina la capa de provincias de arriba, maxZoom 9).
+        // polígonos diminutos no son legibles y serían solo ruido visual. La capa de
+        // provincias de arriba ya no se desactiva a partir de este zoom (se queda como
+        // referencia, ver más arriba) — su zIndex más alto asegura que su trazo
+        // discontinuo se siga viendo por encima del sólido de aquí donde coinciden.
         // No hay otra capa que ponga el nombre de cada municipio (a diferencia de
         // provincia/CCAA, cubiertas por el nomenclátor NGBE de abajo), así que aquí sí
         // se dibuja el nombre (LAU_NAME) centrado en el polígono — con declutter para
         // no amontonar texto de municipios pequeños y contiguos.
-        const municipioSource = new Vector({
+        const munSource = new Vector({
             format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
             url: nomenclatorConfig.municipioUrl
         });
         this.nomenclatorLayers.push(new VectorLayer({
-            source: municipioSource,
-            style: (feature: any) => [baseStyle, new Style({
+            source: munSource,
+            style: (feature: any) => [munStyle, new Style({
                 text: new Text({
                     text: feature.get('LAU_NAME') || '',
                     font: '11px sans-serif',
