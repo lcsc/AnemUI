@@ -101,7 +101,7 @@ const ccaaStyle = new Style({
 // vértices como estas, un trazo discontinuo en Canvas no es fiable, los tramos cortos
 // hacen que casi siempre caiga en la parte de trazo y rara vez en el hueco). Grosor y
 // tono, no el patrón de línea, son lo que la distingue de CCAA/municipio.
-const provinceReferenceStyle = new Style({
+const provStyle = new Style({
     stroke: new Stroke({
       color: '#707070',
       width: 1.25
@@ -111,7 +111,7 @@ const provinceReferenceStyle = new Style({
 // Municipio (ver getNomenclatorLayers()): la más fina y tenue de las tres — a propósito,
 // para que ~8000 polígonos pequeños no compitan visualmente con CCAA/provincia ni entre
 // sí al verse muchos a la vez.
-const municipioStyle = new Style({
+const munStyle = new Style({
     stroke: new Stroke({
       color: 'rgba(150,150,150,0.6)',
       width: 0.5
@@ -673,10 +673,8 @@ export class LayerManager {
         // coincidían con el límite de municipios de abajo (LAU, también a 01M) al verse
         // ambas capas a la vez cerca del corte de zoom.
         // Sin maxZoom: a partir de zoom 9 (donde toma el relevo el detalle de municipio)
-        // se queda visible igual, pero con `provinceReferenceStyle` en vez de `baseStyle`
-        // — a petición del usuario, como referencia de fondo en vez de desactivarse del
-        // todo (lo que sí hace el trazo de CCAA, ver `NOMENCLATOR_LAYER_NAME` en
-        // CsLayers.ts, porque ese caso sí era un bug a corregir, no una referencia útil).
+        // se queda visible igual, con `provStyle` (ver jerarquía de trazos junto a
+        // ccaaStyle) en vez de desactivarse del todo, como referencia de fondo.
         const provSource = new Vector({
             format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
             url: nomenclatorConfig.provinciaUrl
@@ -685,7 +683,7 @@ export class LayerManager {
             source: provSource,
             style: (feature: any) => {
                 const p = feature.getProperties();
-                return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? provinceReferenceStyle : null;
+                return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? provStyle : null;
             },
             minZoom: 7,
             // zIndex por encima del de municipio (5000): mismo zIndex tapaba el trazo
@@ -709,13 +707,13 @@ export class LayerManager {
         // provincia/CCAA, cubiertas por el nomenclátor NGBE de abajo), así que aquí sí
         // se dibuja el nombre (LAU_NAME) centrado en el polígono — con declutter para
         // no amontonar texto de municipios pequeños y contiguos.
-        const municipioSource = new Vector({
+        const munSource = new Vector({
             format: new TopoJSON({ dataProjection: 'EPSG:3857' }),
             url: nomenclatorConfig.municipioUrl
         });
         this.nomenclatorLayers.push(new VectorLayer({
-            source: municipioSource,
-            style: (feature: any) => [municipioStyle, new Style({
+            source: munSource,
+            style: (feature: any) => [munStyle, new Style({
                 text: new Text({
                     text: feature.get('LAU_NAME') || '',
                     font: '11px sans-serif',
