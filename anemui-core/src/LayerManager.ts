@@ -577,11 +577,13 @@ export class LayerManager {
             eq('Provincia'), 7, 9, false, 11, true, 0.001
         ));
 
-        // Etiquetas de nombre de municipio (NGBE): desactivadas, no las cubre este cambio
-        // — el límite de municipios de abajo es solo trazo, sin nombre. Si se quieren
-        // nombres habría que revisar antes el rendimiento con ~8000 puntos (aquí sí se
-        // filtraría por bbox, useBbox=true, a diferencia de CCAA/provincia que cargan todo
-        // de una vez por ser pocos).
+        // Etiquetas de nombre de municipio vía nomenclátor NGBE (puntos, mismo mecanismo
+        // que CCAA/provincia): desactivadas, no las cubre este cambio. No hace falta: la
+        // capa de límites de municipios de abajo ya pinta su propio nombre (`LAU_NAME`)
+        // sobre cada polígono. Se deja aquí solo por si ese enfoque (LAU_NAME) da problemas
+        // en algún caso — esta alternativa por puntos requeriría antes revisar el
+        // rendimiento con ~8000 puntos (aquí sí se filtraría por bbox, useBbox=true, a
+        // diferencia de CCAA/provincia que cargan todo de una vez por ser pocos).
         // this.nomenclatorLayers.push(this.buildNgbeLayer(
         //     eq('Municipio'), 9, undefined, true, 10, false, 0.0004
         // ));
