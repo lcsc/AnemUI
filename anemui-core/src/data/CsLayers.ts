@@ -6,10 +6,25 @@ import { ENV } from "../Env";
 // implementa cómo construir/renderizar cada tipo de capa a partir de esta configuración.
 // Se define aquí, separado de Env.ts y de LayerManager.ts, para evitar un ciclo de imports
 // (LayerManager.ts importa de este módulo).
+export const AL_TYPE_OSM = "OSM";
+export const AL_TYPE_TOPO_JSON = "TopoJson";
+export const AL_TYPE_GEO_JSON = "GeoJson";
+export const AL_TYPE_IMG_LAYER = "Image";
+export const AL_TYPE_WMS = "WMS";
+export const AL_TYPE_WMTS = "WMTS";
+
+export type AnemuiLayerType =
+    | typeof AL_TYPE_OSM
+    | typeof AL_TYPE_TOPO_JSON
+    | typeof AL_TYPE_GEO_JSON
+    | typeof AL_TYPE_IMG_LAYER
+    | typeof AL_TYPE_WMS
+    | typeof AL_TYPE_WMTS;
+
 export interface LayerConfigEntry {
     name: string;
     url: string;
-    type: string;
+    type: AnemuiLayerType;
     global: boolean;
     layer?: string;
     /** Clave de crédito resuelta contra el registro CREDITS de este mismo fichero */
