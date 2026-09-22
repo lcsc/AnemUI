@@ -5,7 +5,6 @@ import {Image, Layer, WebGLTile} from "ol/layer";
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
 import VectorLayer from "ol/layer/Vector";
-import DataTileSource from "ol/source/DataTile";
 import VectorSource from "ol/source/Vector";
 import { Stroke, Style, Text, Fill } from "ol/style";
 import Feature from 'ol/Feature';
@@ -16,22 +15,16 @@ import WMTS from 'ol/source/WMTS.js';
 import WMTSTileGrid from 'ol/tilegrid/WMTS.js';
 import * as proj from 'ol/proj';
 import { getTopLeft, getWidth } from 'ol/extent';
-import { initialZoom, defaultGlobalBaseLayer, defaultNationalBaseLayer } from './Env';
-import { LayerConfigEntry, baseLayersConfig, topLayersConfig, CREDITS, NOMENCLATOR_LAYER_NAME, nomenclatorConfig } from './data/CsLayers';
-
-export const AL_TYPE_OSM="OSM"
-export const AL_TYPE_TOPO_JSON="TopoJson"
-export const AL_TYPE_GEO_JSON="GeoJson"
-export const AL_TYPE_IMG_LAYER="Image"
-export const AL_TYPE_WMS="WMS"
-export const AL_TYPE_WMTS="WMTS"
-
-export type AnemuiLayerType = "OSM"|"TopoJson"|"GeoJson"|"ImageLayer"|"WMS"|"WMTS"
+import { initialZoom, defaultGlobalBaseLayer, defaultNationalBaseLayer, olProjection } from './Env';
+import {
+    LayerConfigEntry, baseLayersConfig, topLayersConfig, CREDITS, NOMENCLATOR_LAYER_NAME, nomenclatorConfig,
+    AnemuiLayerType, AL_TYPE_OSM, AL_TYPE_TOPO_JSON, AL_TYPE_GEO_JSON, AL_TYPE_IMG_LAYER, AL_TYPE_WMS, AL_TYPE_WMTS
+} from './data/CsLayers';
 
 export type AnemuiLayer={
     name:string,
     url:string,
-    type:string,
+    type:AnemuiLayerType,
     global: boolean,
     source?:Source,
     layer?: string,
@@ -55,20 +48,7 @@ export type AnemuiLayer={
     maxZoom?: number
 }
 
-// Jerarquía de trazos de los límites administrativos (CCAA > provincia > municipio):
-// un solo tono neutro (gris/negro), diferenciado solo por grosor/opacidad/discontinuo —
-// no por color. Se probó con colores distintos por nivel (rojo/azul) y se descartó: el
-// visor ya tiene su propia paleta de datos (el ráster de precipitación en azul/verde/
-// morado, p.ej.), y un color saturado propio para límites administrativos compite con
-// ella en vez de leerse como referencia de fondo. Es también la convención habitual en
-// mapas de referencia (Google Maps, el propio IGN): límites administrativos en gris/
-// negro neutro, nunca en colores vivos reservados para los datos.
-// De más grueso/oscuro (CCAA, la más agregada) a más fino/tenue (municipio, ~8000
-// polígonos pequeños — con el mismo peso que CCAA/provincia sería puro ruido visual).
-// Donde dos trazos coinciden (p.ej. Madrid, CCAA de una única provincia: su borde es
-// literalmente la misma geometría en ambos niveles, no hay color que lo diferencie ahí)
-// domina el más grueso/oscuro por zIndex (ver getNomenclatorLayers()), sin ambigüedad de
-// "qué color es cuál".
+
 const baseStyle= new Style({
     stroke: new Stroke({
       color: '#444444',
@@ -76,31 +56,15 @@ const baseStyle= new Style({
     })
   });
 
-// CCAA (capa seleccionable "Límites provinciales (Eurostat NUTS)", ver getTopLayerOlLayer()
-// más abajo): la más gruesa y oscura, sin maxZoom — se queda visible a cualquier zoom
-// mientras la capa esté seleccionada, igual que provincia (ver debajo). Se probó a
-// ocultarla del todo a partir de zoom de municipio (bug real corregido antes, visto en
-// Ceuta) pero causaba un problema distinto: un borde real de CCAA (p.ej. Madrid/Segovia)
-// se quedaba sin ninguna línea que lo distinguiera de un borde puramente de provincia
-// (mismo trazo discontinuo para ambos, al no quedar ya ninguna capa de CCAA visible).
-// Verificado con los datos reales (arcos del TopoJSON) que el límite de CCAA nunca
-// aparece donde no debe — p.ej. Segovia/Soria (misma CCAA) no comparte ningún arco con
-// el polígono de Castilla y León — así que dejarla siempre visible no reintroduce falsos
-// positivos, solo asegura que los bordes que sí son de CCAA se vean como tales.
+
 const ccaaStyle = new Style({
     stroke: new Stroke({
-      color: '#333333',
+      color: '#707070',
       width: 1.75
     })
   });
 
-// Provincia (ver getNomenclatorLayers()): mismo gris neutro que CCAA/municipio, tono y
-// grosor intermedios — sin lineDash (se probó discontinuo y se descartó: reportado por
-// el usuario que el mismo límite real se veía discontinuo a un zoom y prácticamente
-// sólido a otro, sin relación con el nivel administrativo — con geometrías de muchos
-// vértices como estas, un trazo discontinuo en Canvas no es fiable, los tramos cortos
-// hacen que casi siempre caiga en la parte de trazo y rara vez en el hueco). Grosor y
-// tono, no el patrón de línea, son lo que la distingue de CCAA/municipio.
+
 const provStyle = new Style({
     stroke: new Stroke({
       color: '#707070',
@@ -108,15 +72,32 @@ const provStyle = new Style({
     })
   });
 
-// Municipio (ver getNomenclatorLayers()): la más fina y tenue de las tres — a propósito,
-// para que ~8000 polígonos pequeños no compitan visualmente con CCAA/provincia ni entre
-// sí al verse muchos a la vez.
+
 const munStyle = new Style({
     stroke: new Stroke({
-      color: 'rgba(150,150,150,0.6)',
+      color: '#000000',
       width: 0.5
     })
   });
+
+// Zoom a partir del cual aparece cada nivel más fino (ver getNomenclatorLayers()).
+const PROVINCIA_MIN_ZOOM = 7;
+const MUNICIPIO_MIN_ZOOM = 9;
+
+
+function withHalo(style: Style): Style[] {
+    const width = (style.getStroke()?.getWidth() ?? 1) + 2;
+    return [
+        new Style({ stroke: new Stroke({ color: 'rgba(192, 99, 99, 0.8)', width }) }),
+        style
+    ];
+}
+
+
+function zoomForResolution(resolution: number): number {
+    const extent = proj.get(olProjection)!.getExtent();
+    return Math.log2(getWidth(extent) / 256 / resolution);
+}
 
 // Filtros de features referenciados por LayerConfigEntry.featureFilterKey (ver env/env.js).
 const FEATURE_FILTERS: { [key: string]: (feature: any, resolution: number) => boolean } = {
@@ -177,8 +158,7 @@ export class LayerManager {
     private topLayerWMS: TileLayer<TileWMS>;
     private nomenclatorLayers: VectorLayer<VectorSource>[] = [];
     protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
-     private uncertaintyLayerVisible: boolean = false;
-    
+
     private constructor() {
         // CAPAS BASE Y SUPERPUESTAS
         // Definidas por visor en env/env.js (ENV.baseLayers / ENV.topLayers), ver src/data/CsLayers.ts.
@@ -198,7 +178,6 @@ export class LayerManager {
         const topNames = Object.keys(this.topLayers);
         this.topSelected = topNames.length > 0 ? topNames[0] : "";
         this.uncertaintyLayer = [];
-        this.uncertaintyLayerVisible = false;
         this.initBaseSelected(initialZoom);
     }
 
@@ -368,8 +347,16 @@ export class LayerManager {
                 const boundaryStyle = featureFilter ? ccaaStyle : baseStyle;
                 const styleFunc = (feature: any, resolution: number) => {
                     if (featureFilter && !featureFilter(feature, resolution)) return null;
-                    if (!labelPropertyKey) return boundaryStyle;
-                    return [boundaryStyle, new Style({
+                    // CCAA (featureFilter) deja de ser el nivel más fino en pantalla en
+                    // cuanto aparece provincia (ver regla de halo más arriba); baseStyle
+                    // (países, sin featureFilter) no forma parte de esta jerarquía.
+                    const zoom = zoomForResolution(resolution);
+                    const resolvedBoundaryStyle: Style | Style[] = featureFilter && zoom >= PROVINCIA_MIN_ZOOM
+                        ? withHalo(boundaryStyle)
+                        : boundaryStyle;
+                    if (!labelPropertyKey) return resolvedBoundaryStyle;
+                    const boundaryStyles = Array.isArray(resolvedBoundaryStyle) ? resolvedBoundaryStyle : [resolvedBoundaryStyle];
+                    return [...boundaryStyles, new Style({
                         text: new Text({
                             text: feature.get(labelPropertyKey) || '',
                             font: '11px sans-serif',
@@ -681,11 +668,13 @@ export class LayerManager {
         });
         this.nomenclatorLayers.push(new VectorLayer({
             source: provSource,
-            style: (feature: any) => {
+            style: (feature: any, resolution: number) => {
                 const p = feature.getProperties();
-                return (p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3) ? provStyle : null;
+                if (!(p.CNTR_CODE === 'ES' && p.LEVL_CODE === 3)) return null;
+                const zoom = zoomForResolution(resolution);
+                return zoom >= MUNICIPIO_MIN_ZOOM ? withHalo(provStyle) : provStyle;
             },
-            minZoom: 7,
+            minZoom: PROVINCIA_MIN_ZOOM,
             // zIndex por encima del de municipio (5000): mismo zIndex tapaba el trazo
             // discontinuo con el sólido de municipio en el borde exterior, donde ambos
             // coinciden exactamente (se añade después en el array, y con el mismo zIndex
@@ -722,7 +711,7 @@ export class LayerManager {
                 })
             })],
             declutter: true,
-            minZoom: 9,
+            minZoom: MUNICIPIO_MIN_ZOOM,
             zIndex: 5000
         }));
 
