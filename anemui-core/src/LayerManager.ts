@@ -95,8 +95,17 @@ function withHalo(style: Style): Style[] {
 
 
 function zoomForResolution(resolution: number): number {
-    const extent = proj.get(olProjection)!.getExtent();
-    return Math.log2(getWidth(extent) / 256 / resolution);
+    // Proyecciones sin extent registrado (p.ej. EPSG:23030, definida en OpenLayersMap.ts
+    // vía proj4.defs sin bbox) devuelven getExtent() === null: replica aquí el mismo
+    // tamaño de mundo "virtual" que usa ol/View internamente en ese caso (ver
+    // createResolutionConstraint en ol/View.js) para que el zoom calculado coincida
+    // con el zoom real de la vista.
+    const projection = proj.get(olProjection)!;
+    const extent = projection.getExtent();
+    const size = extent
+        ? getWidth(extent)
+        : (360 * proj.METERS_PER_UNIT.degrees) / projection.getMetersPerUnit();
+    return Math.log2(size / 256 / resolution);
 }
 
 // Filtros de features referenciados por LayerConfigEntry.featureFilterKey (ver env/env.js).
