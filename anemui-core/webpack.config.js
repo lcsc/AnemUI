@@ -172,7 +172,9 @@ const development={
   mode: 'development',
   devServer: {
     static: ['./assets'],
+    host: '0.0.0.0',
     port:9000,
+    allowedHosts: 'all',
     compress: false,
     client: {
       overlay: {

@@ -298,9 +298,20 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         }
    
         const filteredArrays: number[][] = [];
-        
+
         for (let i = 0; i < validFloatArrays.length; i++) {
-            const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
+            // filterValues() es un hook pensado para transformar la capa
+            // PRINCIPAL de datos (p.ej. enmascarar por selectionParam, o el
+            // desplazamiento +DELTA_OFFSET de gams para esquivar un bug de
+            // GradientPainter con negativos). La capa de incertidumbre/
+            // significación es una máscara binaria (0/1) que el painter de
+            // overlay usa directamente como índice de color en una paleta de
+            // 2 colores (ver GradientPainter.paintValues/DotPatternPainter) —
+            // aplicarle el filtro del visor la desplaza fuera de rango y la
+            // deja siempre transparente. Se aplica solo a la capa principal.
+            const filteredArray = uncertaintyLayer
+                ? validFloatArrays[i]
+                : await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
             filteredArrays.push(filteredArray);
         }
 
@@ -389,7 +400,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         } else {
             painterInstance = PaletteManager.getInstance().getPainter();
         }
-
         // Para datos computados, precalcular breaks con todos los datos combinados
         if (status.computedLayer && allValidNumbers.length > 0 && (painterInstance as any).setPrecalculatedBreaks) {
             (painterInstance as any).setPrecalculatedBreaks(allValidNumbers);
@@ -410,7 +420,7 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                     filteredArray = filteredArray.map((val, idx) => {
                         const mainVal = mainLayerData[i][idx];
                         if (isNaN(mainVal) || !isFinite(mainVal)) {
-                            return 0;
+                            return NaN;
                         }
                         return val;
                     });
@@ -425,8 +435,22 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
             // Informar al painter de la resolución de la capa de datos principal para calcular stride
             if (uncertaintyLayer && (painterInstance as any).setDataWidth) {
                 const dataPortion = timesJs.portions[status.varId]?.[i] ?? timesJs.portions[uncertaintyVarId][i];
-                const dataWidth = timesJs.lonNum[status.varId + dataPortion] || width;
-                (painterInstance as any).setDataWidth(dataWidth);
+                let dataWidth = timesJs.lonNum[status.varId + dataPortion];
+
+                // Derivar dataWidth de los tamaños reales de los arrays cuando:
+                // a) lonNum no tiene el dato (dataWidth undefined), o
+                // b) lonNum devolvió el ancho de la incertidumbre en vez del dato (dataWidth >= width).
+                if (mainLayerData[i] && mainLayerData[i].length > 0 && height > 0 && width > 0) {
+                    const uncertPixels = width * height;
+                    const dataPixels = mainLayerData[i].length;
+                    const strideEst = Math.max(1, Math.round(Math.sqrt(uncertPixels / dataPixels)));
+                    if (!dataWidth || dataWidth >= width) {
+                        dataWidth = Math.round(width / strideEst);
+                    }
+                }
+
+                const finalDW = dataWidth || width;
+                (painterInstance as any).setDataWidth(finalDW);
             }
 
             let canvas: HTMLCanvasElement | null = null;
@@ -436,7 +460,6 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                 if (canvas) {
                     const portionName = timesJs.portions[uncertaintyVarId][i];
                     const extent = ncExtents[portionName];
-
                     const imageSource = new Static({
                         url: canvas.toDataURL('image/png'),
                         crossOrigin: '',
@@ -563,8 +586,17 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
         }
 
         const chunk = await rangeRequest(ncUrl, BigInt(chunkOffset), BigInt(chunkOffset) + BigInt(chunkSize) - BigInt(1));
+
+        if (!chunk || chunk.length === 0) {
+            throw new Error(`Empty chunk for ${varName}${portion} at offset=${chunkOffset}, size=${chunkSize}. Check server range support or data integrity.`);
+        }
+
         const uncompressedArray = inflate(chunk);
-   
+
+        if (!uncompressedArray) {
+            throw new Error(`inflate returned undefined for ${varName}${portion}, chunk.length=${chunk.length}`);
+        }
+
         const floatArray = Array.from(chunkStruct.iter_unpack(uncompressedArray.buffer), x => x[0]);
 
         if (!Array.isArray(floatArray) || floatArray.length === 0) {
@@ -639,7 +671,7 @@ export function calcPixelIndex(ncCoords: number[], portion: string): number {
 export function extractDataChunkedFromT(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false): void {
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
-    if (portion != '') {
+    if (portion != '' || globalMap) {
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
         let cb: ArrayDownloadDone = (data: number[]) => {
             let download = false;
@@ -739,7 +771,7 @@ export function downloadCSVbySt(station: string, varName: string, doneCb: CsvDow
 export function downloadCSVbyRegion(folder: string, varName: string, doneCb: CsvDownloadDone): void {
     downloadUrl("./regData/" + folder + "/" + varName + ".csv", (status: number, response) => {
         if (status == 200) {
-            let result: string
+            let result: any
             try {
                 result = parse(response as Buffer, {
                     columns: true,
@@ -785,7 +817,7 @@ export function downloadXYbyRegion(time: string, timeIndex: number, folder: stri
                     columns: true,
                     skip_empty_lines: true
                 });
-                stResult = records[timeIndex]
+                stResult = records[timeIndex] as []
                 // if (records.length == 1) stResult = records[0];
                 // else {
                 //     records.forEach((record: any) => {
