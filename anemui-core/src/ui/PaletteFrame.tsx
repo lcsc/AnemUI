@@ -22,7 +22,6 @@ public render(): JSX.Element {
     let max: number = Math.max(...values);
 
     let name = this.parent.getState().legendTitle;
-    let palettes = mgr.getPalettesNames();
     mgr.setUncertaintyLayerChecked(false)
     
     const currentPalette = mgr.getSelected();
@@ -158,7 +157,6 @@ public render(): JSX.Element {
         let mgr = PaletteManager.getInstance();
         mgr.setSelected(value);
         this.parent.update();
-        this.container.querySelector("div.paletteSelect").classList.remove("visible")
     }
 
     public build() {
@@ -298,14 +296,6 @@ public render(): JSX.Element {
     const bottomDiv = document.createElement('div');
     bottomDiv.id = 'legendBottom';
     data.appendChild(bottomDiv);
-
-    let palettes = mgr.getPalettesNames();
-    if (palettes.length > 2) {
-        const paletteSpan = this.container.querySelector(".paletteSelect span[aria-label=paleta]") as HTMLElement;
-        if (paletteSpan) {
-            paletteSpan.textContent = this.parent.getTranslation('paleta') + ": " + mgr.getSelected();
-        }
-    }
 }
 
     private createDataDrivenGradient(values: number[], min: number, max: number, ptr: any): string {

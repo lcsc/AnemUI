@@ -9,7 +9,7 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent, globalMap, exportCopyright } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent, globalMap, exportCopyright, hasCanarias } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
 import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
@@ -236,10 +236,13 @@ export class OpenLayerMap implements CsMapController {
         const fittedViewportExtent = view.calculateExtent(sz);
         // Ampliar el extent vertical para que se pueda centrar en Canarias (sur)
         // y en el norte de España (norte), manteniendo los límites horizontales.
+        // Visores sin datos en Canarias (hasCanarias=false en Env.ts, ver env.js
+        // del visor): basta un margen simétrico pequeño al sur, igual que al norte.
         const vph = (fittedViewportExtent[3] - fittedViewportExtent[1]) / 2;
+        const southPad = hasCanarias ? vph * 0.5 : vph * 0.1;
         const panExtent: [number, number, number, number] = [
           fittedViewportExtent[0],
-          fittedViewportExtent[1] - vph * 0.5, // sur: +media altura para llegar a Canarias
+          fittedViewportExtent[1] - southPad, // sur: +media altura para llegar a Canarias
           fittedViewportExtent[2],
           fittedViewportExtent[3] + vph * 0.5, // norte: margen pequeño (Santander ya está cerca del borde)
         ];
@@ -1409,7 +1412,7 @@ export class OpenLayerMap implements CsMapController {
       // España ni añadir el recuadro de Canarias (loadWmsImages/
       // composeExportImage aceptan ambos el bloque Canarias como opcional
       // para este caso, pasando null).
-      if (globalMap) {
+      if (globalMap || !hasCanarias) {
         setStatus(`${app.getTranslation('exportmap_renderizando_mapa')}  (1/3)`);
         await waitForRender();
 

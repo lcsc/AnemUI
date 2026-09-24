@@ -70,6 +70,11 @@ export const maxPaletteSteps = typeof ENV.maxPaletteSteps !== 'undefined'? ENV.m
 export const globalMap = typeof ENV.globalMap !== 'undefined'? ENV.globalMap:false;
 export const mapExtent: [number, number, number, number] | undefined =
     Array.isArray(ENV.mapExtent) ? ENV.mapExtent as [number, number, number, number] : undefined;
+// Visores sin datos en Canarias (ver OpenLayersMap.ts): el mapExtent inicial ya
+// debe recortarse a Península+Baleares en el env.js del visor; este flag solo
+// evita el margen extra hacia el sur que OpenLayersMap añade por defecto para
+// poder centrarse en Canarias. Default = comportamiento actual (con Canarias).
+export const hasCanarias: boolean = typeof ENV.hasCanarias !== 'undefined'? ENV.hasCanarias:true;
 
 // Factory Method Pattern
 // true = usar factory method (permite override en subclases)
