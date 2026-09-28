@@ -193,11 +193,26 @@ export class CsMenuItem extends BaseUiElement {
             let popOver = new Popover(popoverElem, {
               container: 'body',
               placement: 'left',
+              // Sin posiciones de reserva: por defecto Bootstrap prueba
+              // top/right/bottom si el popover no cabe entero a la izquierda
+              // (descripciones largas, o selector más centrado como en
+              // Visores-LCSC) y acababa debajo del desplegable, tapándolo.
+              fallbackPlacements: ['left'],
               trigger: 'hover',
               title: popTitle,
               html: true,
               content: popDiv,
-              offset: [0, 10]
+              // Separación de 10px medida desde el borde del desplegable, no
+              // desde el <a> (referencia de Popper): el padding del menú y del
+              // li varía por visor (en Visores-LCSC suma ~25px) y con un offset
+              // fijo el popover quedaba encima del desplegable, tapando la flecha.
+              offset: () => {
+                const menu = popoverElem.closest('.dpdown-menu') as HTMLElement | null;
+                const inset = menu
+                  ? popoverElem.getBoundingClientRect().left - menu.getBoundingClientRect().left
+                  : 0;
+                return [0, 10 + Math.max(0, inset)];
+              }
             })
           }
         }
