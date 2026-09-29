@@ -89,6 +89,10 @@ export class OpenLayerMap implements CsMapController {
   protected map: Map;
   protected marker: Overlay;
   protected mouseMoveTo: NodeJS.Timeout;
+  // Distinguir clic simple de arrastre (ver trackPointerDrag()).
+  private pointerDownXY: [number, number] | null = null;
+  private pointerDragged: boolean = false;
+  private static readonly DRAG_TOLERANCE_PX = 4;
 
   public value: Overlay;
   public popup: HTMLElement;
@@ -266,7 +270,8 @@ export class OpenLayerMap implements CsMapController {
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
-    this.map.on('click', (event) => { self.onClick(event) })
+    this.trackPointerDrag();
+    this.map.on('click', (event) => { if (!self.pointerDragged) self.onClick(event) })
     this.map.on('moveend', self.handleMapMove.bind(this));
     this.marker = new Overlay({
       positioning: 'center-center',
@@ -460,6 +465,33 @@ export class OpenLayerMap implements CsMapController {
     if (tileQueue.getCount() == 0) {
       this.parent.onDragStart(this.toCsMapEvent(event))
     }
+  }
+
+  // Clic y arrastre (desplazar el mapa) no debe abrir el gráfico del píxel.
+  // En principio OpenLayers ya omite 'click' tras un 'pointerdrag', pero en
+  // los visores AEMET/LCSC el arrastre estaba abriendo igualmente el gráfico.
+  // Se mide el desplazamiento real del puntero con eventos nativos (fase de
+  // captura), independientemente de lo que haga la vista.
+  private trackPointerDrag(): void {
+    const viewport = this.map.getViewport();
+    viewport.addEventListener('pointerdown', (e: PointerEvent) => {
+      this.pointerDownXY = [e.clientX, e.clientY];
+      this.pointerDragged = false;
+    }, true);
+    document.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!this.pointerDownXY || this.pointerDragged) return;
+      const dx = e.clientX - this.pointerDownXY[0];
+      const dy = e.clientY - this.pointerDownXY[1];
+      if (Math.hypot(dx, dy) > OpenLayerMap.DRAG_TOLERANCE_PX) this.pointerDragged = true;
+    }, true);
+    // pointerDragged se mantiene hasta el siguiente pointerdown: el 'click'
+    // de OpenLayers se emite dentro del mismo pointerup, así que limpiarlo
+    // aquí lo borraría antes de que onClick llegue a consultarlo.
+    document.addEventListener('pointerup', () => { this.pointerDownXY = null; }, true);
+  }
+
+  public isPointerDragged(): boolean {
+    return this.pointerDragged;
   }
 
   public onMapLoaded() {
@@ -1937,6 +1969,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     this.map.on("click", (evt: MapBrowserEvent<any>) => {
       if (this.geoLayer == undefined) return;
       if (!this.geoLayerShown) return;
+      if (this.csMap.isPointerDragged()) return;
       this.geoLayer.getFeatures(evt.pixel).then((features: FeatureLike[]) => {
         if (this.popupOverlay != undefined) this.popupOverlay.setPosition(undefined)
         if (features.length >= 0 && features[0] != undefined) {
