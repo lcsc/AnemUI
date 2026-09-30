@@ -425,8 +425,9 @@ export class OpenLayerMap implements CsMapController {
 
     // ELIMINAR toda la lógica de shouldShowPercentileClock de aquí
     // Solo mantener el flujo normal de hover
-    loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
-      .then(value => {
+    Promise.all([loadLatLogValue(event.latLong, state, timesJs, this.getZoom()), this.loadOverlayValue(event.latLong, state, timesJs)])
+      .then(([value, overlayValue]) => {
+        state.overlayValue = overlayValue;
         if (state.support == this.defaultRenderer) {
           // value[2] codifica Canarias/Península (0/1), un esquema propio de
           // los visores de España con dos portions. Los visores "globalMap"
@@ -515,8 +516,9 @@ export class OpenLayerMap implements CsMapController {
     const mapEvent = this.toCsMapEvent(event);
     const timesJs = this.parent.getParent().getTimesJs();
 
-    loadLatLogValue(mapEvent.latLong, state, timesJs, this.getZoom())
-      .then(value => {
+    Promise.all([loadLatLogValue(mapEvent.latLong, state, timesJs, this.getZoom()), this.loadOverlayValue(mapEvent.latLong, state, timesJs)])
+      .then(([value, overlayValue]) => {
+        state.overlayValue = overlayValue;
         self.showValue(mapEvent.latLong, value[0], value[1], globalMap ? '' : (value[2] == 0 ? '_can' : '_pen'));
         if (!Number.isNaN(state.xyValue)) {
           self.parent.onMapClick(mapEvent);
@@ -591,6 +593,20 @@ export class OpenLayerMap implements CsMapController {
 
   public getZoom(): number {
     return this.map.getView().getZoom();
+  }
+
+  /**
+   * Valor de la capa overlay (incertidumbre/significación) en el punto, para que el popup
+   * solo muestre su mensaje sobre los píxeles marcados. NaN si la capa no está activa o no hay dato.
+   */
+  private loadOverlayValue(latLong: CsLatLong, state: CsViewerData, timesJs: CsTimesJsData): Promise<number> {
+    // Misma variable que usa buildUncertaintyLayer() para pintar las X
+    const overlayVarId = state.overlayVarId || (state.varId + '_uncertainty');
+    if (!state.uncertaintyLayer || !timesJs.portions[overlayVarId]) return Promise.resolve(NaN);
+    const overlayState: CsViewerData = { ...state, varId: overlayVarId, computedLayer: false };
+    return loadLatLogValue(latLong, overlayState, timesJs, this.getZoom())
+      .then(v => v[1])
+      .catch(() => NaN);
   }
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {

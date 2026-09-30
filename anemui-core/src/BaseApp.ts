@@ -1104,8 +1104,17 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return '';
     }
 
+    /**
+     * true si el popup debe mostrar el mensaje de la capa overlay (incertidumbre/significación).
+     * Por defecto, siempre que la capa esté activa. Los visores pueden sobrescribirlo para
+     * mostrarlo solo sobre los píxeles marcados usando state.overlayValue (lo rellena el mapa).
+     */
+    protected isOverlayMarked(): boolean {
+        return this.state.uncertaintyLayer;
+    }
+
     protected formatTercilPopup(tercilLabel: string, acronimo?: string): string {
-        const uncertaintyMsg = this.state.uncertaintyLayer
+        const uncertaintyMsg = this.isOverlayMarked()
             ? `<div class="uncertainty-msg">${this.getTranslation('uncertainty_prediction')}</div>`
             : '';
         let descripcionMsg = '';
