@@ -4,8 +4,10 @@ import { BaseFrame } from "./BaseFrame";
 import Dygraph, { dygraphs } from 'dygraphs';
 import { dateText } from "../data/CsPConstans";
 import { CsTimeSpan } from "../data/CsDataTypes";
+import { DateFrameMode } from "./DateFrame";
 import { CsLatLong } from '../CsMapTypes';
 import Chart from 'chart.js/auto';
+import { exportCopyright, exportShowGraphHeader } from "../Env";
 
 
 require("dygraphs/dist/dygraph.css")
@@ -230,6 +232,19 @@ export class CsGraph extends BaseFrame {
     document.addEventListener('mouseup', onMouseUp);
   }
 
+  /**
+   * Permite a un visor concreto sobrescribir el título ya fijado por
+   * setParams (p.ej. para añadirle la base de datos activa) sin perder la
+   * segunda línea (coordenadas/estación) que gestiona fullTitle.
+   */
+  public setGraphTitle(title: string): void {
+    this.graphTitle = title;
+  }
+
+  public getFullTitle(): string {
+    return this.fullTitle;
+  }
+
   public setParams(_title: string = '', _type: GraphType, _byPoint: boolean, _scaleSelectors?: boolean, _xLabel: string = '', _yLabel: string = '') {
     this.graphType = _type;
     if (_title != '') this.graphTitle = _title;
@@ -270,6 +285,7 @@ export class CsGraph extends BaseFrame {
   protected get exportShowDygraphTitle(): boolean { return true; }
 
   protected getExportHeaderLines(): string[] {
+    if (!exportShowGraphHeader) return [];
     const state = this.parent.getState();
     const tpSupport = state.tpSupport || '';
     const varName = state.varName || '';
@@ -316,7 +332,9 @@ export class CsGraph extends BaseFrame {
     const labelsDiv = document.getElementById('labels');
     const colorLegendDiv = document.getElementById('colorLegend');
     const headerLines = this.getExportHeaderLines();
-    const headerHeight = Math.max(36, headerLines.length * 18 + 12);
+    // Sin líneas de cabecera (ver exportShowGraphHeader): 0, no la altura
+    // mínima — evita una franja oscura vacía cuando el visor la desactiva.
+    const headerHeight = headerLines.length > 0 ? Math.max(36, headerLines.length * 18 + 12) : 0;
     const padding = 12;
     const copyrightHeight = 20;
 
@@ -370,19 +388,21 @@ export class CsGraph extends BaseFrame {
     ctx.fillRect(0, 0, totalW, totalH);
 
     // --- Barra de título ---
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(0, 0, totalW, headerHeight);
-    ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'middle';
-    if (headerLines.length <= 1) {
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(headerLines[0] || '', padding, headerHeight / 2);
-    } else {
-      const lineH = headerHeight / headerLines.length;
-      headerLines.forEach((line, i) => {
-        ctx.font = i === 0 ? 'bold 14px sans-serif' : '12px sans-serif';
-        ctx.fillText(line, padding, lineH * i + lineH / 2);
-      });
+    if (headerHeight > 0) {
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(0, 0, totalW, headerHeight);
+      ctx.fillStyle = '#ffffff';
+      ctx.textBaseline = 'middle';
+      if (headerLines.length <= 1) {
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(headerLines[0] || '', padding, headerHeight / 2);
+      } else {
+        const lineH = headerHeight / headerLines.length;
+        headerLines.forEach((line, i) => {
+          ctx.font = i === 0 ? 'bold 14px sans-serif' : '12px sans-serif';
+          ctx.fillText(line, padding, lineH * i + lineH / 2);
+        });
+      }
     }
 
     // Recortar al área del gráfico para que no se salga
@@ -774,11 +794,21 @@ export class CsGraph extends BaseFrame {
   }
 
   protected drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string, exportScale?: number): void {
-    const banner = new Image();
-    banner.crossOrigin = 'anonymous';
-    banner.onload = () => this.appendLogosBarAndDownload(exportCanvas, banner, filename, exportScale);
-    banner.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
-    banner.src = './images/banner_logos_imp.svg';
+    // Logo real del visor (el mismo <img> de la topbar en pantalla), no un
+    // banner fijo de VisorServiciosClimaticos — mismo criterio que
+    // OpenLayersMap.drawLogosAndDownload (mapa impreso).
+    const logoImg = document.querySelector('#logo-container img') as HTMLImageElement;
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+      this.appendLogosBarAndDownload(exportCanvas, logoImg, filename, exportScale);
+    } else if (logoImg) {
+      const clone = new Image();
+      clone.crossOrigin = 'anonymous';
+      clone.onload = () => this.appendLogosBarAndDownload(exportCanvas, clone, filename, exportScale);
+      clone.onerror = () => this.downloadExportCanvas(exportCanvas, filename);
+      clone.src = logoImg.src;
+    } else {
+      this.downloadExportCanvas(exportCanvas, filename);
+    }
   }
 
   protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string, exportScale?: number): void {
@@ -788,8 +818,16 @@ export class CsGraph extends BaseFrame {
 
     const cssW = srcCanvas.width / dpr;
 
-    // Logos a ancho completo, altura proporcional
-    const logoH = cssW * (logoImg.naturalHeight / logoImg.naturalWidth);
+    // Proporción real del logo, limitada por ancho disponible Y por una
+    // altura máxima razonable — igual criterio que en
+    // OpenLayersMap.appendLogosBarAndDownload (mapa impreso): estirar
+    // siempre al ancho completo asume un banner muy ancho y bajo (AEMET,
+    // 6060×246px); con un logo de proporción normal (p.ej. gams) el
+    // resultado era una barra de logo desproporcionada.
+    const MAX_LOGO_HEIGHT = 70;
+    const logoScale = Math.min(cssW / logoImg.naturalWidth, MAX_LOGO_HEIGHT / logoImg.naturalHeight);
+    const logoW = logoImg.naturalWidth * logoScale;
+    const logoH = logoImg.naturalHeight * logoScale;
     const totalBarH = logoH + copyrightLineH;
     const totalBarHPx = Math.round(totalBarH * dpr);
 
@@ -815,9 +853,9 @@ export class CsGraph extends BaseFrame {
     fCtx.lineTo(cssW, 0);
     fCtx.stroke();
 
-    // Logo a ancho completo — downscaling progresivo (mipmap) para evitar
-    // artefactos al reducir 6060px→~800px en un solo paso.
-    const targetW = Math.round(cssW * dpr);
+    // Downscaling progresivo (mipmap) para evitar artefactos al reducir
+    // 6060px→~800px en un solo paso.
+    const targetW = Math.round(logoW * dpr);
     const targetH = Math.round(logoH * dpr);
     let logoSrc: HTMLImageElement | HTMLCanvasElement = logoImg;
     let sw = logoImg.naturalWidth;
@@ -836,10 +874,10 @@ export class CsGraph extends BaseFrame {
     }
     fCtx.imageSmoothingEnabled = true;
     fCtx.imageSmoothingQuality = 'high';
-    fCtx.drawImage(logoSrc, 0, 0, cssW, logoH);
+    fCtx.drawImage(logoSrc, 0, 0, logoW, logoH);
 
     // Copyright en línea separada debajo
-    const copyrightText = '© AEMET - CSIC PTI-Clima';
+    const copyrightText = '© ' + exportCopyright;
     fCtx.font = '10px sans-serif';
     fCtx.fillStyle = '#666666';
     fCtx.textBaseline = 'middle';
@@ -1053,6 +1091,53 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         console.log('Media calculada en drawSerialGraph:', this.currentMeanValue);
     }
     
+    const xAxisLabelFormatter = function (number: number, granularity: any, opts: any, dygraph: Dygraph) {
+      var fecha = new Date(number);
+
+      const numRows = dygraph.numRows();
+
+      if (numRows <= 12 && numRows > 4) {
+        const monthNames = self.parent.getTranslation('monthsShort');
+        return monthNames[fecha.getMonth()];
+      } else if (numRows <= 4) {
+        const seasonNames = self.parent.getTranslation('season');
+        const season = Math.floor(fecha.getMonth() / 3);
+        return seasonNames[season];
+      } else {
+        let value = self.formatDate(fecha);
+        return value;
+      }
+    };
+
+    // Dygraph detecta el tipo de la columna x al parsear el CSV (fechas en
+    // nuestro caso, ver Dygraph.prototype.parseCSV_ -> detectTypeFromString_
+    // -> setXAxisOptions_) y ahí mismo pisa axes.x.axisLabelFormatter con su
+    // propio formateador de fábrica, ignorando el que se pasa aquí en el
+    // constructor -- ni pasándolo de nuevo por updateOptions() ni forzando un
+    // redraw consigue aplicarse (las pruebas con updateOptions()/predraw_()
+    // no cambiaron nada en pantalla). Como no hay forma fiable de que Dygraph
+    // respete el formateador para un eje de fechas con datos en CSV, se
+    // reescribe directamente el texto ya pintado de las etiquetas del eje X
+    // en el DOM, usando el valor real de cada tick (dygraph.layout_.xticks,
+    // en el mismo orden en que willDrawChart crea sus divs .dygraph-axis-label-x).
+    const fixXAxisLabels = function (dygraph: Readonly<Dygraph>) {
+      const layout = (dygraph as any).layout_;
+      if (!layout || !Array.isArray(layout.xticks)) return;
+      // layout_.xticks solo trae pos (fracción 0-1 dentro del rango visible)
+      // y label (ya como string calculado con el formateador de fábrica) --
+      // no el valor numérico del tick, así que se recupera invirtiendo el
+      // mismo cálculo que usa Dygraph internamente en toPercentXCoord.
+      const ticksWithLabel = layout.xticks.filter((t: any) => t.label !== undefined);
+      const container = document.getElementById("popGraph");
+      if (!container) return;
+      const els = container.getElementsByClassName('dygraph-axis-label-x');
+      const xRange = (dygraph as Dygraph).xAxisRange();
+      for (let i = 0; i < ticksWithLabel.length && i < els.length; i++) {
+        const value = xRange[0] + ticksWithLabel[i].pos * (xRange[1] - xRange[0]);
+        els[i].textContent = xAxisLabelFormatter(value, 0, undefined, dygraph as Dygraph);
+      }
+    };
+
     var graph = new Dygraph(
       document.getElementById("popGraph"),
       url,
@@ -1068,6 +1153,9 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         xValueParser: function (str: any): number {
           return self.parseXValue(str);
         },
+        drawCallback: function (dygraph, isInitial) {
+          fixXAxisLabels(dygraph);
+        },
         axes: {
           x: {
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
@@ -1075,23 +1163,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
               let value = self.formatDate(fecha)
               return value;
             },
-            axisLabelFormatter(number, granularity, opts, dygraph) {
-              var fecha = new Date(number);
-              
-              const numRows = dygraph.numRows();
-              
-              if (numRows <= 12 && numRows > 4) {
-                const monthNames = self.parent.getTranslation('monthsShort');
-                return monthNames[fecha.getMonth()];
-              } else if (numRows <= 4) {
-                const seasonNames = self.parent.getTranslation('season');
-                const season = Math.floor(fecha.getMonth() / 3);
-                return seasonNames[season];
-              } else {
-                let value = self.formatDate(fecha);
-                return value;
-              }
-            }
+            axisLabelFormatter: xAxisLabelFormatter
           },
           y: {
             valueFormatter: function (millis, opts, seriesName, dygraph, row, col) {
@@ -1101,6 +1173,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         }
       }
     );
+
     return graph;
   }
 
@@ -1574,7 +1647,13 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         break;
       case 3:
         value = date.getFullYear() + " "
-        break;  
+        break;
+      case DateFrameMode.DateFrameYear:
+      case DateFrameMode.DateFrameYearSeries:
+        // Series anuales (p.ej. monitorización con un valor por año): solo el año,
+        // sin día/mes -> antes caía sin match y devolvía undefined.
+        value = "" + date.getFullYear()
+        break;
     }
     return value;
   }

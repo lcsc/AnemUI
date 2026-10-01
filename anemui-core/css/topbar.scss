@@ -870,6 +870,15 @@ input.selection-param-input {
     min-width: fit-content;
 }
 
+// El botón que abre el desplegable (dpdown-button) debe ocupar todo el ancho
+// de su li.inputDiv (ver min-width por role en #inputs>li[role=...] arriba):
+// con el width:fit-content de .menu-item, el área que abre el dropdown al
+// pasar el ratón quedaba mucho más estrecha que el recuadro gris del botón.
+.dpdown-button.menu-item {
+    width: 100%;
+    min-width: 100%;
+}
+
 // Contenedor del checkbox de incertidumbre
 .inputDiv[role^="uncertainty-"] {
     background: none !important;

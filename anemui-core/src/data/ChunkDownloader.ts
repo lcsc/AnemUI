@@ -92,7 +92,15 @@ async function rangeRequest(url: string, startByte: bigint, endByte: bigint): Pr
     headers.append('Range', 'bytes=' + startByte + '-' + endByte);
 
     try {
-        const response = await fetch(url, { headers: headers });
+        let response: Response;
+        try {
+            response = await fetch(url, { headers: headers });
+        } catch (e) {
+            // Chrome puede fallar con ERR_CACHE_OPERATION_NOT_SUPPORTED si hay varias peticiones
+            // Range simultáneas al mismo fichero: se reintenta una vez sin pasar por la caché HTTP
+            if (!(e instanceof TypeError)) throw e;
+            response = await fetch(url, { headers: headers, cache: 'no-store' });
+        }
         if (response.status === 206) {
             return new Uint8Array(await response.arrayBuffer());
         } else if (response.status === 200) {
@@ -298,9 +306,20 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
         }
    
         const filteredArrays: number[][] = [];
-        
+
         for (let i = 0; i < validFloatArrays.length; i++) {
-            const filteredArray = await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
+            // filterValues() es un hook pensado para transformar la capa
+            // PRINCIPAL de datos (p.ej. enmascarar por selectionParam, o el
+            // desplazamiento +DELTA_OFFSET de gams para esquivar un bug de
+            // GradientPainter con negativos). La capa de incertidumbre/
+            // significación es una máscara binaria (0/1) que el painter de
+            // overlay usa directamente como índice de color en una paleta de
+            // 2 colores (ver GradientPainter.paintValues/DotPatternPainter) —
+            // aplicarle el filtro del visor la desplaza fuera de rango y la
+            // deja siempre transparente. Se aplica solo a la capa principal.
+            const filteredArray = uncertaintyLayer
+                ? validFloatArrays[i]
+                : await app.filterValues(validFloatArrays[i], actualTimeIndex, status.varId, timesJs.portions[status.varId][i]);
             filteredArrays.push(filteredArray);
         }
 
@@ -533,19 +552,29 @@ export function downloadXYArrayChunked(requestedTimeIndex: number, varName: stri
         });
 }
 
-let xyCache: {
-    t: number,
-    varName: string,
-    portion: string,
-    data: number[]
-} = undefined
+// Caché de los últimos arrays XY descargados. Varias entradas para que la variable
+// principal y la capa overlay (incertidumbre/significación), que el hover consulta a la vez,
+// o las porciones _pen/_can, no se expulsen entre sí y se vuelvan a descargar en cada movimiento.
+type XYCacheEntry = { t: number, varName: string, portion: string, data: number[] };
+const XY_CACHE_SIZE = 4;
+let xyCache: XYCacheEntry[] = [];
+
+function getXYCache(t: number, varName: string, portion: string): XYCacheEntry | undefined {
+    return xyCache.find(e => e.varName == varName && e.portion == portion && e.t == t);
+}
+
+function setXYCache(entry: XYCacheEntry): void {
+    xyCache = [entry, ...xyCache.filter(e => !(e.varName == entry.varName && e.portion == entry.portion))]
+        .slice(0, XY_CACHE_SIZE);
+}
 
 async function downloadXYChunkNC(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
     let app = window.CsViewerApp;
     const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
 
-    if (xyCache && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == actualTimeIndex) {
-        let ret = [...xyCache.data];
+    const cachedNC = getXYCache(actualTimeIndex, varName, portion);
+    if (cachedNC) {
+        let ret = [...cachedNC.data];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
         return ret;
     }
@@ -592,7 +621,7 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
             throw new Error(`Invalid float array: length=${floatArray.length}, isArray=${Array.isArray(floatArray)}`);
         }
 
-        xyCache = { t: actualTimeIndex, varName, portion, data: [...floatArray] };
+        setXYCache({ t: actualTimeIndex, varName, portion, data: [...floatArray] });
 
         let ret = [...floatArray];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
@@ -613,8 +642,9 @@ async function downloadXYChunkZarr(t: number, varName: string, portion: string, 
     const actualTimeIndex = getActualTimeIndex(t, varName, timesJs);
 
     // Check cache
-    if (xyCache != undefined && xyCache.varName == varName && xyCache.portion == portion && xyCache.t == actualTimeIndex) {
-        let ret = [...xyCache.data];
+    const cachedZarr = getXYCache(actualTimeIndex, varName, portion);
+    if (cachedZarr) {
+        let ret = [...cachedZarr.data];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
         return ret;
     }
@@ -631,14 +661,7 @@ async function downloadXYChunkZarr(t: number, varName: string, portion: string, 
             floatArray = [Number(data)];
         }
 
-        if (xyCache == undefined) {
-            xyCache = { t: actualTimeIndex, varName, portion, data: floatArray };
-        } else {
-            xyCache.t = actualTimeIndex;
-            xyCache.varName = varName;
-            xyCache.portion = portion;
-            xyCache.data = floatArray;
-        }
+        setXYCache({ t: actualTimeIndex, varName, portion, data: floatArray });
 
         let ret = [...floatArray];
         app.transformDataXY(ret, actualTimeIndex, varName, portion);
@@ -649,18 +672,20 @@ async function downloadXYChunkZarr(t: number, varName: string, portion: string, 
     }
 }
 
-export function calcPixelIndex(ncCoords: number[], portion: string): number {
+// varId: variable cuya malla se usa (por defecto la del estado). La capa overlay
+// (incertidumbre/significación) puede tener otra resolución que la variable principal.
+export function calcPixelIndex(ncCoords: number[], portion: string, varId?: string): number {
     let timesJs: CsTimesJsData = window.CsViewerApp.getTimesJs();
-    let state: CsViewerData = window.CsViewerApp.getState();
-    let xIndex: number = Math.round((ncCoords[0] - timesJs.lonMin[state.varId + portion]) / (timesJs.lonMax[state.varId + portion] - timesJs.lonMin[state.varId + portion]) * (timesJs.lonNum[state.varId + portion] - 1));
-    let yIndex: number = Math.round((ncCoords[1] - timesJs.latMin[state.varId + portion]) / (timesJs.latMax[state.varId + portion] - timesJs.latMin[state.varId + portion]) * (timesJs.latNum[state.varId + portion] - 1));
-    return xIndex + yIndex * timesJs.lonNum[state.varId + portion] + 1;
+    const key = (varId ?? window.CsViewerApp.getState().varId) + portion;
+    let xIndex: number = Math.round((ncCoords[0] - timesJs.lonMin[key]) / (timesJs.lonMax[key] - timesJs.lonMin[key]) * (timesJs.lonNum[key] - 1));
+    let yIndex: number = Math.round((ncCoords[1] - timesJs.latMin[key]) / (timesJs.latMax[key] - timesJs.latMin[key]) * (timesJs.latNum[key] - 1));
+    return xIndex + yIndex * timesJs.lonNum[key] + 1;
 }
 
 export function extractDataChunkedFromT(latlng: CsLatLong, functionValue: TileArrayCB, errorCb: DownloadErrorCB, status: CsViewerData, times: CsTimesJsData, int: boolean = false): void {
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
-    if (portion != '') {
+    if (portion != '' || globalMap) {
         const chunkIndex: number = calcPixelIndex(ncCoords, portion);
         let cb: ArrayDownloadDone = (data: number[]) => {
             let download = false;
@@ -708,7 +733,7 @@ export function extractValueChunkedFromXY(latlng: CsLatLong, functionValue: Tile
     let ncCoords: number[] = fromLonLat([latlng.lng, latlng.lat], times.projection);
     let portion: string = getPortionForPoint(ncCoords, times, status.varId);
     if (portion != '' || globalMap) { 
-        const chunkIndex: number = calcPixelIndex(ncCoords, portion);
+        const chunkIndex: number = calcPixelIndex(ncCoords, portion, status.varId);
 
         if (status.computedLayer) {
             let value = parseFloat(status.computedData[portion][chunkIndex - 1].toPrecision(ncSignif));

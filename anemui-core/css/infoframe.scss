@@ -81,7 +81,7 @@ div.tingle-modal {
         }
 
         // Listas
-        ul {
+        ul, ol {
             font-size: 13px;
             line-height: 1.7;
             margin-top: 0.2em;
@@ -117,6 +117,134 @@ div.tingle-modal {
         em {
             font-style: italic;
             color: #555;
+        }
+
+        // Guía de usuario tipo documento (ver GamsInfo.tsx), copiando el
+        // estilo del .docx original (portada + jerarquía Título/Heading1/
+        // Heading2/Callout de Word). Todo bajo .lcsc-info a propósito: no es
+        // específico de gams, sino el estilo de guía "documento" a reusar en
+        // otros visores de Visores-LCSC que tengan su propio .docx — y en
+        // cualquier caso distinto de lo que usa el bloque de licencia
+        // genérico (h6 arriba, compartido con VisorServiciosClimaticos-AEMET)
+        // — no deben mezclarse ni confundirse visualmente con los de AEMET.
+        .lcsc-info {
+            $doc-navy: #1f4e79;
+            $doc-blue: #2e74b5;
+            $doc-teal: #2c8c99;
+            $doc-serif: Georgia, 'Times New Roman', serif;
+
+            // Portada
+            .doc-title {
+                font-family: $doc-serif;
+                color: $doc-navy;
+                font-size: 22px;
+                font-weight: 700;
+                line-height: 1.25;
+                text-align: center;
+                margin-bottom: 0.3em;
+            }
+
+            .doc-subtitle {
+                font-family: $doc-serif;
+                color: $doc-blue;
+                font-size: 15px;
+                text-align: center;
+                margin-bottom: 0.8em;
+            }
+
+            .doc-byline {
+                text-align: center;
+                font-size: 13px;
+                color: #444;
+
+                strong {
+                    display: block;
+                    color: #222;
+                }
+
+                em {
+                    display: block;
+                }
+            }
+
+            // Cuadro destacado (estilo "Callout" del .docx)
+            p.callout {
+                background: #dce6f1;
+                color: $doc-navy;
+                font-weight: 700;
+                text-align: center;
+                padding: 0.6em 0.9em;
+                border-bottom: 3px solid $doc-navy;
+                border-radius: 2px;
+            }
+
+            // Jerarquía de secciones (Heading1/Heading2/Heading3 del .docx):
+            // h2 secciones principales, h3 subsecciones, h4 sub-subsecciones.
+            h2 {
+                color: $doc-navy;
+                font-size: 17px;
+                font-weight: 700;
+                margin-top: 1.6em;
+                margin-bottom: 0.5em;
+
+                &:first-of-type {
+                    margin-top: 2.5em;
+                }
+            }
+
+            h3 {
+                color: $doc-teal;
+                font-size: 15px;
+                font-weight: 700;
+                margin-top: 1.2em;
+                margin-bottom: 0.4em;
+            }
+
+            h4 {
+                color: #555;
+                font-size: 13px;
+                font-weight: 700;
+                font-style: italic;
+                margin-top: 0.9em;
+                margin-bottom: 0.3em;
+            }
+
+            p {
+                text-align: justify;
+            }
+
+            p.formula {
+                font-family: monospace;
+                font-size: 14px;
+                text-align: center;
+                background: #f4f6f7;
+                padding: 0.4em;
+                border-radius: 4px;
+            }
+
+            // Tabla de categorías de aridez
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 13px;
+                margin: 0.6em 0 1em;
+            }
+
+            th, td {
+                border: 1px solid #ddd;
+                padding: 0.4em 0.6em;
+                text-align: left;
+            }
+
+            th {
+                background: $title_bgcolor;
+                color: $doc-navy;
+                font-weight: 700;
+            }
+
+            tr:nth-child(even) td {
+                background: #fafafa;
+            }
         }
     }
 

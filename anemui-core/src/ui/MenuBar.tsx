@@ -3,7 +3,7 @@ import "../../css/anemui-core.scss"
 import { CsMenuItem, CsMenuInput, CsMenuCheckbox, CsMenuItemListener, CsMenuCheckboxListener } from './CsMenuItem';
 import { BaseFrame, BaseUiElement, mouseOverFrame } from './BaseFrame';
 import { BaseApp } from '../BaseApp';
-import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData } from "../Env";
+import { logo, logoStyle, hasButtons, hasSpSupport, hasSubVars, hasTpSupport, hasClimatology, hasVars, hasSelection, hasSelectionParam, hasUnits, varHasPopData, sbVarHasPopData, portalUrl, portalTitle } from "../Env";
 
 export interface MenuBarListener {
     spatialSelected(index: number, value?: string, values?: string[]): void;
@@ -19,7 +19,9 @@ export interface MenuBarListener {
 export type simpleDiv = {
     role: string,
     title: string,
-    subTitle: string
+    subTitle: string,
+    /** Clase CSS del botón (ver setExtraDisplay). Sin ella, buildExtraDisplays() usa 'climBtn'. */
+    btnClass?: string
 }
 
 export class MenuBar extends BaseFrame {
@@ -274,7 +276,7 @@ export class MenuBar extends BaseFrame {
                                 </div>
                             </div>
                             <div className="col menu-info d-flex" id="home">
-                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal">
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle}>
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                             </div>
@@ -312,7 +314,7 @@ export class MenuBar extends BaseFrame {
                                 </ul>
                             </div>
                             <div className="mobile-actions">
-                                <a href="https://www.aemet.es/es/serviciosclimaticos/pesc" className="topbar-icon-btn" title="Volver al portal" id="home-mobile">
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle} id="home-mobile">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                                 <div className="topbar-icon-btn" id="info-mobile">
@@ -345,13 +347,18 @@ export class MenuBar extends BaseFrame {
     protected buildExtraDisplays(): void {
         if (!hasClimatology) return;
         this.extraDisplays.forEach((dsp) => {
+            // btnClass (ver setExtraDisplay) permite a un visor sacar un extraDisplay
+            // del grupo climBtn (Time span/Period, oculto fuera de modo climatología)
+            // dándole otra clase — p.ej. gams usa 'dbBtn' para Database, que debe
+            // verse siempre. Por defecto 'climBtn', mismo comportamiento que antes.
+            const btnType = dsp.btnClass || 'climBtn';
             const isInput = this.extraMenuInputs.some((input) => input.id == dsp.role);
             if (isInput) {
-                addChild(this.inputsSubmenu, this.renderDisplay(dsp, 'climBtn'));
-                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsSubmenu, this.renderDisplay(dsp, btnType));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, btnType));
             } else {
-                addChild(this.inputsFrame, this.renderDisplay(dsp, 'climBtn'));
-                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, 'climBtn'));
+                addChild(this.inputsFrame, this.renderDisplay(dsp, btnType));
+                addChild(this.inputsFrameMobile, this.renderDisplay(dsp, btnType));
             }
             const containers = document.querySelectorAll("[role=" + dsp.role + "]") as NodeListOf<HTMLDivElement>;
             this.extraMenuItems.forEach((dpn) => {
@@ -393,6 +400,14 @@ export class MenuBar extends BaseFrame {
         this.collapseMenuMb = document.querySelector(".collapse-menu-mb");
         this.navMenuMb = document.querySelector(".nav-menu-mb");
         this.logoContainer = document.getElementById('logo-container') as HTMLElement;
+
+        // Enlace "Volver al portal": algunos visores (p.ej. los de LCSC) no
+        // tienen un portal común al que volver. portalUrl vacío en Env oculta
+        // el enlace en vez de dejarlo roto (href="").
+        if (!portalUrl) {
+            document.getElementById('home')?.remove();
+            document.getElementById('home-mobile')?.remove();
+        }
 
         // Crear footer móvil con los logos
         const mobileFooter = document.createElement('div');
@@ -786,7 +801,7 @@ export class MenuBar extends BaseFrame {
                 if (associatedButton) {
                     // Crear el display del checkbox con la clase CSS del botón asociado
                     // Usar el role dinámico basado en el botón asociado
-                    let dspUncertainty: simpleDiv = { role: this.uncertaintyRole, title: 'Incertidumbre', subTitle: '' };
+                    let dspUncertainty: simpleDiv = { role: this.uncertaintyRole, title: this.parent.getTranslation('uncertainty'), subTitle: '' };
                     const uncertaintyElement = this.renderDisplay(dspUncertainty, this.uncertaintyCssClass);
 
                     // Agregar el elemento al DOM
@@ -915,7 +930,7 @@ export class MenuBar extends BaseFrame {
     }
 
     public setExtraDisplay(type: number, id: string, displayTitle: string, options: string[], cssClass?: string, hasUncertainty?: boolean) {
-        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0] })
+        this.extraDisplays.push({ role: id, title: displayTitle, subTitle: options[0], btnClass: cssClass })
         let listener = this.listener
 
         switch (type) {
@@ -946,17 +961,21 @@ export class MenuBar extends BaseFrame {
     }
 
     public hideExtraMenuItem(role: string): void {
-        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
-        if (element) {
+        // querySelectorAll, no querySelector: buildExtraDisplays() renderiza cada
+        // extraDisplay dos veces (inputsFrame desktop + inputsFrameMobile), ambas
+        // copias con el mismo role. Con querySelector solo se ocultaba la primera,
+        // dejando la otra visible (ver climBtnArray para el mismo patrón correcto).
+        const elements = this.container.querySelectorAll(`[role="${role}"]`) as NodeListOf<HTMLElement>;
+        elements.forEach((element) => {
             element.hidden = true;
-        }
+        });
     }
 
     public showExtraMenuItem(role: string): void {
-        const element = this.container.querySelector(`[role="${role}"]`) as HTMLElement;
-        if (element) {
+        const elements = this.container.querySelectorAll(`[role="${role}"]`) as NodeListOf<HTMLElement>;
+        elements.forEach((element) => {
             element.hidden = false;
-        }
+        });
     }
 
     public updateExtraDisplay(type: number, dspRole: string, displayTitle: string, options: string[], hidden: boolean = false) {
@@ -1148,7 +1167,7 @@ export class MenuBar extends BaseFrame {
         this.uncertaintyId = `UncertaintyCheckbox-${associatedRole}`;
 
         // Crear el checkbox con el id dinámico
-        this.uncertaintyCheckbox = new CsMenuCheckbox(this.uncertaintyId, "Incertidumbre", {
+        this.uncertaintyCheckbox = new CsMenuCheckbox(this.uncertaintyId, this.parent.getTranslation('uncertainty'), {
             checkboxChanged(origin, checked) {
                 self.toggleUncertaintyLayer(checked);
             },

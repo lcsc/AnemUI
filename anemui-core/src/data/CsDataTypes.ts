@@ -94,6 +94,8 @@ export type CsViewerData={
     climatology:boolean,
     uncertaintyLayer:boolean,
     overlayVarId?:string,
+    // Valor de la capa overlay en el último punto consultado (hover/clic); NaN si no hay dato
+    overlayValue?:number,
     season:string,
     month:string,
     xyValue:number,

@@ -8,4 +8,7 @@ module.exports={
     ncSignif:7,
     dataSource: 'nc',  // 'nc' or 'zarr'
     mapExtent: [-18.5, 27.0, 5.0, 44.5]  // [O, S, E, N] en grados. Sobreescribir con null para mapas globales
+
+    // Capas base/superpuestas del mapa: valores por defecto en src/data/CsLayers.ts.
+    // Un visor puede sobreescribir el conjunto completo definiendo baseLayers/topLayers aquí.
 }
