@@ -1,6 +1,6 @@
 {
   "name": "@lcsc/anemui-parent",
-  "version": "1.0.3",
+  "version": "1.0.4-SNAPSHOT",
   "description": "Climatic Services Viewer",
   "scripts": {
     "test": "mocha --timeout 10000",
