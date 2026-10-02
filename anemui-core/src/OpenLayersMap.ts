@@ -930,17 +930,36 @@ export class OpenLayerMap implements CsMapController {
     Object.entries(this.renderers).forEach(([key, renderer]) => {
       if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
         const folders = this.parent.getParent().getFolders(renderer)
-        folders.forEach( folder =>{
-          loadGeoJsonData(folder)
-            .then(GeoJsonData => {
-              self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
-            })
-            .catch(error => {
-              console.error('Error: ', error);
-            });
-        })
+        folders.forEach(folder => { self.ensureGeoLayer(folder) })
       }
     } )
+  }
+
+  // Capas GeoJSON cuya descarga está en curso, para no pedir dos veces el mismo fichero
+  private geoLayerLoads: { [folder: string]: Promise<CsOpenLayerGeoJsonLayer | undefined> } = {};
+
+  /**
+   * Devuelve la capa GeoJSON de la carpeta y la carga si todavía no lo está.
+   * buildFeatureLayers() solo precarga los soportes habilitados al iniciar el mapa;
+   * los que el visor habilita después (p. ej. Provincia en climatología en EPM,
+   * o los soportes de drought-monitor) se cargan aquí la primera vez que se eligen.
+   */
+  private ensureGeoLayer(folder: string): Promise<CsOpenLayerGeoJsonLayer | undefined> {
+    const existing = this.glmgr.getGeoLayer(folder);
+    if (existing) return Promise.resolve(existing);
+    if (!this.geoLayerLoads[folder]) {
+      this.geoLayerLoads[folder] = loadGeoJsonData(folder)
+        .then(geoJsonData => {
+          this.glmgr.addGeoLayer(folder, geoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
+          return this.glmgr.getGeoLayer(folder);
+        })
+        .catch((error): undefined => {
+          console.error('Error: ', error);
+          delete this.geoLayerLoads[folder];
+          return undefined;
+        });
+    }
+    return this.geoLayerLoads[folder];
   }
 
   public async setDate(dateIndex: number, state: CsViewerData): Promise<void> {
@@ -1050,7 +1069,7 @@ export class OpenLayerMap implements CsMapController {
 
     const folder = folders[0];
 
-    this.featureLayer = this.glmgr.getGeoLayer(folder);
+    this.featureLayer = await this.ensureGeoLayer(folder);
 
     if (!this.featureLayer) {
       console.error('Failed to get geo layer');
@@ -1181,7 +1200,7 @@ export class OpenLayerMap implements CsMapController {
 
     let dataFolder = this.selectDataFolder(folders);
 
-    this.featureLayer = this.glmgr.getGeoLayer(dataFolder);
+    this.featureLayer = await this.ensureGeoLayer(dataFolder);
 
     if (this.featureLayer) {
       this.featureLayer.indexData = null;
