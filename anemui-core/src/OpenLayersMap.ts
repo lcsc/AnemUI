@@ -9,7 +9,7 @@ import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
-import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent } from "./Env";
+import { isTileDebugEnabled, isWmsEnabled, olProjection, initialZoom, computedDataTilesLayer, mapExtent, globalMap, exportCopyright, hasCanarias } from "./Env";
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4.js';
 import { buildImages, downloadXYChunk, CsvDownloadDone, downloadXYbyRegion, getPortionForPoint, downloadHistoricalDataForPercentile, calcPixelIndex, downloadTArrayChunked, downloadXYbyRegionMultiPortion } from "./data/ChunkDownloader";
@@ -89,6 +89,10 @@ export class OpenLayerMap implements CsMapController {
   protected map: Map;
   protected marker: Overlay;
   protected mouseMoveTo: NodeJS.Timeout;
+  // Distinguir clic simple de arrastre (ver trackPointerDrag()).
+  private pointerDownXY: [number, number] | null = null;
+  private pointerDragged: boolean = false;
+  private static readonly DRAG_TOLERANCE_PX = 4;
 
   public value: Overlay;
   public popup: HTMLElement;
@@ -174,6 +178,36 @@ export class OpenLayerMap implements CsMapController {
     this.renderers = this.parent.getParent().getRenderers()
     let layers: (ImageLayer<Static> | TileLayer)[] = isWmsEnabled ? this.buildWmsLayers(state) : this.buildChunkLayers(state);
 
+    // Visor global (gams y similares, ver globalMap en Env.ts): igual que
+    // mapExtent limita la vista al rectángulo Península+Baleares+Canarias en
+    // los visores de España (más abajo), aquí se limita al mundo entero —
+    // sin esto se puede desplazar horizontalmente sin límite (países
+    // repetidos al enrollar la vista) o verticalmente más allá de los polos
+    // (huecos en blanco, sin datos). View.extent (constrainOnlyCenter=false
+    // por defecto) ya impide por sí solo que se vea nada fuera del extent,
+    // tanto al desplazar como al alejar el zoom — no hace falta el ajuste
+    // manual de minZoom que sí necesita el caso mapExtent (ahí se calcula a
+    // partir de un fit con padding, no de un rectángulo fijo conocido).
+    // ±85.0511° es el límite real de Web Mercator (EPSG:3857): más allá la
+    // proyección diverge a infinito. gams usa EPSG:4326, sin esa limitación,
+    // así que ahí se usan los polos reales (±90°).
+    const worldExtent4326: [number, number, number, number] = [-180, -90, 180, 90];
+    const worldExtent = olProjection === 'EPSG:4326'
+      ? worldExtent4326
+      : transformExtent([-180, -85.0511, 180, 85.0511], 'EPSG:4326', olProjection) as [number, number, number, number];
+
+    // El extent bloquea que se pueda desplazar/alejar más allá del mundo,
+    // pero no obliga a que el rectángulo del mundo llene exactamente el
+    // contenedor #map (initialZoom es un valor fijo, no calculado por fit)
+    // — si la proporción ancho/alto del contenedor no coincide con la del
+    // mundo (2:1), queda un hueco en blanco por encima/debajo. Se disimula
+    // con una clase en <body> (ver body.global-map en anemui-core.scss)
+    // que le pone de fondo el mismo azul del océano de OpenStreetMap, en
+    // vez de blanco — exclusivo de visores globalMap.
+    if (globalMap) {
+      document.body.classList.add('global-map');
+    }
+
     let options: MapOptions = {
       target: 'map',
       layers: layers,
@@ -181,7 +215,8 @@ export class OpenLayerMap implements CsMapController {
       view: new View({
         center: center,
         zoom: initialZoom,
-        projection: olProjection
+        projection: olProjection,
+        ...(globalMap ? { extent: worldExtent } : {})
       })
     };
 
@@ -205,10 +240,13 @@ export class OpenLayerMap implements CsMapController {
         const fittedViewportExtent = view.calculateExtent(sz);
         // Ampliar el extent vertical para que se pueda centrar en Canarias (sur)
         // y en el norte de España (norte), manteniendo los límites horizontales.
+        // Visores sin datos en Canarias (hasCanarias=false en Env.ts, ver env.js
+        // del visor): basta un margen simétrico pequeño al sur, igual que al norte.
         const vph = (fittedViewportExtent[3] - fittedViewportExtent[1]) / 2;
+        const southPad = hasCanarias ? vph * 0.5 : vph * 0.1;
         const panExtent: [number, number, number, number] = [
           fittedViewportExtent[0],
-          fittedViewportExtent[1] - vph * 0.5, // sur: +media altura para llegar a Canarias
+          fittedViewportExtent[1] - southPad, // sur: +media altura para llegar a Canarias
           fittedViewportExtent[2],
           fittedViewportExtent[3] + vph * 0.5, // norte: margen pequeño (Santander ya está cerca del borde)
         ];
@@ -232,7 +270,8 @@ export class OpenLayerMap implements CsMapController {
     let self = this;
     this.map.on('movestart', event => { self.onDragStart(event) })
     this.map.on('loadend', () => { self.onMapLoaded() })
-    this.map.on('click', (event) => { self.onClick(event) })
+    this.trackPointerDrag();
+    this.map.on('click', (event) => { if (!self.pointerDragged) self.onClick(event) })
     this.map.on('moveend', self.handleMapMove.bind(this));
     this.marker = new Overlay({
       positioning: 'center-center',
@@ -349,6 +388,7 @@ export class OpenLayerMap implements CsMapController {
     this.popupContent = document.createElement("div");
     this.popupContent.setAttribute("role", "popup-content")
     this.popup.appendChild(this.popupContent);
+    this.popup.hidden = true;
   }
 
   public onMouseMove(event: MapBrowserEvent<any>) {
@@ -385,10 +425,16 @@ export class OpenLayerMap implements CsMapController {
 
     // ELIMINAR toda la lógica de shouldShowPercentileClock de aquí
     // Solo mantener el flujo normal de hover
-    loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
-      .then(value => {
+    Promise.all([loadLatLogValue(event.latLong, state, timesJs, this.getZoom()), this.loadOverlayValue(event.latLong, state, timesJs)])
+      .then(([value, overlayValue]) => {
+        state.overlayValue = overlayValue;
         if (state.support == this.defaultRenderer) {
-          self.showValue(event.latLong, value[0], value[1], value[2] == 0? '_can':'_pen');
+          // value[2] codifica Canarias/Península (0/1), un esquema propio de
+          // los visores de España con dos portions. Los visores "globalMap"
+          // (p.ej. gams) tienen una única portion sin sufijo (''); forzarla
+          // aquí evita que el popup busque luego en un portion '_pen'/'_can'
+          // que no existe para ellos (ver App.ts formatPopupValue).
+          self.showValue(event.latLong, value[0], value[1], globalMap ? '' : (value[2] == 0? '_can':'_pen'));
         } else {
           let evt = event.original
           var features: Feature[] = [];
@@ -422,13 +468,65 @@ export class OpenLayerMap implements CsMapController {
     }
   }
 
+  // Clic y arrastre (desplazar el mapa) no debe abrir el gráfico del píxel.
+  // En principio OpenLayers ya omite 'click' tras un 'pointerdrag', pero en
+  // los visores AEMET/LCSC el arrastre estaba abriendo igualmente el gráfico.
+  // Se mide el desplazamiento real del puntero con eventos nativos (fase de
+  // captura), independientemente de lo que haga la vista.
+  private trackPointerDrag(): void {
+    const viewport = this.map.getViewport();
+    viewport.addEventListener('pointerdown', (e: PointerEvent) => {
+      this.pointerDownXY = [e.clientX, e.clientY];
+      this.pointerDragged = false;
+    }, true);
+    document.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!this.pointerDownXY || this.pointerDragged) return;
+      const dx = e.clientX - this.pointerDownXY[0];
+      const dy = e.clientY - this.pointerDownXY[1];
+      if (Math.hypot(dx, dy) > OpenLayerMap.DRAG_TOLERANCE_PX) this.pointerDragged = true;
+    }, true);
+    // pointerDragged se mantiene hasta el siguiente pointerdown: el 'click'
+    // de OpenLayers se emite dentro del mismo pointerup, así que limpiarlo
+    // aquí lo borraría antes de que onClick llegue a consultarlo.
+    document.addEventListener('pointerup', () => { this.pointerDownXY = null; }, true);
+  }
+
+  public isPointerDragged(): boolean {
+    return this.pointerDragged;
+  }
+
   public onMapLoaded() {
     this.parent.onMapLoaded();
   }
 
   public onClick(event: MapEvent) {
-    if (!Number.isNaN(this.parent.getParent().getState().xyValue))
-      this.parent.onMapClick(this.toCsMapEvent(event))
+    const state = this.parent.getParent().getState();
+
+    if (!Number.isNaN(state.xyValue)) {
+      this.parent.onMapClick(this.toCsMapEvent(event));
+      return;
+    }
+
+    // En touch/móvil no hay pointermove antes del tap, así que xyValue nunca
+    // se ha calculado por el hover. Calculamos el valor del punto pulsado
+    // directamente, igual que hace onMouseMoveEnd, antes de decidir si se abre el gráfico.
+    if (state.support !== this.defaultRenderer) return;
+
+    const self = this;
+    const mapEvent = this.toCsMapEvent(event);
+    const timesJs = this.parent.getParent().getTimesJs();
+
+    Promise.all([loadLatLogValue(mapEvent.latLong, state, timesJs, this.getZoom()), this.loadOverlayValue(mapEvent.latLong, state, timesJs)])
+      .then(([value, overlayValue]) => {
+        state.overlayValue = overlayValue;
+        self.showValue(mapEvent.latLong, value[0], value[1], globalMap ? '' : (value[2] == 0 ? '_can' : '_pen'));
+        if (!Number.isNaN(state.xyValue)) {
+          self.parent.onMapClick(mapEvent);
+        }
+      })
+      .catch(reason => {
+        console.log("error: " + reason);
+      });
   }
 
   public handleMapMove() {
@@ -438,17 +536,21 @@ export class OpenLayerMap implements CsMapController {
       this.parent.getParent().update();
     }
 
-    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad
+    // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad,
+    // salvo que el painter activo indique que no necesita reconstruirse (skipZoomRebuild).
     if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
-      const zoom = this.getZoom();
-      const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
-      if (currentLevel !== this.lastUncertaintyZoomLevel) {
-        this.lastUncertaintyZoomLevel = currentLevel;
-        // Diferir al siguiente ciclo para no interferir con el render actual
-        setTimeout(() => {
-          let timesJs = this.parent.getParent().getTimesJs();
-          this.buildUncertaintyLayer(state, timesJs);
-        }, 0);
+      const overlayKey = state.overlayVarId?.includes('_pvalue') ? 'significance' : 'uncertainty';
+      const activePainter = PaletteManager.getInstance().getNamedPainter(overlayKey);
+      if (!(activePainter as any)?.skipZoomRebuild) {
+        const zoom = this.getZoom();
+        const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
+        if (currentLevel !== this.lastUncertaintyZoomLevel) {
+          this.lastUncertaintyZoomLevel = currentLevel;
+          setTimeout(() => {
+            let timesJs = this.parent.getParent().getTimesJs();
+            this.buildUncertaintyLayer(state, timesJs);
+          }, 0);
+        }
       }
     }
   }
@@ -491,6 +593,20 @@ export class OpenLayerMap implements CsMapController {
 
   public getZoom(): number {
     return this.map.getView().getZoom();
+  }
+
+  /**
+   * Valor de la capa overlay (incertidumbre/significación) en el punto, para que el popup
+   * solo muestre su mensaje sobre los píxeles marcados. NaN si la capa no está activa o no hay dato.
+   */
+  private loadOverlayValue(latLong: CsLatLong, state: CsViewerData, timesJs: CsTimesJsData): Promise<number> {
+    // Misma variable que usa buildUncertaintyLayer() para pintar las X
+    const overlayVarId = state.overlayVarId || (state.varId + '_uncertainty');
+    if (!state.uncertaintyLayer || !timesJs.portions[overlayVarId]) return Promise.resolve(NaN);
+    const overlayState: CsViewerData = { ...state, varId: overlayVarId, computedLayer: false };
+    return loadLatLogValue(latLong, overlayState, timesJs, this.getZoom())
+      .then(v => v[1])
+      .catch(() => NaN);
   }
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
@@ -748,7 +864,10 @@ export class OpenLayerMap implements CsMapController {
     });
 
     let promises: Promise<number[]>[] = [];
-    this.setExtents(timesJs, uncertaintyVarId);
+    // No llamar setExtents para uncertaintyVarId: usa el extent del dato (ya calculado con
+    // pxSize del dato). El extent de incertidumbre difiere en pxSize cuando la resolución
+    // de incertidumbre es mayor que la del dato (p.ej. 1090 vs 545 en CCM), lo que causaría
+    // un desplazamiento de escala al renderizar en OL.
 
     timesJs.portions[uncertaintyVarId].forEach((portion: string, index, array) => {
       promises.push(downloadXYChunk(state.selectedTimeIndex, uncertaintyVarId, portion, timesJs));
@@ -809,20 +928,38 @@ export class OpenLayerMap implements CsMapController {
     this.glmgr = GeoLayerManager.getInstance();
     let self = this
     Object.entries(this.renderers).forEach(([key, renderer]) => {
-      // if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
-      if(!renderer.startsWith("-") && renderer != this.defaultRenderer){
+      if(!renderer.startsWith("~") && !renderer.startsWith("-") && renderer != this.defaultRenderer){
         const folders = this.parent.getParent().getFolders(renderer)
-        folders.forEach( folder =>{
-          loadGeoJsonData(folder)
-            .then(GeoJsonData => {
-              self.glmgr.addGeoLayer(folder, GeoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
-            })
-            .catch(error => {
-              console.error('Error: ', error);
-            });
-        })
+        folders.forEach(folder => { self.ensureGeoLayer(folder) })
       }
     } )
+  }
+
+  // Capas GeoJSON cuya descarga está en curso, para no pedir dos veces el mismo fichero
+  private geoLayerLoads: { [folder: string]: Promise<CsOpenLayerGeoJsonLayer | undefined> } = {};
+
+  /**
+   * Devuelve la capa GeoJSON de la carpeta y la carga si todavía no lo está.
+   * buildFeatureLayers() solo precarga los soportes habilitados al iniciar el mapa;
+   * los que el visor habilita después (p. ej. Provincia en climatología en EPM,
+   * o los soportes de drought-monitor) se cargan aquí la primera vez que se eligen.
+   */
+  private ensureGeoLayer(folder: string): Promise<CsOpenLayerGeoJsonLayer | undefined> {
+    const existing = this.glmgr.getGeoLayer(folder);
+    if (existing) return Promise.resolve(existing);
+    if (!this.geoLayerLoads[folder]) {
+      this.geoLayerLoads[folder] = loadGeoJsonData(folder)
+        .then(geoJsonData => {
+          this.glmgr.addGeoLayer(folder, geoJsonData, this.map, this, (feature, event) => { this.onFeatureClick(feature, folder, event) })
+          return this.glmgr.getGeoLayer(folder);
+        })
+        .catch((error): undefined => {
+          console.error('Error: ', error);
+          delete this.geoLayerLoads[folder];
+          return undefined;
+        });
+    }
+    return this.geoLayerLoads[folder];
   }
 
   public async setDate(dateIndex: number, state: CsViewerData): Promise<void> {
@@ -932,7 +1069,7 @@ export class OpenLayerMap implements CsMapController {
 
     const folder = folders[0];
 
-    this.featureLayer = this.glmgr.getGeoLayer(folder);
+    this.featureLayer = await this.ensureGeoLayer(folder);
 
     if (!this.featureLayer) {
       console.error('Failed to get geo layer');
@@ -1063,7 +1200,7 @@ export class OpenLayerMap implements CsMapController {
 
     let dataFolder = this.selectDataFolder(folders);
 
-    this.featureLayer = this.glmgr.getGeoLayer(dataFolder);
+    this.featureLayer = await this.ensureGeoLayer(dataFolder);
 
     if (this.featureLayer) {
       this.featureLayer.indexData = null;
@@ -1131,12 +1268,14 @@ export class OpenLayerMap implements CsMapController {
     // Safely update political layer
     let pLayer = lmgr.getTopLayerOlLayer();
     if (pLayer && this.politicalLayer !== pLayer) {
-      if (this.politicalLayer && this.map.getLayers().getArray().includes(this.politicalLayer)) {
+      if (this.politicalLayer) {
         this.map.removeLayer(this.politicalLayer);
+      }
+      if (!this.map.getLayers().getArray().includes(pLayer)) {
         pLayer.setZIndex(5000);
         this.map.addLayer(pLayer);
-        this.politicalLayer = pLayer;
       }
+      this.politicalLayer = pLayer;
     }
 
     let pSource = lmgr.getTopLayerSource();
@@ -1323,7 +1462,7 @@ export class OpenLayerMap implements CsMapController {
 
     const label = document.createElement('span');
     label.style.cssText = 'font:bold 14px sans-serif;color:#2c3e50';
-    label.textContent = 'Generando imagen…';
+    label.textContent = app.getTranslation('exportmap_generando_imagen');
 
     overlay.appendChild(spinner);
     overlay.appendChild(label);
@@ -1334,8 +1473,42 @@ export class OpenLayerMap implements CsMapController {
 
     const doExport = async () => {
       try {
+      // Visor global (p.ej. gams, aridez mundial): no existe una partición
+      // Península/Canarias que recortar aparte de los .nc (ver globalMap en
+      // Env.ts) — se exporta la vista actual tal cual, sin reencuadrar a
+      // España ni añadir el recuadro de Canarias (loadWmsImages/
+      // composeExportImage aceptan ambos el bloque Canarias como opcional
+      // para este caso, pasando null).
+      if (globalMap || !hasCanarias) {
+        setStatus(`${app.getTranslation('exportmap_renderizando_mapa')}  (1/3)`);
+        await waitForRender();
+
+        const mapSize = this.map.getSize();
+        if (!mapSize) { removeOverlay(); return; }
+        const mainWidth = mapSize[0];
+        const mainHeight = mapSize[1];
+
+        const mainOlCanvas = this.captureOlCanvas(mainWidth, mainHeight);
+        const mainViewExtent = this.map.getView().calculateExtent(mapSize);
+        const mainBbox4326 = transformExtent(mainViewExtent, proj, 'EPSG:4326');
+
+        setStatus(`${app.getTranslation('exportmap_descargando_fondo')}  (2/3)`);
+        this.loadWmsImages(mainBbox4326, mainWidth, mainHeight, null, 0, 0,
+          (mainBg) => {
+            setStatus(`${app.getTranslation('exportmap_componiendo_imagen')}  (3/3)`);
+            this.composeExportImage(
+              mainBg, mainOlCanvas, mainWidth, mainHeight,
+              null, null, 0, 0,
+              state, timesJs, app
+            );
+            removeOverlay();
+          }
+        );
+        return;
+      }
+
       // Paso 1: Capturar Península + Baleares
-      setStatus('Renderizando Península…  (1/4)');
+      setStatus(`${app.getTranslation('exportmap_renderizando_peninsula')}  (1/4)`);
       const peninsulaExtent4326 = [-10.0, 35.0, 5.0, 44.5];
       const peninsulaExtent = transformExtent(peninsulaExtent4326, 'EPSG:4326', proj);
       const mapSize0 = this.map.getSize();
@@ -1354,7 +1527,7 @@ export class OpenLayerMap implements CsMapController {
       const mainBbox4326 = transformExtent(mainViewExtent, proj, 'EPSG:4326');
 
       // Paso 2: Capturar Canarias
-      setStatus('Renderizando Canarias…  (2/4)');
+      setStatus(`${app.getTranslation('exportmap_renderizando_canarias')}  (2/4)`);
       const canariasExtent4326 = [-18.5, 27.4, -13.2, 29.6];
       const canariasExtent = transformExtent(canariasExtent4326, 'EPSG:4326', proj);
       this.map.getView().fit(canariasExtent, { padding: [5, 5, 5, 5] });
@@ -1372,10 +1545,10 @@ export class OpenLayerMap implements CsMapController {
       this.map.getView().setResolution(currentResolution);
 
       // Paso 3: Pedir ambas imágenes WMS al IGN y componer
-      setStatus('Descargando fondo cartográfico…  (3/4)');
+      setStatus(`${app.getTranslation('exportmap_descargando_fondo')}  (3/4)`);
       this.loadWmsImages(mainBbox4326, mainWidth, mainHeight, canariasBbox4326, insetWidth, insetHeight,
         (mainBg, canBg) => {
-          setStatus('Componiendo imagen…  (4/4)');
+          setStatus(`${app.getTranslation('exportmap_componiendo_imagen')}  (4/4)`);
           this.composeExportImage(
             mainBg, mainOlCanvas, mainWidth, mainHeight,
             canBg, canariasOlCanvas, insetWidth, insetHeight,
@@ -1454,7 +1627,7 @@ export class OpenLayerMap implements CsMapController {
 
   private loadWmsImages(
     mainBbox: number[], mainW: number, mainH: number,
-    canBbox: number[], canW: number, canH: number,
+    canBbox: number[] | null, canW: number, canH: number,
     callback: (mainBg: CanvasImageSource | null, canBg: CanvasImageSource | null) => void
   ): void {
     // Obtener capas base con info WMS para la exportación. Incluye capas WMS nativas y
@@ -1494,17 +1667,22 @@ export class OpenLayerMap implements CsMapController {
 
     let mainBg: CanvasImageSource | null = null;
     let canBg: CanvasImageSource | null = null;
+    // canBbox null (visores globales, ver exportMap): no hay recuadro de
+    // Canarias que pedir, solo se espera la imagen principal.
+    const pending = canBbox ? 2 : 1;
     let done = 0;
-    const check = () => { if (++done >= 2) callback(mainBg, canBg); };
+    const check = () => { if (++done >= pending) callback(mainBg, canBg); };
 
     loadComposite(mainBbox, mainW, mainH, result => { mainBg = result; check(); });
-    loadComposite(canBbox, canW, canH, result => { canBg = result; check(); });
+    if (canBbox) {
+      loadComposite(canBbox, canW, canH, result => { canBg = result; check(); });
+    }
   }
 
   private composeExportImage(
     mainBg: CanvasImageSource | null, mainOl: HTMLCanvasElement,
     mainW: number, mainH: number,
-    canBg: CanvasImageSource | null, canOl: HTMLCanvasElement,
+    canBg: CanvasImageSource | null, canOl: HTMLCanvasElement | null,
     insetW: number, insetH: number,
     state: any, timesJs: any, app: any
   ): void {
@@ -1530,29 +1708,34 @@ export class OpenLayerMap implements CsMapController {
     ctx.drawImage(mainOl, 0, titleHeight);
 
     // --- 3) Recuadro Canarias (esquina inferior izquierda) ---
-    const insetX = insetMargin;
-    const insetY = titleHeight + mainH - insetH - insetMargin;
+    // Solo aplica a visores de España con partición Península/Canarias
+    // (canOl es null en visores globalMap, ver exportMap): ese recuadro no
+    // tiene sentido en una vista mundial y se omite por completo.
+    if (canOl) {
+      const insetX = insetMargin;
+      const insetY = titleHeight + mainH - insetH - insetMargin;
 
-    // Fondo blanco + borde
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
-    ctx.strokeStyle = '#333333';
-    ctx.lineWidth = insetBorder;
-    ctx.strokeRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
+      // Fondo blanco + borde
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = insetBorder;
+      ctx.strokeRect(insetX - insetBorder, insetY - insetBorder, insetW + insetBorder * 2, insetH + insetBorder * 2);
 
-    // Fondo WMS Canarias
-    if (canBg) {
-      ctx.drawImage(canBg, 0, 0, insetW, insetH, insetX, insetY, insetW, insetH);
+      // Fondo WMS Canarias
+      if (canBg) {
+        ctx.drawImage(canBg, 0, 0, insetW, insetH, insetX, insetY, insetW, insetH);
+      }
+
+      // Datos OL Canarias (reescalado al tamaño del recuadro)
+      ctx.drawImage(canOl, 0, 0, canOl.width, canOl.height, insetX, insetY, insetW, insetH);
+
+      // Etiqueta "Canarias"
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.fillText('Canarias', insetX + 4, insetY + 3);
     }
-
-    // Datos OL Canarias (reescalado al tamaño del recuadro)
-    ctx.drawImage(canOl, 0, 0, canOl.width, canOl.height, insetX, insetY, insetW, insetH);
-
-    // Etiqueta "Canarias"
-    ctx.fillStyle = '#333333';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Canarias', insetX + 4, insetY + 3);
 
     // --- 4) Título ---
     const titleText = app.getExportTitle();
@@ -1634,7 +1817,7 @@ export class OpenLayerMap implements CsMapController {
     const rawCredit = LayerManager.getInstance().getSelectedCredit();
     const layerCredit = rawCredit.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
     const lines: string[] = [];
-    lines.push('\u00A9 AEMET \u2013 CSIC PTI-Clima');
+    lines.push('\u00A9 ' + exportCopyright);
     if (layerCredit) lines.push(layerCredit);
 
     ctx.font = `${fontSize}px sans-serif`;
@@ -1679,13 +1862,19 @@ export class OpenLayerMap implements CsMapController {
   private appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, srcCtx: CanvasRenderingContext2D, logoImg: HTMLImageElement, filename: string): void {
     const pad = 10;
 
-    // Escalar el logo para que ocupe el ancho completo del canvas (máxima calidad).
-    // De este modo se aprovechan todos los píxeles de la imagen fuente (6060×246)
-    // en lugar de escalarla a una altura fija pequeña.
+    // Escalar el logo manteniendo proporción, limitando tanto el ancho
+    // disponible como una altura máxima razonable (equivalente al alto del
+    // logo en la topbar en pantalla). Escalar solo "al ancho completo del
+    // canvas" (como se hacía antes) asume implícitamente un logo muy ancho y
+    // bajo tipo banner (el de AEMET, 6060×246px) — con un logo de proporción
+    // normal (p.ej. gams) el resultado era una barra de logo desproporcionada,
+    // exageradamente alta. Con min() del escalado por ancho y por alto se
+    // respeta lo que sea más restrictivo, válido para cualquier proporción.
+    const MAX_LOGO_HEIGHT = 70;
     const availableW = srcCanvas.width - pad * 2;
-    const scaleByWidth = availableW / logoImg.naturalWidth;
-    const logoW = availableW;
-    const logoH = Math.round(logoImg.naturalHeight * scaleByWidth);
+    const scale = Math.min(availableW / logoImg.naturalWidth, MAX_LOGO_HEIGHT / logoImg.naturalHeight);
+    const logoW = Math.round(logoImg.naturalWidth * scale);
+    const logoH = Math.round(logoImg.naturalHeight * scale);
     const logoBarHeight = logoH + pad * 2;
 
     // Crear canvas final con espacio para la barra de logos
@@ -1815,6 +2004,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     this.map.on("click", (evt: MapBrowserEvent<any>) => {
       if (this.geoLayer == undefined) return;
       if (!this.geoLayerShown) return;
+      if (this.csMap.isPointerDragged()) return;
       this.geoLayer.getFeatures(evt.pixel).then((features: FeatureLike[]) => {
         if (this.popupOverlay != undefined) this.popupOverlay.setPosition(undefined)
         if (features.length >= 0 && features[0] != undefined) {
@@ -2048,10 +2238,10 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     }
 
     const val = dataValue !== undefined ? parseFloat(String(dataValue)) : NaN;
-    if (!isNaN(val) && isFinite(val) && currentRange !== 0) {
-      color = ptr.getColorString(val, minValue, maxValue);
-      radius = 10;
-      if (isNaN(radius) || radius < 3) radius = 3;
+    if (!isNaN(val) && isFinite(val)) {          
+        color = ptr.getColorString(val, minValue, maxValue);
+        radius = 10;
+        if (isNaN(radius) || radius < 3) radius = 3;
     }
 
     const isHovered = feature.get('hover') || feature.get('selected');

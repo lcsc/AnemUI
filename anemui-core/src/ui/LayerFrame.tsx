@@ -256,13 +256,17 @@ export default class LayerFrame  extends BaseFrame {
     public update(): void {
         let mgr=PaletteManager.getInstance();
         let lmgr=LayerManager.getInstance();
-        let name:string; 
-        if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
-            const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
-            const legendValues = Language.getInstance().getTranslation('legendValues');
-            name = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
-        }else {
-            name = 'Unidades';
+        let name:string;
+        // state.legendTitle tiene prioridad y no pasa por language.ts (el visor ya lo fija en español)
+        name = this.parent.getState().legendTitle || '';
+        if (!name) {
+            if (this.parent.getTimesJs().legendTitle[this.parent.getState().varId] != undefined){
+                const rawTitle = this.parent.getTimesJs().legendTitle[this.parent.getState().varId];
+                const legendValues = Language.getInstance().getTranslation('legendValues');
+                name = (legendValues && typeof legendValues === 'object' && (legendValues as any)[rawTitle]) ? (legendValues as any)[rawTitle] : rawTitle;
+            } else {
+                name = 'Unidades';
+            }
         }
         this.container.querySelector(".layerFrame span[aria-label=base]").textContent= this.parent.getTranslation('base_layer') +": "+lmgr.getBaseSelected();
         this.container.querySelector(".layerFrame span[aria-label=transparency]").textContent= this.parent.getTranslation('transparency') +": "+mgr.getTransparency();
