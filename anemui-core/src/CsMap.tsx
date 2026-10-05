@@ -133,8 +133,8 @@ public onMapClick(event: CsMapEvent): void {
         return this.controller.getZoom();
     }
 
-    public updateRender(support: string) {
-        this.controller.updateRender(support)
+    public async updateRender(support: string): Promise<void> {
+        await this.controller.updateRender(support)
     }
 
     public refreshFeatureLayer() {

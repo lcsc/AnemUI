@@ -997,6 +997,16 @@ export class OpenLayerMap implements CsMapController {
         this.contourLayer = null;
       }
 
+      if (!this.renderers.slice(0, 6).includes(support)) {
+        console.error("Render " + support + " not supported");
+        return;
+      }
+
+      // Se asigna antes de montar la capa: initializeFeatureLayer() elige el estilo
+      // con lastSupport y, si aún tuviera el soporte anterior (p. ej. Estaciones),
+      // pintaría provincias/CCAA con el estilo de puntos y la capa saldría vacía.
+      this.lastSupport = support;
+
       switch (support) {
         case this.renderers[1]:
           break;
@@ -1011,13 +1021,8 @@ export class OpenLayerMap implements CsMapController {
         case this.renderers[5]:
           await this.setupRegionRenderer(state, support);
           break;
-
-        default:
-          console.error("Render " + support + " not supported");
-          return;
       }
 
-      this.lastSupport = support;
       await this.finalizeRenderUpdate();
 
     } catch (error) {
