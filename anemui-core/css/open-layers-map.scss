@@ -106,10 +106,29 @@
 
 .ol-attribution {
   position: absolute;
-  bottom: 5em;   // Por defecto: por encima del DateSelectorFrame (90% ancho en tablet/móvil)
+  bottom: 5em;   // Por defecto: por encima del DateSelectorFrame (tablet)
   right: 0.5em;
   max-width: calc(100% - 1.3em);
   z-index: 11;
+
+  @include dateAttr-mobile {
+      // Hasta 750px de ancho (no solo sm-mobile: por debajo de 750px el
+      // DateSelectorFrame, al 90% de ancho, ya se solapa con las
+      // atribuciones en su posición de escritorio — ver dateAttr-mobile en
+      // media-queries.scss). Valor verificado empíricamente en dispositivo
+      // real (el cálculo teórico a partir del CSS de DateSelectorFrame/
+      // footer no coincidía con el resultado real). translateY(50%)
+      // mantiene el centrado independiente de la altura real del texto.
+      bottom: 50px;
+      transform: translateY(50%);
+      // Centrado horizontal: sin esto, right:0.5em lo deja pegado a la
+      // derecha. left+right+margin:auto centra una caja de ancho fit-content.
+      right: 0;
+      left: 0;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+  }
 
   @include desktop {
     bottom: 0.5em; // En desktop el selector solo ocupa el 60% central, la esquina derecha queda libre
@@ -179,6 +198,13 @@
     opacity: 0.9;
     margin-top: 4px;
     line-height: 1.3;
+  }
+  .uncertainty-msg {
+    font-size: 0.85em;
+    font-style: italic;
+    margin-top: 4px;
+    line-height: 1.3;
+    opacity: 0.9;
   }
   font-size: 14px;
   font-weight: 500;
