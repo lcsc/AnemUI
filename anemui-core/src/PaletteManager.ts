@@ -369,7 +369,14 @@ export class CsDynamicPainter implements Painter{
         let mgr = PaletteManager.getInstance()
         let paletteStr: string[] = mgr.updatePaletteStrings()
         let paletteLength = paletteStr.length - 1
-        let i = parseInt(((val - min) / (max - min) * paletteLength) + "");
+        // Infinitos como en paintValues(): +Infinity es "> máximo" (último color).
+        // Antes parseInt("Infinity") daba NaN, paletteStr[NaN] undefined y la
+        // feature se pintaba en negro (p.ej. periodo de retorno infinito en
+        // retorno-lluvias por provincias). Math.floor y no parseInt(... + ""):
+        // parseInt("1e+21") da 1.
+        if (val === Infinity) return paletteStr[paletteLength];
+        if (val === -Infinity) return paletteStr[0];
+        let i = Math.floor((val - min) / (max - min) * paletteLength);
         if (i < 0) {
             i = 0;
         }
