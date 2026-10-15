@@ -100,6 +100,26 @@
   content: "✖";
 }
 
+// Recuadro de Canarias (LcscCombinedMap en lcsc-ui, pensado para pasar a
+// anemui-core): el título con el aspecto de .ol-popup, sin flecha; el
+// tooltip es un .ol-popup más, sin eventos de ratón.
+.map-inset-label {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 2;
+  background-color: $color_4;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid $border-color;
+  font-size: small;
+}
+
+.map-inset-tooltip {
+  pointer-events: none;
+}
+
 .ol-zoom{
   display:none;
 }

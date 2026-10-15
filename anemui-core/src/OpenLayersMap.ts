@@ -425,7 +425,14 @@ export class OpenLayerMap implements CsMapController {
 
     // ELIMINAR toda la lógica de shouldShowPercentileClock de aquí
     // Solo mantener el flujo normal de hover
-    Promise.all([loadLatLogValue(event.latLong, state, timesJs, this.getZoom()), this.loadOverlayValue(event.latLong, state, timesJs)])
+    // El valor de píxel solo se usa en Rejilla. Con soporte de features (Provincia,
+    // CCAA...) el dato sale de featureLayer.indexData: pedirlo igualmente obligaba a
+    // esperar a extractValueChunkedFromXY, que descarga el chunk de state.varId si
+    // computedLayer es false (p.ej. retorno-lluvias arrancando en Provincia).
+    const pixelValue: Promise<number[]> = state.support == this.defaultRenderer
+      ? loadLatLogValue(event.latLong, state, timesJs, this.getZoom())
+      : Promise.resolve([]);
+    Promise.all([pixelValue, this.loadOverlayValue(event.latLong, state, timesJs)])
       .then(([value, overlayValue]) => {
         state.overlayValue = overlayValue;
         if (state.support == this.defaultRenderer) {
@@ -531,9 +538,16 @@ export class OpenLayerMap implements CsMapController {
 
   public handleMapMove() {
     let state = this.parent.getParent().getState();
-    //  if (state.support == renderers[2]) {
+    // Mover el mapa no recarga los datos: la capa de features ya tiene todas
+    // (sin filtro por vista desde el 13/10/2026). Solo se recarga si el zoom
+    // cambia de nivel en un soporte con varias capas (Unidad administrativa:
+    // autonomía, provincia o municipio, ver selectDataFolder).
     if (state.support != this.defaultRenderer) {
-      this.parent.getParent().update();
+      const folders = this.parent.getParent().getFolders(state.support);
+      if (folders && folders.length > 1
+          && this.glmgr.getGeoLayer(this.selectDataFolder(folders)) !== this.featureLayer) {
+        this.parent.getParent().update();
+      }
     }
 
     // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad,
@@ -1991,6 +2005,9 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
   protected currentFeature: Feature;
   protected selectedFeature: Feature;
   public indexData: ArrayData;
+  // Caché de min/max de la leyenda para setFeatureStyle(), ver computeLegendRange().
+  private legendRange: { min: number, max: number };
+  private legendRangeFor: ArrayData = undefined;
 
   public rendererIndex: number = -1;
 
@@ -2096,20 +2113,13 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
         zIndex: 1000
       });
     } else {
-      const view = this.map.getView();
-      const mapSize = this.map.getSize() || [100, 100]; // Fallback size
-      const extent = view.calculateExtent(mapSize);
-
-      const filteredFeatures = myFeatures.filter(feature => {
-        const geometry = feature.getGeometry();
-        if (!geometry) return false;
-
-        const featureExtent = geometry.getExtent();
-        return this.intersectsExtent(featureExtent, extent);
-      });
-
+      // Todas las features, no solo las de la vista actual: si no, lo que
+      // queda fuera al crear la capa no se rellena al desplazarse ni en el
+      // recuadro de Canarias. Filtrar no ahorraba tiempo (prueba del
+      // 13/10/2026: ~7 ms provincias, ~55 ms municipios, con y sin filtro) y
+      // OpenLayers ya pinta solo lo que cae en la vista.
       vectorSource = new VectorSource({
-        features: filteredFeatures,
+        features: myFeatures,
         wrapX: false
       });
 
@@ -2259,8 +2269,7 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     return new Style({ image: imgStation });
   }
 
-  public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
-    // Usar los mismos min/max que la leyenda para que los colores coincidan
+  private computeLegendRange(): { min: number, max: number } {
     const legendValues = this.csMap.getParent().getParent().getLegendValues();
     let min: number, max: number;
     if (legendValues && legendValues.length > 0) {
@@ -2269,13 +2278,27 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
     } else {
       min = Number.MAX_VALUE;
       max = Number.MIN_VALUE;
-      Object.values(this.indexData).forEach((value) => {
+      Object.values(this.indexData || {}).forEach((value) => {
         if (!isNaN(value as number)) {
           min = Math.min(min, value as number);
           max = Math.max(max, value as number);
         }
       });
     }
+    return { min, max };
+  }
+
+  public setFeatureStyle(state: CsViewerData, feature: Feature, timesJs: CsTimesJsData): Style {
+    // Usar los mismos min/max que la leyenda para que los colores coincidan.
+    // Se calculan una vez por cada indexData (cada update() trae un objeto nuevo) y
+    // no en cada llamada: esta función se ejecuta por feature en cada repintado y
+    // getLegendValues() puede recorrer y ordenar la rejilla entera (p.ej.
+    // retorno-lluvias), lo que hacía muy lenta la capa, el hover y el desplazamiento.
+    if (this.legendRangeFor !== this.indexData) {
+      this.legendRange = this.computeLegendRange();
+      this.legendRangeFor = this.indexData;
+    }
+    const { min, max } = this.legendRange;
 
     let color: string = 'rgba(0,0,0,0)'; // Transparente por defecto (sin dato → no pinta)
     let id = feature.getProperties()['id'];
@@ -2337,15 +2360,6 @@ export class CsOpenLayerGeoJsonLayer extends CsGeoJsonLayer {
         color: '#999',
       }),
     });
-  }
-
-  private intersectsExtent(featureExtent: number[], viewExtent: number[]): boolean {
-    return !(
-      featureExtent[2] < viewExtent[0] || // right < left
-      featureExtent[0] > viewExtent[2] || // left > right
-      featureExtent[3] < viewExtent[1] || // top < bottom
-      featureExtent[1] > viewExtent[3]    // bottom > top
-    );
   }
 
   public showFeatureValue(data: any, feature: any, pixel: any, pos: CsLatLong): void {

@@ -29,8 +29,10 @@ export const portalUrl: string = typeof ENV.portalUrl !== 'undefined'? ENV.porta
 export const portalTitle: string = typeof ENV.portalTitle !== 'undefined'? ENV.portalTitle:'Volver al portal';
 // Nombre del layer (LayerConfigEntry.name, ver CsLayers.ts) preseleccionado
 // al cargar el mapa, por zoom global/nacional — ver
-// LayerManager.initBaseSelected(). Default = comportamiento actual.
-export const defaultGlobalBaseLayer: string = typeof ENV.defaultGlobalBaseLayer !== 'undefined'? ENV.defaultGlobalBaseLayer:'Foto satélite global ARCGIS';
+// LayerManager.initBaseSelected(). Default = comportamiento actual; en visores
+// globales (ENV.globalMap) mapa geográfico/político (OpenStreetMap), no satélite.
+export const defaultGlobalBaseLayer: string = typeof ENV.defaultGlobalBaseLayer !== 'undefined'? ENV.defaultGlobalBaseLayer
+    : (ENV.globalMap ? 'Mapa global OpenStreet Map' : 'Foto satélite global ARCGIS');
 export const defaultNationalBaseLayer: string = typeof ENV.defaultNationalBaseLayer !== 'undefined'? ENV.defaultNationalBaseLayer:'Mapa LIDAR nacional (PNOA)';
 // Texto de copyright superpuesto en la esquina del mapa exportado/impreso
 // (ver OpenLayersMap.drawAttributionOverlay). Default = AEMET (comportamiento

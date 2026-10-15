@@ -753,6 +753,22 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
 
+    // Valida el soporte espacial ("sp") leído de la URL. "Raster" y "Malla
+    // (raster)" son nombres antiguos de "Rejilla" que siguen llegando en
+    // enlaces/marcadores viejos. Un sp no válido deja state.support fuera de
+    // getRenderers(): updateRender() falla ("Render X not supported") y el
+    // hover/tap no muestra el valor de píxel (solo se hace con support ==
+    // defaultRenderer). Se traducen los nombres antiguos y cualquier otro valor
+    // no válido se sustituye por el actual (state.support). Los visores que
+    // sobrescriben fillStateFromUrl() la usan tras su propio decodeParam().
+    protected sanitizeSupport(support: string): string {
+        const legacySupport: { [old: string]: string } = { "Raster": defaultRenderer, "Malla (raster)": defaultRenderer };
+        const value = legacySupport[support] ?? support
+        if (this.getRenderers().includes(value)) return value
+        console.warn(`El parámetro "sp" de la URL ("${support}") no es válido; usando "${this.state.support}".`)
+        return this.state.support
+    }
+
     public fillStateFromUrl(): boolean {
         let ret = false
         let newUrl = new URL(document.location.toString())
@@ -766,7 +782,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
         if (newUrl.searchParams.has("sp")) {
             ret = true
-            this.state.support = newUrl.searchParams.get("sp")
+            const urlSupport = newUrl.searchParams.get("sp")
+            this.state.support = this.sanitizeSupport(urlSupport)
+            if (this.state.support !== urlSupport) {
+                newUrl.searchParams.set("sp", this.state.support)
+                history.replaceState({}, "", newUrl)
+            }
         }
         if (newUrl.searchParams.has("tp")) {
             ret = true
@@ -813,6 +834,9 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     }
 
     public async update(dateChanged: boolean = false): Promise<void> {
+        // Mismo aviso de carga que al pulsar en el mapa (onClick): solo sale
+        // si tarda más de 2 s (MenuBar.showLoading).
+        this.menuBar.showLoading();
         try {
             this.menuBar.update();
             this.leftBar.update();
@@ -840,6 +864,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             this.paletteFrame.update();
              this.layerFrame.update();
             this.changeUrl();
+        } finally {
+            this.menuBar.hideLoading();
         }
     }
 

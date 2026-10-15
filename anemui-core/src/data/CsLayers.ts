@@ -1,4 +1,4 @@
-import { ENV } from "../Env";
+import { ENV, globalMap } from "../Env";
 
 // Capas de mapa (base y superpuestas) y sus referencias asociadas (créditos, URLs del
 // nomenclátor), configurables por visor vía env.js (ENV.baseLayers/ENV.topLayers). Todo lo
@@ -64,15 +64,16 @@ const defaultBaseLayers: LayerConfigEntry[] = [
     // IGN, no el MTN (ver doc/PROPUESTAS_IGN_CNIG_CARTOGRAFIA.md, punto 4) — el nombre
     // anterior era engañoso respecto al dato real que sirve esta capa.
     { name: "Callejero (IGN)", url: 'https://tms-ign-base.idee.es/1.0.0/IGNBaseTodo/{z}/{x}/{-y}.jpeg', type: 'OSM', global: true, creditKey: 'ign', wmsExportUrl: 'https://www.ign.es/wms-inspire/ign-base?', wmsExportLayer: 'IGNBaseTodo' },
-    // MTN real (punto 4 del informe anterior): mismo servicio WMTS que "Fondo relieve
-    // global GEBCO (IGN)" de más abajo (`mapa-raster`), capa `MTN` en vez de `MTN_Fondo`.
-    // Confirmado con una tesela real (`GetTile`, zoom 10 sobre Cuenca): estilo clásico de
-    // mapa topográfico (fondo beige, curvas de nivel), formato JPEG.
-    { name: "Mapa Topográfico Nacional (IGN)", url: 'https://www.ign.es/wmts/mapa-raster?', layer: 'MTN', type: 'WMTS', global: true, creditKey: 'ign', format: 'image/jpeg' },
     { name: "Foto satélite global ARCGIS", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", type: 'OSM', global: true, creditKey: 'esri', wmsExportUrl: 'https://services.arcgisonline.com/ArcGIS/services/World_Imagery/MapServer/WMSServer?', wmsExportLayer: '0' },
     { name: "Mapa global OpenStreet Map", type: 'OSM', global: true, creditKey: 'osm' } as LayerConfigEntry,
     { name: "Fondo relieve global GEBCO (IGN)", url: 'https://www.ign.es/wmts/mapa-raster?', layer: 'MTN_Fondo', type: 'WMTS', global: true, creditKey: 'ign', format: 'image/jpeg' },
     // ------ Estatal
+    // MTN real (punto 4 del informe anterior): mismo servicio WMTS que "Fondo relieve
+    // global GEBCO (IGN)" de más arriba (`mapa-raster`), capa `MTN` en vez de `MTN_Fondo`.
+    // Confirmado con una tesela real (`GetTile`, zoom 10 sobre Cuenca): estilo clásico de
+    // mapa topográfico (fondo beige, curvas de nivel), formato JPEG. global:false: sin
+    // cobertura fuera de España, no aparece en visores globalMap.
+    { name: "Mapa Topográfico Nacional (IGN)", url: 'https://www.ign.es/wmts/mapa-raster?', layer: 'MTN', type: 'WMTS', global: false, creditKey: 'ign', format: 'image/jpeg' },
     { name: "Ortofoto nacional (PNOA)", url: 'https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/{z}/{x}/{-y}.jpeg', type: 'OSM', global: false, creditKey: 'ign_pnoa', wmsExportUrl: 'https://www.ign.es/wms-inspire/pnoa-ma?', wmsExportLayer: 'OI.OrthoimageCoverage' },
     { name: "Mapa LIDAR nacional (PNOA)", url: 'https://wmts-mapa-lidar.idee.es/lidar?', layer: 'EL.GridCoverageDSM', type: 'WMTS', global: false, creditKey: 'ign_pnoa' },
     { name: "Mapa Base de España - Gris (IGN)", url: 'https://tms-ign-base.idee.es/1.0.0/IGNBaseGris/{z}/{x}/{-y}.jpeg', type: 'OSM', global: false, creditKey: 'ign', wmsExportUrl: 'https://www.ign.es/wms-inspire/ign-base?', wmsExportLayer: 'IGNBaseGris' },
@@ -120,8 +121,15 @@ const defaultTopLayers: LayerConfigEntry[] = [
     { name: WORLD_COUNTRIES_LAYER_NAME, url: WORLD_COUNTRIES_URL, type: 'GeoJson', global: true, creditKey: 'naturalearth', labelPropertyKey: 'name' }
 ];
 
-export const baseLayersConfig: LayerConfigEntry[] = Array.isArray(ENV.baseLayers) ? ENV.baseLayers : defaultBaseLayers;
-export const topLayersConfig: LayerConfigEntry[] = Array.isArray(ENV.topLayers) ? ENV.topLayers : defaultTopLayers;
+// Visor global (ENV.globalMap): las capas estatales (global:false, solo cobertura España)
+// no aplican — por defecto solo las globales.
+export const baseLayersConfig: LayerConfigEntry[] = Array.isArray(ENV.baseLayers) ? ENV.baseLayers
+    : (globalMap ? defaultBaseLayers.filter(l => l.global) : defaultBaseLayers);
+// Visor global (ENV.globalMap): la capa NUTS (solo España) no aplica — por defecto solo la
+// de países de Natural Earth, que queda como única topLayer y por tanto seleccionada.
+const defaultGlobalTopLayers: LayerConfigEntry[] = defaultTopLayers.filter(l => l.name === WORLD_COUNTRIES_LAYER_NAME);
+export const topLayersConfig: LayerConfigEntry[] = Array.isArray(ENV.topLayers) ? ENV.topLayers
+    : (globalMap ? defaultGlobalTopLayers : defaultTopLayers);
 
 // Referencias de las capas del nomenclátor (ver LayerManager.getNomenclatorLayers()): trazo
 // de provincias (Eurostat NUTS, mismo fichero que la capa seleccionable de arriba) y de
