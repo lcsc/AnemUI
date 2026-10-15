@@ -17,7 +17,7 @@ export class CsMapEvent{
 }
 
 export interface CsMapController{
-    updateRender(support: string): void;
+    updateRender(support: string): Promise<void>;
     init(_parent:CsMap):void;
     putMarker(pos:CsLatLong):void;
     setDate(dateIndex:number, state:CsViewerData):void;
@@ -32,7 +32,7 @@ export interface CsMapListener{
     onMapInited():void;
     onMapLoaded():void;
     onDragStart(event:CsMapEvent):void;
-    onClick(event:CsMapEvent):void;
+    onClick(event:CsMapEvent):void | Promise<void>;
     // onMouseMoveEnd(event:CsMapEvent):void;
 }
 

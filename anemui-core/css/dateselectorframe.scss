@@ -13,9 +13,17 @@ div.DateSelectorFrame{
     width: 90%;
     left:0;
     right:0;
-    bottom: 44px; // dejar espacio para el #mobile-footer en móvil
+    bottom: 44px; // dejar espacio para el #mobile-footer (visible hasta desktop)
 
-    @include tablet {
+    @include dateAttr-mobile {
+        // Hasta 750px de ancho: subir el selector deja un hueco real de
+        // ~36px justo encima de #mobile-footer para el aviso de
+        // atribuciones del mapa (.ol-attribution en open-layers-map.scss),
+        // en vez de que ambos compitan por el mismo espacio.
+        bottom: 76px;
+    }
+
+    @include desktop {
         bottom: 0.25em;
     }
     margin-left:auto;
@@ -73,6 +81,30 @@ div.DateSelectorFrame{
 
     button.navbar-btn-title {
         min-width: 130px;
+    }
+
+    @include dateAttr-mobile {
+        // Flechas anterior/siguiente más pequeñas (.navbar-md-btn es
+        // exclusivo del selector de fechas, no se usa en ningún otro sitio).
+        .navbar-md-btn {
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 1.1rem !important;
+        }
+
+        // Input de fecha y su icono de calendario más compactos.
+        #PickerFrame {
+            .form-control {
+                font-size: 0.8rem;
+                padding: 0.25rem 0.4rem;
+            }
+
+            .input-group-addon,
+            .input-group-text {
+                font-size: 0.8rem;
+                padding: 0.25rem 0.4rem;
+            }
+        }
     }
 
     div.slider-horizontal{

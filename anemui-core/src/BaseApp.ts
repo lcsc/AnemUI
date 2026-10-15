@@ -10,7 +10,7 @@ import { DateSelectorFrame, DateFrameListener } from "./ui/DateFrame";
 import { loadLatLongData, loadPopData, PopDataItem } from "./data/CsDataLoader";
 import { CsLatLongData, CsTimesJsData, CsViewerData, CsTimeSpan } from "./data/CsDataTypes";
 import { CsGraph } from "./ui/Graph";
-import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods } from "./Env";
+import { isKeyCloakEnabled, locale, avoidMinimize, maxWhenInf, minWhenInf, hasDownload, hasCookies, computedDataTilesLayer, useFactoryMethods, faviconUrl } from "./Env";
 import { InfoDiv, InfoFrame } from "./ui/InfoPanel";
 import { CsvDownloadDone, browserDownloadFile, downloadCSVbySt, downloadTimebyRegion, getPortionForPoint } from "./data/ChunkDownloader";
 import { downloadTCSVChunked } from "./data/ChunkDownloader";
@@ -67,6 +67,15 @@ export const OVERLAY_SUFFIXES = [UNCERTAINTY_LAYER, PVALUE_LAYER]
 const LEYEND_TITLE = "Leyenda"
 const STR_ALL = "Todo"
 
+export type CsViewerAppParam={
+    param: string,
+    field: string,
+    storeFn?: (param: string,field:string, value: any) => boolean,
+    validValues?: string[],
+    validValueFn?: (param: string,field:string, value: any) => boolean,
+    castFn?:(value: any) => any
+}
+
 export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFrameListener {
 
     protected menuBar: MenuBar;
@@ -93,6 +102,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     
     protected language: Language;
     protected cookies: CsCookies;
+    protected paramsDef?: CsViewerAppParam[];
 
     protected constructor() {
         this.menuBar = useFactoryMethods.menuBar ? this.createMenuBar() : new MenuBar(this, this);
@@ -111,7 +121,18 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
 
         this.downloadOptionsDiv = new DownloadOptionsDiv(this, "downloadOptionsDiv")
         window.CsViewerApp = this;
-        
+
+        // Favicon común a todos los visores. El HTML generado por
+        // HtmlWebpackPlugin no incluye favicon, así que se inyecta aquí.
+        // Parametrizable vía Env.faviconUrl (por defecto, el de AEMET).
+        let favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+        if (!favicon) {
+            favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            document.head.appendChild(favicon);
+        }
+        favicon.href = faviconUrl;
+
         this.language = Language.getInstance();
         
         if (isKeyCloakEnabled) this.loginFrame = new LoginFrame(this);
@@ -292,13 +313,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
     
-    private renderBaseStructure(): void {
+    protected renderBaseStructure(): void {
         // Renderizado del frame principal
         mount(this.mainFrame.render(), document.body);
         this.mainFrame.build();
     }
     
-    private renderMainComponents(): void {
+    protected renderMainComponents(): void {
         // Componentes que no dependen de datos
         const mainFrameElement = document.getElementById('MainFrame');
         if (!mainFrameElement) {
@@ -379,7 +400,7 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         addChild(mainFrameElement, DownloadIframe());
     }
     
-    private renderDataDependentComponents(): void {
+    protected renderDataDependentComponents(): void {
         // Componentes que necesitan datos cargados
         const rightBarElement = document.getElementById('RightBar');
         if (rightBarElement) {
@@ -521,14 +542,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadFrame.showPointButtons()
     }
 
-    onClick(event: CsMapEvent): void {
-        //console.log("Map Clicked");
-
+    onClick(event: CsMapEvent): Promise<void> {
         this.menuBar.showLoading();
-        loadLatLongData(event.latLong, this.state, this.timesJs)
+        return loadLatLongData(event.latLong, this.state, this.timesJs)
             .then((data: CsLatLongData) => {
                 this.menuBar.hideLoading();
-                this.onLlDataLoaded(data)
+                this.onLlDataLoaded(data);
             })
             .catch((reason: any) => {
                 this.menuBar.hideLoading();
@@ -690,6 +709,36 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
     }
 
+    
+    public safeChangeUrl(): void {
+        console.log("safeChangeUrl called");
+        if (!this.paramsDef) return ;
+        if (this.paramsDef.length == 0) return;
+        let newUrl = new URL(document.location.toString())
+        
+        for (let paramDef of this.paramsDef) {
+            
+            let paramValue = (this.state as any)[paramDef.field];
+            let param = paramDef.param;
+
+            if (paramDef.storeFn && paramDef.storeFn(param, paramDef.field, paramValue) === false) {
+                newUrl.searchParams.delete(param);
+                continue;
+            }
+            if (paramValue !== undefined && paramValue !== null) {
+                newUrl.searchParams.set(param, this.getCode(paramValue));
+            } else {
+                newUrl.searchParams.delete(param);
+            }
+        }
+
+        if (history.replaceState) {
+            history.replaceState({}, "", newUrl)
+        } else {
+            history.pushState({}, "", newUrl)
+        }
+    }
+
     public changeUrl(): void {
         let newUrl = new URL(document.location.toString())
         newUrl.searchParams.set("var", this.state.varId)
@@ -702,6 +751,22 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         } else {
             history.pushState({}, "", newUrl)
         }
+    }
+
+    // Valida el soporte espacial ("sp") leído de la URL. "Raster" y "Malla
+    // (raster)" son nombres antiguos de "Rejilla" que siguen llegando en
+    // enlaces/marcadores viejos. Un sp no válido deja state.support fuera de
+    // getRenderers(): updateRender() falla ("Render X not supported") y el
+    // hover/tap no muestra el valor de píxel (solo se hace con support ==
+    // defaultRenderer). Se traducen los nombres antiguos y cualquier otro valor
+    // no válido se sustituye por el actual (state.support). Los visores que
+    // sobrescriben fillStateFromUrl() la usan tras su propio decodeParam().
+    protected sanitizeSupport(support: string): string {
+        const legacySupport: { [old: string]: string } = { "Raster": defaultRenderer, "Malla (raster)": defaultRenderer };
+        const value = legacySupport[support] ?? support
+        if (this.getRenderers().includes(value)) return value
+        console.warn(`El parámetro "sp" de la URL ("${support}") no es válido; usando "${this.state.support}".`)
+        return this.state.support
     }
 
     public fillStateFromUrl(): boolean {
@@ -717,7 +782,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
         if (newUrl.searchParams.has("sp")) {
             ret = true
-            this.state.support = newUrl.searchParams.get("sp")
+            const urlSupport = newUrl.searchParams.get("sp")
+            this.state.support = this.sanitizeSupport(urlSupport)
+            if (this.state.support !== urlSupport) {
+                newUrl.searchParams.set("sp", this.state.support)
+                history.replaceState({}, "", newUrl)
+            }
         }
         if (newUrl.searchParams.has("tp")) {
             ret = true
@@ -726,19 +796,63 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return ret
     }
 
+    public safeFillStateFromUrl(): boolean {
+        let ret = false;
+        if (!this.paramsDef) return ret;
+        let newUrl = new URL(document.location.toString());
+        for (let paramDef of this.paramsDef) {
+            let param = paramDef.param;
+            if (newUrl.searchParams.has(param)) {
+                console.log(`Found param ${param} in URL, processing...`);
+                let value = newUrl.searchParams.get(param);
+                if (paramDef.castFn) {
+                    value = paramDef.castFn(value);
+                }
+
+                // si hay una función de validación, usarla para validar el valor
+                if (paramDef.validValueFn){
+                    if (!paramDef.validValueFn(param, paramDef.field, value)) {
+                        console.warn(`Value ${value} for param ${param} is not valid`);
+                        return false;
+                    } 
+                } else if (paramDef.validValues){
+                    if (!paramDef.validValues.includes(value)) {
+                        console.warn(`Value ${value} for param ${param} is not valid`);
+                        return false;
+                    }
+                }else{
+                    console.warn(`No validValues or validValueFn defined for param ${param}`);
+                    continue;
+                }
+                
+                (this.state as any)[paramDef.field] = value;
+                ret = true;
+            }
+        }
+        return ret;
+
+    }
+
     public async update(dateChanged: boolean = false): Promise<void> {
+        // Mismo aviso de carga que al pulsar en el mapa (onClick): solo sale
+        // si tarda más de 2 s (MenuBar.showLoading).
+        this.menuBar.showLoading();
         try {
             this.menuBar.update();
             this.leftBar.update();
-            await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
-            this.csMap.updateRender(this.state.support);
-
-            // Wait for data only if we have computed data tiles layer
-            if (computedDataTilesLayer && this.state.computedLayer) {
-                await this.waitForDataLoad();
-            }
-
+            // Actualizar el DateFrame antes de los awaits del mapa para que el cambio
+            // de modo (histórico ↔ climatología) sea inmediato, sin esperar a la carga
             if (!dateChanged) this.dateSelectorFrame.update();
+
+            await this.csMap.updateDate(this.state.selectedTimeIndex, this.state);
+            // Sin este await, paletteFrame.update() (línea siguiente) podía
+            // ejecutarse mientras updateRender() todavía estaba a mitad de
+            // computeFeatureLayerData() — es decir, con computedDataByFeature
+            // recién vaciado (self.state.computedDataByFeature = {}) antes de
+            // rellenarse. La leyenda se calculaba entonces sobre datos vacíos,
+            // no sobre los definitivos.
+            await this.csMap.updateRender(this.state.support);
+
             this.paletteFrame.update();
             this.layerFrame.update();
             this.changeUrl();
@@ -750,6 +864,8 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
             this.paletteFrame.update();
              this.layerFrame.update();
             this.changeUrl();
+        } finally {
+            this.menuBar.hideLoading();
         }
     }
 
@@ -997,6 +1113,43 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         }
 
         return this.getTranslation('valor_en') + text + formattedValue;
+    }
+
+    /** Devuelve el acrónimo del índice para los textos de tercil. Cada visor lo sobrescribe. */
+    public getTercilAcronym(): string { return ''; }
+
+    /** Texto descriptivo de un tercil dado un acrónimo. Fuente única de verdad para pixel popup y leyenda. */
+    public getTercilDescriptionText(tercilLabel: string, acronimo: string): string {
+        const lc = tercilLabel.toLowerCase();
+        if (lc === 'inferior')
+            return `Se prevé una tendencia hacia valores inferiores a lo normal para el índice ${acronimo}.`;
+        if (lc === 'medio')
+            return `No se anticipa una tendencia clara; los valores del índice ${acronimo} tienen mayor probabilidad de situarse dentro del rango habitual.`;
+        if (lc === 'superior')
+            return `Se prevé una tendencia hacia valores superiores a lo normal para el índice ${acronimo}.`;
+        return '';
+    }
+
+    /**
+     * true si el popup debe mostrar el mensaje de la capa overlay (incertidumbre/significación).
+     * Por defecto, siempre que la capa esté activa. Los visores pueden sobrescribirlo para
+     * mostrarlo solo sobre los píxeles marcados usando state.overlayValue (lo rellena el mapa).
+     */
+    protected isOverlayMarked(): boolean {
+        return this.state.uncertaintyLayer;
+    }
+
+    protected formatTercilPopup(tercilLabel: string, acronimo?: string): string {
+        const uncertaintyMsg = this.isOverlayMarked()
+            ? `<div class="uncertainty-msg">${this.getTranslation('uncertainty_prediction')}</div>`
+            : '';
+        let descripcionMsg = '';
+        const acr = acronimo ?? this.getTercilAcronym();
+        if (acr) {
+            const texto = this.getTercilDescriptionText(tercilLabel, acr);
+            if (texto) descripcionMsg = `<div class="popover-description">${texto}</div>`;
+        }
+        return `<div>Tercil ${tercilLabel}</div>${descripcionMsg}${uncertaintyMsg}`;
     }
 
     public getHoverHintText(): string | null { return null; }

@@ -1824,58 +1824,6 @@
     {
       "type": "Feature",
       "properties": {
-        "id": "C029O",
-        "name": "LANZAROTE/AEROPUERTO",
-        "utm_x": "-536098",
-        "utm_y": "3249414",
-        "prov": "LAS PALMAS",
-        "source": "aemet",
-        "is_auto": "TRUE",
-        "is_active": "TRUE",
-        "cand": "TRUE",
-        "island": "CANARIAS",
-        "sp_domain": "LANZAROTE",
-        "resol": "0.1",
-        "complete_years": "52.8733744010951",
-        "alt": "81"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          "-13.600278",
-          "28.951944"
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "id": "C249I",
-        "name": "FUERTEVENTURA/AEROPUERTO",
-        "utm_x": "-567173",
-        "utm_y": "3195044",
-        "prov": "LAS PALMAS",
-        "source": "aemet",
-        "is_auto": "TRUE",
-        "is_active": "TRUE",
-        "cand": "TRUE",
-        "island": "CANARIAS",
-        "sp_domain": "FUERTEVENTURA",
-        "resol": "0.1",
-        "complete_years": "55.9945242984257",
-        "alt": "0"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          "-13.863056",
-          "28.444722"
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "id": "C430E",
         "name": "IZAÑA",
         "utm_x": "-830282",
@@ -1948,58 +1896,6 @@
         "coordinates": [
           "-16.255278",
           "28.463333"
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "id": "C649I",
-        "name": "GRAN CANARIA/AEROPUERTO",
-        "utm_x": "-725041",
-        "utm_y": "3150786",
-        "prov": "LAS PALMAS",
-        "source": "aemet",
-        "is_auto": "TRUE",
-        "is_active": "TRUE",
-        "cand": "TRUE",
-        "island": "CANARIAS",
-        "sp_domain": "GRAN CANARIA",
-        "resol": "0.1",
-        "complete_years": "64.4380561259411",
-        "alt": "23"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          "-15.395278",
-          "27.917778"
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "id": "C929I",
-        "name": "HIERRO/AEROPUERTO",
-        "utm_x": "-975736",
-        "utm_y": "3167955",
-        "prov": "SANTA CRUZ DE TENERIFE",
-        "source": "aemet",
-        "is_auto": "TRUE",
-        "is_active": "TRUE",
-        "cand": "TRUE",
-        "island": "CANARIAS",
-        "sp_domain": "EL HIERRO",
-        "resol": "0.1",
-        "complete_years": "51.854893908282",
-        "alt": "47"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          "-17.888889",
-          "27.818889"
         ]
       }
     }

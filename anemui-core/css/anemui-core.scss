@@ -45,6 +45,16 @@ body {
     font-family: $font-family-base;
 }
 
+// Visores globalMap (ver OpenLayersMap.init(), añade esta clase a <body>):
+// el rectángulo del mundo (extent que limita la vista, ver globalMap en
+// Env.ts) no siempre llena el alto de #map si su proporción no es 2:1 —
+// deja un hueco en blanco arriba/abajo al desplazar hacia los polos. Se
+// disimula con el mismo azul de océano de OpenStreetMap (#aad3df) de fondo
+// en vez de blanco, en lugar de resolver el ajuste exacto de proporciones.
+body.global-map {
+    background-color: #aad3df;
+}
+
 #MainFrame {
     width: 98%;
     margin: 0px auto;
