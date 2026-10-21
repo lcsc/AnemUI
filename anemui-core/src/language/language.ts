@@ -96,6 +96,10 @@ export default class Language {
             'exportmap_descargando_fondo': "Downloading map background…",
             'exportmap_componiendo_imagen': "Composing image…",
             'cerrar': "Close",
+            'iniciar_sesion': "Log in",
+            'cerrar_sesion': "Log out",
+            'perfil': "Profile",
+            'usuario': "User:",
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',
@@ -197,6 +201,10 @@ export default class Language {
             'exportmap_descargando_fondo': "Descargando fondo cartográfico…",
             'exportmap_componiendo_imagen': "Componiendo imagen…",
             'cerrar': "Cerrar",
+            'iniciar_sesion': "Iniciar sesión",
+            'cerrar_sesion': "Cerrar sesión",
+            'perfil': "Perfil",
+            'usuario': "Usuario:",
             'legendValues': {
                 '%': '%',
                 'celsius': '°C',

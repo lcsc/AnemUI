@@ -25,6 +25,9 @@ export const minWhenInf:number=typeof ENV.minWhenInf !== 'undefined'? ENV.minWhe
 export const computedDataTilesLayer:boolean = ENV.computedDataTilesLayer !== 'undefined'? ENV.computedDataTilesLayer: false;
 export const dataSource: string = ENV.dataSource !== 'undefined'? ENV.dataSource:'nc';
 export const faviconUrl: string = typeof ENV.faviconUrl !== 'undefined'? ENV.faviconUrl:'https://www.aemet.es/favicon.ico';
+export const keycloakUrl: string = typeof ENV.keycloakUrl !== 'undefined'? ENV.keycloakUrl:'https://central.lcsc.csic.es/iam/';
+export const keycloakRealm: string = typeof ENV.keycloakRealm !== 'undefined'? ENV.keycloakRealm:'lcsc';
+export const keycloakClientId: string = typeof ENV.keycloakClientId !== 'undefined'? ENV.keycloakClientId:'AnemUI-Dev';
 export const portalUrl: string = typeof ENV.portalUrl !== 'undefined'? ENV.portalUrl:'https://www.aemet.es/es/serviciosclimaticos/pesc';
 export const portalTitle: string = typeof ENV.portalTitle !== 'undefined'? ENV.portalTitle:'Volver al portal';
 // Nombre del layer (LayerConfigEntry.name, ver CsLayers.ts) preseleccionado

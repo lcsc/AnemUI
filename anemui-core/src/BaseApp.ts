@@ -200,6 +200,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return this.paletteFrame;
     }
 
+    public getLoginFrame(): LoginFrame | undefined {
+        return this.loginFrame;
+    }
+
+    // LoginFrame lo llama al terminar de iniciar Keycloak.
+    public onLoginChange(authenticated: boolean): void {}
+
     public getTranslation(text:string): string {
         return this.language.getTranslation(text) ;
     }
