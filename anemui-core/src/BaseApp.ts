@@ -685,15 +685,20 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         let yearCount = 1
         if (time.length<=12) number = time.length
         else {
-            const result = time.reduce((acc, curr) => {
+            const perYear: { [year: string]: number } = {};
+            for (const curr of time) {
                 const year = curr.split('-')[0];
-                if (!acc.includes(year)) {
-                acc.push(year);
-                }
-                return acc;
-            }, []);
-            yearCount = result.length
-            number = time.length / result.length;
+                perYear[year] = (perYear[year] || 0) + 1;
+            }
+            const counts = Object.values(perYear);
+            yearCount = counts.length
+            number = time.length / yearCount;
+            // Si la división no es entera, el primer o el último año está incompleto
+            // (p. ej. spei, la única monitorización mensual, cuyo último año llega hasta
+            // el último mes calculado) y se toma el número de fechas de un año completo.
+            // Solo hasta 12 fechas al año: una serie diaria de varios años sigue siendo Date.
+            const maxPerYear = Math.max(...counts);
+            if (!Number.isInteger(number) && maxPerYear <= 12) number = maxPerYear;
         }
         // Caso especial: si hay exactamente 365 o 366 elementos totales, es día juliano
         // independientemente de si las fechas cruzan dos años

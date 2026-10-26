@@ -85,6 +85,12 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
             date.setUTCMonth(date.getUTCMonth() + d);
             return date.toISOString().split("T")[0];
         },
+        // spei: los speiNN.nc usan 'days since 1901-01-01' y nczarrgenerator
+        // escribe en el zarr la misma unidad con la hora ('... 00:00:00')
+        "days since 1901-01-01": (d) =>
+            new Date(Date.UTC(1901, 0, 1) + d * 86400000).toISOString().split("T")[0],
+        "days since 1901-01-01 00:00:00": (d) =>
+            new Date(Date.UTC(1901, 0, 1) + d * 86400000).toISOString().split("T")[0],
     };
 
     // Geo Data
