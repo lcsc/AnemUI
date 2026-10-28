@@ -14,6 +14,7 @@ import { ncSignif, dataSource, globalMap, olProjection } from "../Env";
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestedArray, openArray, TypedArray } from 'zarr';
+import { getZarrStore } from './ZarrStore';
 import { isNestedArray } from "./CsDataLoader";
 
 export type ArrayDownloadDone = (data: number[]) => void;
@@ -248,13 +249,13 @@ async function downloadTChunkNC(x: number, varName: string, portion: string, tim
 }
 
 async function downloadTChunkZarr(x: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-    const zarrBasePath = window.location.origin + '/zarr';
+    const store = await getZarrStore();
     let app = window.CsViewerApp;
     let promise: Promise<number[]> = new Promise((resolve, reject) => {
         const xIndex = (x - 1) % timesJs.lonNum[varName + portion];
         const yIndex = Math.floor((x - 1) / timesJs.lonNum[varName + portion]);
 
-        openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" })
+        openArray({ store, path: varName + '/' + varName, mode: "r" })
             .then(varArray => {
                 varArray.get([null, yIndex, xIndex])
                     .then(data => {
@@ -635,7 +636,7 @@ async function downloadXYChunkNC(t: number, varName: string, portion: string, ti
 }
 
 async function downloadXYChunkZarr(t: number, varName: string, portion: string, timesJs: CsTimesJsData): Promise<number[]> {
-    const zarrBasePath = window.location.origin + '/zarr';
+    const store = await getZarrStore();
     let app = window.CsViewerApp;
 
     // Get the actual time index to use for this variable
@@ -650,7 +651,7 @@ async function downloadXYChunkZarr(t: number, varName: string, portion: string, 
     }
 
     try {
-        const varArray = await openArray({ store: zarrBasePath, path: varName + '/' + varName, mode: "r" });
+        const varArray = await openArray({ store, path: varName + '/' + varName, mode: "r" });
 
         const data = await varArray.get([actualTimeIndex]);
 

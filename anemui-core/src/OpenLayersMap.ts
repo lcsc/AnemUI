@@ -624,6 +624,7 @@ export class OpenLayerMap implements CsMapController {
   }
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
+    value = this.parent.getParent().filterPointValue(pos, value);
     if (Number.isNaN(value)) {
       this.parent.getParent().getState().xyValue = NaN;
       this.popup.hidden = true;

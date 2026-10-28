@@ -7,6 +7,7 @@ import { BaseApp } from "../BaseApp";
 import { extractValueChunkedFromT, extractDataChunkedFromT, extractValueChunkedFromXY } from "./ChunkDownloader";
 import { dataSource } from '../Env';
 import { NestedArray, openArray, openGroup, TypedArray } from 'zarr';
+import { getZarrStore } from './ZarrStore';
 import { timeDim, horDim, verDim, singlePortion } from "./CsPConstans";
 
 async function loadTimesJson(): Promise<CsTimesJsData> {
@@ -62,8 +63,8 @@ export function isNestedArray(value: number | NestedArray<TypedArray>): value is
 async function loadTimesZarr(): Promise<CsTimesJsData> {
     let result: CsTimesJsData = {} as CsTimesJsData;
 
-    const zarrBasePath = window.location.origin + '/zarr';
-    const root_group = await openGroup(zarrBasePath);
+    const store = await getZarrStore();
+    const root_group = await openGroup(store);
     const root_group_attrs = await root_group.attrs.asObject();
     const groups = root_group_attrs.variables;
     const converters: { [unit: string]: (d: number) => string } = {
@@ -115,7 +116,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
 
     for (const varName of groups) {
         const varNamePortion = varName + singlePortion;
-        const var_group = await openGroup(zarrBasePath + "/" + varName);
+        const var_group = await openGroup(store, varName);
         const var_group_attrs = await var_group.attrs.asObject();
 
         // varTitle and legendTitle
@@ -123,7 +124,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         result.legendTitle[varName] = var_group_attrs["legendTitle"];
 
         // times
-        const time_dim = await openArray({store: zarrBasePath, path: varName+"/"+timeDim, mode: "r"});
+        const time_dim = await openArray({store, path: varName+"/"+timeDim, mode: "r"});
         const time_dim_attrs = await time_dim.attrs.asObject();
         const timeData = await time_dim.get();
 
@@ -146,7 +147,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         const timeLength = isNestedArray(timeData) ? (timeData.data as TypedArray).length : 1;
         // varMin
         try {
-            const varMin = await openArray({store: zarrBasePath, path: varName + "/" + varName + "_min", mode: "r"});
+            const varMin = await openArray({store, path: varName + "/" + varName + "_min", mode: "r"});
             const minData = await varMin.get();
             if (isNestedArray(minData)) {
                 const minTypedArray = minData.data as TypedArray;
@@ -161,7 +162,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         
         // varMax
         try {
-            const varMax = await openArray({store: zarrBasePath, path: varName+"/"+varName+"_max", mode: "r"});
+            const varMax = await openArray({store, path: varName+"/"+varName+"_max", mode: "r"});
             const maxData = await varMax.get();
             if (isNestedArray(maxData)) {
                 const maxTypedArray = maxData.data as TypedArray;
@@ -182,7 +183,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         result.portions[varName] = [singlePortion];    // Not used with Zarr => A fixed unique value is given
 
         // lonMin, lonMax and lonNum
-        const lons = await openArray({store: zarrBasePath, path: varName+"/"+horDim, mode: "r"});
+        const lons = await openArray({store, path: varName+"/"+horDim, mode: "r"});
         const lonsData = await lons.get();
         if (isNestedArray(lonsData)) {
             const lonsTypedArray = lonsData.data as TypedArray;
@@ -196,7 +197,7 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         }
 
         // latMin, latMax and latNum
-        const lats = await openArray({store: zarrBasePath, path: varName+"/"+verDim, mode: "r"});
+        const lats = await openArray({store, path: varName+"/"+verDim, mode: "r"});
         const latsData = await lats.get();
         if (isNestedArray(latsData)) {
             const latsTypedArray = latsData.data as TypedArray;

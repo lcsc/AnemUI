@@ -1127,6 +1127,12 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         return this.getTranslation('valor_en') + text + formattedValue;
     }
 
+    /** Valor del punto antes de mostrarlo en el popup. Los visores que ocultan zonas
+     *  del mapa (p.ej. la máscara de zonas áridas de spei) devuelven NaN para no mostrarlo. */
+    public filterPointValue(latLong: CsLatLong, value: number): number {
+        return value;
+    }
+
     /** Devuelve el acrónimo del índice para los textos de tercil. Cada visor lo sobrescribe. */
     public getTercilAcronym(): string { return ''; }
 
