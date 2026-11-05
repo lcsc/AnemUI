@@ -114,20 +114,30 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
 
     let lastProjection: string = "";
 
-    for (const varName of groups) {
+    // Todas las escalas y sus arrays se piden a la vez: en serie, cada petición
+    // abre una conexión nueva en servidores con 'Connection: close'
+    const loadArr = (path: string) => openArray({store, path, mode: "r"});
+    const vars = await Promise.all(groups.map(async (varName: string) => {
+        const [var_group_attrs, [time_dim_attrs, timeData], minData, maxData, lonsData, latsData] = await Promise.all([
+            openGroup(store, varName).then(g => g.attrs.asObject()),
+            loadArr(varName + "/" + timeDim).then(a => Promise.all([a.attrs.asObject(), a.get()])),
+            // If path doesn't exist, null => an array with -1 values
+            loadArr(varName + "/" + varName + "_min").then(a => a.get()).catch((): null => null),
+            loadArr(varName + "/" + varName + "_max").then(a => a.get()).catch((): null => null),
+            loadArr(varName + "/" + horDim).then(a => a.get()),
+            loadArr(varName + "/" + verDim).then(a => a.get()),
+        ]);
+        return { varName, var_group_attrs, time_dim_attrs, timeData, minData, maxData, lonsData, latsData };
+    }));
+
+    for (const { varName, var_group_attrs, time_dim_attrs, timeData, minData, maxData, lonsData, latsData } of vars) {
         const varNamePortion = varName + singlePortion;
-        const var_group = await openGroup(store, varName);
-        const var_group_attrs = await var_group.attrs.asObject();
 
         // varTitle and legendTitle
         result.varTitle[varName] = var_group_attrs["varTitle"];
         result.legendTitle[varName] = var_group_attrs["legendTitle"];
 
         // times
-        const time_dim = await openArray({store, path: varName+"/"+timeDim, mode: "r"});
-        const time_dim_attrs = await time_dim.attrs.asObject();
-        const timeData = await time_dim.get();
-
         if (isNestedArray(timeData)) {
             const typedArray = timeData.data as TypedArray;
             const timeArr = Array.from(typedArray);
@@ -146,33 +156,21 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
 
         const timeLength = isNestedArray(timeData) ? (timeData.data as TypedArray).length : 1;
         // varMin
-        try {
-            const varMin = await openArray({store, path: varName + "/" + varName + "_min", mode: "r"});
-            const minData = await varMin.get();
-            if (isNestedArray(minData)) {
-                const minTypedArray = minData.data as TypedArray;
-                result.varMin[varName] = Array.from(minTypedArray);
-            } else {
-                result.varMin[varName] = [Number(minData)];
-            }
-        } catch (error) {
-            // If path doesn't exist, create an array with -1 values
+        if (minData === null) {
             result.varMin[varName] = Array(timeLength).fill(-1);
+        } else if (isNestedArray(minData)) {
+            result.varMin[varName] = Array.from(minData.data as TypedArray);
+        } else {
+            result.varMin[varName] = [Number(minData)];
         }
-        
+
         // varMax
-        try {
-            const varMax = await openArray({store, path: varName+"/"+varName+"_max", mode: "r"});
-            const maxData = await varMax.get();
-            if (isNestedArray(maxData)) {
-                const maxTypedArray = maxData.data as TypedArray;
-                result.varMax[varName] = Array.from(maxTypedArray);
-            } else {
-                result.varMax[varName] = [Number(maxData)];
-            }
-        } catch (error) {
-            // If path doesn't exist, create an array with -1 values
+        if (maxData === null) {
             result.varMax[varName] = Array(timeLength).fill(-1);
+        } else if (isNestedArray(maxData)) {
+            result.varMax[varName] = Array.from(maxData.data as TypedArray);
+        } else {
+            result.varMax[varName] = [Number(maxData)];
         }
 
         // minVal and maxVal
@@ -183,8 +181,6 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         result.portions[varName] = [singlePortion];    // Not used with Zarr => A fixed unique value is given
 
         // lonMin, lonMax and lonNum
-        const lons = await openArray({store, path: varName+"/"+horDim, mode: "r"});
-        const lonsData = await lons.get();
         if (isNestedArray(lonsData)) {
             const lonsTypedArray = lonsData.data as TypedArray;
             result.lonMin[varNamePortion] = lonsTypedArray[0];
@@ -197,8 +193,6 @@ async function loadTimesZarr(): Promise<CsTimesJsData> {
         }
 
         // latMin, latMax and latNum
-        const lats = await openArray({store, path: varName+"/"+verDim, mode: "r"});
-        const latsData = await lats.get();
         if (isNestedArray(latsData)) {
             const latsTypedArray = latsData.data as TypedArray;
             result.latMin[varNamePortion] = latsTypedArray[0];
