@@ -29,7 +29,8 @@ export const keycloakUrl: string = typeof ENV.keycloakUrl !== 'undefined'? ENV.k
 export const keycloakRealm: string = typeof ENV.keycloakRealm !== 'undefined'? ENV.keycloakRealm:'lcsc';
 export const keycloakClientId: string = typeof ENV.keycloakClientId !== 'undefined'? ENV.keycloakClientId:'AnemUI-Dev';
 export const portalUrl: string = typeof ENV.portalUrl !== 'undefined'? ENV.portalUrl:'https://www.aemet.es/es/serviciosclimaticos/pesc';
-export const portalTitle: string = typeof ENV.portalTitle !== 'undefined'? ENV.portalTitle:'Volver al portal';
+// Vacío salvo que el visor lo defina: MenuBar usa entonces la traducción 'volver_portal'
+export const portalTitle: string = typeof ENV.portalTitle !== 'undefined'? ENV.portalTitle:'';
 // Nombre del layer (LayerConfigEntry.name, ver CsLayers.ts) preseleccionado
 // al cargar el mapa, por zoom global/nacional — ver
 // LayerManager.initBaseSelected(). Default = comportamiento actual; en visores

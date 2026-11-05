@@ -95,9 +95,11 @@ export default class Language {
             'exportmap_renderizando_canarias': "Rendering Canarias…",
             'exportmap_descargando_fondo': "Downloading map background…",
             'exportmap_componiendo_imagen': "Composing image…",
+            'cargando_datos': "Loading data…",
             'cerrar': "Close",
             'iniciar_sesion': "Log in",
             'cerrar_sesion': "Log out",
+            'volver_portal': "Back to homepage",
             'perfil': "Profile",
             'usuario': "User:",
             'legendValues': {
@@ -200,9 +202,11 @@ export default class Language {
             'exportmap_renderizando_canarias': "Renderizando Canarias…",
             'exportmap_descargando_fondo': "Descargando fondo cartográfico…",
             'exportmap_componiendo_imagen': "Componiendo imagen…",
+            'cargando_datos': "Cargando datos…",
             'cerrar': "Cerrar",
             'iniciar_sesion': "Iniciar sesión",
             'cerrar_sesion': "Cerrar sesión",
+            'volver_portal': "Volver al portal",
             'perfil': "Perfil",
             'usuario': "Usuario:",
             'legendValues': {
