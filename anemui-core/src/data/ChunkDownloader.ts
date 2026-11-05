@@ -474,7 +474,8 @@ export async function buildImages(promises: Promise<number[]>[], dataTilesLayer:
                         crossOrigin: '',
                         projection: olProjection,
                         imageExtent: extent,
-                        interpolate: false
+                        // La trama de X (líneas de 1 px) produce moiré si se escala sin interpolar
+                        interpolate: uncertaintyLayer
                     });
 
                     dataTilesLayer[i].setSource(imageSource);
