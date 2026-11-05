@@ -5,7 +5,8 @@ import { CsGeoJsonClick, CsLatLong, CsMapController, CsMapEvent } from "./CsMapT
 import { CsTimesJsData, CsViewerData, CsGeoJsonData, Array4Portion, ArrayData } from "./data/CsDataTypes";
 import { MapOptions } from "ol/Map";
 import { TileWMS, XYZ, OSM, TileDebug, ImageStatic as Static } from "ol/source";
-import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
+import { Image as ImageLayer, Layer } from 'ol/layer';
+import TileLayer from 'ol/layer/Tile';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
@@ -21,7 +22,7 @@ import { Select } from 'ol/interaction';
 import { pointerMove } from 'ol/events/condition';
 import { LayerManager } from "./LayerManager";
 import { loadLatLogValue, loadGeoJsonData } from "./data/CsDataLoader";
-import DataTileSource from "ol/source/DataTile";
+import TileSource from "ol/source/Tile";
 import { Geometry } from 'ol/geom';
 // import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
 
@@ -101,7 +102,7 @@ export class OpenLayerMap implements CsMapController {
   public renderers: string[];
 
   protected dataWMSLayer: TileWMS;
-  protected dataTilesLayer: (ImageLayer<Static> | TileLayer)[];
+  protected dataTilesLayer: (ImageLayer<Static> | TileLayer<TileSource>)[];
 
   // Definimos un diccionario vacío
   protected ncExtents: Array4Portion = {};
@@ -110,7 +111,7 @@ export class OpenLayerMap implements CsMapController {
   protected terrainLayers: Layer[] = [];
   protected politicalLayer: Layer;
   private attributionEl: HTMLElement | null = null;
-  protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
+  protected uncertaintyLayer: (ImageLayer<Static> | TileLayer<TileSource>)[];
   private lastUncertaintyZoomLevel: number = 0; // 0=normal, 1=4X, 2=9X
   private initialFitExtent: [number, number, number, number] | null = null;
   protected currentFeature: Feature;
@@ -176,7 +177,7 @@ export class OpenLayerMap implements CsMapController {
     this.setExtents(timesJs, state.varId);
     this.defaultRenderer = this.parent.getParent().getDefaultRenderer()
     this.renderers = this.parent.getParent().getRenderers()
-    let layers: (ImageLayer<Static> | TileLayer)[] = isWmsEnabled ? this.buildWmsLayers(state) : this.buildChunkLayers(state);
+    let layers: (ImageLayer<Static> | TileLayer<TileSource>)[] = isWmsEnabled ? this.buildWmsLayers(state) : this.buildChunkLayers(state);
 
     // Visor global (gams y similares, ver globalMap en Env.ts): igual que
     // mapExtent limita la vista al rectángulo Península+Baleares+Canarias en
@@ -315,7 +316,7 @@ export class OpenLayerMap implements CsMapController {
     }
   }
 
-  private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
+  private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer<TileSource>)[] {
     this.dataWMSLayer = new TileWMS({
       url: '/geoserver/lcsc/wms',
       params: { 'LAYERS': 'lcsc:value', 'FORMAT': 'image/png', 'TRANSPARENT': true, "TILED": true, time: state.times[state.selectedTimeIndex] },
@@ -348,22 +349,22 @@ export class OpenLayerMap implements CsMapController {
     return this.parent;
   }
 
-  private buildChunkLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
+  private buildChunkLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer<TileSource>)[] {
     let lmgr = LayerManager.getInstance();
-    let layers: (ImageLayer<Static> | TileLayer)[] = [];
+    let layers: (ImageLayer<Static> | TileLayer<TileSource>)[] = [];
 
     let layersLength = lmgr.getBaseSelected().length - 1;
 
     this.terrainLayers = [];
     for (let i = 0; i <= layersLength; i++) {
       let terrain = new TileLayer({
-        source: lmgr.getBaseLayerSource(i) as DataTileSource
+        source: lmgr.getBaseLayerSource(i) as TileSource
       });
       this.terrainLayers.push(terrain);
       layers.push(terrain);
     }
 
-    let political = lmgr.getTopLayerOlLayer() as TileLayer;
+    let political = lmgr.getTopLayerOlLayer() as TileLayer<TileSource>;
     political.setZIndex(5000);
     this.politicalLayer = political
 
@@ -807,7 +808,7 @@ export class OpenLayerMap implements CsMapController {
   // Safe layer removal method
   private safelyRemoveDataLayers(): void {
     if (this.dataTilesLayer && Array.isArray(this.dataTilesLayer)) {
-      this.dataTilesLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
+      this.dataTilesLayer.forEach((layer: ImageLayer<Static> | TileLayer<TileSource>) => {
         if (layer && this.map) {
           try {
             // Set layer invisible and source to null before removing
@@ -918,7 +919,7 @@ export class OpenLayerMap implements CsMapController {
 
   private safelyRemoveUncertaintyLayers(): void {
     if (this.uncertaintyLayer && Array.isArray(this.uncertaintyLayer)) {
-      this.uncertaintyLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
+      this.uncertaintyLayer.forEach((layer: ImageLayer<Static> | TileLayer<TileSource>) => {
         if (layer && this.map) {
           try {
             const layers = this.map.getLayers();

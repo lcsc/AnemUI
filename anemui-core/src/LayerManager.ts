@@ -1,7 +1,7 @@
 import { Source } from "ol/source";
 import { OSM, Vector, ImageStatic } from "ol/source";
 import { TopoJSON, GeoJSON } from "ol/format"
-import {Image, Layer, WebGLTile} from "ol/layer";
+import {Image, Layer} from "ol/layer";
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
 import VectorLayer from "ol/layer/Vector";
@@ -166,7 +166,7 @@ export class LayerManager {
     private topLayerVector:Layer;
     private topLayerWMS: TileLayer<TileWMS>;
     private nomenclatorLayers: VectorLayer<VectorSource>[] = [];
-    protected uncertaintyLayer: (Image<ImageStatic> | WebGLTile)[];
+    protected uncertaintyLayer: (Image<ImageStatic> | TileLayer<any>)[];
 
     private constructor() {
         // CAPAS BASE Y SUPERPUESTAS
@@ -741,11 +741,11 @@ export class LayerManager {
         return credits.join(' &nbsp;|&nbsp; ');
     }
 
-    public getUncertaintyLayer():(Image<ImageStatic> | WebGLTile)[] {
+    public getUncertaintyLayer():(Image<ImageStatic> | TileLayer<any>)[] {
         return this.uncertaintyLayer;
     }
 
-    public setUncertaintyLayer(layers: (Image<ImageStatic> | WebGLTile)[]) {
+    public setUncertaintyLayer(layers: (Image<ImageStatic> | TileLayer<any>)[]) {
         this.uncertaintyLayer = layers;
     }
 
