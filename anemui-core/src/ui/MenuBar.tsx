@@ -276,7 +276,7 @@ export class MenuBar extends BaseFrame {
                                 </div>
                             </div>
                             <div className="col menu-info d-flex" id="home">
-                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle}>
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle || this.parent.getTranslation('volver_portal')}>
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                             </div>
@@ -314,7 +314,7 @@ export class MenuBar extends BaseFrame {
                                 </ul>
                             </div>
                             <div className="mobile-actions">
-                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle} id="home-mobile">
+                                <a href={portalUrl} className="topbar-icon-btn" title={portalTitle || this.parent.getTranslation('volver_portal')} id="home-mobile">
                                     <i className="bi bi-box-arrow-left"></i>
                                 </a>
                                 <div className="topbar-icon-btn" id="info-mobile">
@@ -671,7 +671,7 @@ export class MenuBar extends BaseFrame {
             'text-shadow:0 1px 3px rgba(0,0,0,0.9),0 0 8px rgba(0,0,0,0.7)',
             'filter:drop-shadow(0 0 4px rgba(255,255,255,0.8))',
         ].join(';');
-        label.textContent = 'Cargando datos…';
+        label.textContent = this.parent.getTranslation('cargando_datos');
 
         overlay.appendChild(spinner);
         overlay.appendChild(label);

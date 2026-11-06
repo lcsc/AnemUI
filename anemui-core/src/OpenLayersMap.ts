@@ -5,7 +5,8 @@ import { CsGeoJsonClick, CsLatLong, CsMapController, CsMapEvent } from "./CsMapT
 import { CsTimesJsData, CsViewerData, CsGeoJsonData, Array4Portion, ArrayData } from "./data/CsDataTypes";
 import { MapOptions } from "ol/Map";
 import { TileWMS, XYZ, OSM, TileDebug, ImageStatic as Static } from "ol/source";
-import { Image as ImageLayer, Layer, WebGLTile as TileLayer } from 'ol/layer';
+import { Image as ImageLayer, Layer } from 'ol/layer';
+import TileLayer from 'ol/layer/Tile';
 import { Coordinate } from "ol/coordinate";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { PaletteManager } from "./PaletteManager";
@@ -21,7 +22,7 @@ import { Select } from 'ol/interaction';
 import { pointerMove } from 'ol/events/condition';
 import { LayerManager } from "./LayerManager";
 import { loadLatLogValue, loadGeoJsonData } from "./data/CsDataLoader";
-import DataTileSource from "ol/source/DataTile";
+import TileSource from "ol/source/Tile";
 import { Geometry } from 'ol/geom';
 // import { renderers, defaultRenderer, getFolders } from "./tiles/Support";
 
@@ -101,7 +102,7 @@ export class OpenLayerMap implements CsMapController {
   public renderers: string[];
 
   protected dataWMSLayer: TileWMS;
-  protected dataTilesLayer: (ImageLayer<Static> | TileLayer)[];
+  protected dataTilesLayer: (ImageLayer<Static> | TileLayer<TileSource>)[];
 
   // Definimos un diccionario vacío
   protected ncExtents: Array4Portion = {};
@@ -110,8 +111,9 @@ export class OpenLayerMap implements CsMapController {
   protected terrainLayers: Layer[] = [];
   protected politicalLayer: Layer;
   private attributionEl: HTMLElement | null = null;
-  protected uncertaintyLayer: (ImageLayer<Static> | TileLayer)[];
-  private lastUncertaintyZoomLevel: number = 0; // 0=normal, 1=4X, 2=9X
+  protected uncertaintyLayer: (ImageLayer<Static> | TileLayer<TileSource>)[];
+  private lastUncertaintyZoomLevel: number = 0; // zoom (redondeado) con el que se pintó la capa overlay
+  private uncertaintyBuildId: number = 0; // identifica la última llamada a buildUncertaintyLayer
   private initialFitExtent: [number, number, number, number] | null = null;
   protected currentFeature: Feature;
   protected glmgr: GeoLayerManager;
@@ -176,7 +178,7 @@ export class OpenLayerMap implements CsMapController {
     this.setExtents(timesJs, state.varId);
     this.defaultRenderer = this.parent.getParent().getDefaultRenderer()
     this.renderers = this.parent.getParent().getRenderers()
-    let layers: (ImageLayer<Static> | TileLayer)[] = isWmsEnabled ? this.buildWmsLayers(state) : this.buildChunkLayers(state);
+    let layers: (ImageLayer<Static> | TileLayer<TileSource>)[] = isWmsEnabled ? this.buildWmsLayers(state) : this.buildChunkLayers(state);
 
     // Visor global (gams y similares, ver globalMap en Env.ts): igual que
     // mapExtent limita la vista al rectángulo Península+Baleares+Canarias en
@@ -315,7 +317,7 @@ export class OpenLayerMap implements CsMapController {
     }
   }
 
-  private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
+  private buildWmsLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer<TileSource>)[] {
     this.dataWMSLayer = new TileWMS({
       url: '/geoserver/lcsc/wms',
       params: { 'LAYERS': 'lcsc:value', 'FORMAT': 'image/png', 'TRANSPARENT': true, "TILED": true, time: state.times[state.selectedTimeIndex] },
@@ -348,22 +350,22 @@ export class OpenLayerMap implements CsMapController {
     return this.parent;
   }
 
-  private buildChunkLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer)[] {
+  private buildChunkLayers(state: CsViewerData): (ImageLayer<Static> | TileLayer<TileSource>)[] {
     let lmgr = LayerManager.getInstance();
-    let layers: (ImageLayer<Static> | TileLayer)[] = [];
+    let layers: (ImageLayer<Static> | TileLayer<TileSource>)[] = [];
 
     let layersLength = lmgr.getBaseSelected().length - 1;
 
     this.terrainLayers = [];
     for (let i = 0; i <= layersLength; i++) {
       let terrain = new TileLayer({
-        source: lmgr.getBaseLayerSource(i) as DataTileSource
+        source: lmgr.getBaseLayerSource(i) as TileSource
       });
       this.terrainLayers.push(terrain);
       layers.push(terrain);
     }
 
-    let political = lmgr.getTopLayerOlLayer() as TileLayer;
+    let political = lmgr.getTopLayerOlLayer() as TileLayer<TileSource>;
     political.setZIndex(5000);
     this.politicalLayer = political
 
@@ -556,8 +558,9 @@ export class OpenLayerMap implements CsMapController {
       const overlayKey = state.overlayVarId?.includes('_pvalue') ? 'significance' : 'uncertainty';
       const activePainter = PaletteManager.getInstance().getNamedPainter(overlayKey);
       if (!(activePainter as any)?.skipZoomRebuild) {
-        const zoom = this.getZoom();
-        const currentLevel = zoom >= 11 ? 2 : (zoom >= 8 ? 1 : 0);
+        // El tamaño de las X depende del zoom con el que se pinta la capa: repintar en cuanto
+        // cambie de nivel entero para que no se muestren muy encogidas (moiré) o estiradas
+        const currentLevel = Math.round(this.getZoom());
         if (currentLevel !== this.lastUncertaintyZoomLevel) {
           this.lastUncertaintyZoomLevel = currentLevel;
           setTimeout(() => {
@@ -608,7 +611,6 @@ export class OpenLayerMap implements CsMapController {
   public getZoom(): number {
     return this.map.getView().getZoom();
   }
-
   /**
    * Valor de la capa overlay (incertidumbre/significación) en el punto, para que el popup
    * solo muestre su mensaje sobre los píxeles marcados. NaN si la capa no está activa o no hay dato.
@@ -624,6 +626,7 @@ export class OpenLayerMap implements CsMapController {
   }
 
   public showValue(pos: CsLatLong, pixelIndex: number, value: number, portion: string, int: boolean = false): void {
+    value = this.parent.getParent().filterPointValue(pos, value);
     if (Number.isNaN(value)) {
       this.parent.getParent().getState().xyValue = NaN;
       this.popup.hidden = true;
@@ -806,7 +809,7 @@ export class OpenLayerMap implements CsMapController {
   // Safe layer removal method
   private safelyRemoveDataLayers(): void {
     if (this.dataTilesLayer && Array.isArray(this.dataTilesLayer)) {
-      this.dataTilesLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
+      this.dataTilesLayer.forEach((layer: ImageLayer<Static> | TileLayer<TileSource>) => {
         if (layer && this.map) {
           try {
             // Set layer invisible and source to null before removing
@@ -841,12 +844,15 @@ export class OpenLayerMap implements CsMapController {
   public async buildUncertaintyLayer(state: CsViewerData, timesJs: CsTimesJsData): Promise<void> {
     let lmgr = LayerManager.getInstance();
     let app = window.CsViewerApp;
+    const buildId = ++this.uncertaintyBuildId;
+    this.lastUncertaintyZoomLevel = Math.round(this.getZoom());
 
     // Safely remove existing uncertainty layers
     this.safelyRemoveUncertaintyLayers();
 
-    // Siempre empezar con un array limpio
-    this.uncertaintyLayer = [];
+    // Siempre empezar con un array limpio, propio de esta llamada
+    const builtLayers: ImageLayer<Static>[] = [];
+    this.uncertaintyLayer = builtLayers;
 
     const uncertaintyVarId = state.overlayVarId || (state.varId + '_uncertainty');
     if (!timesJs.portions[uncertaintyVarId]) {
@@ -889,24 +895,30 @@ export class OpenLayerMap implements CsMapController {
 
     if (this.uncertaintyLayer.length > 0 && promises.length > 0) {
       // Esperar a que se construyan las imágenes antes de registrar las capas
-      await buildImages(promises, this.uncertaintyLayer, state, timesJs, app, this.ncExtents, true);
+      await buildImages(promises, builtLayers, state, timesJs, app, this.ncExtents, true);
+
+      // Mientras se pintaba ha empezado otra construcción: sus capas sustituyen a estas
+      // (ya las quitó del mapa su safelyRemoveUncertaintyLayers)
+      if (buildId !== this.uncertaintyBuildId) return;
 
       // Si buildImages falló internamente (p.ej. fichero .bin inexistente), las capas quedan
       // sin source. Limpiar y desactivar para no reintentar en cada cambio de zoom.
-      const hasData = this.uncertaintyLayer.some(l => (l as any).getSource() !== null);
+      const hasData = builtLayers.some(l => (l as any).getSource() !== null);
       if (!hasData) {
-        this.safelyRemoveUncertaintyLayers();
-        this.uncertaintyLayer = [];
-        state.uncertaintyLayer = false;
+        builtLayers.forEach(l => this.map.getLayers().remove(l));
+        if (this.uncertaintyLayer === builtLayers) {
+          this.safelyRemoveUncertaintyLayers();
+          state.uncertaintyLayer = false;
+        }
         return;
       }
 
       // Registrar las capas en LayerManager después de construirlas
-      lmgr.setUncertaintyLayer(this.uncertaintyLayer);
+      lmgr.setUncertaintyLayer(builtLayers);
 
       // Mostrar directamente sin fade (el fade es solo para toggle manual del usuario)
       if (state.uncertaintyLayer) {
-        this.uncertaintyLayer.forEach(layer => {
+        builtLayers.forEach(layer => {
           layer.setOpacity(1);
           layer.setVisible(true);
           layer.changed();
@@ -917,7 +929,7 @@ export class OpenLayerMap implements CsMapController {
 
   private safelyRemoveUncertaintyLayers(): void {
     if (this.uncertaintyLayer && Array.isArray(this.uncertaintyLayer)) {
-      this.uncertaintyLayer.forEach((layer: ImageLayer<Static> | TileLayer) => {
+      this.uncertaintyLayer.forEach((layer: ImageLayer<Static> | TileLayer<TileSource>) => {
         if (layer && this.map) {
           try {
             const layers = this.map.getLayers();
