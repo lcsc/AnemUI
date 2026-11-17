@@ -595,11 +595,10 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
         this.downloadOptionsDiv.openModal();
     }
 
-    // Si un clic en la rejilla abre el gráfico del punto. Por defecto sí, salvo en
-    // «Escenarios futuros» (SAMS). Los visores sin gráfico en algún otro modo
-    // (GAMS en climatología) lo sobrescriben.
+    // Si un clic en la rejilla abre el gráfico del punto. Por defecto, siempre;
+    // los visores sin gráfico en algún modo (GAMS y SAMS en climatología) lo sobrescriben.
     public showsPointGraph(state: CsViewerData): boolean {
-        return state.tpSupport !== 'Escenarios futuros';
+        return true;
     }
 
     public showGraph(params?: { type: 'point' | 'station' | 'region', stParams?: any, folder?: string }) {
