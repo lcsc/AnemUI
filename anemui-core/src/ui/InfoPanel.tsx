@@ -117,6 +117,9 @@ export class InfoDiv extends BaseFrame {
     }
 }
 
+// Hash de la URL que abre el panel de información (no #info: ya existe id="info")
+const INFO_HASH = "#infopanel";
+
 export class InfoFrame extends BaseFrame {
 
     private btn: HTMLElement
@@ -140,24 +143,16 @@ export class InfoFrame extends BaseFrame {
     }
 
     public build(): void {
-        //throw new Error("Method not implemented.");
+        // build() se llama dos veces (escritorio y móvil): un solo modal
+        if (this.modal) return;
         this.btn = document.querySelector("[role=infoBtn]")
         this.modal = new modal({
             footer: true,
             stickyFooter: false,
             closeMethods: ['overlay', 'button', 'escape'],
-            //cssClass: ['custom-class-1', 'custom-class-2'],
-            onOpen: function () {
-                //console.log('modal open');
-            },
-            onClose: function () {
-                //console.log('modal closed');
-            },
-            beforeClose: function () {
-                // here's goes some logic
-                // e.g. save content before closing the modal
-                return true; // close the modal
-            }
+            onOpen: () => this.setHash(true),
+            onClose: () => this.setHash(false),
+            beforeClose: () => true
         });
 
         let infoDiv = this.parent.getInfoDiv().getDiv();
@@ -167,6 +162,26 @@ export class InfoFrame extends BaseFrame {
         this.modal.addFooterBtn(this.parent.getTranslation('cerrar'), 'tingle-btn tingle-btn--muted tingle-btn--pull-right', function() {
             self.modal.close();
           });
+        window.addEventListener("hashchange", () => this.openFromHash());
+        this.openFromHash();
+    }
+
+    // #infopanel abre el panel; #infopanel-<sección> además baja hasta esa sección
+    private openFromHash(): void {
+        const hash = decodeURIComponent(document.location.hash);
+        if (!hash.startsWith(INFO_HASH)) return;
+        if (!this.modal.isOpen()) this.modal.open();
+        if (hash.length > INFO_HASH.length) {
+            const target = document.getElementById(hash.substring(1));
+            if (target) requestAnimationFrame(() => target.scrollIntoView());
+        }
+    }
+
+    private setHash(open: boolean): void {
+        const url = new URL(document.location.toString());
+        if (open && !url.hash.startsWith(INFO_HASH)) url.hash = INFO_HASH;
+        if (!open) url.hash = "";
+        history.replaceState(history.state, "", url);
     }
 
     public showFrame(): void {
