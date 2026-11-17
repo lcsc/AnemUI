@@ -71,9 +71,6 @@ export class CsMap{
 
 public onMapClick(event: CsMapEvent): void {
     const state = this.parent.getState();
-    
-    // Para serie temporal en rejilla, siempre mostrar gráfico
-    const isTimeSeries = !state.climatology && state.tpSupport !== 'Escenarios futuros';
     const isGridSupport = state.support === defaultRenderer; // defaultRenderer es "Rejilla"
     
     if (state.support != defaultRenderer) {
@@ -88,9 +85,9 @@ public onMapClick(event: CsMapEvent): void {
 
     const result = this.listener.onClick(event);
 
-    if (!isTimeSeries) {
-        // Climatología (p.ej. Average Aridity): un único valor, no hay serie
-        // temporal que graficar -> solo se posiciona el marcador, sin popup.
+    if (!this.parent.showsPointGraph(state)) {
+        // Visor sin gráfico en este modo (p. ej. GAMS en climatología):
+        // solo se posiciona el marcador, sin popup.
         if (result instanceof Promise) result.catch(() => {});
         return;
     }
