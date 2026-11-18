@@ -594,7 +594,13 @@ export abstract class BaseApp implements CsMapListener, MenuBarListener, DateFra
     public downloadPointOptions(): void {
         this.downloadOptionsDiv.openModal();
     }
-    
+
+    // Si un clic en la rejilla abre el gráfico del punto. Por defecto, siempre;
+    // los visores sin gráfico en algún modo (GAMS y SAMS en climatología) lo sobrescriben.
+    public showsPointGraph(state: CsViewerData): boolean {
+        return true;
+    }
+
     public showGraph(params?: { type: 'point' | 'station' | 'region', stParams?: any, folder?: string }) {
         if (!params || params.type === 'point') {
             // Graph for a point (pixel click)
