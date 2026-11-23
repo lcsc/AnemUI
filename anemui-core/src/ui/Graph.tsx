@@ -316,9 +316,13 @@ export class CsGraph extends BaseFrame {
     const forcedDesktopSize = !!graphContainerEl && !graphContainerEl.classList.contains('gc-auto-size');
     const prevInlineWidth = graphContainerEl?.style.width ?? '';
     const prevInlineHeight = graphContainerEl?.style.height ?? '';
+    const prevAlignItems = popGraph.style.alignItems;
     if (forcedDesktopSize) {
       graphContainerEl!.style.width = '930px';
       graphContainerEl!.style.height = '700px';
+      // Donut de predicción: alinear arriba durante la captura para que el
+      // recorte al contenido no deje el blanco del centrado encima
+      if (popGraph.querySelector('.prediction-doughnut-container')) popGraph.style.alignItems = 'flex-start';
       window.dispatchEvent(new Event('resize'));
     }
 
@@ -326,6 +330,7 @@ export class CsGraph extends BaseFrame {
       if (!forcedDesktopSize) return;
       graphContainerEl!.style.width = prevInlineWidth;
       graphContainerEl!.style.height = prevInlineHeight;
+      popGraph.style.alignItems = prevAlignItems;
       window.dispatchEvent(new Event('resize'));
     };
 
@@ -354,7 +359,9 @@ export class CsGraph extends BaseFrame {
       plotBottomY = Math.max(plotBottomY, popGraph.scrollHeight);
       const predContainerForH = popGraph.querySelector<HTMLElement>('.prediction-doughnut-container');
       if (predContainerForH) {
-        plotBottomY = Math.max(plotBottomY, predContainerForH.scrollHeight);
+        // El donut no llena el contenedor agrandado a 930×700: recortar al contenido
+        const predRect = predContainerForH.getBoundingClientRect();
+        plotBottomY = Math.ceil(predRect.bottom - graphRect.top) + 8;
       }
     }
 
@@ -2344,6 +2351,8 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
         margin:   popGraph.style.margin,
         padding:  popGraph.style.padding,
         height:   popGraph.style.height,
+        display:  popGraph.style.display,
+        alignItems: popGraph.style.alignItems,
       };
     }
     const gc = document.getElementById('GraphContainer') as HTMLDivElement;
@@ -2415,7 +2424,11 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     const graphContainer = document.getElementById('GraphContainer') as HTMLDivElement;
     if (graphContainer) graphContainer.hidden = false;
     popGraph.style.width = '100%';
-    popGraph.style.height = 'auto';
+    // Centrar en vertical: el contenido es más bajo que el popup (75vh) y si no
+    // todo el sobrante queda debajo. Restaurado por _resetContainerStyles.
+    popGraph.style.height = '100%';
+    popGraph.style.display = 'flex';
+    popGraph.style.alignItems = 'safe center';
 
     const downloadBtn = document.querySelector('[role=dropPointBtn]') as HTMLButtonElement;
     if (downloadBtn) downloadBtn.hidden = true;
@@ -2483,6 +2496,27 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     }
 
     popGraph.appendChild(mainContainer);
+
+    // Pantallas bajas (portátil 1366×768, escalado de Windows 125–150 %): el popup mide
+    // 75vh y título + donut + descripción pueden no caber; #popGraph recorta
+    // (overflow:hidden, sin scroll por requisito). Encoger el donut lo que sobresalga,
+    // hasta 120 px. Si el popup aún no es visible, las medidas son 0 y no cambia nada.
+    const overflow = Math.ceil(mainContainer.getBoundingClientRect().bottom - popGraph.getBoundingClientRect().bottom);
+    if (overflow > 0) {
+      const fitted = Math.max(120, canvasSize - overflow);
+      canvas.width = fitted;
+      canvas.height = fitted;
+      canvas.style.width = `${fitted}px`;
+      canvas.style.height = `${fitted}px`;
+    }
+    // Si ni con 120 px cabe, compactar márgenes (relleno, título y descripción).
+    const rest = Math.ceil(mainContainer.getBoundingClientRect().bottom - popGraph.getBoundingClientRect().bottom);
+    if (rest > 0) {
+      mainContainer.style.padding = '4px 20px';
+      titleEl.style.marginBottom = '6px';
+      const descEl = mainContainer.querySelector('.popover-description') as HTMLElement | null;
+      if (descEl) descEl.style.marginTop = '6px';
+    }
 
     const ctx = canvas.getContext('2d');
     this._predChart = new Chart(ctx as any, {
