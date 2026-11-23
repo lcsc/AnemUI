@@ -83,6 +83,24 @@ function lastDate(times) {
     return Array.isArray(times) ? times[times.length - 1] : times;
 }
 
+// Muestra del test 6: perFamily índices de cada familia (el varId sin el nombre del
+// índice y con los números como N), distintos cada día para recorrerlos todos con el tiempo
+function sampleVars(varIds, perFamily) {
+    const families = {};
+    for (const v of varIds) {
+        const f = v.replace(/^[^_]+_/, '').replace(/\d+/g, 'N');
+        (families[f] = families[f] || []).push(v);
+    }
+    const day = Math.floor(Date.now() / 86400000);
+    const sample = [];
+    for (const list of Object.values(families)) {
+        for (let i = 0; i < Math.min(perFamily, list.length); i++) {
+            sample.push(list[(day * perFamily + i) % list.length]);
+        }
+    }
+    return sample;
+}
+
 class csTest {
 
     scrShotFolder;
@@ -115,7 +133,8 @@ class csTest {
             await driver.register(VAR_USR, VAR_PWD, connection);
             await driver.get(webPage);
         } else if (VAR_USR) {
-            const url = new URL(webPage);
+            // Se entra por times.json, que pide autenticación también en localhost (proxy a -dev)
+            const url = new URL('times.json', webPage);
             url.username = VAR_USR;
             url.password = VAR_PWD;
             // Con usuario:contraseña@ en la URL, los fetch relativos del visor fallan:
@@ -193,6 +212,8 @@ class csTest {
         const dropDownVars = params["dropDownVars"];
         const pointDate = params["pointDate"];
         const clickPoint = params["clickPoint"];
+        // false en visores sin CSV de píxel (sri, wind en climatología)
+        const testDownload = params["testDownload"] !== false;
         const webPage = VAR_BASE_URL.replace('{code}', serviceCode);
         const self = this;
         let browserName;
@@ -279,7 +300,7 @@ class csTest {
                     assert.match(await latLong.getText(), /^Lat:-?\d+\.\d+ Long:-?\d+\.\d+$/);
                 });
 
-                it(VAR_TEST_4, async () => {
+                if (testDownload) it(VAR_TEST_4, async () => {
                     self.emptyFolder(self.downloadFolder);
                     await self.openViewer(driver, browserName, webPage);
                     await self.takeScreenshot(driver, "t4_before_click");
@@ -311,13 +332,18 @@ class csTest {
     // Tests 6 y 7: solo peticiones HTTP a los ficheros del visor, sin navegador
     //   emptyAllowed  expresiones regulares de índices cuyo mapa puede estar vacío (todo NaN), p. ej. eventos
     //   updateVars    expresiones regulares de los índices que se actualizan; si no se da, no se ejecuta el test 7
-    //   maxAgeDays    días máximos desde la última fecha de esos índices
+    //   maxAgeDays    días máximos desde la última fecha de esos índices; si no se da, la última
+    //                 fecha tiene que ser como mínimo el día 1 del mes anterior
+    //   dataSample    índices de cada familia que se comprueban en el test 6 (ver sampleVars);
+    //                 si no se da, se comprueban todos
     performDataTest(params) {
         const serviceFolder = params["serviceFolder"];
-        const webPage = VAR_BASE_URL.replace('{code}', params["serviceCode"]);
+        // Node resuelve localhost a IPv6 y el servidor de desarrollo solo escucha en IPv4
+        const webPage = VAR_BASE_URL.replace('{code}', params["serviceCode"]).replace('//localhost', '//127.0.0.1');
         const emptyAllowed = params["emptyAllowed"] || [];
         const updateVars = params["updateVars"];
         const maxAgeDays = params["maxAgeDays"];
+        const dataSample = params["dataSample"];
         const matches = (list, varId) => list.some(re => new RegExp(re).test(varId));
 
         describe('Datos - ' + serviceFolder, function () {
@@ -330,7 +356,8 @@ class csTest {
 
             it(VAR_TEST_6, async () => {
                 const errors = [];
-                for (const varId of Object.keys(timesJs.times)) {
+                const allVars = Object.keys(timesJs.times);
+                for (const varId of dataSample ? sampleVars(allVars, dataSample) : allVars) {
                     const times = timesJs.times[varId];
                     const n = Array.isArray(times) ? times.length : 1;
                     let finite = 0;
@@ -355,15 +382,17 @@ class csTest {
 
             if (updateVars) {
                 it(VAR_TEST_7, async () => {
-                    const limit = new Date();
-                    limit.setDate(limit.getDate() - maxAgeDays);
+                    const now = new Date();
+                    const limit = maxAgeDays
+                        ? new Date(now.getTime() - maxAgeDays * 86400000)
+                        : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
                     const errors = [];
                     const vars = Object.keys(timesJs.times).filter(v => matches(updateVars, v));
                     assert.ok(vars.length > 0, 'Ningún índice coincide con updateVars');
                     for (const varId of vars) {
                         const last = lastDate(timesJs.times[varId]);
                         if (new Date(last) < limit) {
-                            errors.push(varId + ': última fecha ' + last + ', más de ' + maxAgeDays + ' días');
+                            errors.push(varId + ': última fecha ' + last + ', anterior al ' + limit.toISOString().slice(0, 10));
                         }
                     }
                     assert.deepEqual(errors, []);

@@ -1604,7 +1604,10 @@ export class OpenLayerMap implements CsMapController {
     const ctx = capture.getContext('2d');
 
     // Usar el mismo selector que el ejemplo oficial de OL para capturar todas las capas
-    const olCanvases = this.map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer') as NodeListOf<HTMLCanvasElement>;
+    // La capa de incertidumbre/significación se crea con className 'uncertainty-layer'
+    // (buildUncertaintyLayer), que sustituye a 'ol-layer': sin incluirla, la trama no se exporta
+    const olCanvases = this.map.getViewport().querySelectorAll(
+      '.ol-layer canvas, canvas.ol-layer, .uncertainty-layer canvas, canvas.uncertainty-layer') as NodeListOf<HTMLCanvasElement>;
     olCanvases.forEach((canvas) => {
       if (canvas.width > 0) {
         ctx.save();
