@@ -1793,8 +1793,25 @@ export class OpenLayerMap implements CsMapController {
       let legendTitle = app.getExportLegendTitle();
 
       const legendBoxWidth = 150;
+      // El título de la leyenda se parte en varias líneas si no cabe en el recuadro
+      ctx.font = 'bold 11px sans-serif';
+      const titleLines: string[] = [];
+      let currentLine = '';
+      for (const word of (legendTitle || '').split(' ')) {
+        const test = currentLine ? currentLine + ' ' + word : word;
+        if (currentLine && ctx.measureText(test).width > legendBoxWidth - padding * 2) {
+          titleLines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = test;
+        }
+      }
+      titleLines.push(currentLine);
+      const titleLineH = 14;
+      const extraTitleH = (titleLines.length - 1) * titleLineH;
+
       const itemHeight = Math.min(22, Math.max(14, (mainH * 0.4) / legendValues.length));
-      const legendBoxHeight = 24 + legendValues.length * itemHeight + padding;
+      const legendBoxHeight = 24 + extraTitleH + legendValues.length * itemHeight + padding;
       const lx = insetMargin;
       const ly = titleHeight + padding;
 
@@ -1814,8 +1831,8 @@ export class OpenLayerMap implements CsMapController {
       ctx.fillStyle = '#333333';
       ctx.font = 'bold 11px sans-serif';
       ctx.textBaseline = 'top';
-      ctx.fillText(legendTitle, lx + padding, curY);
-      curY += 18;
+      titleLines.forEach((line, i) => ctx.fillText(line, lx + padding, curY + i * titleLineH));
+      curY += 18 + extraTitleH;
 
       const colorBoxWidth = legendBoxWidth - padding * 2;
 
