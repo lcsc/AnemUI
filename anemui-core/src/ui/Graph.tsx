@@ -594,18 +594,18 @@ export class CsGraph extends BaseFrame {
     let curY = headerHeight + graphH;
     if (labelsDiv && labelsDiv.offsetHeight > 0) {
       curY += 4;
-      const labelsSpans = labelsDiv.querySelectorAll('span');
-      let lx = padding;
-      labelsSpans.forEach((span: HTMLSpanElement) => {
-        const style = window.getComputedStyle(span);
+      // Cada texto en su posición de pantalla: respeta saltos de línea (<br>) y negritas (<strong>)
+      const labelsRect = labelsDiv.getBoundingClientRect();
+      labelsDiv.querySelectorAll<HTMLElement>('span, strong').forEach(el => {
+        if (el.querySelector('span, strong')) return; // solo los que llevan el texto
+        const style = window.getComputedStyle(el);
+        const r = el.getBoundingClientRect();
         const color = style.color || '#333333';
         const fontWeight = style.fontWeight || 'normal';
         ctx.fillStyle = color;
         ctx.font = (fontWeight === 'bold' || fontWeight === '700' ? 'bold ' : '') + '11px sans-serif';
         ctx.textBaseline = 'top';
-        const text = span.textContent || '';
-        ctx.fillText(text, lx, curY);
-        lx += ctx.measureText(text).width + 4;
+        ctx.fillText(el.textContent || '', padding + (r.left - labelsRect.left), curY + (r.top - labelsRect.top));
       });
       curY += labelsH;
     }
