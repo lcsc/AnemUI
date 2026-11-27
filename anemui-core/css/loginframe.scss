@@ -1,21 +1,39 @@
+// Botones de info y de login en la misma línea de la cabecera.
+#info > .TopRightFrame{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 div.loginFrame{
-    // @include blurBgFrame();
-    // max-width: fit-content;
-    // top:0.25em;
-    // right:0.25em;
-    // position: relative;
-    // margin-top: 0.25em;
-    // margin-bottom: 0.25em;
-    text-align: center;
-    
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;   // mismo tamaño que .topbar-icon-btn (botón de info)
+    height: 36px;
+    font-size: 1.4rem;
+    cursor: pointer;
+
+    &[hidden]{
+        display: none;
+    }
+
     i.bi:hover{
         color:cornflowerblue;
     }
-}
 
-div.loginFrame.max{
-    i.bi{
-        // font-size: 2rem;
+    // Desplegable con los botones, fuera del flujo para no empujar la cabecera.
+    // padding-top en vez de margin: sin hueco, el ratón no sale del frame
+    // al bajar del icono al botón y el desplegable no se cierra.
+    > div[role=logginAutoHidden]{
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 1100;
+        padding-top: 4px;
+        white-space: nowrap;
+        font-size: 1rem;
     }
 }
 

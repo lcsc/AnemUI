@@ -71,38 +71,33 @@ export class CsMap{
 
 public onMapClick(event: CsMapEvent): void {
     const state = this.parent.getState();
-    
-    // Para serie temporal en rejilla, siempre mostrar gráfico
-    const isTimeSeries = !state.climatology && state.tpSupport !== 'Escenarios futuros';
     const isGridSupport = state.support === defaultRenderer; // defaultRenderer es "Rejilla"
     
-    if (isTimeSeries && isGridSupport) {
-        // En serie temporal + rejilla, siempre proceder con el gráfico
-        if (!event || !event.latLong) {
-            console.error("El objeto event o latLong no están definidos:", event);
-            return;
-        }
-        
-        this.listener.onClick(event);
-        
-        setTimeout(() => {
-            this.checkDataToShowGraph();
-        }, 500);
-    } else if (state.support != defaultRenderer) {
-        // Lógica original para otros soportes (estaciones, regiones)
+    if (state.support != defaultRenderer) {
+        // Estaciones / regiones: sin gráfico de punto
         return;
-    } else {
-        // Lógica original para otros casos
-        if (!event || !event.latLong) {
-            console.error("El objeto event o latLong no están definidos:", event);
-            return;
-        }
-    
-        this.listener.onClick(event);
+    }
 
-        setTimeout(() => {
-            this.checkDataToShowGraph();
-        }, 500);
+    if (!event || !event.latLong) {
+        console.error("El objeto event o latLong no están definidos:", event);
+        return;
+    }
+
+    const result = this.listener.onClick(event);
+
+    if (!this.parent.showsPointGraph(state)) {
+        // Visor sin gráfico en este modo (p. ej. GAMS en climatología):
+        // solo se posiciona el marcador, sin popup.
+        if (result instanceof Promise) result.catch(() => {});
+        return;
+    }
+
+    const showWhenReady = () => this.checkDataToShowGraph();
+
+    if (result instanceof Promise) {
+        result.then(showWhenReady).catch(() => {});
+    } else {
+        setTimeout(showWhenReady, 500);
     }
 }
 
@@ -135,8 +130,8 @@ public onMapClick(event: CsMapEvent): void {
         return this.controller.getZoom();
     }
 
-    public updateRender(support: string) {
-        this.controller.updateRender(support)
+    public async updateRender(support: string): Promise<void> {
+        await this.controller.updateRender(support)
     }
 
     public refreshFeatureLayer() {

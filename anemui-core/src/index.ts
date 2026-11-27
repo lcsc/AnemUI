@@ -14,7 +14,7 @@ export { hasSubVars } from './Env';
 export { enableRenderer } from './tiles/Support';
 
 // public APIs
-export { CsGraph } from './ui/Graph';
+export { CsGraph, EXPORT_GRAPH_GAP } from './ui/Graph';
 export type { GraphType, ColorLegendConfig } from './ui/Graph';
 export { MenuBar } from './ui/MenuBar';
 export type { MenuBarListener, simpleDiv } from './ui/MenuBar';

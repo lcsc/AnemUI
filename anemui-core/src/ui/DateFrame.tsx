@@ -151,6 +151,20 @@ export class DateSelectorFrame extends BaseFrame {
         return dateStr;
     }
 
+    /**
+     * Texto del tooltip del slider: para datos anuales (DateFrameYear/YearSeries)
+     * solo el año (el mes/día del NC es un relleno fijo sin significado, p.ej.
+     * "1957-01-01" -> "1957"), igual que ya renderiza el propio datepicker con
+     * su formato "yyyy" (ver updatePicker). Para el resto de modos, el formato
+     * habitual según el locale.
+     */
+    private formatSliderTooltip(dateStr: string): string {
+        if (this.mode === DateFrameMode.DateFrameYear || this.mode === DateFrameMode.DateFrameYearSeries) {
+            return dateStr.split('-')[0];
+        }
+        return this.formatDateForDisplay(dateStr);
+    }
+
     public setValidDates(_dates: string[], _varChanged: boolean = false): void {
         // Handle the case where _dates is actually a single string (annual data)
         const times = this.parent.getState().times;
@@ -801,21 +815,25 @@ export class DateSelectorFrame extends BaseFrame {
         })
         // @ts-ignore
         this.slider._setText = function (element: any, text: any) {}
-        this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[endDate])
+        this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatSliderTooltip(this.dates[endDate])
         this.slider.on('slideStop',(val:number)=>{
             if(val==this.parent.getState().selectedTimeIndex)return;
             this.parent.getState().selectedTimeIndex=val;
-            this.datepicker.datepicker('setDate', this.formatDateForDisplay(this.dates[val]))
+            // updateDatepicker() formatea según this.mode (p.ej. como Date nativo
+            // para Year/YearSeries, cuyo picker usa format:"yyyy") — un string
+            // "dd/mm/yyyy" no encaja ahí y bootstrap-datepicker lo descarta,
+            // dejando el campo en blanco hasta navegar con las flechas.
+            this.updateDatepicker()
             if (this.mode == DateFrameMode.DateFrameSeason) {
                 let season = this.getSeason(this.dates[val])
             }
             this.parent.update(true);
         })
         this.slider.on('slide',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatSliderTooltip(this.dates[val])
         })
         this.slider.on('slideStop',(val)=>{
-            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatDateForDisplay(this.dates[val])
+            this.container.getElementsByClassName("tooltip-inner")[0].textContent=this.formatSliderTooltip(this.dates[val])
         })
     }
 
@@ -843,6 +861,9 @@ export class DateSelectorFrame extends BaseFrame {
         }
         this.setValidDates(this.parent.getState().times, varChanged);
         this.slider.setValue(this.parent.getState().selectedTimeIndex,false,false);
+        if (this.parent.getState().climatology) {
+            this.updateMode();
+        }
     }
 
     protected updateMode(){
@@ -893,6 +914,7 @@ export class DateSelectorFrame extends BaseFrame {
                         this.mode = DateFrameMode.DateFrameDate;
                         break;
                 }
+            this.setSliderTooltipHidden(false);
             }
         } else {
             this.timeSeriesFrame.hidden = true;
@@ -918,6 +940,23 @@ export class DateSelectorFrame extends BaseFrame {
                     this.climatologyFrame.hidden = false;
                     break;
             }
+            // En modo climatología el slider muestra fechas ficticias del NC (ej. "04/05/2026").
+            // Ocultar el tooltip del slider para todos los visores.
+            this.setSliderTooltipHidden(true);
+        }
+    }
+
+    private setSliderTooltipHidden(hidden: boolean): void {
+        const styleId = 'anemui-clim-tooltip-hide';
+        if (hidden) {
+            if (!document.getElementById(styleId)) {
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = '#sliderFrame div.tooltip { display: none !important; }';
+                document.head.appendChild(style);
+            }
+        } else {
+            document.getElementById(styleId)?.remove();
         }
     }
 
