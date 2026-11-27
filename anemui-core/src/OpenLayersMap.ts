@@ -114,6 +114,7 @@ export class OpenLayerMap implements CsMapController {
   protected uncertaintyLayer: (ImageLayer<Static> | TileLayer<TileSource>)[];
   private lastUncertaintyZoomLevel: number = 0; // zoom (redondeado) con el que se pintó la capa overlay
   private uncertaintyBuildId: number = 0; // identifica la última llamada a buildUncertaintyLayer
+  private exportingMap: boolean = false; // true mientras exportMap() reencuadra y captura la vista
   private initialFitExtent: [number, number, number, number] | null = null;
   protected currentFeature: Feature;
   protected glmgr: GeoLayerManager;
@@ -554,7 +555,10 @@ export class OpenLayerMap implements CsMapController {
 
     // Reconstruir capa de incertidumbre si el zoom cruza un umbral de densidad,
     // salvo que el painter activo indique que no necesita reconstruirse (skipZoomRebuild).
-    if (state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
+    // Durante exportMap() la vista se reencuadra temporalmente (Península,
+    // Canarias) y se restaura después: no reconstruir aquí, porque la
+    // reconstrucción es asíncrona y dejaría la capa vacía justo al capturarla.
+    if (!this.exportingMap && state.uncertaintyLayer && this.uncertaintyLayer && this.uncertaintyLayer.length > 0) {
       const overlayKey = state.overlayVarId?.includes('_pvalue') ? 'significance' : 'uncertainty';
       const activePainter = PaletteManager.getInstance().getNamedPainter(overlayKey);
       if (!(activePainter as any)?.skipZoomRebuild) {
@@ -1499,10 +1503,14 @@ export class OpenLayerMap implements CsMapController {
     overlay.appendChild(label);
     mapEl.appendChild(overlay);
 
-    const removeOverlay = () => { if (overlay.parentNode) overlay.remove(); };
+    const removeOverlay = () => {
+      this.exportingMap = false;
+      if (overlay.parentNode) overlay.remove();
+    };
     const setStatus  = (msg: string) => { label.textContent = msg; };
 
     const doExport = async () => {
+      this.exportingMap = true;
       try {
       // Visor global (p.ej. gams, aridez mundial): no existe una partición
       // Península/Canarias que recortar aparte de los .nc (ver globalMap en

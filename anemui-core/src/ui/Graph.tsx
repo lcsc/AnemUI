@@ -29,6 +29,13 @@ interface MeanLineConfig {
   labelPadding: number;
 }
 
+/**
+ * Separación (px CSS) entre el gráfico exportado/impreso y la cabecera
+ * oscura de arriba, y entre el gráfico y la barra de logos de abajo.
+ * Común a todos los visores.
+ */
+export const EXPORT_GRAPH_GAP = 8;
+
 export interface ColorLegendRange {
   min: number;
   max: number;
@@ -339,9 +346,14 @@ export class CsGraph extends BaseFrame {
     const headerLines = this.getExportHeaderLines();
     // Sin líneas de cabecera (ver exportShowGraphHeader): 0, no la altura
     // mínima — evita una franja oscura vacía cuando el visor la desactiva.
-    const headerHeight = headerLines.length > 0 ? Math.max(36, headerLines.length * 18 + 12) : 0;
+    const headerBarH = headerLines.length > 0 ? Math.max(36, headerLines.length * 18 + 12) : 0;
+    // headerHeight = barra oscura + separación pequeña hasta el gráfico; es
+    // el desplazamiento vertical de todo el contenido del gráfico.
+    const headerHeight = headerBarH > 0 ? headerBarH + EXPORT_GRAPH_GAP : 0;
     const padding = 12;
-    const copyrightHeight = 20;
+    // Separación pequeña entre la última leyenda y la barra de logos (el
+    // copyright se dibuja dentro de la propia barra, en appendLogosBarAndDownload).
+    const copyrightHeight = EXPORT_GRAPH_GAP;
 
     // Obtener dimensiones del contenedor del gráfico
     const graphRect = popGraph.getBoundingClientRect();
@@ -406,16 +418,16 @@ export class CsGraph extends BaseFrame {
     ctx.fillRect(0, 0, totalW, totalH);
 
     // --- Barra de título ---
-    if (headerHeight > 0) {
+    if (headerBarH > 0) {
       ctx.fillStyle = '#2c3e50';
-      ctx.fillRect(0, 0, totalW, headerHeight);
+      ctx.fillRect(0, 0, totalW, headerBarH);
       ctx.fillStyle = '#ffffff';
       ctx.textBaseline = 'middle';
       if (headerLines.length <= 1) {
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(headerLines[0] || '', padding, headerHeight / 2);
+        ctx.fillText(headerLines[0] || '', padding, headerBarH / 2);
       } else {
-        const lineH = headerHeight / headerLines.length;
+        const lineH = headerBarH / headerLines.length;
         headerLines.forEach((line, i) => {
           ctx.font = i === 0 ? 'bold 14px sans-serif' : '12px sans-serif';
           ctx.fillText(line, padding, lineH * i + lineH / 2);
@@ -565,7 +577,8 @@ export class CsGraph extends BaseFrame {
         const y = Math.round(rect.top - graphRect.top) + headerHeight;
         const fontSize = style.fontSize || '13px';
         const fw = parseInt(style.fontWeight) >= 700 ? 'bold ' : '';
-        drawWrapped(el.textContent || '', x, y, rect.width, 16, `${fw}${fontSize} sans-serif`, style.color || '#1f2937');
+        const titleLineH = parseFloat(style.lineHeight) || Math.round((parseFloat(fontSize) || 13) * 1.3);
+        drawWrapped(el.textContent || '', x, y, rect.width, titleLineH, `${fw}${fontSize} sans-serif`, style.color || '#1f2937');
       });
 
       // Ítems de leyenda: item-div > span(caja coloreada) + span(texto)
@@ -594,10 +607,13 @@ export class CsGraph extends BaseFrame {
       predContainer.querySelectorAll<HTMLElement>('.popover-description').forEach(el => {
         const rect = el.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
+        const descStyle = getComputedStyle(el);
+        const descFontPx = parseFloat(descStyle.fontSize) || 12;
+        const descLineH = parseFloat(descStyle.lineHeight) || Math.round(descFontPx * 1.4);
         drawWrapped(el.textContent || '',
           Math.round(rect.left - graphRect.left),
           Math.round(rect.top - graphRect.top) + headerHeight,
-          rect.width, 16, '12px sans-serif', getComputedStyle(el).color || '#374151');
+          rect.width, descLineH, `${descFontPx}px sans-serif`, descStyle.color || '#374151');
       });
     }
 
@@ -775,13 +791,30 @@ export class CsGraph extends BaseFrame {
       chartInstance?.update('none');
     };
 
+    // El canvas de Chart.js está en píxeles de dispositivo (width = cssW * dpr).
+    // La cabecera se dibuja en px CSS escalados por ese mismo factor; antes se
+    // pintaba sin escalar y en pantallas con dpr 2 salía a la mitad de tamaño
+    // que el gráfico y que la barra de logos.
+    const cssChartW = chartCanvas.clientWidth || chartCanvas.width;
+    const scale = (chartInstance as any)?.currentDevicePixelRatio
+      || (cssChartW > 0 ? chartCanvas.width / cssChartW : 0)
+      || window.devicePixelRatio || 1;
+
     const lineHeight = 18;
     const padding = 12;
-    const headerHeight = Math.max(headerLines.length * lineHeight + padding, 36);
+    const headerHeight = headerLines.length > 0
+      ? Math.max(headerLines.length * lineHeight + padding, 36)
+      : 0;
+    // Respiro entre la cabecera y el gráfico (los títulos/ejes de Chart.js
+    // empiezan en el borde superior del canvas).
+    const gapBelowHeader = headerHeight > 0 ? EXPORT_GRAPH_GAP : 0;
+    const headerHeightPx = Math.round((headerHeight + gapBelowHeader) * scale);
+    // Separación pequeña entre el gráfico y la barra de logos.
+    const gapAboveLogosPx = Math.round(EXPORT_GRAPH_GAP * scale);
 
     const exportCanvas = document.createElement('canvas');
     exportCanvas.width  = chartCanvas.width;
-    exportCanvas.height = headerHeight + chartCanvas.height;
+    exportCanvas.height = headerHeightPx + chartCanvas.height + gapAboveLogosPx;
     const ctx = exportCanvas.getContext('2d');
     if (!ctx) {
       restoreLiveSize();
@@ -791,25 +824,31 @@ export class CsGraph extends BaseFrame {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
 
-    // Cabecera oscura
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(0, 0, exportCanvas.width, headerHeight);
-    ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'middle';
-    for (let i = 0; i < headerLines.length; i++) {
-      ctx.font = i === 0 ? 'bold 13px sans-serif' : '11px sans-serif';
-      ctx.fillText(headerLines[i], padding, padding / 2 + lineHeight * i + lineHeight / 2);
+    // Cabecera oscura (en px CSS)
+    if (headerHeight > 0) {
+      ctx.save();
+      ctx.scale(scale, scale);
+      const cssW = exportCanvas.width / scale;
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(0, 0, cssW, headerHeight);
+      ctx.fillStyle = '#ffffff';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i < headerLines.length; i++) {
+        ctx.font = i === 0 ? 'bold 13px sans-serif' : '11px sans-serif';
+        ctx.fillText(headerLines[i], padding, padding / 2 + lineHeight * i + lineHeight / 2, cssW - 2 * padding);
+      }
+      ctx.restore();
     }
 
     // Gráfico
-    ctx.drawImage(chartCanvas, 0, headerHeight);
+    ctx.drawImage(chartCanvas, 0, headerHeightPx);
 
     // exportCanvas ya tiene los píxeles capturados a tamaño desktop:
     // restaurar el chart en pantalla a su tamaño real de móvil.
     restoreLiveSize();
 
     // Barra de logos + descarga
-    this.drawLogosAndDownload(exportCanvas, ctx, filename, window.devicePixelRatio || 1);
+    this.drawLogosAndDownload(exportCanvas, ctx, filename, scale);
   }
 
   protected drawLogosAndDownload(exportCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, filename: string, exportScale?: number): void {
@@ -832,6 +871,8 @@ export class CsGraph extends BaseFrame {
 
   protected appendLogosBarAndDownload(srcCanvas: HTMLCanvasElement, logoImg: HTMLImageElement, filename: string, exportScale?: number): void {
     const pad = 6;
+    // Separación entre la línea divisoria y el logo
+    const logoTopPad = 8;
     const copyrightLineH = 18;
     const dpr = exportScale ?? (window.devicePixelRatio || 1);
 
@@ -847,7 +888,7 @@ export class CsGraph extends BaseFrame {
     const logoScale = Math.min(cssW / logoImg.naturalWidth, MAX_LOGO_HEIGHT / logoImg.naturalHeight);
     const logoW = logoImg.naturalWidth * logoScale;
     const logoH = logoImg.naturalHeight * logoScale;
-    const totalBarH = logoH + copyrightLineH;
+    const totalBarH = logoTopPad + logoH + copyrightLineH;
     const totalBarHPx = Math.round(totalBarH * dpr);
 
     const finalCanvas = document.createElement('canvas');
@@ -893,7 +934,7 @@ export class CsGraph extends BaseFrame {
     }
     fCtx.imageSmoothingEnabled = true;
     fCtx.imageSmoothingQuality = 'high';
-    fCtx.drawImage(logoSrc, 0, 0, logoW, logoH);
+    fCtx.drawImage(logoSrc, 0, logoTopPad, logoW, logoH);
 
     // Copyright en línea separada debajo
     const copyrightText = '© ' + exportCopyright;
@@ -901,7 +942,7 @@ export class CsGraph extends BaseFrame {
     fCtx.fillStyle = '#666666';
     fCtx.textBaseline = 'middle';
     fCtx.textAlign = 'right';
-    fCtx.fillText(copyrightText, cssW - pad, logoH + copyrightLineH / 2);
+    fCtx.fillText(copyrightText, cssW - pad, logoTopPad + logoH + copyrightLineH / 2);
 
     fCtx.restore();
 
@@ -2457,21 +2498,21 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
 
     const titleEl = document.createElement('h3');
     titleEl.textContent = title;
-    titleEl.style.cssText = 'margin:0 0 14px 0; font-size:13px; color:#1f2937; text-align:center; max-width:560px;';
+    titleEl.style.cssText = 'margin:0 0 18px 0; font-size:17px; line-height:1.35; color:#1f2937; text-align:center; max-width:760px;';
     mainContainer.appendChild(titleEl);
 
     if (periodText) {
       const periodEl = document.createElement('p');
       periodEl.textContent = periodText;
-      periodEl.style.cssText = 'margin:-8px 0 12px 0; font-size:12px; color:#6b7280; font-weight:500; text-align:center;';
+      periodEl.style.cssText = 'margin:-8px 0 16px 0; font-size:14px; color:#6b7280; font-weight:500; text-align:center;';
       mainContainer.appendChild(periodEl);
     }
 
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:24px; justify-content:center; width:100%;';
+    row.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:40px; justify-content:center; width:100%;';
 
     const canvas = document.createElement('canvas');
-    const canvasSize = 200;
+    const canvasSize = 320;
     canvas.width = canvasSize;
     canvas.height = canvasSize;
     canvas.style.cssText = `flex-shrink:0; width:${canvasSize}px; height:${canvasSize}px;`;
@@ -2480,17 +2521,17 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     const multiCol = labels.length > 6;
     const legendCol = document.createElement('div');
     legendCol.style.cssText = multiCol
-      ? 'display:grid; grid-template-columns:1fr 1fr; gap:4px 20px; align-content:center;'
-      : 'display:flex; flex-direction:column; gap:6px; justify-content:center;';
+      ? 'display:grid; grid-template-columns:1fr 1fr; gap:8px 28px; align-content:center;'
+      : 'display:flex; flex-direction:column; gap:11px; justify-content:center;';
 
     for (let i = 0; i < labels.length; i++) {
       const pct = total > 0 ? ((values[i] / total) * 100).toFixed(1) : '0.0';
       const item = document.createElement('div');
-      item.style.cssText = 'display:flex; align-items:center; gap:6px;';
+      item.style.cssText = 'display:flex; align-items:center; gap:10px;';
       const box = document.createElement('span');
-      box.style.cssText = `display:inline-block; width:11px; height:11px; border-radius:2px; background:${colors[i]}; flex-shrink:0;`;
+      box.style.cssText = `display:inline-block; width:16px; height:16px; border-radius:3px; background:${colors[i]}; flex-shrink:0;`;
       const text = document.createElement('span');
-      text.style.cssText = 'font-size:11px; color:#374151; white-space:nowrap;';
+      text.style.cssText = 'font-size:15px; color:#374151; white-space:nowrap;';
       text.textContent = `${labels[i]}: ${pct}%`;
       item.appendChild(box);
       item.appendChild(text);
@@ -2502,7 +2543,7 @@ public showGraph(data: any, latlng: CsLatLong = { lat: 0.0, lng: 0.0 }, station:
     if (descriptionText) {
       const desc = document.createElement('p');
       desc.className = 'popover-description';
-      desc.style.cssText = 'display:block; margin:14px auto 0; max-width:560px; text-align:justify;';
+      desc.style.cssText = 'display:block; margin:20px auto 0; max-width:760px; font-size:14px; line-height:1.45; text-align:justify;';
       desc.textContent = descriptionText;
       mainContainer.appendChild(desc);
     }
