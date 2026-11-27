@@ -371,7 +371,18 @@ export class CsGraph extends BaseFrame {
     // Calcular alto de labels
     let labelsH = 0;
     if (labelsDiv && labelsDiv.offsetHeight > 0) {
-      labelsH = labelsDiv.offsetHeight + 8;
+      if (labelsDiv.querySelector('[data-no-export]')) {
+        // Con partes que no se exportan, el alto llega hasta el último texto que sí se exporta
+        const top = labelsDiv.getBoundingClientRect().top;
+        let bottom = top;
+        labelsDiv.querySelectorAll<HTMLElement>('span, strong').forEach(el => {
+          if (el.querySelector('span, strong') || el.closest('[data-no-export]')) return;
+          bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+        });
+        labelsH = Math.ceil(bottom - top) + 8;
+      } else {
+        labelsH = labelsDiv.offsetHeight + 8;
+      }
     }
 
     // Calcular alto de color legend
@@ -598,6 +609,7 @@ export class CsGraph extends BaseFrame {
       const labelsRect = labelsDiv.getBoundingClientRect();
       labelsDiv.querySelectorAll<HTMLElement>('span, strong').forEach(el => {
         if (el.querySelector('span, strong')) return; // solo los que llevan el texto
+        if (el.closest('[data-no-export]')) return;   // partes de la leyenda solo para pantalla
         const style = window.getComputedStyle(el);
         const r = el.getBoundingClientRect();
         const color = style.color || '#333333';
